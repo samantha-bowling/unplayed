@@ -99,6 +99,7 @@ export type Database = {
           hidden: boolean | null
           id: string
           last_played_date: string | null
+          notes: string | null
           playtime_minutes: number | null
           updated_at: string
           user_id: string
@@ -111,6 +112,7 @@ export type Database = {
           hidden?: boolean | null
           id?: string
           last_played_date?: string | null
+          notes?: string | null
           playtime_minutes?: number | null
           updated_at?: string
           user_id: string
@@ -123,6 +125,7 @@ export type Database = {
           hidden?: boolean | null
           id?: string
           last_played_date?: string | null
+          notes?: string | null
           playtime_minutes?: number | null
           updated_at?: string
           user_id?: string
