@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -7,19 +8,66 @@ import { Maximize, LayoutGrid, List } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 // Sample data - in a real app, this would come from the Steam API
-const sampleGames = [
-  // ... keep existing code (sampleGames array)
-];
+const sampleGames = [{
+  id: 1,
+  title: "The Witcher 3: Wild Hunt",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 2,
+  title: "Hades",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 3,
+  title: "Stardew Valley",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 4,
+  title: "Cyberpunk 2077",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 5,
+  title: "Hollow Knight",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 6,
+  title: "Disco Elysium",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/632470/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 7,
+  title: "Divinity: Original Sin 2",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/435150/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 8,
+  title: "Red Dead Redemption 2",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 9,
+  title: "Civilization VI",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/289070/capsule_184x69.jpg",
+  playtime: 0
+}, {
+  id: 10,
+  title: "Terraria",
+  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/105600/capsule_184x69.jpg",
+  playtime: 0
+}];
 
 interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
 }
 
-// Helper function to generate positions based on grid with enhanced randomization
+// Helper function to generate positions based on grid
 const generateZenPositions = (count: number, isFullScreen: boolean) => {
   const positions = [];
-  // Use a larger grid size for better distribution
-  const gridSize = Math.ceil(Math.sqrt(count * 3)); 
+  const gridSize = Math.ceil(Math.sqrt(count * 2)); // Create a grid with enough cells
   const cellWidth = 100 / gridSize;
   const cellHeight = 100 / gridSize;
 
@@ -37,43 +85,20 @@ const generateZenPositions = (count: number, isFullScreen: boolean) => {
   // Shuffle the grid to get random positions
   const shuffledGrid = [...grid].sort(() => Math.random() - 0.5);
   
-  // Take the positions we need with enhanced randomization
+  // Take the positions we need
   for (let i = 0; i < count; i++) {
     if (i < shuffledGrid.length) {
-      // Increase randomization factor for more spread out positions
-      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.8 - cellWidth * 0.4);
-      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.8 - cellHeight * 0.4);
-      
-      // Add more variation to animations
-      const baseDelay = i * 0.8; // Reduced delay between items
-      const randomDelay = baseDelay + Math.random() * 1.2; // Add some randomness to delays
-      
-      // More varied durations
-      const baseDuration = 3 + Math.random() * 4;
-      
-      // Add different movement patterns
-      const movementType = Math.floor(Math.random() * 4); // 0-3 different movement types
-      
-      // Randomize font sizes more
-      const fontSize = isFullScreen ? 
-        `${0.9 + Math.random() * 0.8}rem` : // More varied font in fullscreen: 0.9-1.7rem
-        `${0.7 + Math.random() * 0.5}rem`; // Normal size: 0.7-1.2rem
-        
-      // Random opacity variation
-      const opacity = 0.7 + Math.random() * 0.3;
-      
-      // Add random z-index for better layering
-      const zIndex = Math.floor(Math.random() * 20);
+      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.5 - cellWidth * 0.25);
+      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.5 - cellHeight * 0.25);
       
       positions.push({
         left: `${randX}%`,
         top: `${randY}%`,
-        delay: randomDelay, 
-        duration: baseDuration,
-        fontSize: fontSize,
-        movementType: movementType,
-        opacity: opacity,
-        zIndex: zIndex
+        delay: i * 1.5, // Stagger the animations
+        duration: 3 + Math.random() * 2, // Random duration between 3-5s
+        fontSize: isFullScreen ? 
+          `${1 + Math.random() * 0.5}rem` : // Larger font in fullscreen: 1-1.5rem
+          `${0.75 + Math.random() * 0.25}rem` // Normal size: 0.75-1rem
       });
     }
   }
@@ -115,7 +140,7 @@ const LibraryPreview = ({
     }
   }, [viewMode, focusedComponent, updateComponentSettings]);
   
-  // Generate new positions with enhanced randomization when switching to zen mode or when full screen changes
+  // Generate new positions when switching to zen mode or when full screen changes
   useEffect(() => {
     if (viewMode === 'zen' || positionsGeneratedRef.current === false) {
       const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
@@ -147,43 +172,6 @@ const LibraryPreview = ({
       const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
       setZenPositions(newPositions);
     }
-  };
-
-  // Helper function to determine animation properties based on movement type
-  const getAnimationStyle = (position: any) => {
-    const baseStyle = {
-      top: position?.top || '50%',
-      left: position?.left || '50%',
-      transform: 'translate(-50%, -50%)',
-      zIndex: position?.zIndex || Math.floor(Math.random() * 10),
-      opacity: 0,
-    };
-    
-    // Different animation patterns based on movement type
-    let animationName = 'zen-float';
-    switch (position?.movementType) {
-      case 0:
-        animationName = 'zen-float'; // Default side to side
-        break;
-      case 1:
-        animationName = 'zen-bounce'; // Up and down
-        break;
-      case 2:
-        animationName = 'zen-circle'; // Circular motion
-        break;
-      case 3:
-        animationName = 'zen-pulse'; // Pulse/scale
-        break;
-      default:
-        animationName = 'zen-float';
-    }
-    
-    return {
-      ...baseStyle,
-      animation: `${animationName} ${position?.duration || 4}s ease-in-out infinite alternate, 
-                  zen-fade-in 2s ease-out forwards`,
-      animationDelay: `${position?.delay || 0}s`,
-    };
   };
 
   return (
@@ -236,18 +224,24 @@ const LibraryPreview = ({
         </div>
       ) : (
         // Enhanced Zen view mode
-        <div className={`${isFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full zen-view-container`}>
+        <div className={`${isFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
           {sampleGames.map((game, index) => (
             <div
               key={game.id}
               className="absolute transition-all zen-game-item"
-              style={getAnimationStyle(zenPositions[index])}
+              style={{
+                top: zenPositions[index]?.top || '50%',
+                left: zenPositions[index]?.left || '50%',
+                transform: 'translate(-50%, -50%)',
+                animationDelay: `${zenPositions[index]?.delay || index}s`,
+                zIndex: Math.floor(Math.random() * 10),
+                opacity: 0,
+                animation: `zen-float ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
+                            zen-fade-in 2s ease-out forwards`,
+              }}
             >
               <p className="text-unplayed-mint whitespace-nowrap text-glow" 
-                 style={{ 
-                   fontSize: zenPositions[index]?.fontSize || '1rem',
-                   opacity: zenPositions[index]?.opacity || 0.8,
-                 }}>
+                 style={{ fontSize: zenPositions[index]?.fontSize || '1rem' }}>
                 {game.title}
               </p>
             </div>
