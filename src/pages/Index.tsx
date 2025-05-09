@@ -1,3 +1,4 @@
+
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -10,10 +11,11 @@ import Footer from "../components/Footer";
 import ZenModeWrapper from "@/components/ZenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useZenMode } from "@/context/ZenModeContext";
+import SteamLoginButton from "@/components/SteamLoginButton";
 
 const Index = () => {
-  const { user, signInWithSteam } = useAuth();
-  const { isZenMode, focusedComponent, componentSettings } = useZenMode();
+  const { user } = useAuth();
+  const { isZenMode, focusedComponent } = useZenMode();
   
   // In Zen Mode, show only the focused component
   if (isZenMode && focusedComponent) {
@@ -45,9 +47,7 @@ const Index = () => {
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
               Unplayed helps you conquer your massive Steam backlog and actually play the games you own.
             </p>
-            <button className="btn-primary text-lg py-3 px-8">
-              Connect Your Steam Account
-            </button>
+            <SteamLoginButton />
           </div>
         </section>
         
@@ -119,9 +119,7 @@ const Index = () => {
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
               Connect your Steam account and start using your unplayed games today.
             </p>
-            <button className="btn-primary text-lg py-3 px-8">
-              Connect Your Steam Account
-            </button>
+            <SteamLoginButton />
             
             <p className="text-sm text-gray-500 mt-4">
               We use Steam's official API. Your account details are safe.

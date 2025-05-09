@@ -5,13 +5,14 @@ import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SteamIcon } from '@/components/icons/SteamIcon';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SteamLoader from '@/components/SteamLoader';
 import AuthErrorMessage from '@/components/AuthErrorMessage';
 import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
+import SteamLoginButton from '@/components/SteamLoginButton';
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -58,23 +59,6 @@ const AuthPage = () => {
       window.history.replaceState({}, '', newUrl.toString());
     }
   }, [location.search, toast]);
-
-  const handleSteamLogin = async () => {
-    if (isLoading) return; // Prevent multiple clicks
-    
-    try {
-      setIsLoading(true);
-      await signInWithSteam(from);
-    } catch (error) {
-      console.error('Error during Steam login:', error);
-      toast({
-        title: 'Authentication Failed',
-        description: 'Could not authenticate with Steam. Please try again.',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-    }
-  };
 
   // Get appropriate loading message based on auth state
   const getLoadingMessage = () => {
@@ -204,31 +188,22 @@ const AuthPage = () => {
             
             <AnimatePresence>
               {enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && (
-                <motion.button
-                  onClick={handleSteamLogin}
-                  disabled={isLoading || authStatus === AuthStatus.LOADING}
-                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-[#1b2838] hover:bg-[#2a3f5a] transition-colors rounded-md relative overflow-hidden group"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
+                <motion.div
+                  className="flex justify-center"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   key="steam-button"
                 >
-                  {/* Steam-styled loading animation */}
-                  {(isLoading || authStatus === AuthStatus.LOADING) ? (
-                    <div className="flex items-center space-x-2">
+                  {isLoading || authStatus === AuthStatus.LOADING ? (
+                    <div className="flex items-center space-x-2 py-3">
                       <Loader2 className="w-5 h-5 animate-spin text-unplayed-mint" />
                       <span>Connecting to Steam...</span>
                     </div>
                   ) : (
-                    <>
-                      <SteamIcon className="w-6 h-6" />
-                      <span>Login with Steam</span>
-                      <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-unplayed-mint group-hover:w-full transition-all duration-300"></div>
-                    </>
+                    <SteamLoginButton redirectPath={from} />
                   )}
-                </motion.button>
+                </motion.div>
               )}
             </AnimatePresence>
             

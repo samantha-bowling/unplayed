@@ -8,6 +8,7 @@ import { useZenMode } from '@/context/ZenModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import ZenModeToggle from './ZenModeToggle';
+import SteamLoginButton from './SteamLoginButton';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -76,9 +77,7 @@ const Header = () => {
             </button>
           </div>
         ) : (
-          <Link to="/auth" className="btn-primary">
-            Login with Steam
-          </Link>
+          <SteamLoginButton />
         )}
       </div>
 
@@ -135,9 +134,7 @@ const Header = () => {
                 </button>
               </div>
             ) : (
-              <Link to="/auth" className="btn-primary w-4/5">
-                Login with Steam
-              </Link>
+              <SteamLoginButton fullWidth />
             )}
           </div>
         </div>
