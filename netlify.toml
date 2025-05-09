@@ -10,3 +10,9 @@
   force = true
   headers = { "X-Steam-Auth-Source" = "netlify" }
 
+[[redirects]]
+  from = "/api/webhooks/stripe"
+  to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/handle-stripe-donation"
+  status = 200
+  force = true
+

@@ -1,19 +1,23 @@
+
 import { useState } from "react";
 import { useZenMode } from "@/context/ZenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import { Link } from "react-router-dom";
+
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
   const {
     isZenMode
   } = useZenMode();
+
   const openPrivacyPolicy = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log("Opening Privacy Policy dialog");
     setPrivacyPolicyOpen(true);
   };
+
   const openTermsOfService = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log("Opening Terms of Service dialog");
@@ -24,6 +28,7 @@ const Footer = () => {
   if (isZenMode) {
     return null;
   }
+
   return <footer className="w-full p-6 mt-16 relative z-10">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
@@ -45,6 +50,9 @@ const Footer = () => {
             <Link to="/about" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
               About
             </Link>
+            <Link to="/support" className="text-gray-400 hover:text-unplayed-pink transition-colors text-sm">
+              Support
+            </Link>
           </div>
         </div>
         
@@ -63,4 +71,5 @@ const Footer = () => {
       <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />
     </footer>;
 };
+
 export default Footer;

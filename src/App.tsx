@@ -13,6 +13,7 @@ import AuthPage from "./pages/AuthPage";
 import LibraryPage from "./pages/LibraryPage";
 import PickerPage from "./pages/PickerPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
+import SupportPage from "./pages/SupportPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/auth-debug" element={<AuthDebugPage />} />
+                <Route path="/support" element={<SupportPage />} />
                 {/* Protected routes */}
                 <Route path="/library" element={
                   <ProtectedRoute>

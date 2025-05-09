@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      donors: {
+        Row: {
+          approved: boolean
+          created_at: string
+          display_name: string
+          id: string
+          source: string
+        }
+        Insert: {
+          approved?: boolean
+          created_at?: string
+          display_name: string
+          id?: string
+          source?: string
+        }
+        Update: {
+          approved?: boolean
+          created_at?: string
+          display_name?: string
+          id?: string
+          source?: string
+        }
+        Relationships: []
+      }
       game_picks: {
         Row: {
           filters: Json | null
