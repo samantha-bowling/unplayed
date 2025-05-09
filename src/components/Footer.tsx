@@ -1,9 +1,11 @@
 
 import { useState } from "react";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
+import TermsOfServiceDialog from "./TermsOfServiceDialog";
 
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+  const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
 
   return (
     <footer className="w-full p-6 mt-16">
@@ -28,7 +30,14 @@ const Footer = () => {
             >
               Privacy Policy
             </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
+            <a 
+              href="#" 
+              className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                setTermsOfServiceOpen(true);
+              }}
+            >
               Terms of Service
             </a>
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
@@ -50,6 +59,10 @@ const Footer = () => {
       <PrivacyPolicyDialog 
         open={privacyPolicyOpen} 
         onOpenChange={setPrivacyPolicyOpen} 
+      />
+      <TermsOfServiceDialog
+        open={termsOfServiceOpen}
+        onOpenChange={setTermsOfServiceOpen}
       />
     </footer>
   );
