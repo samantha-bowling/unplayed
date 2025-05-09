@@ -37,14 +37,17 @@ const Index = () => {
             <span className="text-white">.exe</span>
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <UnplayedCounter />
             <DustScoreMeter />
             <SpendingEstimate />
           </div>
           
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="mt-6">
             <GenreHoarding />
+          </div>
+          
+          <div className="mt-6">
             <ShelfLife />
           </div>
         </div>
