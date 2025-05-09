@@ -24,8 +24,8 @@ const ZenModeWrapper: React.FC<ZenModeWrapperProps> = ({ children }) => {
 
   return (
     <div className={cn(
-      'transition-all duration-300 ease-in-out',
-      isZenMode && 'zen-mode-container'
+      'transition-all duration-500 ease-in-out',
+      isZenMode ? 'zen-mode-container' : ''
     )}>
       {children}
     </div>
