@@ -6,12 +6,14 @@ interface SteamLoginButtonProps {
   className?: string;
   redirectPath?: string;
   fullWidth?: boolean;
+  centered?: boolean; // New prop to control centering
 }
 
 const SteamLoginButton = ({ 
   className = '', 
   redirectPath = '/',
-  fullWidth = false
+  fullWidth = false,
+  centered = false
 }: SteamLoginButtonProps) => {
   const { signInWithSteam } = useAuth();
   const navigate = useNavigate();
@@ -28,7 +30,9 @@ const SteamLoginButton = ({
   return (
     <button 
       onClick={handleSteamLogin}
-      className={`${fullWidth ? 'w-full' : ''} flex items-center justify-center transition-opacity hover:opacity-90 ${className}`}
+      className={`${fullWidth ? 'w-full' : ''} 
+                 ${centered ? 'mx-auto' : ''} 
+                 flex items-center justify-center transition-opacity hover:opacity-90 ${className}`}
     >
       <img 
         src="/lovable-uploads/0b70a4e5-f3cb-44e0-bb0b-bf29ee038fa3.png"

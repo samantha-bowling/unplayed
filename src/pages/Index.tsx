@@ -47,7 +47,9 @@ const Index = () => {
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
               Unplayed helps you conquer your massive Steam backlog and actually play the games you own.
             </p>
-            <SteamLoginButton />
+            <div className="flex justify-center">
+              <SteamLoginButton centered />
+            </div>
           </div>
         </section>
         
@@ -119,7 +121,9 @@ const Index = () => {
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
               Connect your Steam account and start using your unplayed games today.
             </p>
-            <SteamLoginButton />
+            <div className="flex justify-center">
+              <SteamLoginButton centered />
+            </div>
             
             <p className="text-sm text-gray-500 mt-4">
               We use Steam's official API. Your account details are safe.
