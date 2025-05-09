@@ -1,0 +1,52 @@
+
+import AuthDebug from "@/components/AuthDebug";
+import { Separator } from "@/components/ui/separator";
+
+/**
+ * Authentication Debug Page
+ * A dedicated page for troubleshooting Steam Auth and authentication flows
+ */
+const AuthDebugPage = () => {
+  return (
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold text-unplayed-mint mb-4">Authentication Debug</h1>
+      <p className="text-gray-300 mb-6">
+        This page provides tools for diagnosing and troubleshooting authentication issues.
+      </p>
+      <Separator className="my-6" />
+      <AuthDebug />
+      
+      <div className="mt-8 p-6 terminal-container">
+        <h2 className="text-xl font-bold text-unplayed-amber mb-4">Documentation</h2>
+        <p className="text-gray-300 mb-4">
+          This debug page helps identify issues with the Steam authentication process.
+          It provides visibility into the current authentication state and enables testing
+          of direct connections to the authentication endpoints.
+        </p>
+        
+        <h3 className="text-lg font-semibold text-unplayed-mint mt-6 mb-2">Authentication Flow</h3>
+        <ol className="list-decimal pl-5 space-y-2 text-gray-300">
+          <li>User initiates Steam login via <code>signInWithSteam()</code></li>
+          <li>The auth system determines the appropriate Steam auth URL</li>
+          <li>User is redirected to Steam's OpenID login page</li>
+          <li>After successful Steam login, user is sent to the callback URL</li>
+          <li>The callback is processed by our Edge Function</li>
+          <li>Edge Function creates/updates Supabase user and links to Steam account</li>
+          <li>User is redirected back to the app with authentication parameters</li>
+          <li>The app processes these parameters and establishes a session</li>
+        </ol>
+        
+        <h3 className="text-lg font-semibold text-unplayed-mint mt-6 mb-2">Potential Issues</h3>
+        <ul className="list-disc pl-5 space-y-2 text-gray-300">
+          <li><strong>DNS Configuration:</strong> Domain redirects not properly configured</li>
+          <li><strong>Edge Function:</strong> Missing environment variables (e.g., service role key)</li>
+          <li><strong>Redirect URLs:</strong> Incorrect callback URLs in Steam Developer Portal</li>
+          <li><strong>CORS:</strong> Cross-origin request issues blocking API calls</li>
+          <li><strong>Session Handling:</strong> Problems with JWT token creation or validation</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default AuthDebugPage;

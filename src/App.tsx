@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import LibraryPage from "./pages/LibraryPage";
 import PickerPage from "./pages/PickerPage";
+import AuthDebugPage from "./pages/AuthDebugPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth-debug" element={<AuthDebugPage />} />
                 {/* Protected routes */}
                 <Route path="/library" element={
                   <ProtectedRoute>

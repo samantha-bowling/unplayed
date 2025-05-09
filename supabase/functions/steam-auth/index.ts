@@ -786,6 +786,57 @@ async function handleHealthCheck() {
   });
 }
 
+// New debug endpoint for troubleshooting the edge function environment
+async function handleDebug(req: Request) {
+  // Get request information
+  const url = new URL(req.url);
+  const headers = Object.fromEntries(req.headers.entries());
+  
+  // Check for environment variables
+  const serviceRoleKeyPresent = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const steamApiKeyPresent = !!STEAM_API_KEY;
+  
+  // Construct debug information
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    environment: {
+      deno: Deno.version,
+      supabaseUrl: SUPABASE_URL,
+      steamReturnUrl: STEAM_RETURN_URL,
+      frontendUrl: FRONTEND_URL,
+      serviceRoleKeyPresent,
+      steamApiKeyPresent,
+    },
+    config: {
+      corsHeaders,
+    },
+    request: {
+      url: req.url,
+      method: req.method,
+      headers: {
+        // Only include safe headers
+        'user-agent': headers['user-agent'],
+        'content-type': headers['content-type'],
+        'origin': headers['origin'],
+        'referer': headers['referer'],
+        'host': headers['host'],
+        'x-netlify-source': headers['x-netlify-source'],
+        'x-steam-auth-source': headers['x-steam-auth-source'],
+      },
+      path: url.pathname,
+      query: Object.fromEntries(url.searchParams.entries()),
+    }
+  };
+  
+  return new Response(
+    JSON.stringify(debugInfo),
+    {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    }
+  );
+}
+
 // Main handler function
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -808,27 +859,7 @@ serve(async (req) => {
       case 'health':
         return await handleHealthCheck();
       case 'debug':
-        // New debug endpoint to help diagnose issues
-        return new Response(JSON.stringify({
-          timestamp: new Date().toISOString(),
-          environment: {
-            deno: Deno.version,
-            supabaseUrl: SUPABASE_URL,
-            steamReturnUrl: STEAM_RETURN_URL,
-            frontendUrl: FRONTEND_URL,
-            serviceRoleKeyPresent: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-          },
-          request: {
-            url: req.url,
-            method: req.method,
-            headers: Object.fromEntries(req.headers.entries()),
-            path: url.pathname,
-            query: Object.fromEntries(url.searchParams.entries())
-          }
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
+        return await handleDebug(req);
       default:
         console.log(`Unknown path requested: ${path}`);
         return new Response(JSON.stringify({ 
