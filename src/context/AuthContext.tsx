@@ -80,6 +80,41 @@ const getSteamAuthUrl = (queryParams: string = ''): string => {
   return `/api/auth/steam/login${queryParams}`;
 };
 
+// Helper function to safely fetch and parse JSON responses
+const fetchAndParseJson = async (url: string, options: RequestInit = {}): Promise<any> => {
+  const response = await fetch(url, options);
+  
+  // Read the response as text first
+  const responseText = await response.text();
+  
+  // Check response status before trying to parse
+  if (!response.ok) {
+    // Check content type to provide better error messages
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/html')) {
+      console.error('[Steam Auth] Received HTML instead of JSON:', responseText.substring(0, 200));
+      throw new Error(`Received HTML instead of JSON. Status: ${response.status}. This usually indicates a redirect issue.`);
+    }
+    
+    // Try to parse error as JSON if possible
+    try {
+      const errorData = JSON.parse(responseText);
+      throw new Error(`Request failed: ${errorData.message || response.statusText}`);
+    } catch (parseError) {
+      // If we can't parse as JSON, use the text response in the error
+      throw new Error(`Request failed (${response.status}): ${responseText.substring(0, 100)}...`);
+    }
+  }
+  
+  // Try to parse successful response as JSON
+  try {
+    return JSON.parse(responseText);
+  } catch (parseError) {
+    console.error('[Steam Auth] Failed to parse response as JSON:', responseText.substring(0, 200));
+    throw new Error(`Failed to parse response as JSON. Raw response: ${responseText.substring(0, 100)}...`);
+  }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -582,31 +617,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       logAuthEvent('Fetching Steam login URL', { authUrl });
       
-      const response = await fetch(authUrl, {
+      // Use our new helper function to safely fetch and parse the response
+      const responseData = await fetchAndParseJson(authUrl, {
         headers: {
           'User-Agent': 'UnplayedWTF Web App',
           'Content-Type': 'application/json',
         }
       });
-      
-      if (!response.ok) {
-        // Check if we received HTML instead of JSON (common error in misconfigured endpoints)
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('text/html')) {
-          throw new Error(`Received HTML instead of JSON. Status: ${response.status}. This usually indicates a redirect issue.`);
-        }
-        throw new Error(`Failed to get Steam login URL: ${response.status} ${response.statusText}`);
-      }
-      
-      // Try to parse the response as JSON, with better error handling
-      let responseData;
-      try {
-        responseData = await response.json();
-      } catch (parseError) {
-        // If JSON parsing fails, try to get the raw text for better debugging
-        const rawText = await response.text();
-        throw new Error(`Failed to parse response as JSON. Raw response: ${rawText.substring(0, 100)}...`);
-      }
       
       const { url, error } = responseData;
       
