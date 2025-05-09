@@ -498,7 +498,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 toast({
                   title: 'Partial Sign In',
                   description: 'Your profile was loaded but your session may expire soon.',
-                  variant: 'default', // FIXED: Changed from "warning" to "default"
+                  variant: 'default',
                 });
               } else {
                 throw new Error('Could not find user profile');

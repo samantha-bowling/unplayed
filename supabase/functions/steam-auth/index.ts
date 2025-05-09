@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -250,91 +251,98 @@ async function getExtendedSteamUserData(steamId: string): Promise<any> {
   }
 }
 
-// Function to create a user directly in Supabase auth system
+// Function to create a user directly in Supabase auth system - Now only using admin methods
 async function createSupabaseUser(steamId: string, steamName: string, steamAvatar: string): Promise<string> {
   try {
     console.log(`Creating new Supabase user for Steam ID: ${steamId}`);
     
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
+    // Verify we have the service role key
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceRoleKey) {
+      console.error("SERVICE ROLE KEY IS MISSING");
+      throw new Error("Service role key not available for admin operations");
+    }
+    
+    // Create admin client with service role
+    const adminClient = createClient(
+      SUPABASE_URL,
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
+        }
       }
-    });
+    );
     
     // Create a unique, valid email from the Steam ID
     const email = `steam_${steamId}@unplayed.wtf`;
-    // Generate a secure random password (user will never need to know this)
-    const password = crypto.randomUUID();
     
-    // Sign up user with email/password
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
+    console.log(`Using admin client to create or retrieve user with email: ${email}`);
+    
+    // Try to find if the user already exists
+    const { data: existingUsers, error: searchError } = await adminClient.auth.admin.listUsers({
+      filter: { email: email }
+    });
+    
+    if (searchError) {
+      console.error("Error searching for existing user:", searchError);
+      throw searchError;
+    }
+    
+    let userId: string;
+    
+    // Check if user exists
+    if (existingUsers && existingUsers.users.length > 0) {
+      userId = existingUsers.users[0].id;
+      console.log(`Found existing user with ID: ${userId}`);
+      
+      // Update user metadata
+      const { error: updateError } = await adminClient.auth.admin.updateUserById(
+        userId,
+        {
+          user_metadata: {
+            steam_id: steamId,
+            name: steamName,
+            avatar_url: steamAvatar,
+            provider: 'steam'
+          }
+        }
+      );
+      
+      if (updateError) {
+        console.error("Error updating user metadata:", updateError);
+        // Non-fatal error, continue
+      }
+    } else {
+      // Create new user with admin API
+      console.log("No existing user found, creating new user");
+      const { data: newUserData, error: createError } = await adminClient.auth.admin.createUser({
+        email: email,
+        email_confirm: true, // Auto-confirm the email
+        user_metadata: {
           steam_id: steamId,
           name: steamName,
           avatar_url: steamAvatar,
           provider: 'steam'
         }
-      }
-    });
-    
-    if (signUpError) {
-      console.error("Error during sign up:", signUpError);
+      });
       
-      // If the error is that the user already exists, try to sign them in instead
-      if (signUpError.message.includes('User already registered')) {
-        console.log("User already exists, attempting sign in");
-        
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (signInError) {
-          // If sign-in with the password fails, try admin sign-in
-          console.log("Regular sign in failed, trying admin sign in");
-          
-          // Create service role client
-          const adminSupabase = createClient(
-            SUPABASE_URL,
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-            {
-              auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-                detectSessionInUrl: false
-              }
-            }
-          );
-          
-          // Try admin sign in
-          const { data: adminData, error: adminError } = await adminSupabase.auth.admin.generateLink({
-            type: 'magiclink',
-            email
-          });
-          
-          if (adminError) {
-            throw new Error(`Failed to authenticate existing user: ${adminError.message}`);
-          }
-          
-          return adminData?.user?.id || '';
-        }
-        
-        return signInData?.user?.id || '';
+      if (createError) {
+        console.error("Error creating new user:", createError);
+        throw createError;
       }
       
-      throw new Error(`User signup failed: ${signUpError.message}`);
+      if (!newUserData?.user) {
+        throw new Error("No user returned after creation");
+      }
+      
+      userId = newUserData.user.id;
+      console.log(`Created new user with ID: ${userId}`);
     }
     
-    if (!authData.user) {
-      throw new Error("No user returned after signup");
-    }
-    
-    return authData.user.id;
+    return userId;
   } catch (error) {
     console.error("Error creating Supabase user:", error);
     throw {
@@ -500,36 +508,38 @@ async function handleCallback(request: Request) {
         }
       }
       
-      // Generate JWT token for the user
-      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+      // Verify we have the service role key for auth operations
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!serviceRoleKey) {
+        console.error("SERVICE ROLE KEY IS MISSING FOR SESSION CREATION");
+        return Response.redirect(
+          generateErrorRedirect('auth_setup_error', 'Server authentication configuration error'),
+          302
+        );
+      }
+      
+      // Create admin client for authentication
+      const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
+      
+      // Create a session for the user using admin API
+      console.log(`Creating session for user ID: ${userId}`);
+      const { data: signInData, error: signInError } = await adminClient.auth.admin.generateLink({
+        type: 'magiclink',
         email: `steam_${steamId}@unplayed.wtf`,
-        password: crypto.randomUUID() // This won't work but we want to get the session data format
+        options: {
+          redirectTo: FRONTEND_URL + (redirectTo || '/')
+        }
       });
       
-      if (sessionError || !sessionData) {
-        // Use admin APIs as fallback
-        console.log("Using admin API to create session");
-        
-        // Create admin client with service role
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        if (!serviceRoleKey) {
-          throw new Error("Service role key not available");
-        }
-        
-        const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
-        
-        // Create a session for the user
-        const { data: adminSessionData, error: adminSessionError } = await adminClient.auth.admin.generateLink({
-          type: 'magiclink',
-          email: `steam_${steamId}@unplayed.wtf`
-        });
-        
-        if (adminSessionError) {
-          throw adminSessionError;
-        }
-        
-        console.log("Admin session created successfully");
+      if (signInError || !signInData) {
+        console.error("Error generating auth link:", signInError);
+        return Response.redirect(
+          generateErrorRedirect('session_creation_error', 'Failed to create authentication session'),
+          302
+        );
       }
+      
+      console.log("Admin session created successfully");
       
       // Mark the last sync time
       await supabase
@@ -805,7 +815,8 @@ serve(async (req) => {
             deno: Deno.version,
             supabaseUrl: SUPABASE_URL,
             steamReturnUrl: STEAM_RETURN_URL,
-            frontendUrl: FRONTEND_URL
+            frontendUrl: FRONTEND_URL,
+            serviceRoleKeyPresent: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
           },
           request: {
             url: req.url,
