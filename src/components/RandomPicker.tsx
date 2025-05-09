@@ -3,6 +3,41 @@ import { ChevronDown, X, Clock, MousePointer, Maximize } from 'lucide-react';
 import { useZenMode } from '@/context/ZenModeContext';
 import ZenModeToggle from './ZenModeToggle';
 
+// Array of quips to display during game selection
+const selectionQuips = [
+  "Compiling regret data...",
+  "RNGsus take the wheel...",
+  "Alt-tabbing through your indecision...",
+  "Initializing regret engine...",
+  "Spooling up ancient HDDs...",
+  "Defragmenting expectations...",
+  "Launching 3am decisions early...",
+  "Deploying chaos.exe...",
+  "Alt+F4 won't save you now...",
+  "Pinging Valve for divine guidance...",
+  "Brushing off the Steam cobwebs...",
+  "Sorting by playtime... instantly regretting it...",
+  "Overclocking your willpower...",
+  "Minimizing responsibility...",
+  "Threading the needle of your backlog...",
+  "Installing patience.dll...",
+  "Compiling excuses not to play that one...",
+  "Checking RAM for nostalgia leaks...",
+  "Shuffling bytes and broken promises...",
+  "Querying the void (again)...",
+  "Digging into the digital bargain bin...",
+  "Mounting ancient ISO files...",
+  "Filtering out that 300-hour RPG (you're welcome)...",
+  "Updating your will-to-launch drivers...",
+  "Evaluating decision trees... and lighting them on fire...",
+  "Waiting for inspiration to load...",
+  "Optimizing for guilt-based performance...",
+  "Rebooting your impulse control...",
+  "Running backlog_compliance_check.exe...",
+  "Handshaking with your past self...",
+  "Booting up the illusion of control..."
+];
+
 // Sample data - in a real app, this would come from the Steam API
 const sampleGames = [{
   id: 1,
@@ -79,6 +114,8 @@ const RandomPicker = ({
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [spinHistory, setSpinHistory] = useState<Array<any>>([]);
+  const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
+  
   const {
     isZenMode,
     enterZenMode
@@ -88,6 +125,11 @@ const RandomPicker = ({
   const isFullScreenMode = fullScreen && isZenMode;
   const handleSpin = () => {
     if (isSpinning) return;
+    
+    // Select a random quip to display
+    const randomQuipIndex = Math.floor(Math.random() * selectionQuips.length);
+    setCurrentQuip(selectionQuips[randomQuipIndex]);
+    
     setIsSpinning(true);
     setSelectedGame(null);
 
@@ -119,7 +161,10 @@ const RandomPicker = ({
       {/* Filter controls */}
       <div className="flex flex-wrap gap-2 mb-6">
         <div className="relative">
-          <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="btn-primary flex items-center">
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
+            className="btn-primary flex items-center"
+          >
             {selectedFilter ? moodCategories.find(cat => cat.id === selectedFilter)?.name : 'Mood'} 
             <ChevronDown className="ml-2 h-4 w-4" />
           </button>
@@ -141,7 +186,11 @@ const RandomPicker = ({
             </div>}
         </div>
         
-        <button className="btn-amber flex items-center" onClick={handleSpin} disabled={isSpinning}>
+        <button 
+          className="btn-amber flex items-center" 
+          onClick={handleSpin} 
+          disabled={isSpinning}
+        >
           <MousePointer className="mr-2 h-4 w-4" />
           {isSpinning ? 'Selecting...' : 'Select Game.exe'}
         </button>
@@ -153,7 +202,7 @@ const RandomPicker = ({
       <div className="mb-6">
         {isSpinning ? <div className="h-80 flex items-center justify-center">
             <div className="text-4xl text-unplayed-amber animate-spin">⚙️</div>
-            <p className="ml-4 text-lg text-gray-300">Compiling regret data...</p>
+            <p className="ml-4 text-lg text-gray-300 animate-pulse">{currentQuip}</p>
           </div> : selectedGame ? <div className="pixel-card animate-fade-in">
             <img src={selectedGame.image} alt={selectedGame.title} className="w-full h-48 object-cover rounded-md mb-4" />
             
