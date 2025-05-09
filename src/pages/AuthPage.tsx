@@ -1,30 +1,38 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, AuthStatus } from '@/context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SteamIcon } from '@/components/icons/SteamIcon';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { signInWithSteam, user } = useAuth();
+  const { signInWithSteam, authStatus, user } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+  // Extract the redirect path from location state or query params
+  const from = 
+    (location.state as { from?: { pathname: string } })?.from?.pathname || 
+    new URLSearchParams(location.search).get('redirectTo') ||
+    '/';
 
   useEffect(() => {
     // If user is already logged in, redirect to the intended page
-    if (user) {
+    if (authStatus === AuthStatus.AUTHENTICATED && user) {
       navigate(from, { replace: true });
     }
-  }, [user, navigate, from]);
+  }, [authStatus, user, navigate, from]);
 
   const handleSteamLogin = async () => {
+    if (isLoading) return; // Prevent multiple clicks
+    
     try {
       setIsLoading(true);
-      await signInWithSteam();
+      await signInWithSteam(from);
     } catch (error) {
       console.error('Error during Steam login:', error);
       toast({
@@ -32,20 +40,34 @@ const AuthPage = () => {
         description: 'Could not authenticate with Steam. Please try again.',
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <motion.div 
+      className="min-h-screen bg-black flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <div className="text-4xl font-space font-bold mb-8">
+        <motion.div 
+          className="text-4xl font-space font-bold mb-8"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+        >
           <span className="text-unplayed-mint">unplayed</span>
           <span className="text-unplayed-pink">.wtf</span>
-        </div>
+        </motion.div>
         
-        <div className="w-full max-w-md terminal-container">
+        <motion.div 
+          className="w-full max-w-md terminal-container"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
           <h1 className="terminal-header text-2xl mb-6">Authentication Required</h1>
           
           <div className="space-y-6">
@@ -59,20 +81,27 @@ const AuthPage = () => {
               </p>
             </div>
             
-            <button
+            <motion.button
               onClick={handleSteamLogin}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-[#1b2838] hover:bg-[#2a3f5a] transition-colors rounded-md"
+              disabled={isLoading || authStatus === AuthStatus.LOADING}
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-[#1b2838] hover:bg-[#2a3f5a] transition-colors rounded-md relative overflow-hidden group"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {isLoading ? (
-                <div className="animate-spin w-5 h-5 border-2 border-unplayed-mint border-t-transparent rounded-full" />
+              {/* Steam-styled loading animation */}
+              {(isLoading || authStatus === AuthStatus.LOADING) ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-unplayed-mint" />
+                  <span>Connecting to Steam...</span>
+                </div>
               ) : (
                 <>
                   <SteamIcon className="w-6 h-6" />
                   <span>Login with Steam</span>
+                  <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-unplayed-mint group-hover:w-full transition-all duration-300"></div>
                 </>
               )}
-            </button>
+            </motion.button>
             
             <div className="text-xs text-gray-500 text-center">
               By logging in, you agree to our{' '}
@@ -85,9 +114,9 @@ const AuthPage = () => {
               </a>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
