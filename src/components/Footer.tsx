@@ -7,7 +7,7 @@ const Footer = () => {
           <div className="mb-4 md:mb-0">
             <div className="text-xl font-space font-bold">
               <span className="text-unplayed-mint">unplayed</span>
-              <span className="text-unplayed-pink">.exe</span>
+              <span className="text-unplayed-pink">.wtf</span>
             </div>
             <p className="text-gray-400 text-sm mt-1">The backlog tamer for PC gamers</p>
           </div>
@@ -30,7 +30,7 @@ const Footer = () => {
             Not affiliated with Valve Corporation or Steam. All game images are property of their respective owners.
           </p>
           <p className="mt-2">
-            © {new Date().getFullYear()} Unplayed.exe - All rights reserved
+            © {new Date().getFullYear()} Unplayed.wtf - All rights reserved
           </p>
         </div>
       </div>

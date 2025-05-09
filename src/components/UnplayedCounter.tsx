@@ -38,7 +38,7 @@ const UnplayedCounter = ({ count = 137 }: UnplayedCounterProps) => {
         </div>
         
         <p className="text-gray-300 text-center text-lg">
-          You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed.exe files
+          You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed.wtf files
         </p>
         
         <div className="mt-4 text-sm text-gray-400 text-center">
