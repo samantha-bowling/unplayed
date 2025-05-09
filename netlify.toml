@@ -8,3 +8,4 @@
   to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/:splat"
   status = 200
   force = true
+  headers = { "X-Steam-Auth-Source" = "netlify" }

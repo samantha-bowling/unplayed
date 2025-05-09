@@ -72,25 +72,55 @@ const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
 // Helper function to determine the correct API URL based on environment
 const getSteamAuthUrl = (queryParams: string = ''): string => {
+  // Log the environment to help debug production vs development behavior
+  console.log(`[Steam Auth] Getting auth URL in environment: ${process.env.NODE_ENV}, window.location.origin: ${window.location.origin}`);
+  
   // In development, use the direct Supabase function URL
   if (import.meta.env.DEV) {
-    return `https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`;
+    const url = `https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`;
+    console.log(`[Steam Auth] Using development URL: ${url}`);
+    return url;
   }
   // In production, use the Netlify redirect
-  return `/api/auth/steam/login${queryParams}`;
+  const url = `/api/auth/steam/login${queryParams}`;
+  console.log(`[Steam Auth] Using production URL: ${url}`);
+  return url;
 };
 
 // Helper function to safely fetch and parse JSON responses
 const fetchAndParseJson = async (url: string, options: RequestInit = {}): Promise<any> => {
-  const response = await fetch(url, options);
+  console.log(`[Steam Auth] Fetching URL: ${url}`);
+  console.log(`[Steam Auth] Request options:`, JSON.stringify(options, null, 2));
   
-  // Read the response as text first
-  const responseText = await response.text();
+  let response: Response;
+  try {
+    response = await fetch(url, options);
+    console.log(`[Steam Auth] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[Steam Auth] Response headers:`, JSON.stringify(Object.fromEntries([...response.headers.entries()]), null, 2));
+  } catch (fetchError) {
+    console.error(`[Steam Auth] Network error fetching ${url}:`, fetchError);
+    throw new Error(`Network error connecting to Steam auth service: ${fetchError.message}`);
+  }
+  
+  // Read the response as text first to avoid the "body stream already read" error
+  let responseText: string;
+  try {
+    responseText = await response.text();
+    console.log(`[Steam Auth] Response text length: ${responseText.length} characters`);
+    if (responseText.length > 0) {
+      console.log(`[Steam Auth] Response preview:`, responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+    }
+  } catch (textError) {
+    console.error(`[Steam Auth] Error reading response text:`, textError);
+    throw new Error(`Failed to read response from Steam auth service: ${textError.message}`);
+  }
   
   // Check response status before trying to parse
   if (!response.ok) {
     // Check content type to provide better error messages
     const contentType = response.headers.get('content-type');
+    console.log(`[Steam Auth] Response content type: ${contentType}`);
+    
     if (contentType && contentType.includes('text/html')) {
       console.error('[Steam Auth] Received HTML instead of JSON:', responseText.substring(0, 200));
       throw new Error(`Received HTML instead of JSON. Status: ${response.status}. This usually indicates a redirect issue.`);
@@ -99,18 +129,23 @@ const fetchAndParseJson = async (url: string, options: RequestInit = {}): Promis
     // Try to parse error as JSON if possible
     try {
       const errorData = JSON.parse(responseText);
-      throw new Error(`Request failed: ${errorData.message || response.statusText}`);
+      console.error('[Steam Auth] JSON error response:', errorData);
+      throw new Error(`Request failed: ${errorData.message || errorData.error || response.statusText}`);
     } catch (parseError) {
       // If we can't parse as JSON, use the text response in the error
+      console.error('[Steam Auth] Failed to parse error response as JSON:', parseError);
       throw new Error(`Request failed (${response.status}): ${responseText.substring(0, 100)}...`);
     }
   }
   
   // Try to parse successful response as JSON
   try {
-    return JSON.parse(responseText);
+    const jsonData = JSON.parse(responseText);
+    console.log('[Steam Auth] Successfully parsed JSON response');
+    return jsonData;
   } catch (parseError) {
-    console.error('[Steam Auth] Failed to parse response as JSON:', responseText.substring(0, 200));
+    console.error('[Steam Auth] Failed to parse response as JSON:', parseError);
+    console.error('[Steam Auth] Response content:', responseText.substring(0, 200));
     throw new Error(`Failed to parse response as JSON. Raw response: ${responseText.substring(0, 100)}...`);
   }
 };
@@ -638,6 +673,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: 'Please wait while we connect to Steam...',
         });
         
+        console.log(`[Steam Auth] Redirecting to Steam URL: ${url.substring(0, 100)}...`);
         window.location.href = url;
       } else {
         throw new Error('Failed to get Steam login URL');

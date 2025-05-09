@@ -797,6 +797,27 @@ serve(async (req) => {
         return await handleCallback(req);
       case 'health':
         return await handleHealthCheck();
+      case 'debug':
+        // New debug endpoint to help diagnose issues
+        return new Response(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          environment: {
+            deno: Deno.version,
+            supabaseUrl: SUPABASE_URL,
+            steamReturnUrl: STEAM_RETURN_URL,
+            frontendUrl: FRONTEND_URL
+          },
+          request: {
+            url: req.url,
+            method: req.method,
+            headers: Object.fromEntries(req.headers.entries()),
+            path: url.pathname,
+            query: Object.fromEntries(url.searchParams.entries())
+          }
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
       default:
         console.log(`Unknown path requested: ${path}`);
         return new Response(JSON.stringify({ 
