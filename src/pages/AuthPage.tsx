@@ -10,10 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SteamLoader from '@/components/SteamLoader';
 import AuthErrorMessage from '@/components/AuthErrorMessage';
 import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
+import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
+import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+  const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
   const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile } = useAuth();
   const { hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const { toast } = useToast();
@@ -208,11 +212,27 @@ const AuthPage = () => {
             
             <div className="text-xs text-gray-500 text-center">
               By logging in, you agree to our{' '}
-              <a href="#" className="text-unplayed-mint hover:underline">
+              <a 
+                href="#" 
+                className="text-unplayed-mint hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('Terms of Service clicked');
+                  setTermsOfServiceOpen(true);
+                }}
+              >
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="#" className="text-unplayed-mint hover:underline">
+              <a 
+                href="#" 
+                className="text-unplayed-mint hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('Privacy Policy clicked');
+                  setPrivacyPolicyOpen(true);
+                }}
+              >
                 Privacy Policy
               </a>
             </div>
@@ -229,6 +249,10 @@ const AuthPage = () => {
           />
         )}
       </AnimatePresence>
+      
+      {/* Dialog components */}
+      <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />
+      <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />
     </motion.div>
   );
 };

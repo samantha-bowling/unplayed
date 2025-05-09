@@ -13,6 +13,8 @@ interface TermsOfServiceDialogProps {
 }
 
 const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps) => {
+  console.log("TermsOfServiceDialog render: open =", open);
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
