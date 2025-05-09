@@ -15,12 +15,12 @@ const Index = () => {
       <Header />
       
       {/* Hero section */}
-      <section className="w-full py-12 px-4">
+      <section className="w-full py-8 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 gradient-text">
             Your PC games are gathering dust.
           </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
             Unplayed helps you conquer your massive Steam backlog and actually play the games you own.
           </p>
           <button className="btn-primary text-lg py-3 px-8">
@@ -30,33 +30,33 @@ const Index = () => {
       </section>
       
       {/* Dashboard section */}
-      <section id="dashboard" className="w-full py-12 px-4 bg-black/30">
+      <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold font-space mb-8 text-center">
+          <h2 className="text-3xl font-bold font-space mb-6 text-center">
             <span className="text-unplayed-mint">Dashboard</span>
             <span className="text-white">.exe</span>
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <UnplayedCounter />
             <DustScoreMeter />
             <SpendingEstimate />
           </div>
           
-          <div className="mt-6">
+          <div className="mt-4">
             <GenreHoarding />
           </div>
           
-          <div className="mt-6">
+          <div className="mt-4">
             <ShelfLife />
           </div>
         </div>
       </section>
       
       {/* Library preview section */}
-      <section id="library" className="w-full py-12 px-4">
+      <section id="library" className="w-full py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold font-space mb-8 text-center">
+          <h2 className="text-3xl font-bold font-space mb-6 text-center">
             <span className="text-unplayed-pink">Library</span>
             <span className="text-white">.exe</span>
           </h2>
@@ -66,9 +66,9 @@ const Index = () => {
       </section>
       
       {/* Random picker section */}
-      <section id="picker" className="w-full py-12 px-4 bg-black/30">
+      <section id="picker" className="w-full py-8 px-4 bg-black/30">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold font-space mb-8 text-center">
+          <h2 className="text-3xl font-bold font-space mb-6 text-center">
             <span className="text-unplayed-amber">Picker</span>
             <span className="text-white">.exe</span>
           </h2>
@@ -78,12 +78,12 @@ const Index = () => {
       </section>
       
       {/* Call to action */}
-      <section className="w-full py-16 px-4">
+      <section className="w-full py-10 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold font-space mb-4 text-white">
             Ready to confront your backlog?
           </h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
             Connect your Steam account and start using your unplayed games today.
           </p>
           <button className="btn-primary text-lg py-3 px-8">
