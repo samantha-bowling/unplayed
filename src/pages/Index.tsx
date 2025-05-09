@@ -1,4 +1,3 @@
-
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -11,11 +10,10 @@ import Footer from "../components/Footer";
 import ZenModeWrapper from "@/components/ZenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useZenMode } from "@/context/ZenModeContext";
-import { DemoModeIndicator } from "@/components/DemoModeIndicator";
 
 const Index = () => {
   const { user, signInWithSteam } = useAuth();
-  const { isZenMode, focusedComponent } = useZenMode();
+  const { isZenMode, focusedComponent, componentSettings } = useZenMode();
   
   // In Zen Mode, show only the focused component
   if (isZenMode && focusedComponent) {
@@ -136,4 +134,5 @@ const Index = () => {
     </ZenModeWrapper>
   );
 };
+
 export default Index;
