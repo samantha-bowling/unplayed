@@ -15,4 +15,3 @@
   to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/handle-stripe-donation"
   status = 200
   force = true
-

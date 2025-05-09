@@ -42,6 +42,7 @@ const Header = () => {
             <NavLink href="/picker" label="Random Picker" />
           </>
         )}
+        <NavLink href="/support" label="Support" />
 
         {/* Add Zen Mode Toggle to header */}
         <ZenModeToggle />
@@ -101,6 +102,7 @@ const Header = () => {
                 <NavLink href="/picker" label="Random Picker" />
               </>
             )}
+            <NavLink href="/support" label="Support" />
             
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>

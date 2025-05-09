@@ -65,7 +65,8 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
       ))}
       
       {/* Add floating animations */}
-      <style jsx global>{`
+      <style>
+        {`
         @keyframes float {
           0%, 100% {
             transform: translateY(0) rotate(0deg);
@@ -80,7 +81,8 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
             transform: translateY(-8px) rotate(1deg);
           }
         }
-      `}</style>
+      `}
+      </style>
     </div>
   );
 };
