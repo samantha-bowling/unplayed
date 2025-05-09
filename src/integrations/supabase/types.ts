@@ -9,13 +9,184 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      game_picks: {
+        Row: {
+          filters: Json | null
+          game_id: number
+          id: string
+          picked_at: string
+          user_id: string
+        }
+        Insert: {
+          filters?: Json | null
+          game_id: number
+          id?: string
+          picked_at?: string
+          user_id: string
+        }
+        Update: {
+          filters?: Json | null
+          game_id?: number
+          id?: string
+          picked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      games: {
+        Row: {
+          categories: string[] | null
+          created_at: string
+          genres: string[] | null
+          header_image: string | null
+          id: number
+          image_url: string | null
+          metacritic_score: number | null
+          name: string
+          price_cents: number | null
+          release_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          categories?: string[] | null
+          created_at?: string
+          genres?: string[] | null
+          header_image?: string | null
+          id: number
+          image_url?: string | null
+          metacritic_score?: number | null
+          name: string
+          price_cents?: number | null
+          release_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categories?: string[] | null
+          created_at?: string
+          genres?: string[] | null
+          header_image?: string | null
+          id?: number
+          image_url?: string | null
+          metacritic_score?: number | null
+          name?: string
+          price_cents?: number | null
+          release_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_games: {
+        Row: {
+          acquisition_date: string | null
+          created_at: string
+          dust_score: number | null
+          game_id: number
+          hidden: boolean | null
+          id: string
+          last_played_date: string | null
+          playtime_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acquisition_date?: string | null
+          created_at?: string
+          dust_score?: number | null
+          game_id: number
+          hidden?: boolean | null
+          id?: string
+          last_played_date?: string | null
+          playtime_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acquisition_date?: string | null
+          created_at?: string
+          dust_score?: number | null
+          game_id?: number
+          hidden?: boolean | null
+          id?: string
+          last_played_date?: string | null
+          playtime_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_games_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          id: string
+          last_sync: string | null
+          steam_avatar: string | null
+          steam_id: string
+          steam_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          last_sync?: string | null
+          steam_avatar?: string | null
+          steam_id: string
+          steam_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_sync?: string | null
+          steam_avatar?: string | null
+          steam_id?: string
+          steam_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_dust_score: {
+        Args: {
+          acquisition_date: string
+          release_date: string
+          playtime_minutes: number
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
