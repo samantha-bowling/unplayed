@@ -49,13 +49,13 @@ const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
   };
 
   return (
-    <div className={`terminal-container w-full ${isDemo ? 'relative' : ''}`}>
+    <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <div className="mb-4">
         <h3 className="terminal-header text-2xl mb-2">Dust Score™</h3>
         <p className="text-sm text-gray-400">unplayed time × days since added</p>
       </div>
       
-      <div className="flex flex-col items-center">
+      <div className="terminal-content flex flex-col items-center">
         <div className="relative w-48 h-48 mb-4">
           {/* Outer ring */}
           <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
@@ -103,7 +103,7 @@ const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
         </div>
         
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-4 text-center">
+          <div className="mt-auto pt-4 text-center">
             <button 
               onClick={() => signInWithSteam()} 
               className="text-sm text-unplayed-mint hover:underline"

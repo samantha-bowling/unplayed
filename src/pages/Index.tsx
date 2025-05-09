@@ -30,6 +30,7 @@ const Index = () => {
         </div>
       </ZenModeWrapper>;
   }
+  
   return <ZenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -68,7 +69,7 @@ const Index = () => {
               <span className="text-white">.exe</span>
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="dashboard-grid">
               <UnplayedCounter />
               <DustScoreMeter />
               <SpendingEstimate />

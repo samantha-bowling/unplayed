@@ -28,7 +28,7 @@ const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
         You say you love <span className="text-unplayed-amber">{mostHoardedGenre.name}</span>... the data agrees
       </p>
       
-      <div className="w-full h-[300px]">
+      <div className="terminal-content w-full h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -69,7 +69,7 @@ const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
       </div>
       
       {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-        <div className="mt-4 text-center">
+        <div className="mt-auto pt-4 text-center">
           <button 
             onClick={() => signInWithSteam()} 
             className="text-sm text-unplayed-mint hover:underline"

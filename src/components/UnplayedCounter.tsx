@@ -32,10 +32,10 @@ const UnplayedCounter = ({ count = 137, isDemo = false }: UnplayedCounterProps) 
   }, [count]);
   
   return (
-    <div className={`terminal-container ${isDemo ? 'relative' : ''}`}>
+    <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <h3 className="terminal-header text-2xl mb-2">Unplayed Games</h3>
       
-      <div className="flex flex-col items-center py-6">
+      <div className="terminal-content flex flex-col items-center py-6">
         <div className="text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-2">
           {animatedCount}
         </div>
@@ -53,7 +53,7 @@ const UnplayedCounter = ({ count = 137, isDemo = false }: UnplayedCounterProps) 
         </div>
         
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-4 text-center">
+          <div className="mt-auto pt-4 text-center">
             <button 
               onClick={() => signInWithSteam()} 
               className="text-sm text-unplayed-mint hover:underline"

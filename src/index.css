@@ -58,7 +58,20 @@
   }
   
   .terminal-container {
-    @apply bg-black/50 rounded-lg border border-unplayed-mint/30 p-4 shadow-[0_0_20px_rgba(163,247,191,0.15)] relative;
+    @apply bg-black/50 rounded-lg border border-unplayed-mint/30 p-4 shadow-[0_0_20px_rgba(163,247,191,0.15)] relative flex flex-col h-full;
+  }
+  
+  .terminal-content {
+    @apply flex-grow flex flex-col;
+  }
+  
+  .equal-height-container {
+    @apply h-full;
+  }
+  
+  .dashboard-grid {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-4;
+    grid-auto-rows: 1fr;
   }
   
   .terminal-header::after {
