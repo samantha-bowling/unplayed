@@ -1,5 +1,10 @@
 
+import { useState } from "react";
+import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
+
 const Footer = () => {
+  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+
   return (
     <footer className="w-full p-6 mt-16">
       <div className="max-w-7xl mx-auto">
@@ -13,7 +18,14 @@ const Footer = () => {
           </div>
           
           <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
+            <a 
+              href="#" 
+              className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                setPrivacyPolicyOpen(true);
+              }}
+            >
               Privacy Policy
             </a>
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
@@ -34,6 +46,11 @@ const Footer = () => {
           </p>
         </div>
       </div>
+
+      <PrivacyPolicyDialog 
+        open={privacyPolicyOpen} 
+        onOpenChange={setPrivacyPolicyOpen} 
+      />
     </footer>
   );
 };
