@@ -8,8 +8,12 @@ import RandomPicker from "../components/RandomPicker";
 import LibraryPreview from "../components/LibraryPreview";
 import SpendingEstimate from "../components/SpendingEstimate";
 import Footer from "../components/Footer";
+import { useAuth } from "@/context/AuthContext";
+import { DemoModeIndicator } from "@/components/DemoModeIndicator";
 
 const Index = () => {
+  const { user, signInWithSteam } = useAuth();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -32,6 +36,24 @@ const Index = () => {
       {/* Dashboard section */}
       <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
         <div className="max-w-7xl mx-auto">
+          {/* Add Demo Mode Banner */}
+          {!user && (
+            <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
+              <h3 className="text-lg font-medium text-unplayed-amber mb-2">
+                🔍 Demo Mode Active
+              </h3>
+              <p className="text-sm text-gray-300 mb-4">
+                You're viewing example data. Connect your Steam account to see your personal gaming stats.
+              </p>
+              <button 
+                onClick={() => signInWithSteam()} 
+                className="btn-primary"
+              >
+                Connect Steam Account
+              </button>
+            </div>
+          )}
+          
           <h2 className="text-3xl font-bold font-space mb-6 text-center">
             <span className="text-unplayed-mint">Dashboard</span>
             <span className="text-white">.exe</span>

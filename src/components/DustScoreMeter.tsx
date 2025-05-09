@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from 'react';
+import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
+import { useAuth } from '@/context/AuthContext';
 
-interface DustScoreProps {
+interface DustScoreProps extends WithDemoProps {
   score?: number;
 }
 
-const DustScoreMeter = ({ score = 237 }: DustScoreProps) => {
+const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
   const [animatedScore, setAnimatedScore] = useState(0);
+  const { signInWithSteam } = useAuth();
   
   useEffect(() => {
     const duration = 2000;
@@ -46,7 +49,7 @@ const DustScoreMeter = ({ score = 237 }: DustScoreProps) => {
   };
 
   return (
-    <div className="terminal-container w-full">
+    <div className={`terminal-container w-full ${isDemo ? 'relative' : ''}`}>
       <div className="mb-4">
         <h3 className="terminal-header text-2xl mb-2">Dust Score™</h3>
         <p className="text-sm text-gray-400">unplayed time × days since added</p>
@@ -98,9 +101,20 @@ const DustScoreMeter = ({ score = 237 }: DustScoreProps) => {
                 : "Warning: Critical clutter detected in your library."}
           </p>
         </div>
+        
+        {isDemo && !document.cookie.includes("demo_note_dismissed") && (
+          <div className="mt-4 text-center">
+            <button 
+              onClick={() => signInWithSteam()} 
+              className="text-sm text-unplayed-mint hover:underline"
+            >
+              Connect Steam to see your actual dust score
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default DustScoreMeter;
+export default withDemoIndicator(DustScoreMeter);

@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, signOut, isLoading } = useAuth();
+  const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
 
   return (
     <header className="w-full px-4 py-4 flex items-center justify-between">
@@ -40,6 +43,19 @@ const Header = () => {
                 </AvatarFallback>
               )}
             </Avatar>
+            <div className="flex flex-col text-sm">
+              <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
+              
+              {/* Demo Mode toggle for logged-in users */}
+              <div className="flex items-center space-x-2 text-xs">
+                <span className="text-gray-400">Preview Mode</span>
+                <Switch 
+                  checked={isDemoExplicit}
+                  onCheckedChange={setIsDemoExplicit}
+                  className="scale-75 data-[state=checked]:bg-unplayed-amber"
+                />
+              </div>
+            </div>
             <button onClick={signOut} className="text-unplayed-red hover:text-red-400 transition-colors">
               Logout
             </button>
@@ -87,6 +103,17 @@ const Header = () => {
                 <div className="text-sm text-gray-300">
                   {profile?.steam_name || 'Gamer'}
                 </div>
+                
+                {/* Demo Mode toggle for logged-in users on mobile */}
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="text-gray-400">Preview Mode</span>
+                  <Switch 
+                    checked={isDemoExplicit}
+                    onCheckedChange={setIsDemoExplicit}
+                    className="scale-75 data-[state=checked]:bg-unplayed-amber"
+                  />
+                </div>
+                
                 <button onClick={signOut} className="btn-secondary w-full mt-2">
                   Logout
                 </button>

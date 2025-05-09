@@ -1,5 +1,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
+import { useAuth } from '@/context/AuthContext';
 
 // Sample data - in a real app, this would come from the Steam API
 const genreData = [
@@ -11,13 +13,16 @@ const genreData = [
   { name: 'Other', value: 5, color: '#6C757D' }
 ];
 
-const GenreHoarding = () => {
+interface GenreHoardingProps extends WithDemoProps {}
+
+const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
+  const { signInWithSteam } = useAuth();
   const mostHoardedGenre = genreData.reduce((prev, current) => 
     (prev.value > current.value) ? prev : current
   );
 
   return (
-    <div className="terminal-container w-full">
+    <div className={`terminal-container w-full ${isDemo ? 'relative' : ''}`}>
       <h3 className="terminal-header text-2xl mb-2">Genres You Hoard</h3>
       <p className="text-sm text-gray-400 mb-6">
         You say you love <span className="text-unplayed-amber">{mostHoardedGenre.name}</span>... the data agrees
@@ -62,8 +67,19 @@ const GenreHoarding = () => {
           </PieChart>
         </ResponsiveContainer>
       </div>
+      
+      {isDemo && !document.cookie.includes("demo_note_dismissed") && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => signInWithSteam()} 
+            className="text-sm text-unplayed-mint hover:underline"
+          >
+            Connect Steam to see your genre breakdown
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-export default GenreHoarding;
+export default withDemoIndicator(GenreHoarding);

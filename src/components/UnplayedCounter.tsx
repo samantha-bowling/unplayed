@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from 'react';
+import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
+import { useAuth } from '@/context/AuthContext';
 
-interface UnplayedCounterProps {
+interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
 }
 
-const UnplayedCounter = ({ count = 137 }: UnplayedCounterProps) => {
+const UnplayedCounter = ({ count = 137, isDemo = false }: UnplayedCounterProps) => {
   const [animatedCount, setAnimatedCount] = useState(0);
+  const { signInWithSteam } = useAuth();
   
   useEffect(() => {
     const duration = 2000;
@@ -29,7 +32,7 @@ const UnplayedCounter = ({ count = 137 }: UnplayedCounterProps) => {
   }, [count]);
   
   return (
-    <div className="terminal-container">
+    <div className={`terminal-container ${isDemo ? 'relative' : ''}`}>
       <h3 className="terminal-header text-2xl mb-2">Unplayed Games</h3>
       
       <div className="flex flex-col items-center py-6">
@@ -48,9 +51,20 @@ const UnplayedCounter = ({ count = 137 }: UnplayedCounterProps) => {
           </span>{' '}
           of potential gameplay
         </div>
+        
+        {isDemo && !document.cookie.includes("demo_note_dismissed") && (
+          <div className="mt-4 text-center">
+            <button 
+              onClick={() => signInWithSteam()} 
+              className="text-sm text-unplayed-mint hover:underline"
+            >
+              Connect Steam to see your actual stats
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default UnplayedCounter;
+export default withDemoIndicator(UnplayedCounter);

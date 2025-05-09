@@ -1,5 +1,7 @@
 
 import { useState } from 'react';
+import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
+import { useAuth } from '@/context/AuthContext';
 
 // Sample data - in a real app, this would come from the Steam API
 const sampleGames = [
@@ -15,12 +17,15 @@ const sampleGames = [
   { id: 10, title: "Terraria", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/105600/capsule_184x69.jpg", playtime: 0 }
 ];
 
-const LibraryPreview = () => {
+interface LibraryPreviewProps extends WithDemoProps {}
+
+const LibraryPreview = ({ isDemo = false }: LibraryPreviewProps) => {
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
+  const { signInWithSteam } = useAuth();
   
   return (
-    <div className="terminal-container w-full">
+    <div className={`terminal-container w-full ${isDemo ? 'relative' : ''}`}>
       <div className="flex justify-between items-center mb-4">
         <h3 className="terminal-header text-2xl">Your Unplayed Library</h3>
         
@@ -103,12 +108,21 @@ const LibraryPreview = () => {
         <p className="text-gray-400">
           Showing 10 of 137 unplayed games
         </p>
-        <button className="btn-secondary mt-3">
-          View Full Library
-        </button>
+        {isDemo ? (
+          <button 
+            onClick={() => signInWithSteam()} 
+            className="btn-secondary mt-3"
+          >
+            Connect Steam to View Your Library
+          </button>
+        ) : (
+          <button className="btn-secondary mt-3">
+            View Full Library
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
-export default LibraryPreview;
+export default withDemoIndicator(LibraryPreview);
