@@ -418,7 +418,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 toast({
                   title: 'Partial Sign In',
                   description: 'Your profile was loaded but your session may expire soon.',
-                  variant: 'warning',
+                  variant: "default", // Changed from "warning" to "default"
                 });
               } else {
                 throw new Error('Could not find user profile');
@@ -695,3 +695,5 @@ export const useEnhancedAuthStatus = () => {
   const { enhancedStatus, lastError } = useAuth();
   return { enhancedStatus, lastError };
 };
+
+</edits_to_apply>
