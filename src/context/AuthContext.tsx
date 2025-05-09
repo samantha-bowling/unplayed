@@ -4,6 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { logAuthEvent, trackAuthPerformance } from '@/utils/auth-analytics';
 
 // Auth status enum for more descriptive state management
 export enum AuthStatus {
@@ -23,7 +24,12 @@ export enum EnhancedAuthStatus {
   PROFILE_LOADED = 'profile_loaded',
   PROFILE_ERROR = 'profile_error',
   TOKEN_REFRESH_ERROR = 'token_refresh_error',
-  AUTH_ERROR = 'auth_error'
+  AUTH_ERROR = 'auth_error',
+  // New enhanced statuses for library sync
+  LIBRARY_IMPORTING = 'library_importing',
+  LIBRARY_UPDATING = 'library_updating', 
+  LIBRARY_READY = 'library_ready',
+  LIBRARY_ERROR = 'library_error'
 }
 
 type UserProfile = {
@@ -55,6 +61,7 @@ type AuthContextType = {
   refreshProfile: () => Promise<void>;
   refreshSession: () => Promise<void>;
   clearAuthError: () => void;
+  isLibrarySynced: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,13 +71,6 @@ const LAST_SESSION_KEY = 'unplayed_last_session';
 const LAST_SESSION_TIME_KEY = 'unplayed_last_session_time';
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
-// Log auth events in development only
-const logAuthEvent = (event: string, data?: any) => {
-  if (DEBUG_AUTH) {
-    console.debug(`[Auth] ${event}`, data || '');
-  }
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus>(AuthStatus.LOADING);
   const [enhancedStatus, setEnhancedStatus] = useState<EnhancedAuthStatus>(EnhancedAuthStatus.INITIAL);
   const [lastError, setLastError] = useState<AuthError | null>(null);
+  const [isLibrarySynced, setIsLibrarySynced] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -134,7 +135,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         const duration = Date.now() - startTime;
         logAuthEvent('Profile fetched successfully', { steamName: data.steam_name, durationMs: duration });
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+        
+        // Check if library sync has happened
+        if (data.last_sync) {
+          setIsLibrarySynced(true);
+          setEnhancedStatus(EnhancedAuthStatus.LIBRARY_READY);
+        } else {
+          setIsLibrarySynced(false);
+          setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+        }
+        
         return data as UserProfile;
       } else {
         logAuthEvent('Profile not found');
@@ -224,6 +234,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Check if user has games in their library
+  const checkForLibraryData = async (userId: string): Promise<boolean> => {
+    try {
+      const { count, error } = await supabase
+        .from('user_games')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error checking for library data:', error);
+        return false;
+      }
+      
+      return count !== null && count > 0;
+    } catch (e) {
+      console.error('Exception checking library data:', e);
+      return false;
+    }
+  };
+
   // Public method to manually refresh profile data
   const refreshProfile = async (): Promise<void> => {
     if (!user) return;
@@ -233,6 +263,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profileData = await fetchProfile(user.id);
       if (profileData) {
         setProfile(profileData);
+        
+        // Check for library data
+        const hasLibrary = await checkForLibraryData(user.id);
+        setIsLibrarySynced(hasLibrary);
+        
+        if (hasLibrary) {
+          setEnhancedStatus(EnhancedAuthStatus.LIBRARY_READY);
+        } else {
+          setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+        }
       }
     } catch (error) {
       logAuthEvent('Manual profile refresh failed', error);
@@ -309,6 +349,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const url = new URL(window.location.href);
       const accessToken = url.searchParams.get('access_token');
       const refreshToken = url.searchParams.get('refresh_token');
+      const errorCode = url.searchParams.get('error_code');
+      const errorMessage = url.searchParams.get('error_message');
+
+      if (errorCode) {
+        logAuthEvent('Auth error from URL', { errorCode, errorMessage });
+        setAuthStatus(AuthStatus.ERROR);
+        setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
+        recordAuthError(errorCode, errorMessage || 'Authentication error', null);
+        
+        toast({
+          title: 'Authentication Error',
+          description: errorMessage || 'Failed to authenticate with Steam',
+          variant: 'destructive',
+        });
+        
+        // Remove tokens from URL to prevent sharing sensitive data
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('error_code');
+        cleanUrl.searchParams.delete('error_message');
+        window.history.replaceState({}, document.title, cleanUrl.toString());
+        return;
+      }
 
       if (accessToken && refreshToken) {
         try {
@@ -360,7 +422,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } finally {
           // Remove tokens from URL regardless of outcome
-          window.history.replaceState({}, document.title, window.location.pathname);
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete('access_token');
+          cleanUrl.searchParams.delete('refresh_token');
+          window.history.replaceState({}, document.title, cleanUrl.toString());
         }
       }
     };
@@ -389,6 +454,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setAuthStatus(AuthStatus.UNAUTHENTICATED);
             setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
             setProfile(null);
+            setIsLibrarySynced(false);
           }
         }, 0);
       }
@@ -434,6 +500,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) {
       setProfile(null);
+      setIsLibrarySynced(false);
       return;
     }
 
@@ -442,6 +509,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const profileData = await fetchProfile(user.id);
         if (profileData) {
           setProfile(profileData);
+          
+          // Check if we have library data
+          const hasLibraryData = await checkForLibraryData(user.id);
+          setIsLibrarySynced(hasLibraryData);
+          
+          // Update status based on library data presence
+          if (hasLibraryData) {
+            setEnhancedStatus(EnhancedAuthStatus.LIBRARY_READY);
+          } else {
+            setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+          }
         }
       } catch (error) {
         logAuthEvent('Error fetching profile after auth', error);
@@ -562,6 +640,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshProfile,
         refreshSession,
         clearAuthError,
+        isLibrarySynced,
       }}
     >
       {children}

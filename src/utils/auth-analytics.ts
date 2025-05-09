@@ -6,6 +6,8 @@ type AuthEventType =
   | 'auth_failed' 
   | 'token_refresh' 
   | 'profile_loaded' 
+  | 'library_imported'
+  | 'library_updated'
   | 'error_recovered'
   | 'session_expired'
   | 'auth_ui_interaction'
@@ -48,6 +50,12 @@ export const getStatusDescription = (status: EnhancedAuthStatus): string => {
       return 'Session expired';
     case EnhancedAuthStatus.AUTH_ERROR:
       return 'Authentication error';
+    case EnhancedAuthStatus.LIBRARY_IMPORTING:
+      return 'Importing your game library...';
+    case EnhancedAuthStatus.LIBRARY_UPDATING:
+      return 'Updating your game library...';
+    case EnhancedAuthStatus.LIBRARY_READY:
+      return 'Your game library is ready';
     default:
       return 'Unknown status';
   }
@@ -77,6 +85,10 @@ export const logAuthEvent = (event: string, data?: any) => {
     trackAuthEvent('token_refresh', { success: true });
   } else if (event === 'Profile fetched successfully') {
     trackAuthEvent('profile_loaded', data);
+  } else if (event === 'Game library import completed') {
+    trackAuthEvent('library_imported', { gameCount: data?.gameCount });
+  } else if (event === 'Game library update completed') {
+    trackAuthEvent('library_updated', { updatedCount: data?.updatedCount });
   } else if (event === 'Success animation displayed') {
     trackAuthEvent('auth_animation_complete', { displayDuration: data?.duration });
   }
@@ -117,6 +129,12 @@ export const getUserFriendlyErrorMessage = (errorCode: string): string => {
       return 'There was an error connecting to Steam. Please try again later.';
     case 'auth/session-expired':
       return 'Your session has expired. Please sign in again.';
+    case 'verification_failed':
+      return 'Authentication verification failed with Steam. Please try again.';
+    case 'signup_failed':
+      return 'There was a problem creating your account. Please try again.';
+    case 'missing_steam_id':
+      return 'Could not connect to your Steam ID. Please try again.';
     default:
       return 'An error occurred during authentication. Please try again.';
   }

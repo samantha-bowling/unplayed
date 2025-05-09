@@ -37,6 +37,28 @@ const AuthPage = () => {
     }
   }, [authStatus, user, navigate, from, showSuccessAnimation]);
 
+  // Check for auth errors in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const errorCode = params.get('error_code');
+    const errorMessage = params.get('error_message');
+    
+    if (errorCode) {
+      console.error('Authentication error:', errorCode, errorMessage);
+      toast({
+        title: 'Authentication Error',
+        description: errorMessage || 'Failed to authenticate with Steam',
+        variant: 'destructive',
+      });
+      
+      // Clean up error params from URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('error_code');
+      newUrl.searchParams.delete('error_message');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [location.search, toast]);
+
   const handleSteamLogin = async () => {
     if (isLoading) return; // Prevent multiple clicks
     
