@@ -13,6 +13,19 @@ export enum AuthStatus {
   ERROR = 'error'
 }
 
+// Enhanced auth status for more granular reporting
+export enum EnhancedAuthStatus {
+  INITIAL = 'initial',
+  SESSION_LOADING = 'session_loading',
+  SESSION_FOUND = 'session_found',
+  SESSION_NOT_FOUND = 'session_not_found',
+  PROFILE_LOADING = 'profile_loading',
+  PROFILE_LOADED = 'profile_loaded',
+  PROFILE_ERROR = 'profile_error',
+  TOKEN_REFRESH_ERROR = 'token_refresh_error',
+  AUTH_ERROR = 'auth_error'
+}
+
 type UserProfile = {
   id: string;
   steam_id: string;
@@ -21,20 +34,39 @@ type UserProfile = {
   last_sync: string | null;
 };
 
+export type AuthError = {
+  code: string;
+  message: string;
+  details?: any;
+  recoverable?: boolean;
+  timestamp: number;
+};
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
   isLoading: boolean;
   authStatus: AuthStatus;
+  enhancedStatus: EnhancedAuthStatus;
+  lastError: AuthError | null;
   signInWithSteam: (redirectTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  clearAuthError: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_REDIRECT_KEY = 'unplayed_auth_redirect';
+const DEBUG_AUTH = process.env.NODE_ENV === 'development';
+
+// Log auth events in development only
+const logAuthEvent = (event: string, data?: any) => {
+  if (DEBUG_AUTH) {
+    console.debug(`[Auth] ${event}`, data || '');
+  }
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -42,14 +74,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<AuthStatus>(AuthStatus.LOADING);
-  const [authError, setAuthError] = useState<Error | null>(null);
+  const [enhancedStatus, setEnhancedStatus] = useState<EnhancedAuthStatus>(EnhancedAuthStatus.INITIAL);
+  const [lastError, setLastError] = useState<AuthError | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Clear the last auth error
+  const clearAuthError = () => {
+    setLastError(null);
+  };
 
-  // Function to fetch user profile
-  const fetchProfile = async (userId: string) => {
+  // Record an auth error with proper structure
+  const recordAuthError = (code: string, message: string, details?: any, recoverable: boolean = false) => {
+    const error: AuthError = {
+      code,
+      message,
+      details,
+      recoverable,
+      timestamp: Date.now()
+    };
+    
+    logAuthEvent('Error recorded', error);
+    setLastError(error);
+    return error;
+  };
+
+  // Function to fetch user profile with retry logic
+  const fetchProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
     try {
+      logAuthEvent('Fetching profile', { userId, retryCount });
+      setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -57,13 +113,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        // If we get an error on fetch, retry a limited number of times
+        if (retryCount < 3) {
+          logAuthEvent('Profile fetch error, retrying', { error, retryCount });
+          await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retryCount)));
+          return fetchProfile(userId, retryCount + 1);
+        }
+        
+        logAuthEvent('Profile fetch failed after retries', error);
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+        recordAuthError('profile_fetch_error', 'Error fetching user profile', error, true);
         return null;
       }
 
-      return data as UserProfile;
+      if (data) {
+        logAuthEvent('Profile fetched successfully', { steamName: data.steam_name });
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+        return data as UserProfile;
+      } else {
+        logAuthEvent('Profile not found');
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+        recordAuthError('profile_not_found', 'User profile not found', null, true);
+        return null;
+      }
     } catch (error) {
-      console.error('Error in profile fetch:', error);
+      logAuthEvent('Exception in profile fetch', error);
+      setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+      recordAuthError('profile_exception', 'Exception while fetching profile', error, true);
       return null;
     }
   };
@@ -73,22 +149,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
+      logAuthEvent('Manual profile refresh', { userId: user.id });
       const profileData = await fetchProfile(user.id);
       if (profileData) {
         setProfile(profileData);
+        return profileData;
       }
     } catch (error) {
-      console.error('Error refreshing profile:', error);
+      logAuthEvent('Manual profile refresh failed', error);
       toast({
         title: 'Profile Refresh Failed',
         description: 'Could not update your profile information.',
         variant: 'destructive',
       });
     }
+    return null;
   };
 
   useEffect(() => {
-    // Check for access_token and refresh_token in URL params (from Steam auth redirect)
+    // Handle tokens in URL from auth callback
     const handleTokensFromUrl = async () => {
       const url = new URL(window.location.href);
       const accessToken = url.searchParams.get('access_token');
@@ -96,7 +175,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (accessToken && refreshToken) {
         try {
+          logAuthEvent('Processing tokens from URL');
           setAuthStatus(AuthStatus.LOADING);
+          setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
           
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -108,9 +189,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           
           if (data.session) {
+            logAuthEvent('Session established from URL tokens');
             setSession(data.session);
             setUser(data.session.user);
             setAuthStatus(AuthStatus.AUTHENTICATED);
+            setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
             
             // Try to get stored redirect path
             const storedRedirect = localStorage.getItem(LOCAL_STORAGE_REDIRECT_KEY);
@@ -128,9 +211,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           }
         } catch (error) {
-          console.error('Error setting session:', error);
+          logAuthEvent('Error setting session from URL tokens', error);
           setAuthStatus(AuthStatus.ERROR);
-          setAuthError(error as Error);
+          setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
+          recordAuthError('token_processing_error', 'Failed to process authentication tokens', error);
           
           toast({
             title: 'Authentication Error',
@@ -148,49 +232,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate, toast]);
 
   useEffect(() => {
-    setAuthStatus(AuthStatus.LOADING);
+    logAuthEvent('Setting up auth state management');
+    setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
-        console.log('Auth state change:', event);
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        logAuthEvent('Auth state change', { event, userId: newSession?.user?.id });
         
-        if (newSession) {
-          setAuthStatus(AuthStatus.AUTHENTICATED);
-        } else {
-          setAuthStatus(AuthStatus.UNAUTHENTICATED);
-        }
-        
-        // For debugging
-        if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-        } else if (event === 'SIGNED_IN') {
-          console.log('User signed in');
-        }
+        // Use setTimeout to prevent potential auth deadlocks
+        setTimeout(() => {
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          
+          if (newSession) {
+            setAuthStatus(AuthStatus.AUTHENTICATED);
+            setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
+          } else {
+            setAuthStatus(AuthStatus.UNAUTHENTICATED);
+            setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
+            setProfile(null);
+          }
+        }, 0);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession }, error }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      
       if (error) {
-        console.error('Error getting session:', error);
+        logAuthEvent('Error getting session', error);
         setAuthStatus(AuthStatus.ERROR);
-        setAuthError(error);
+        setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
+        recordAuthError('session_retrieval_error', 'Error retrieving session', error);
       } else if (existingSession) {
+        logAuthEvent('Existing session found', { userId: existingSession.user.id });
+        setSession(existingSession);
+        setUser(existingSession.user);
         setAuthStatus(AuthStatus.AUTHENTICATED);
+        setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
       } else {
+        logAuthEvent('No existing session found');
         setAuthStatus(AuthStatus.UNAUTHENTICATED);
+        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
       }
       
       setIsLoading(false);
     });
 
     return () => {
+      logAuthEvent('Unsubscribing from auth state changes');
       subscription.unsubscribe();
     };
   }, []);
@@ -209,7 +299,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(profileData);
         }
       } catch (error) {
-        console.error('Error fetching profile after auth:', error);
+        logAuthEvent('Error fetching profile after auth', error);
       }
     };
 
@@ -220,6 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithSteam = async (redirectTo?: string) => {
     try {
       setIsLoading(true);
+      logAuthEvent('Initiating Steam sign in', { redirectTo });
       
       // Store the redirect path if provided
       if (redirectTo) {
@@ -255,26 +346,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to get Steam login URL');
       }
     } catch (error) {
-      console.error('Steam auth error:', error);
+      logAuthEvent('Steam auth error', error);
       setIsLoading(false);
+      
+      const authError = recordAuthError(
+        'steam_auth_error', 
+        'Failed to initialize Steam login', 
+        error
+      );
       
       toast({
         title: 'Authentication Error',
         description: 'Failed to initialize Steam login. Please try again.',
         variant: 'destructive',
       });
+      
+      return Promise.reject(authError);
     }
   };
 
   // Sign out
   const signOut = async () => {
     try {
+      logAuthEvent('Signing out');
       await supabase.auth.signOut();
       
       // Clear any stored redirects
       localStorage.removeItem(LOCAL_STORAGE_REDIRECT_KEY);
       
       setAuthStatus(AuthStatus.UNAUTHENTICATED);
+      setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
       navigate('/');
       
       toast({
@@ -282,7 +383,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: 'You have been successfully signed out.',
       });
     } catch (error) {
-      console.error('Sign out error:', error);
+      logAuthEvent('Sign out error', error);
+      recordAuthError('signout_error', 'Failed to sign out', error, true);
       
       toast({
         title: 'Sign Out Error',
@@ -300,9 +402,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         isLoading,
         authStatus,
+        enhancedStatus,
+        lastError,
         signInWithSteam,
         signOut,
         refreshProfile,
+        clearAuthError,
       }}
     >
       {children}
@@ -322,4 +427,10 @@ export const useAuth = () => {
 export const useAuthStatus = () => {
   const { authStatus } = useAuth();
   return authStatus;
+};
+
+// New hook for getting enhanced auth status
+export const useEnhancedAuthStatus = () => {
+  const { enhancedStatus, lastError } = useAuth();
+  return { enhancedStatus, lastError };
 };

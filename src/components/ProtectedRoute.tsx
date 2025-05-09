@@ -1,8 +1,10 @@
 
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth, AuthStatus } from '@/context/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
+import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -11,9 +13,11 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, authStatus } = useAuth();
+  const { isLoading, hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const location = useLocation();
 
-  if (authStatus === AuthStatus.LOADING) {
+  // Show appropriate loading state based on enhanced status
+  if (isLoading) {
     return (
       <motion.div 
         className="flex items-center justify-center min-h-screen"
@@ -24,22 +28,37 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-unplayed-mint mx-auto mb-4" />
           <div className="text-xl text-unplayed-mint">
-            Loading your library...
+            {enhancedStatus === EnhancedAuthStatus.PROFILE_LOADING 
+              ? 'Loading your profile...' 
+              : 'Loading your library...'}
           </div>
         </div>
       </motion.div>
     );
   }
 
-  if (authStatus === AuthStatus.ERROR) {
+  // Handle authentication errors with retry option
+  if (hasError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center max-w-md p-6 terminal-container">
           <h2 className="text-xl text-unplayed-pink mb-4">Authentication Error</h2>
           <p className="text-gray-300 mb-4">
-            There was a problem verifying your session. Please try signing in again.
+            There was a problem verifying your session. {enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR 
+              ? "We couldn't load your profile data." 
+              : "Please try signing in again."}
           </p>
-          <a href="/auth" className="btn-primary">
+          
+          {enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR && (
+            <Button 
+              onClick={retry}
+              className="w-full mb-4 bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Retry Loading Profile
+            </Button>
+          )}
+          
+          <a href="/auth" className="btn-primary block text-center">
             Return to Sign In
           </a>
         </div>
