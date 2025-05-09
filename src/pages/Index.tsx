@@ -1,12 +1,99 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import Header from "../components/Header";
+import DustScoreMeter from "../components/DustScoreMeter";
+import UnplayedCounter from "../components/UnplayedCounter";
+import GenreHoarding from "../components/GenreHoarding";
+import ShelfLife from "../components/ShelfLife";
+import RandomPicker from "../components/RandomPicker";
+import LibraryPreview from "../components/LibraryPreview";
+import SpendingEstimate from "../components/SpendingEstimate";
+import Footer from "../components/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      
+      {/* Hero section */}
+      <section className="w-full py-12 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 gradient-text">
+            Your PC games are gathering dust.
+          </h1>
+          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            Unplayed helps you conquer your massive Steam backlog and actually play the games you own.
+          </p>
+          <button className="btn-primary text-lg py-3 px-8">
+            Connect Your Steam Account
+          </button>
+        </div>
+      </section>
+      
+      {/* Dashboard section */}
+      <section id="dashboard" className="w-full py-12 px-4 bg-black/30">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold font-space mb-8 text-center">
+            <span className="text-unplayed-mint">Dashboard</span>
+            <span className="text-white">.exe</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <UnplayedCounter />
+            <DustScoreMeter />
+            <SpendingEstimate />
+          </div>
+          
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <GenreHoarding />
+            <ShelfLife />
+          </div>
+        </div>
+      </section>
+      
+      {/* Library preview section */}
+      <section id="library" className="w-full py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold font-space mb-8 text-center">
+            <span className="text-unplayed-pink">Library</span>
+            <span className="text-white">.exe</span>
+          </h2>
+          
+          <LibraryPreview />
+        </div>
+      </section>
+      
+      {/* Random picker section */}
+      <section id="picker" className="w-full py-12 px-4 bg-black/30">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold font-space mb-8 text-center">
+            <span className="text-unplayed-amber">Picker</span>
+            <span className="text-white">.exe</span>
+          </h2>
+          
+          <RandomPicker />
+        </div>
+      </section>
+      
+      {/* Call to action */}
+      <section className="w-full py-16 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-3xl font-bold font-space mb-4 text-white">
+            Ready to confront your backlog?
+          </h2>
+          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            Connect your Steam account and start using your unplayed games today.
+          </p>
+          <button className="btn-primary text-lg py-3 px-8">
+            Connect Your Steam Account
+          </button>
+          
+          <p className="text-sm text-gray-500 mt-4">
+            We use Steam's official API. Your account details are safe.
+          </p>
+        </div>
+      </section>
+      
+      <Footer />
     </div>
   );
 };

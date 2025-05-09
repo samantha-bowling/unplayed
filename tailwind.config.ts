@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,15 +53,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+				// Unplayed custom colors
+				unplayed: {
+					ink: '#121212',
+					mint: '#A3F7BF',
+					pink: '#EF5DFF',
+					amber: '#FFD866',
+					red: '#FF3C38'
 				}
 			},
 			borderRadius: {
@@ -84,11 +83,42 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'text-glitch': {
+					'0%, 100%': { opacity: '1' },
+					'33%': { opacity: '0.9' },
+					'66%': { opacity: '0.95' }
+				},
+				'cursor-blink': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0' }
+				},
+				'fade-in': {
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'slide-in': {
+					'0%': { transform: 'translateX(-20px)', opacity: '0' },
+					'100%': { transform: 'translateX(0)', opacity: '1' }
+				},
+				'spin-wheel': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'text-glitch': 'text-glitch 2s infinite',
+				'cursor-blink': 'cursor-blink 1.5s infinite',
+				'fade-in': 'fade-in 0.5s ease-out forwards',
+				'slide-in': 'slide-in 0.3s ease-out forwards',
+				'spin-wheel': 'spin-wheel 2s cubic-bezier(0.1, 0.7, 0.1, 1) forwards'
+			},
+			fontFamily: {
+				'mono': ['IBM Plex Mono', 'monospace'],
+				'space': ['Space Grotesk', 'sans-serif'],
+				'vt': ['VT323', 'monospace']
 			}
 		}
 	},
