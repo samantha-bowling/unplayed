@@ -7,12 +7,13 @@ interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
 }
 
-const UnplayedCounter = ({ count = 137, isDemo = false }: UnplayedCounterProps) => {
+const UnplayedCounter = ({ count = 42, isDemo = false }: UnplayedCounterProps) => {
   const [animatedCount, setAnimatedCount] = useState(0);
   const { signInWithSteam } = useAuth();
   
   useEffect(() => {
-    const duration = 2000;
+    // Use a more reasonable animation duration for better performance
+    const duration = 1500;
     const frameDuration = 1000 / 60;
     const totalFrames = Math.round(duration / frameDuration);
     const increment = count / totalFrames;
