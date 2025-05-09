@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useZenMode } from "@/context/ZenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import { Link } from "react-router-dom";
@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
+  const { isZenMode } = useZenMode();
   
   const openPrivacyPolicy = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -19,6 +20,11 @@ const Footer = () => {
     console.log("Opening Terms of Service dialog");
     setTermsOfServiceOpen(true);
   };
+
+  // Hide footer in zen mode
+  if (isZenMode) {
+    return null;
+  }
 
   return (
     <footer className="w-full p-6 mt-16 relative z-10">

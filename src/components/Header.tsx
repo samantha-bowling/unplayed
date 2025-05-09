@@ -4,13 +4,25 @@ import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
+import { useZenMode } from '@/context/ZenModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
+import ZenModeToggle from './ZenModeToggle';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, signOut, isLoading } = useAuth();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
+  const { isZenMode } = useZenMode();
+
+  // Hide header in zen mode if it's fully activated
+  if (isZenMode) {
+    return (
+      <div className="w-full px-4 py-2 flex justify-end absolute top-0 left-0 z-10 opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <ZenModeToggle />
+      </div>
+    );
+  }
 
   return (
     <header className="w-full px-4 py-4 flex items-center justify-between">
@@ -29,6 +41,9 @@ const Header = () => {
             <NavLink href="/picker" label="Random Picker" />
           </>
         )}
+
+        {/* Add Zen Mode Toggle to header */}
+        <ZenModeToggle />
 
         {isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
@@ -67,7 +82,8 @@ const Header = () => {
         )}
       </div>
 
-      <div className="md:hidden">
+      <div className="md:hidden flex items-center space-x-2">
+        <ZenModeToggle />
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
           className="text-unplayed-mint p-2"
