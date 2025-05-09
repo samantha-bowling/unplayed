@@ -5,10 +5,10 @@ const SUPABASE_URL = "https://gwmygthanyycveyqqspr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bXlndGhhbnl5Y3ZleXFxc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTAxMjUsImV4cCI6MjA2MjMyNjEyNX0.zrL5sYy8LE4ErMRL-W-yuZZR10EYyrgIS9Kj-EfUw80";
 const STEAM_API_KEY = "38839F6C16BC7EC93D3A2DA41DEE8D70";
 
-// The deployed URL of this edge function will be used for Steam's OpenID return_to parameter
-const STEAM_RETURN_URL = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/callback";
+// Updated: The deployed URL of this edge function on the new domain
+const STEAM_RETURN_URL = "https://unplayed.wtf/api/auth/steam/callback";
 
-// The frontend URL - where to redirect after successful auth
+// The frontend URL - unchanged
 const FRONTEND_URL = "https://unplayed.wtf";
 
 // Steam OpenID endpoint
@@ -69,7 +69,7 @@ async function handleLogin(req: Request) {
       'openid.ns': 'http://specs.openid.net/auth/2.0',
       'openid.mode': 'checkid_setup',
       'openid.return_to': `${STEAM_RETURN_URL}?state=${encodeURIComponent(state)}`,
-      'openid.realm': STEAM_RETURN_URL,
+      'openid.realm': 'https://unplayed.wtf', // Updated: Use the unplayed.wtf domain as realm
       'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
       'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
     });

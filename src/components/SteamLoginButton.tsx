@@ -21,6 +21,7 @@ const SteamLoginButton = ({
   const handleSteamLogin = async () => {
     try {
       await signInWithSteam(redirectPath);
+      // Note: This code will not execute immediately as the user will be redirected to Steam
     } catch (error) {
       console.error('Error during Steam login:', error);
       navigate('/auth');

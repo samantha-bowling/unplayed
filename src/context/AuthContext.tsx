@@ -566,9 +566,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(LOCAL_STORAGE_REDIRECT_KEY, location.pathname + location.search);
       }
       
-      // Get login URL from our edge function
+      // Get login URL from our edge function - updated to use the new domain
       const queryParams = redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : '';
-      const response = await fetch(`https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`, {
+      const response = await fetch(`https://unplayed.wtf/api/auth/steam/login${queryParams}`, {
         headers: {
           'User-Agent': 'UnplayedWTF Web App',
           'Content-Type': 'application/json',
