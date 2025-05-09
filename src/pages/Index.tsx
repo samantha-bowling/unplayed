@@ -1,4 +1,3 @@
-
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -12,29 +11,25 @@ import ZenModeWrapper from "@/components/ZenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useZenMode } from "@/context/ZenModeContext";
 import SteamLoginButton from "@/components/SteamLoginButton";
-
 const Index = () => {
-  const { user } = useAuth();
-  const { isZenMode, focusedComponent } = useZenMode();
-  
+  const {
+    user
+  } = useAuth();
+  const {
+    isZenMode,
+    focusedComponent
+  } = useZenMode();
+
   // In Zen Mode, show only the focused component
   if (isZenMode && focusedComponent) {
-    return (
-      <ZenModeWrapper>
+    return <ZenModeWrapper>
         <div className="min-h-screen flex items-center justify-center">
-          {focusedComponent === 'library' && (
-            <LibraryPreview zenModeFullScreen={true} />
-          )}
-          {focusedComponent === 'picker' && (
-            <RandomPicker fullScreen={true} />
-          )}
+          {focusedComponent === 'library' && <LibraryPreview zenModeFullScreen={true} />}
+          {focusedComponent === 'picker' && <RandomPicker fullScreen={true} />}
         </div>
-      </ZenModeWrapper>
-    );
+      </ZenModeWrapper>;
   }
-
-  return (
-    <ZenModeWrapper>
+  return <ZenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
         
@@ -125,16 +120,12 @@ const Index = () => {
               <SteamLoginButton centered />
             </div>
             
-            <p className="text-sm text-gray-500 mt-4">
-              We use Steam's official API. Your account details are safe.
-            </p>
+            <p className="text-sm text-gray-500 mt-4">We use Steam's Web API. Your account details are safe.</p>
           </div>
         </section>
         
         <Footer />
       </div>
-    </ZenModeWrapper>
-  );
+    </ZenModeWrapper>;
 };
-
 export default Index;
