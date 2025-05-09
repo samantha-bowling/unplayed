@@ -165,7 +165,11 @@ const AuthPage = () => {
                 >
                   <AuthErrorMessage
                     errorType={enhancedStatus}
-                    error={hasError ? { code: 'unknown', message: 'Unknown authentication error' } : null}
+                    error={hasError ? { 
+                      code: 'unknown', 
+                      message: 'Unknown authentication error',
+                      timestamp: Date.now() // Added the required timestamp property
+                    } : null}
                     onRetry={retry}
                   />
                 </motion.div>
