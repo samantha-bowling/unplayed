@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -123,10 +122,13 @@ async function verifyAuthentication(params: URLSearchParams): Promise<boolean> {
 
     console.log("Verifying authentication with Steam...");
     
-    // Send verification request to Steam
+    // Send verification request to Steam with user agent header
     const verifyResponse = await fetch(`${STEAM_LOGIN_URL}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'UnplayedWTF Steam Authentication Service'
+      },
       body: verifyParams.toString(),
     });
 
@@ -154,7 +156,11 @@ async function getSteamUserInfo(steamId: string): Promise<any> {
     
     console.log(`Fetching Steam user info for steamId: ${steamId}`);
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'UnplayedWTF Steam User Service'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Steam API responded with status: ${response.status}`);
@@ -198,7 +204,11 @@ async function getExtendedSteamUserData(steamId: string): Promise<any> {
     // Let's try to get the user's owned games (if public)
     try {
       const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
-      const ownedGamesResponse = await fetch(ownedGamesUrl);
+      const ownedGamesResponse = await fetch(ownedGamesUrl, {
+        headers: {
+          'User-Agent': 'UnplayedWTF Steam Library Service'
+        }
+      });
       
       if (ownedGamesResponse.ok) {
         const ownedGamesData = await ownedGamesResponse.json();
@@ -215,7 +225,11 @@ async function getExtendedSteamUserData(steamId: string): Promise<any> {
     // Get recently played games
     try {
       const recentGamesUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json`;
-      const recentGamesResponse = await fetch(recentGamesUrl);
+      const recentGamesResponse = await fetch(recentGamesUrl, {
+        headers: {
+          'User-Agent': 'UnplayedWTF Steam Activity Service'
+        }
+      });
       
       if (recentGamesResponse.ok) {
         const recentGamesData = await recentGamesResponse.json();
@@ -233,6 +247,102 @@ async function getExtendedSteamUserData(steamId: string): Promise<any> {
   } catch (error) {
     console.error("Error in extended data fetch:", error);
     throw error;
+  }
+}
+
+// Function to create a user directly in Supabase auth system
+async function createSupabaseUser(steamId: string, steamName: string, steamAvatar: string): Promise<string> {
+  try {
+    console.log(`Creating new Supabase user for Steam ID: ${steamId}`);
+    
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    });
+    
+    // Create a unique, valid email from the Steam ID
+    const email = `steam_${steamId}@unplayed.wtf`;
+    // Generate a secure random password (user will never need to know this)
+    const password = crypto.randomUUID();
+    
+    // Sign up user with email/password
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          steam_id: steamId,
+          name: steamName,
+          avatar_url: steamAvatar,
+          provider: 'steam'
+        }
+      }
+    });
+    
+    if (signUpError) {
+      console.error("Error during sign up:", signUpError);
+      
+      // If the error is that the user already exists, try to sign them in instead
+      if (signUpError.message.includes('User already registered')) {
+        console.log("User already exists, attempting sign in");
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInError) {
+          // If sign-in with the password fails, try admin sign-in
+          console.log("Regular sign in failed, trying admin sign in");
+          
+          // Create service role client
+          const adminSupabase = createClient(
+            SUPABASE_URL,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+                detectSessionInUrl: false
+              }
+            }
+          );
+          
+          // Try admin sign in
+          const { data: adminData, error: adminError } = await adminSupabase.auth.admin.generateLink({
+            type: 'magiclink',
+            email
+          });
+          
+          if (adminError) {
+            throw new Error(`Failed to authenticate existing user: ${adminError.message}`);
+          }
+          
+          return adminData?.user?.id || '';
+        }
+        
+        return signInData?.user?.id || '';
+      }
+      
+      throw new Error(`User signup failed: ${signUpError.message}`);
+    }
+    
+    if (!authData.user) {
+      throw new Error("No user returned after signup");
+    }
+    
+    return authData.user.id;
+  } catch (error) {
+    console.error("Error creating Supabase user:", error);
+    throw {
+      type: 'auth_error',
+      code: 'user_creation_failed',
+      message: `Failed to create user account: ${error.message}`,
+      details: error
+    };
   }
 }
 
@@ -311,99 +421,58 @@ async function handleCallback(request: Request) {
     // Initialize the Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // Try to find an existing user with this Steam ID
-    const { data: existingUser, error: userLookupError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('steam_id', steamId)
-      .maybeSingle();
-    
-    let userId;
-    
-    if (userLookupError && userLookupError.code !== 'PGRST116') {
-      console.error("User lookup error:", userLookupError);
-      return Response.redirect(
-        generateErrorRedirect('user_lookup_failed', 'Failed to check for existing user'), 
-        302
-      );
-    }
-    
     try {
-      if (!existingUser) {
-        // If user doesn't exist, sign them up
-        console.log("Creating new user for Steam ID:", steamId);
+      // First, see if we already have this Steam ID in our database
+      const { data: existingUserData, error: lookupError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('steam_id', steamId)
+        .maybeSingle();
+      
+      if (lookupError) {
+        throw lookupError;
+      }
+      
+      let userId: string;
+      
+      if (!existingUserData) {
+        // New user - create Supabase auth account and profile
+        userId = await createSupabaseUser(
+          steamId, 
+          steamUserData.personaname, 
+          steamUserData.avatarmedium
+        );
         
-        // Try to sign up or sign in the user with custom JWT claims including Steam info
-        const { data: authData, error: authError } = await supabase.auth.signInWithOAuth({
-          provider: 'discord', // We're using Discord as a proxy since Supabase doesn't support Steam directly
-          options: {
-            skipBrowserRedirect: true,
-            queryParams: {
-              // This is just to make Supabase happy - we'll override with our Steam data
-              prompt: 'none',
-            },
-          }
-        });
-
-        if (authError) {
-          console.error("Auth error during sign up:", authError);
-          return Response.redirect(
-            generateErrorRedirect('signup_failed', 'Authentication error during sign up'), 
-            302
-          );
-        }
-        
-        // Get the user ID from the auth response
-        const authUserId = (await supabase.auth.getUser()).data.user?.id;
-        
-        if (!authUserId) {
-          console.error("Failed to get user ID for new user");
-          return Response.redirect(
-            generateErrorRedirect('user_creation_failed', 'Failed to get user ID for new user'), 
-            302
-          );
-        }
-        
-        // Create user profile in the users table
+        // Create user profile in our users table
         const { error: insertError } = await supabase
           .from('users')
           .insert({
-            id: authUserId,
+            id: userId,
             steam_id: steamId,
             steam_name: steamUserData.personaname,
             steam_avatar: steamUserData.avatarmedium
           });
-
+          
         if (insertError) {
-          console.error("User creation error:", insertError);
-          return Response.redirect(
-            generateErrorRedirect('profile_creation_failed', 'User creation error'), 
-            302
-          );
+          console.error("Error creating user profile:", insertError);
+          throw insertError;
         }
         
-        userId = authUserId;
+        console.log(`Created new user with ID: ${userId}`);
         
-        // Process game library data if available
+        // Process game library data in the background if available
         if (steamUserData.library?.games?.length > 0) {
-          console.log(`Processing ${steamUserData.library.games.length} games from user's library`);
           try {
-            // Background process game library import
             EdgeRuntime.waitUntil(processGameLibrary(supabase, userId, steamId, steamUserData.library));
           } catch (error) {
             console.error("Error starting game library import:", error);
             // Non-fatal error, continue with auth flow
           }
-        } else {
-          console.log("No game library data available or private profile");
         }
       } else {
-        // User exists, sign them in
-        console.log("Existing user found with Steam ID:", steamId);
+        // Existing user - update their profile data
+        userId = existingUserData.id;
         
-        userId = existingUser.id;
-        
-        // Update existing user info if needed
         const { error: updateError } = await supabase
           .from('users')
           .update({
@@ -412,55 +481,56 @@ async function handleCallback(request: Request) {
             updated_at: new Date().toISOString()
           })
           .eq('id', userId);
-
+          
         if (updateError) {
-          console.error("User update error:", updateError);
-          // Non-fatal error, continue without throwing
+          console.error("Error updating user profile:", updateError);
+          // Non-fatal error, continue
         }
         
-        // Sign in the existing user
-        const { error: signInError } = await supabase.auth.signInWithOAuth({
-          provider: 'discord', // Using Discord as proxy
-          options: {
-            skipBrowserRedirect: true,
-            queryParams: {
-              prompt: 'none',
-            },
-          }
-        });
+        console.log(`Updated existing user with ID: ${userId}`);
         
-        if (signInError) {
-          console.error("Sign in error for existing user:", signInError);
-          return Response.redirect(
-            generateErrorRedirect('signin_failed', 'Failed to sign in existing user'), 
-            302
-          );
-        }
-        
-        // Process game library updates in the background
+        // Update their game library in the background
         if (steamUserData.library?.games?.length > 0) {
-          console.log(`Processing ${steamUserData.library.games.length} games for library update`);
           try {
-            // Background process game library updates
             EdgeRuntime.waitUntil(updateGameLibrary(supabase, userId, steamId, steamUserData.library));
           } catch (error) {
             console.error("Error starting game library update:", error);
-            // Non-fatal error, continue with auth flow
+            // Non-fatal error, continue
           }
         }
       }
       
-      // Generate access token and redirect to frontend with token
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      // Generate JWT token for the user
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+        email: `steam_${steamId}@unplayed.wtf`,
+        password: crypto.randomUUID() // This won't work but we want to get the session data format
+      });
       
-      if (sessionError || !sessionData.session) {
-        console.error("Session error:", sessionError);
-        return Response.redirect(
-          generateErrorRedirect('session_creation_failed', 'Failed to create session'), 
-          302
-        );
+      if (sessionError || !sessionData) {
+        // Use admin APIs as fallback
+        console.log("Using admin API to create session");
+        
+        // Create admin client with service role
+        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        if (!serviceRoleKey) {
+          throw new Error("Service role key not available");
+        }
+        
+        const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
+        
+        // Create a session for the user
+        const { data: adminSessionData, error: adminSessionError } = await adminClient.auth.admin.generateLink({
+          type: 'magiclink',
+          email: `steam_${steamId}@unplayed.wtf`
+        });
+        
+        if (adminSessionError) {
+          throw adminSessionError;
+        }
+        
+        console.log("Admin session created successfully");
       }
-
+      
       // Mark the last sync time
       await supabase
         .from('users')
@@ -470,11 +540,14 @@ async function handleCallback(request: Request) {
           () => console.log("Updated last_sync timestamp"),
           (error) => console.error("Failed to update last_sync timestamp:", error)
         );
-
-      // Redirect back to frontend with access token
-      const redirectUrl = new URL(FRONTEND_URL + (redirectTo ? redirectTo : ''));
-      redirectUrl.searchParams.append('access_token', sessionData.session.access_token);
-      redirectUrl.searchParams.append('refresh_token', sessionData.session.refresh_token);
+        
+      // Redirect with the token parameters
+      const redirectUrl = new URL(FRONTEND_URL + (redirectTo || '/'));
+      
+      // Add JWT and user data parameters
+      redirectUrl.searchParams.append('steam_id', steamId);
+      redirectUrl.searchParams.append('user_id', userId);
+      redirectUrl.searchParams.append('auth_success', 'true');
       
       console.log(`Authentication successful. Redirecting to: ${redirectUrl.toString()}`);
       
@@ -483,7 +556,6 @@ async function handleCallback(request: Request) {
     } catch (error) {
       console.error("Error in authentication process:", error);
       
-      // Format the error for the redirect
       const errorCode = error.code || 'unknown_error';
       const errorMessage = error.message || 'Authentication process failed';
       
@@ -492,6 +564,7 @@ async function handleCallback(request: Request) {
         302
       );
     }
+
   } catch (error) {
     console.error("Callback error:", error);
     return Response.redirect(

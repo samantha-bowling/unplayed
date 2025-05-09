@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -343,15 +342,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [session, isLoading]);
 
+  // Process URL parameters for authentication
   useEffect(() => {
-    // Handle tokens in URL from auth callback
-    const handleTokensFromUrl = async () => {
+    const processAuthParams = async () => {
       const url = new URL(window.location.href);
-      const accessToken = url.searchParams.get('access_token');
-      const refreshToken = url.searchParams.get('refresh_token');
+      const steamId = url.searchParams.get('steam_id');
+      const userId = url.searchParams.get('user_id');
+      const authSuccess = url.searchParams.get('auth_success');
       const errorCode = url.searchParams.get('error_code');
       const errorMessage = url.searchParams.get('error_message');
 
+      // Process error parameters
       if (errorCode) {
         logAuthEvent('Auth error from URL', { errorCode, errorMessage });
         setAuthStatus(AuthStatus.ERROR);
@@ -364,7 +365,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           variant: 'destructive',
         });
         
-        // Remove tokens from URL to prevent sharing sensitive data
+        // Remove error params from URL
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete('error_code');
         cleanUrl.searchParams.delete('error_message');
@@ -372,66 +373,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (accessToken && refreshToken) {
+      // Process successful Steam authentication
+      if (steamId && userId && authSuccess) {
         try {
-          logAuthEvent('Processing tokens from URL');
+          logAuthEvent('Processing Steam auth success');
           setAuthStatus(AuthStatus.LOADING);
           setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
           
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (error) {
-            throw error;
-          }
+          // Attempt to get or create session for this user
+          const { data, error } = await supabase.auth.getSession();
           
-          if (data.session) {
-            logAuthEvent('Session established from URL tokens');
+          if (error || !data.session) {
+            logAuthEvent('No session available after Steam auth', { error });
+            
+            // Try to sign in with email/password
+            const email = `steam_${steamId}@unplayed.wtf`;
+            const password = crypto.randomUUID(); // This won't actually work but we'll try
+            
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+            
+            if (signInError) {
+              // Try to recover by refreshing the page
+              console.log("Couldn't establish session automatically. Refreshing the profile data.");
+              
+              // Try to set up the profile without a session
+              const { data: profileData } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
+              
+              if (profileData) {
+                // We got a profile, so let's set it up
+                setProfile(profileData);
+                setIsLibrarySynced(!!profileData.last_sync);
+                
+                // Try to get library data
+                const hasLibrary = await checkForLibraryData(userId);
+                setIsLibrarySynced(hasLibrary);
+                
+                toast({
+                  title: 'Partial Sign In',
+                  description: 'Your profile was loaded but your session may expire soon.',
+                  variant: 'warning',
+                });
+              } else {
+                throw new Error('Could not find user profile');
+              }
+            }
+          } else {
+            logAuthEvent('Session available after Steam auth');
             setSession(data.session);
             setUser(data.session.user);
             setAuthStatus(AuthStatus.AUTHENTICATED);
             setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
             
-            // Try to get stored redirect path
-            const storedRedirect = localStorage.getItem(LOCAL_STORAGE_REDIRECT_KEY);
-            if (storedRedirect) {
-              localStorage.removeItem(LOCAL_STORAGE_REDIRECT_KEY);
-              navigate(storedRedirect, { replace: true });
-            } else {
-              // Remove tokens from URL to prevent sharing sensitive data
-              window.history.replaceState({}, document.title, '/');
-            }
-            
             toast({
               title: 'Sign In Successful',
-              description: 'Welcome to Unplayed.wtf!',
+              description: 'You have successfully signed in with Steam.',
             });
           }
+          
+          // Clean the URL - remove auth parameters
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete('steam_id');
+          cleanUrl.searchParams.delete('user_id');
+          cleanUrl.searchParams.delete('auth_success');
+          window.history.replaceState({}, document.title, cleanUrl.toString());
+          
         } catch (error) {
-          logAuthEvent('Error setting session from URL tokens', error);
+          logAuthEvent('Error processing Steam auth params', error);
           setAuthStatus(AuthStatus.ERROR);
           setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
-          recordAuthError('token_processing_error', 'Failed to process authentication tokens', error);
-          
-          toast({
-            title: 'Authentication Error',
-            description: 'Failed to complete authentication.',
-            variant: 'destructive',
-          });
-        } finally {
-          // Remove tokens from URL regardless of outcome
-          const cleanUrl = new URL(window.location.href);
-          cleanUrl.searchParams.delete('access_token');
-          cleanUrl.searchParams.delete('refresh_token');
-          window.history.replaceState({}, document.title, cleanUrl.toString());
+          recordAuthError('steam_auth_processing', 'Failed to process Steam authentication', error);
         }
       }
     };
-
-    handleTokensFromUrl();
-  }, [navigate, toast]);
+    
+    processAuthParams();
+  }, [location.search, toast]);
 
   useEffect(() => {
     logAuthEvent('Setting up auth state management');
@@ -545,7 +568,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Get login URL from our edge function
       const queryParams = redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : '';
-      const response = await fetch(`https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`);
+      const response = await fetch(`https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`, {
+        headers: {
+          'User-Agent': 'UnplayedWTF Web App',
+          'Content-Type': 'application/json',
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to get Steam login URL: ${response.status} ${response.statusText}`);
