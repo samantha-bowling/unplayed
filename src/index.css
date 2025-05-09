@@ -59,7 +59,7 @@
   }
   
   .terminal-container {
-    @apply bg-black/50 rounded-lg border border-unplayed-mint/30 p-4 shadow-[0_0_20px_rgba(163,247,191,0.15)];
+    @apply bg-black/50 rounded-lg border border-unplayed-mint/30 p-4 shadow-[0_0_20px_rgba(163,247,191,0.15)] relative;
   }
   
   .terminal-header::after {
@@ -142,3 +142,22 @@ body.zen-mode {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+/* Animation for the fade-in effect */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Cursor blink animation */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-cursor-blink {
+  animation: cursor-blink 1s infinite;
+}

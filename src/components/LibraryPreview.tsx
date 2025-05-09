@@ -4,6 +4,7 @@ import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useZenMode } from '@/context/ZenModeContext';
 import ZenModeToggle from './ZenModeToggle';
+import { Maximize } from 'lucide-react';
 
 // Sample data - in a real app, this would come from the Steam API
 const sampleGames = [
@@ -30,7 +31,7 @@ const LibraryPreview = ({
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const { signInWithSteam } = useAuth();
-  const { isZenMode } = useZenMode();
+  const { isZenMode, enterZenMode, focusedComponent } = useZenMode();
   
   // Determine if we should show in full screen zen mode
   const isFullScreenMode = zenModeFullScreen && isZenMode;
@@ -69,6 +70,14 @@ const LibraryPreview = ({
               }`}
             >
               Zen
+            </button>
+            <button
+              onClick={() => enterZenMode('library')} 
+              className="px-3 py-1 text-sm rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 flex items-center"
+              title="Enter full-screen mode"
+            >
+              <Maximize className="h-3 w-3 mr-1" />
+              Full
             </button>
           </div>
         </div>
@@ -133,18 +142,28 @@ const LibraryPreview = ({
           <p className="text-gray-400">
             Showing 10 of 137 unplayed games
           </p>
-          {isDemo ? (
+          <div className="flex justify-center gap-2 mt-3">
+            {isDemo ? (
+              <button 
+                onClick={() => signInWithSteam()} 
+                className="btn-secondary"
+              >
+                Connect Steam to View Your Library
+              </button>
+            ) : (
+              <button className="btn-secondary">
+                View Full Library
+              </button>
+            )}
             <button 
-              onClick={() => signInWithSteam()} 
-              className="btn-secondary mt-3"
+              onClick={() => enterZenMode('library')}
+              className="btn-primary flex items-center"
+              title="Enter full-screen mode"
             >
-              Connect Steam to View Your Library
+              <Maximize className="h-4 w-4 mr-1" />
+              Full Screen
             </button>
-          ) : (
-            <button className="btn-secondary mt-3">
-              View Full Library
-            </button>
-          )}
+          </div>
         </div>
       )}
     </div>

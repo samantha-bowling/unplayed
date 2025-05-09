@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, X, Clock, MousePointer } from 'lucide-react';
+import { ChevronDown, X, Clock, MousePointer, Maximize } from 'lucide-react';
+import { useZenMode } from '@/context/ZenModeContext';
+import ZenModeToggle from './ZenModeToggle';
 
 // Sample data - in a real app, this would come from the Steam API
 const sampleGames = [
@@ -33,6 +35,10 @@ const RandomPicker = ({ fullScreen = false }: RandomPickerProps) => {
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [spinHistory, setSpinHistory] = useState<Array<any>>([]);
+  const { isZenMode, enterZenMode } = useZenMode();
+  
+  // Determine if we should show in full screen zen mode
+  const isFullScreenMode = fullScreen && isZenMode;
   
   const handleSpin = () => {
     if (isSpinning) return;
@@ -57,7 +63,27 @@ const RandomPicker = ({ fullScreen = false }: RandomPickerProps) => {
 
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
-      <h3 className="terminal-header text-2xl mb-4">Random Game Picker</h3>
+      {/* Show the zen mode toggle in the corner when in full screen mode */}
+      {isFullScreenMode && (
+        <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
+          <ZenModeToggle />
+        </div>
+      )}
+      
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="terminal-header text-2xl mb-4">Random Game Picker</h3>
+        
+        {!isFullScreenMode && (
+          <button
+            onClick={() => enterZenMode('picker')} 
+            className="px-3 py-1 text-sm rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 flex items-center mb-4"
+            title="Enter full-screen mode"
+          >
+            <Maximize className="h-3 w-3 mr-1" />
+            Full
+          </button>
+        )}
+      </div>
       
       {/* Filter controls */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -108,6 +134,17 @@ const RandomPicker = ({ fullScreen = false }: RandomPickerProps) => {
           <MousePointer className="mr-2 h-4 w-4" />
           {isSpinning ? 'Selecting...' : 'Select Game.exe'}
         </button>
+        
+        {!isFullScreenMode && !selectedGame && (
+          <button
+            onClick={() => enterZenMode('picker')} 
+            className="btn-secondary flex items-center"
+            title="Enter full-screen mode"
+          >
+            <Maximize className="h-4 w-4 mr-1" />
+            Full Screen
+          </button>
+        )}
       </div>
       
       {/* Game display area */}

@@ -1,18 +1,31 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+// Define available components for zen mode focus
+export type FocusableComponent = 'library' | 'picker' | null;
+
 interface ZenModeContextType {
   isZenMode: boolean;
   toggleZenMode: () => void;
+  focusedComponent: FocusableComponent;
+  setFocusedComponent: (component: FocusableComponent) => void;
+  enterZenMode: (component: FocusableComponent) => void;
 }
 
 const ZenModeContext = createContext<ZenModeContextType | undefined>(undefined);
 
 export const ZenModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isZenMode, setIsZenMode] = useState(false);
+  const [focusedComponent, setFocusedComponent] = useState<FocusableComponent>(null);
 
   const toggleZenMode = () => {
     setIsZenMode(prev => !prev);
+    if (isZenMode) setFocusedComponent(null); // Clear focused component when exiting zen mode
+  };
+  
+  const enterZenMode = (component: FocusableComponent) => {
+    setIsZenMode(true);
+    setFocusedComponent(component);
   };
 
   // Handle keyboard shortcut (Ctrl + Shift + Z)
@@ -29,7 +42,13 @@ export const ZenModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   return (
-    <ZenModeContext.Provider value={{ isZenMode, toggleZenMode }}>
+    <ZenModeContext.Provider value={{ 
+      isZenMode, 
+      toggleZenMode, 
+      focusedComponent, 
+      setFocusedComponent,
+      enterZenMode 
+    }}>
       {children}
     </ZenModeContext.Provider>
   );
