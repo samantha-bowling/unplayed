@@ -14,7 +14,7 @@ export interface AuthSessionState {
 }
 
 export function useAuthSessionStatus() {
-  const { enhancedStatus, lastError, refreshProfile, clearAuthError } = useAuth();
+  const { enhancedStatus, lastError, refreshProfile, refreshSession, clearAuthError } = useAuth();
   const [retryCount, setRetryCount] = useState(0);
   const [sessionState, setSessionState] = useState<AuthSessionState>({
     isInitializing: true,
@@ -73,9 +73,11 @@ export function useAuthSessionStatus() {
     if (enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR) {
       // If profile error, attempt to refresh profile
       await refreshProfile();
-    } else if (enhancedStatus === EnhancedAuthStatus.AUTH_ERROR || 
-               enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR) {
-      // For auth errors, we might need to redirect to login
+    } else if (enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR) {
+      // For token refresh errors, attempt to refresh the session
+      await refreshSession();
+    } else if (enhancedStatus === EnhancedAuthStatus.AUTH_ERROR) {
+      // For general auth errors, we might need to redirect to login
       // This will be implemented in a separate component
     }
   };

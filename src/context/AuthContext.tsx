@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -52,12 +53,15 @@ type AuthContextType = {
   signInWithSteam: (redirectTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshSession: () => Promise<void>;
   clearAuthError: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_REDIRECT_KEY = 'unplayed_auth_redirect';
+const LAST_SESSION_KEY = 'unplayed_last_session';
+const LAST_SESSION_TIME_KEY = 'unplayed_last_session_time';
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
 // Log auth events in development only
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Clear the last auth error
   const clearAuthError = () => {
@@ -101,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Function to fetch user profile with retry logic
   const fetchProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
+    const startTime = Date.now();
     try {
       logAuthEvent('Fetching profile', { userId, retryCount });
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
@@ -126,7 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data) {
-        logAuthEvent('Profile fetched successfully', { steamName: data.steam_name });
+        const duration = Date.now() - startTime;
+        logAuthEvent('Profile fetched successfully', { steamName: data.steam_name, durationMs: duration });
         setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
         return data as UserProfile;
       } else {
@@ -140,6 +147,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
       recordAuthError('profile_exception', 'Exception while fetching profile', error, true);
       return null;
+    }
+  };
+
+  // Setup token refresh timer
+  const setupTokenRefreshTimer = (currentSession: Session | null) => {
+    // Clear any existing timers
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+    
+    if (!currentSession) return;
+    
+    // Calculate time until expiry minus buffer (60s)
+    const expiresAt = new Date(currentSession.expires_at * 1000);
+    const timeUntilExpiry = expiresAt.getTime() - Date.now();
+    const refreshBuffer = 60 * 1000; // 1 minute
+    
+    if (timeUntilExpiry <= refreshBuffer) {
+      // Already near expiration, refresh now
+      refreshSession();
+      return;
+    }
+    
+    // Set timer for refresh
+    refreshTimerRef.current = setTimeout(
+      () => refreshSession(),
+      timeUntilExpiry - refreshBuffer
+    );
+    
+    logAuthEvent('Token refresh timer set', { 
+      expiresAt: expiresAt.toISOString(), 
+      refreshIn: Math.round((timeUntilExpiry - refreshBuffer) / 1000) + 's'
+    });
+  };
+
+  // Public method to refresh the session
+  const refreshSession = async (): Promise<void> => {
+    try {
+      logAuthEvent('Refreshing session token');
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        logAuthEvent('Token refresh error', error);
+        setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
+        recordAuthError('refresh_error', 'Failed to refresh authentication token', error, true);
+        
+        toast({
+          title: 'Session Expired',
+          description: 'Your login session has expired. Please sign in again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (data.session) {
+        logAuthEvent('Token refreshed successfully');
+        // This will trigger onAuthStateChange, which will update our state
+      }
+    } catch (error) {
+      logAuthEvent('Exception during token refresh', error);
+      recordAuthError('token_refresh_exception', 'Exception during token refresh', error, true);
+    }
+  };
+
+  // Persist minimal session state for recovery
+  const persistSessionState = (currentSession: Session | null) => {
+    if (currentSession) {
+      // Only store minimal info needed to detect changes
+      localStorage.setItem(LAST_SESSION_KEY, currentSession.user.id);
+      localStorage.setItem(LAST_SESSION_TIME_KEY, Date.now().toString());
+    } else {
+      localStorage.removeItem(LAST_SESSION_KEY);
+      localStorage.removeItem(LAST_SESSION_TIME_KEY);
     }
   };
 
@@ -162,6 +243,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     }
   };
+
+  // Network connectivity detection for auth recovery
+  useEffect(() => {
+    const handleOnline = () => {
+      logAuthEvent('Network connection restored');
+      if (lastError?.code === 'network_error' || 
+          enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR) {
+        // Try to recover session
+        refreshSession();
+      }
+    };
+    
+    const handleOffline = () => {
+      logAuthEvent('Network connection lost');
+      // We'll just log this for now, recovery happens on reconnect
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [enhancedStatus, lastError]);
+
+  // Setup session recovery from browser crash/refresh
+  useEffect(() => {
+    // Check for inconsistent state on init
+    const storedSessionUserId = localStorage.getItem(LAST_SESSION_KEY);
+    
+    if (storedSessionUserId && !isLoading && !session) {
+      // We expected to have a session but don't
+      logAuthEvent('Detected inconsistent session state', { storedSessionUserId });
+      
+      // Try to recover by forcing a session refresh
+      supabase.auth.refreshSession().then(({ data, error }) => {
+        if (error || !data.session) {
+          // Failed to recover, clear stored state
+          logAuthEvent('Failed to recover session', { error });
+          localStorage.removeItem(LAST_SESSION_KEY);
+          localStorage.removeItem(LAST_SESSION_TIME_KEY);
+        } else {
+          logAuthEvent('Successfully recovered session', { userId: data.session.user.id });
+        }
+      });
+    }
+  }, [isLoading]);
+
+  // Update session persistence when session changes
+  useEffect(() => {
+    if (session) {
+      persistSessionState(session);
+      setupTokenRefreshTimer(session);
+    } else if (!isLoading) {
+      // Only clear if we're sure there's no session (not during initial loading)
+      persistSessionState(null);
+    }
+  }, [session, isLoading]);
 
   useEffect(() => {
     // Handle tokens in URL from auth callback
@@ -267,6 +407,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(existingSession.user);
         setAuthStatus(AuthStatus.AUTHENTICATED);
         setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
+        
+        // Setup token refresh timer
+        setupTokenRefreshTimer(existingSession);
       } else {
         logAuthEvent('No existing session found');
         setAuthStatus(AuthStatus.UNAUTHENTICATED);
@@ -279,6 +422,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       logAuthEvent('Unsubscribing from auth state changes');
       subscription.unsubscribe();
+      
+      // Clear any timers on unmount
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
     };
   }, []);
 
@@ -362,14 +510,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Clear auth data utility
+  const clearAuthData = () => {
+    // Clear all auth-related data
+    localStorage.removeItem(LOCAL_STORAGE_REDIRECT_KEY);
+    localStorage.removeItem(LAST_SESSION_KEY);
+    localStorage.removeItem(LAST_SESSION_TIME_KEY);
+  };
+
   // Sign out
   const signOut = async () => {
     try {
       logAuthEvent('Signing out');
       await supabase.auth.signOut();
       
-      // Clear any stored redirects
-      localStorage.removeItem(LOCAL_STORAGE_REDIRECT_KEY);
+      // Clear auth data
+      clearAuthData();
       
       setAuthStatus(AuthStatus.UNAUTHENTICATED);
       setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
@@ -404,6 +560,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithSteam,
         signOut,
         refreshProfile,
+        refreshSession,
         clearAuthError,
       }}
     >

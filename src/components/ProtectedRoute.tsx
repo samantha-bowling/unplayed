@@ -44,17 +44,29 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         <div className="text-center max-w-md p-6 terminal-container">
           <h2 className="text-xl text-unplayed-pink mb-4">Authentication Error</h2>
           <p className="text-gray-300 mb-4">
-            There was a problem verifying your session. {enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR 
+            {enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR 
               ? "We couldn't load your profile data." 
-              : "Please try signing in again."}
+              : enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR
+                ? "Your session has expired."
+                : "There was a problem with your authentication."}
           </p>
           
+          {/* Show different actions based on error type */}
           {enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR && (
             <Button 
               onClick={retry}
               className="w-full mb-4 bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
             >
               <RefreshCw className="mr-2 h-4 w-4" /> Retry Loading Profile
+            </Button>
+          )}
+          
+          {enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR && (
+            <Button 
+              onClick={retry}
+              className="w-full mb-4 bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Try to Refresh Session
             </Button>
           )}
           
