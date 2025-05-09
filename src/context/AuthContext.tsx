@@ -70,6 +70,16 @@ const LAST_SESSION_KEY = 'unplayed_last_session';
 const LAST_SESSION_TIME_KEY = 'unplayed_last_session_time';
 const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 
+// Helper function to determine the correct API URL based on environment
+const getSteamAuthUrl = (queryParams: string = ''): string => {
+  // In development, use the direct Supabase function URL
+  if (import.meta.env.DEV) {
+    return `https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`;
+  }
+  // In production, use the Netlify redirect
+  return `/api/auth/steam/login${queryParams}`;
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -566,9 +576,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(LOCAL_STORAGE_REDIRECT_KEY, location.pathname + location.search);
       }
       
-      // Get login URL from our edge function - updated to use the new domain
+      // Get login URL from our edge function - use environment-aware URL helper
       const queryParams = redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : '';
-      const response = await fetch(`https://unplayed.wtf/api/auth/steam/login${queryParams}`, {
+      const authUrl = getSteamAuthUrl(queryParams);
+      
+      logAuthEvent('Fetching Steam login URL', { authUrl });
+      
+      const response = await fetch(authUrl, {
         headers: {
           'User-Agent': 'UnplayedWTF Web App',
           'Content-Type': 'application/json',
@@ -576,10 +590,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (!response.ok) {
+        // Check if we received HTML instead of JSON (common error in misconfigured endpoints)
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          throw new Error(`Received HTML instead of JSON. Status: ${response.status}. This usually indicates a redirect issue.`);
+        }
         throw new Error(`Failed to get Steam login URL: ${response.status} ${response.statusText}`);
       }
       
-      const { url, error } = await response.json();
+      // Try to parse the response as JSON, with better error handling
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, try to get the raw text for better debugging
+        const rawText = await response.text();
+        throw new Error(`Failed to parse response as JSON. Raw response: ${rawText.substring(0, 100)}...`);
+      }
+      
+      const { url, error } = responseData;
       
       if (error) {
         throw new Error(`Steam auth error: ${error.message || JSON.stringify(error)}`);
