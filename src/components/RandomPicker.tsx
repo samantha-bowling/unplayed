@@ -23,7 +23,11 @@ const moodCategories = [
   { id: 'quick', name: 'Quick Play', icon: '⚡' }
 ];
 
-const RandomPicker = () => {
+interface RandomPickerProps {
+  fullScreen?: boolean;
+}
+
+const RandomPicker = ({ fullScreen = false }: RandomPickerProps) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -52,7 +56,7 @@ const RandomPicker = () => {
   };
 
   return (
-    <div className="terminal-container w-full">
+    <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
       <h3 className="terminal-header text-2xl mb-4">Random Game Picker</h3>
       
       {/* Filter controls */}
