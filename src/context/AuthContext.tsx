@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -145,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Public method to manually refresh profile data
-  const refreshProfile = async () => {
+  const refreshProfile = async (): Promise<void> => {
     if (!user) return;
     
     try {
@@ -153,7 +152,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profileData = await fetchProfile(user.id);
       if (profileData) {
         setProfile(profileData);
-        return profileData;
       }
     } catch (error) {
       logAuthEvent('Manual profile refresh failed', error);
@@ -163,7 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         variant: 'destructive',
       });
     }
-    return null;
   };
 
   useEffect(() => {
