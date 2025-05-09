@@ -7,7 +7,8 @@ const LOCAL_STORAGE_KEYS = {
   AUTH_REDIRECT: 'unplayed_auth_redirect',
   PROFILE_CACHE: 'unplayed_profile_cache',
   LAST_SESSION: 'unplayed_last_session',
-  LAST_SESSION_TIME: 'unplayed_last_session_time'
+  LAST_SESSION_TIME: 'unplayed_last_session_time',
+  AUTH_ANIMATION_SHOWN: 'unplayed_auth_animation_shown'
 };
 
 // Clear all auth-related data from local storage
@@ -63,4 +64,59 @@ export const formatSessionTimeRemaining = (session: Session | null): string => {
   }
   
   return `${seconds}s`;
+};
+
+// Set flag that auth animation has been shown
+export const markAuthAnimationShown = () => {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_ANIMATION_SHOWN, 'true');
+  } catch (err) {
+    console.error('Error setting auth animation flag:', err);
+  }
+};
+
+// Check if auth animation has been shown
+export const hasAuthAnimationBeenShown = (): boolean => {
+  try {
+    return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_ANIMATION_SHOWN) === 'true';
+  } catch (err) {
+    console.error('Error checking auth animation flag:', err);
+    return false;
+  }
+};
+
+// Reset the auth animation flag
+export const resetAuthAnimationFlag = () => {
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_ANIMATION_SHOWN);
+  } catch (err) {
+    console.error('Error resetting auth animation flag:', err);
+  }
+};
+
+// Sanitize auth redirect URL to prevent open redirect vulnerabilities
+export const sanitizeRedirectUrl = (url: string | null): string => {
+  // Default redirect location
+  const defaultRedirect = '/';
+  
+  // If no URL provided, use default
+  if (!url) return defaultRedirect;
+  
+  try {
+    // If it's a relative URL (starts with /) it's safe
+    if (url.startsWith('/')) return url;
+    
+    // For absolute URLs, check if it's on the same origin
+    const urlObj = new URL(url, window.location.origin);
+    if (urlObj.origin === window.location.origin) {
+      return urlObj.pathname + urlObj.search + urlObj.hash;
+    }
+    
+    // If not same origin, return default
+    return defaultRedirect;
+  } catch (e) {
+    // Invalid URL, return default
+    console.error('Invalid redirect URL:', url);
+    return defaultRedirect;
+  }
 };

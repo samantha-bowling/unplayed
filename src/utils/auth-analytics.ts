@@ -7,7 +7,9 @@ type AuthEventType =
   | 'token_refresh' 
   | 'profile_loaded' 
   | 'error_recovered'
-  | 'session_expired';
+  | 'session_expired'
+  | 'auth_ui_interaction'
+  | 'auth_animation_complete';
 
 type EventContext = Record<string, any>;
 
@@ -75,6 +77,8 @@ export const logAuthEvent = (event: string, data?: any) => {
     trackAuthEvent('token_refresh', { success: true });
   } else if (event === 'Profile fetched successfully') {
     trackAuthEvent('profile_loaded', data);
+  } else if (event === 'Success animation displayed') {
+    trackAuthEvent('auth_animation_complete', { displayDuration: data?.duration });
   }
 };
 
@@ -85,4 +89,35 @@ export const trackAuthPerformance = (operation: string, startTime: number) => {
   
   // Could send to analytics in production
   // trackAuthEvent('auth_performance', { operation, duration });
+};
+
+// Track auth UI interactions
+export const trackAuthUIInteraction = (interaction: string, context?: Record<string, any>) => {
+  trackAuthEvent('auth_ui_interaction', {
+    interaction,
+    timestamp: Date.now(),
+    ...context
+  });
+};
+
+// Generate a user-friendly error message based on error code
+export const getUserFriendlyErrorMessage = (errorCode: string): string => {
+  switch (errorCode) {
+    case 'auth/invalid-login-credentials':
+      return 'Invalid login credentials. Please check and try again.';
+    case 'auth/user-not-found':
+      return 'User not found. Please check your login details or sign up.';
+    case 'auth/too-many-requests':
+      return 'Too many login attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your internet connection.';
+    case 'auth/steam-profile-private':
+      return 'Your Steam profile appears to be private. Please check your privacy settings.';
+    case 'auth/steam-api-error':
+      return 'There was an error connecting to Steam. Please try again later.';
+    case 'auth/session-expired':
+      return 'Your session has expired. Please sign in again.';
+    default:
+      return 'An error occurred during authentication. Please try again.';
+  }
 };

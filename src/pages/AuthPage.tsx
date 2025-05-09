@@ -6,11 +6,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { SteamIcon } from '@/components/icons/SteamIcon';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import SteamLoader from '@/components/SteamLoader';
+import AuthErrorMessage from '@/components/AuthErrorMessage';
+import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus } = useAuth();
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile } = useAuth();
   const { hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const { toast } = useToast();
   const location = useLocation();
@@ -23,11 +27,11 @@ const AuthPage = () => {
     '/';
 
   useEffect(() => {
-    // If user is already logged in, redirect to the intended page
-    if (authStatus === AuthStatus.AUTHENTICATED && user) {
-      navigate(from, { replace: true });
+    // If user is already logged in, show success animation then redirect
+    if (authStatus === AuthStatus.AUTHENTICATED && user && !showSuccessAnimation) {
+      setShowSuccessAnimation(true);
     }
-  }, [authStatus, user, navigate, from]);
+  }, [authStatus, user, navigate, from, showSuccessAnimation]);
 
   const handleSteamLogin = async () => {
     if (isLoading) return; // Prevent multiple clicks
@@ -46,22 +50,21 @@ const AuthPage = () => {
     }
   };
 
-  // Get status message based on current auth state
-  const getStatusMessage = () => {
+  // Get appropriate loading message based on auth state
+  const getLoadingMessage = () => {
     switch (enhancedStatus) {
       case EnhancedAuthStatus.SESSION_LOADING:
-        return "Verifying your session...";
+        return "Connecting to Steam...";
       case EnhancedAuthStatus.PROFILE_LOADING:
-        return "Loading your profile...";
-      case EnhancedAuthStatus.PROFILE_ERROR:
-        return "We're having trouble loading your profile.";
-      case EnhancedAuthStatus.AUTH_ERROR:
-        return "Authentication failed. Please try again.";
-      case EnhancedAuthStatus.TOKEN_REFRESH_ERROR:
-        return "Your session expired. Please log in again.";
+        return "Loading your game library...";
       default:
-        return "Please log in to continue";
+        return "Processing...";
     }
+  };
+
+  // Handle success animation completion
+  const handleSuccessAnimationComplete = () => {
+    navigate(from, { replace: true });
   };
 
   return (
@@ -99,85 +102,105 @@ const AuthPage = () => {
               key={enhancedStatus} // Force re-animation on status change
             >
               <div className={`h-2 w-2 rounded-full ${hasError ? 'bg-unplayed-red animate-pulse' : 'bg-unplayed-mint'}`} />
-              <span>{getStatusMessage()}</span>
+              <span>{
+                [EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) ? 
+                getLoadingMessage() : 
+                enhancedStatus === EnhancedAuthStatus.PROFILE_LOADED ? 
+                "Profile loaded successfully" : 
+                hasError ? "Authentication error" : "Please log in to continue"
+              }</span>
             </motion.div>
           )}
           
           <div className="space-y-6">
-            <p className="text-gray-300 text-center">
-              To access your Steam library data, please authenticate with your Steam account.
-            </p>
-            
-            <div className="terminal-box p-4 mb-4 bg-gray-900 rounded-md">
-              <p className="text-sm text-gray-400 font-mono">
-                <span className="text-unplayed-mint">$</span> We need access to scan your Steam library and provide backlog insights. Your account security is safe - we only access your public game data.
-              </p>
-            </div>
+            <AnimatePresence>
+              {/* Show the Steam Loader during loading states */}
+              {[EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) && (
+                <motion.div 
+                  className="flex flex-col items-center justify-center py-8"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  key="steam-loader"
+                >
+                  <SteamLoader 
+                    message={getLoadingMessage()}
+                    size="lg"
+                    variant="primary" 
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {!hasError && enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && (
+                <motion.div
+                  key="auth-content"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <p className="text-gray-300 text-center">
+                    To access your Steam library data, please authenticate with your Steam account.
+                  </p>
+                  
+                  <div className="terminal-box p-4 my-6 bg-gray-900 rounded-md">
+                    <p className="text-sm text-gray-400 font-mono">
+                      <span className="text-unplayed-mint">$</span> We need access to scan your Steam library and provide backlog insights. Your account security is safe - we only access your public game data.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Error Details Panel */}
-            {hasError && (
-              <motion.div
-                className="auth-error-details mb-4 border border-unplayed-red rounded-md overflow-hidden"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-              >
-                <details className="text-sm">
-                  <summary className="p-3 cursor-pointer bg-unplayed-red/20 hover:bg-unplayed-red/30 transition-colors">
-                    What went wrong?
-                  </summary>
-                  <div className="p-3 bg-black/30">
-                    {enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR && (
-                      <>
-                        <p className="mb-2">We couldn't load your Steam profile. This could be due to:</p>
-                        <ul className="list-disc pl-5 mb-2">
-                          <li>Network connectivity issues</li>
-                          <li>Steam API availability</li>
-                          <li>Your Steam profile privacy settings</li>
-                        </ul>
-                      </>
-                    )}
-                    
-                    {enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR && (
-                      <p className="mb-2">Your authentication session has expired. Please sign in again.</p>
-                    )}
-                    
-                    {enhancedStatus === EnhancedAuthStatus.AUTH_ERROR && (
-                      <p className="mb-2">There was a problem authenticating with Steam.</p>
-                    )}
-                    
-                    <button 
-                      onClick={retry}
-                      className="flex items-center space-x-1 text-xs bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint px-3 py-1 rounded-sm mt-2"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      <span>Try Again</span>
-                    </button>
-                  </div>
-                </details>
-              </motion.div>
-            )}
-            
-            <motion.button
-              onClick={handleSteamLogin}
-              disabled={isLoading || authStatus === AuthStatus.LOADING}
-              className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-[#1b2838] hover:bg-[#2a3f5a] transition-colors rounded-md relative overflow-hidden group"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {/* Steam-styled loading animation */}
-              {(isLoading || authStatus === AuthStatus.LOADING) ? (
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-unplayed-mint" />
-                  <span>Connecting to Steam...</span>
-                </div>
-              ) : (
-                <>
-                  <SteamIcon className="w-6 h-6" />
-                  <span>Login with Steam</span>
-                  <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-unplayed-mint group-hover:w-full transition-all duration-300"></div>
-                </>
+            <AnimatePresence>
+              {hasError && (
+                <motion.div
+                  key="error-message"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <AuthErrorMessage
+                    errorType={enhancedStatus}
+                    error={hasError ? { code: 'unknown', message: 'Unknown authentication error' } : null}
+                    onRetry={retry}
+                  />
+                </motion.div>
               )}
-            </motion.button>
+            </AnimatePresence>
+            
+            <AnimatePresence>
+              {enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && (
+                <motion.button
+                  onClick={handleSteamLogin}
+                  disabled={isLoading || authStatus === AuthStatus.LOADING}
+                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-[#1b2838] hover:bg-[#2a3f5a] transition-colors rounded-md relative overflow-hidden group"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  key="steam-button"
+                >
+                  {/* Steam-styled loading animation */}
+                  {(isLoading || authStatus === AuthStatus.LOADING) ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="w-5 h-5 animate-spin text-unplayed-mint" />
+                      <span>Connecting to Steam...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <SteamIcon className="w-6 h-6" />
+                      <span>Login with Steam</span>
+                      <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-unplayed-mint group-hover:w-full transition-all duration-300"></div>
+                    </>
+                  )}
+                </motion.button>
+              )}
+            </AnimatePresence>
             
             <div className="text-xs text-gray-500 text-center">
               By logging in, you agree to our{' '}
@@ -192,6 +215,16 @@ const AuthPage = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Success Animation */}
+      <AnimatePresence>
+        {showSuccessAnimation && (
+          <AuthSuccessAnimation 
+            username={profile?.steam_name || user?.user_metadata?.name}
+            onComplete={handleSuccessAnimationComplete}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
