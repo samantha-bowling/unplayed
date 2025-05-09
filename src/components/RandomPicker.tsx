@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, X, Clock, GamepadIcon } from 'lucide-react';
+import { ChevronDown, X, Clock, MousePointer } from 'lucide-react';
 
 // Sample data - in a real app, this would come from the Steam API
 const sampleGames = [
@@ -101,8 +101,8 @@ const RandomPicker = () => {
           onClick={handleSpin}
           disabled={isSpinning}
         >
-          <GamepadIcon className="mr-2 h-4 w-4" />
-          {isSpinning ? 'Spinning...' : 'Roll the Dice.exe'}
+          <MousePointer className="mr-2 h-4 w-4" />
+          {isSpinning ? 'Selecting...' : 'Select Game.exe'}
         </button>
       </div>
       
@@ -150,8 +150,8 @@ const RandomPicker = () => {
           </div>
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-center">
-            <GamepadIcon className="h-12 w-12 text-gray-600 mb-4" />
-            <p className="text-gray-400">Click "Roll the Dice.exe" to find your next game</p>
+            <MousePointer className="h-12 w-12 text-gray-600 mb-4" />
+            <p className="text-gray-400">Click "Select Game.exe" to find your next game</p>
           </div>
         )}
       </div>
@@ -159,7 +159,7 @@ const RandomPicker = () => {
       {/* History section */}
       {spinHistory.length > 0 && (
         <div>
-          <h4 className="text-lg font-medium text-gray-300 mb-3">Recently Rolled</h4>
+          <h4 className="text-lg font-medium text-gray-300 mb-3">Recently Selected</h4>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
             {spinHistory.map((game, index) => (
