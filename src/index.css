@@ -66,8 +66,9 @@
     @apply animate-cursor-blink;
   }
   
+  /* Keeping gradient-text class for backward compatibility, but using solid color */
   .gradient-text {
-    @apply bg-gradient-to-r from-unplayed-mint to-unplayed-pink bg-clip-text text-transparent;
+    @apply text-unplayed-mint;
   }
   
   .btn-primary {

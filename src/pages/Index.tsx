@@ -11,6 +11,7 @@ import ZenModeWrapper from "@/components/ZenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useZenMode } from "@/context/ZenModeContext";
 import SteamLoginButton from "@/components/SteamLoginButton";
+
 const Index = () => {
   const {
     user
@@ -36,7 +37,7 @@ const Index = () => {
         {/* Hero section */}
         <section className="w-full py-8 px-4">
           <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 gradient-text">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
               Your PC games are gathering dust.
             </h1>
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
