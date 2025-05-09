@@ -1,15 +1,11 @@
-
 import { useState } from "react";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import { Link } from "react-router-dom";
-
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
-
-  return (
-    <footer className="w-full p-6 mt-16">
+  return <footer className="w-full p-6 mt-16">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
@@ -17,28 +13,20 @@ const Footer = () => {
               <span className="text-unplayed-mint">unplayed</span>
               <span className="text-unplayed-pink">.wtf</span>
             </Link>
-            <p className="text-gray-400 text-sm mt-1">The backlog tamer for PC gamers</p>
+            <p className="text-gray-400 text-sm mt-1">Your Steam backlog tamer</p>
           </div>
           
           <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
-            <a 
-              href="#" 
-              className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                setPrivacyPolicyOpen(true);
-              }}
-            >
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={e => {
+            e.preventDefault();
+            setPrivacyPolicyOpen(true);
+          }}>
               Privacy Policy
             </a>
-            <a 
-              href="#" 
-              className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                setTermsOfServiceOpen(true);
-              }}
-            >
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={e => {
+            e.preventDefault();
+            setTermsOfServiceOpen(true);
+          }}>
               Terms of Service
             </a>
             <Link to="/about" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
@@ -57,16 +45,8 @@ const Footer = () => {
         </div>
       </div>
 
-      <PrivacyPolicyDialog 
-        open={privacyPolicyOpen} 
-        onOpenChange={setPrivacyPolicyOpen} 
-      />
-      <TermsOfServiceDialog
-        open={termsOfServiceOpen}
-        onOpenChange={setTermsOfServiceOpen}
-      />
-    </footer>
-  );
+      <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />
+      <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />
+    </footer>;
 };
-
 export default Footer;
