@@ -8,7 +8,7 @@ import { useZenMode } from '@/context/ZenModeContext';
 import LibraryPreview from '@/components/LibraryPreview';
 
 const LibraryPage: React.FC = () => {
-  const { isZenMode } = useZenMode();
+  const { isZenMode, componentSettings } = useZenMode();
 
   // In Zen Mode, render only the LibraryPreview component
   if (isZenMode) {

@@ -29,7 +29,10 @@ const ZenModeContext = createContext<ZenModeContextType | undefined>(undefined);
 export const ZenModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isZenMode, setIsZenMode] = useState(false);
   const [focusedComponent, setFocusedComponent] = useState<FocusableComponent>(null);
-  const [componentSettings, setComponentSettings] = useState<ComponentSettings>({});
+  const [componentSettings, setComponentSettings] = useState<ComponentSettings>({
+    library: { viewMode: 'grid' }, // Default value
+    picker: {}
+  });
 
   const toggleZenMode = () => {
     setIsZenMode(prev => !prev);

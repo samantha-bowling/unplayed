@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useZenMode } from '@/context/ZenModeContext';
@@ -64,13 +64,53 @@ interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
 }
 
+// Helper function to generate positions based on grid
+const generateZenPositions = (count: number, isFullScreen: boolean) => {
+  const positions = [];
+  const gridSize = Math.ceil(Math.sqrt(count * 2)); // Create a grid with enough cells
+  const cellWidth = 100 / gridSize;
+  const cellHeight = 100 / gridSize;
+
+  // Create a grid of possible positions
+  const grid = [];
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      grid.push({
+        x: j * cellWidth + (cellWidth * 0.5),
+        y: i * cellHeight + (cellHeight * 0.5),
+      });
+    }
+  }
+  
+  // Shuffle the grid to get random positions
+  const shuffledGrid = [...grid].sort(() => Math.random() - 0.5);
+  
+  // Take the positions we need
+  for (let i = 0; i < count; i++) {
+    if (i < shuffledGrid.length) {
+      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.5 - cellWidth * 0.25);
+      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.5 - cellHeight * 0.25);
+      
+      positions.push({
+        left: `${randX}%`,
+        top: `${randY}%`,
+        delay: i * 1.5, // Stagger the animations
+        duration: 3 + Math.random() * 2, // Random duration between 3-5s
+        fontSize: isFullScreen ? 
+          `${1 + Math.random() * 0.5}rem` : // Larger font in fullscreen: 1-1.5rem
+          `${0.75 + Math.random() * 0.25}rem` // Normal size: 0.75-1rem
+      });
+    }
+  }
+  
+  return positions;
+};
+
 const LibraryPreview = ({
   isDemo = false,
   zenModeFullScreen = false
 }: LibraryPreviewProps) => {
-  const {
-    signInWithSteam
-  } = useAuth();
+  const { signInWithSteam } = useAuth();
   const {
     isZenMode,
     enterZenMode,
@@ -85,6 +125,10 @@ const LibraryPreview = ({
   );
   
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
+  const [zenPositions, setZenPositions] = useState<any[]>([]);
+  
+  // Ref to track if positions have been generated
+  const positionsGeneratedRef = useRef(false);
 
   // Determine if we should show in full screen zen mode
   const isFullScreenMode = zenModeFullScreen && isZenMode;
@@ -96,9 +140,24 @@ const LibraryPreview = ({
     }
   }, [viewMode, focusedComponent, updateComponentSettings]);
   
+  // Generate new positions when switching to zen mode or when full screen changes
+  useEffect(() => {
+    if (viewMode === 'zen' || positionsGeneratedRef.current === false) {
+      const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
+      setZenPositions(newPositions);
+      positionsGeneratedRef.current = true;
+    }
+  }, [viewMode, isFullScreenMode]);
+  
   // When entering full screen, make sure the context has the current view mode
   const handleEnterFullScreen = () => {
     enterZenMode('library', { viewMode });
+    
+    // Regenerate positions for zen mode when entering fullscreen
+    if (viewMode === 'zen') {
+      const newPositions = generateZenPositions(sampleGames.length, true);
+      setZenPositions(newPositions);
+    }
   };
   
   // Handle view mode change
@@ -106,6 +165,12 @@ const LibraryPreview = ({
     setViewMode(newMode);
     if (focusedComponent === 'library') {
       updateComponentSettings('library', { viewMode: newMode });
+    }
+    
+    // Regenerate positions when switching to zen mode
+    if (newMode === 'zen') {
+      const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
+      setZenPositions(newPositions);
     }
   };
 
@@ -158,26 +223,27 @@ const LibraryPreview = ({
           ))}
         </div>
       ) : (
-        // Zen view mode (local to the component, not global zen mode)
-        <div className={`${isFullScreenMode ? 'h-screen' : 'h-64'} overflow-hidden relative`}>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-2xl text-gray-500 italic">Zen Mode</p>
-          </div>
-          
+        // Enhanced Zen view mode
+        <div className={`${isFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
           {sampleGames.map((game, index) => (
             <div
               key={game.id}
-              className="absolute opacity-0 transition-all duration-[4s] animate-fade-in"
+              className="absolute transition-all zen-game-item"
               style={{
-                top: `${Math.random() * 80}%`,
-                left: `${Math.random() * 80}%`,
-                animationDelay: `${index * 2}s`,
-                animationDuration: '8s',
-                animationIterationCount: 'infinite',
-                animationDirection: 'alternate'
+                top: zenPositions[index]?.top || '50%',
+                left: zenPositions[index]?.left || '50%',
+                transform: 'translate(-50%, -50%)',
+                animationDelay: `${zenPositions[index]?.delay || index}s`,
+                zIndex: Math.floor(Math.random() * 10),
+                opacity: 0,
+                animation: `zen-float ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
+                            zen-fade-in 2s ease-out forwards`,
               }}
             >
-              <p className="text-unplayed-mint text-sm opacity-70">{game.title}</p>
+              <p className="text-unplayed-mint whitespace-nowrap text-glow" 
+                 style={{ fontSize: zenPositions[index]?.fontSize || '1rem' }}>
+                {game.title}
+              </p>
             </div>
           ))}
         </div>
