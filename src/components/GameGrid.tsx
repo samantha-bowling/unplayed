@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import GameCard from './GameCard';
 import { LibraryGame } from '@/hooks/use-library-data';
 import { Loader2 } from 'lucide-react';
@@ -10,6 +10,7 @@ interface GameGridProps {
   onMarkAsPlayed: (userGameId: string) => void;
   onToggleHidden: (userGameId: string, hidden: boolean) => void;
   onSaveNote: (userGameId: string, note: string) => void;
+  focusedGameId?: number | null;
 }
 
 const GameGrid: React.FC<GameGridProps> = ({
@@ -17,7 +18,8 @@ const GameGrid: React.FC<GameGridProps> = ({
   isLoading,
   onMarkAsPlayed,
   onToggleHidden,
-  onSaveNote
+  onSaveNote,
+  focusedGameId = null
 }) => {
   if (isLoading) {
     return (
@@ -45,20 +47,25 @@ const GameGrid: React.FC<GameGridProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {games.map((game) => (
-        <GameCard
-          key={game.userGame.id}
-          id={game.userGame.id}
-          gameId={game.id}
-          title={game.name}
-          imageUrl={game.image_url || game.header_image}
-          dustScore={game.userGame.dust_score}
-          playtimeMinutes={game.userGame.playtime_minutes}
-          isHidden={game.userGame.hidden}
-          notes={game.userGame.notes}
-          onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
-          onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
-          onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
-        />
+        <div 
+          key={game.userGame.id} 
+          id={`game-${game.id}`}
+          className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
+        >
+          <GameCard
+            id={game.userGame.id}
+            gameId={game.id}
+            title={game.name}
+            imageUrl={game.image_url || game.header_image}
+            dustScore={game.userGame.dust_score}
+            playtimeMinutes={game.userGame.playtime_minutes}
+            isHidden={game.userGame.hidden}
+            notes={game.userGame.notes}
+            onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
+            onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
+            onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
+          />
+        </div>
       ))}
     </div>
   );

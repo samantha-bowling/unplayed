@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
@@ -24,6 +24,10 @@ const LibraryPage: React.FC = () => {
   const { toast } = useToast();
   const { data: unplayedData } = useUnplayedData();
   
+  // Store reference to focused game for scrolling
+  const [focusedGameId, setFocusedGameId] = useState<number | null>(null);
+  const gameGridRef = useRef<HTMLDivElement>(null);
+  
   // Get library data and actions from our hook
   const { 
     games, 
@@ -33,13 +37,17 @@ const LibraryPage: React.FC = () => {
     updateSearchFilter,
     toggleHideIgnored,
     toggleOnlyUnplayed,
+    updateSelectedGenre,
     resetFilters,
     sortBy,
     sortDirection,
     updateSort,
+    viewMode,
+    updateViewMode,
     markAsPlayed,
     toggleGameHidden,
-    saveGameNote
+    saveGameNote,
+    findGameById
   } = useLibraryData();
 
   // Handle mark as played action
@@ -112,13 +120,53 @@ const LibraryPage: React.FC = () => {
       }
     );
   };
+  
+  // Handle genre selection from the pie chart
+  const handleGenreSelect = (genre: string) => {
+    updateSelectedGenre(genre);
+  };
+  
+  // Handle jumping to a game in the library
+  const handleJumpToGame = (gameId: number) => {
+    setFocusedGameId(gameId);
+    
+    // Scroll to game grid
+    if (gameGridRef.current) {
+      gameGridRef.current.scrollIntoView({ behavior: 'smooth' });
+      
+      // Set a timeout to highlight the game after scrolling
+      setTimeout(() => {
+        const gameElement = document.getElementById(`game-${gameId}`);
+        if (gameElement) {
+          gameElement.classList.add('highlight-game');
+          setTimeout(() => {
+            gameElement.classList.remove('highlight-game');
+          }, 3000);
+        }
+      }, 500);
+    }
+  };
+
+  // Reset focused game after a delay
+  useEffect(() => {
+    if (focusedGameId) {
+      const timer = setTimeout(() => {
+        setFocusedGameId(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [focusedGameId]);
 
   // In Full Screen Mode, render only the LibraryPreview component
   if (isFullScreenMode) {
     return (
       <FullScreenModeWrapper>
         <div className="min-h-screen flex items-center justify-center">
-          <LibraryPreview zenModeFullScreen={true} />
+          <LibraryPreview 
+            zenModeFullScreen={true}
+            viewMode={viewMode}
+            onViewModeChange={updateViewMode}
+          />
           
           {/* Add Full Screen Mode toggle in the corner */}
           <div className="absolute top-4 right-4 z-10">
@@ -176,8 +224,14 @@ const LibraryPage: React.FC = () => {
             
             {/* Two-column layout for Genres and Shelf Life on desktop, stacked on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <GenreHoarding onGenreSelect={(genre) => console.log(`Selected genre: ${genre}`)} />
-              <ShelfLife onJumpToGame={(gameId) => console.log(`Jump to game: ${gameId}`)} />
+              <GenreHoarding 
+                onGenreSelect={handleGenreSelect} 
+                activeGenre={filters.selectedGenre} 
+              />
+              <ShelfLife 
+                onJumpToGame={handleJumpToGame} 
+                onMarkAsPlayed={handleMarkAsPlayed} 
+              />
             </div>
             
             {/* Library filters */}
@@ -188,6 +242,8 @@ const LibraryPage: React.FC = () => {
               onHideIgnoredChange={toggleHideIgnored}
               onlyUnplayed={filters.onlyUnplayed}
               onOnlyUnplayedChange={toggleOnlyUnplayed}
+              selectedGenre={filters.selectedGenre}
+              onGenreChange={updateSelectedGenre}
               sortBy={sortBy}
               sortDirection={sortDirection}
               onSortChange={updateSort}
@@ -199,14 +255,48 @@ const LibraryPage: React.FC = () => {
               Explore Your Unplayed Realms
             </h2>
             
-            {/* Game grid */}
-            <GameGrid 
-              games={games}
-              isLoading={isLoading}
-              onMarkAsPlayed={handleMarkAsPlayed}
-              onToggleHidden={handleToggleHidden}
-              onSaveNote={handleSaveNote}
-            />
+            {/* Library view toggle */}
+            <div className="flex justify-end mb-4">
+              <div className="flex space-x-2">
+                <Button
+                  variant={viewMode === 'grid' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => updateViewMode('grid')}
+                  className={viewMode === 'grid' ? "bg-unplayed-mint hover:bg-unplayed-mint/90" : ""}
+                >
+                  Grid View
+                </Button>
+                <Button
+                  variant={viewMode === 'zen' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => updateViewMode('zen')}
+                  className={viewMode === 'zen' ? "bg-unplayed-mint hover:bg-unplayed-mint/90" : ""}
+                >
+                  Zen View
+                </Button>
+              </div>
+            </div>
+            
+            {/* Game display - either grid or zen mode */}
+            <div ref={gameGridRef}>
+              {viewMode === 'grid' ? (
+                <GameGrid 
+                  games={games}
+                  isLoading={isLoading}
+                  onMarkAsPlayed={handleMarkAsPlayed}
+                  onToggleHidden={handleToggleHidden}
+                  onSaveNote={handleSaveNote}
+                  focusedGameId={focusedGameId}
+                />
+              ) : (
+                <LibraryPreview
+                  viewMode="zen"
+                  onViewModeChange={updateViewMode}
+                  games={games}
+                  isLoading={isLoading}
+                />
+              )}
+            </div>
 
             {/* Loading state */}
             {isLoading && (

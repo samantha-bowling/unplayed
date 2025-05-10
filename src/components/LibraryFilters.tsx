@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, X, ChevronDown, Check } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SortOption } from '@/hooks/use-library-data';
+import { Badge } from '@/components/ui/badge';
 
 interface LibraryFiltersProps {
   searchQuery: string;
@@ -19,6 +20,8 @@ interface LibraryFiltersProps {
   onHideIgnoredChange: () => void;
   onlyUnplayed: boolean;
   onOnlyUnplayedChange: () => void;
+  selectedGenre?: string;
+  onGenreChange?: (genre: string) => void;
   sortBy: SortOption;
   sortDirection: 'asc' | 'desc';
   onSortChange: (option: SortOption) => void;
@@ -33,6 +36,8 @@ const SortOptions: { label: string; value: SortOption }[] = [
   { label: 'Last Played', value: 'last_played_date' },
 ];
 
+const STORAGE_KEY = "unplayed-library-preferences";
+
 const LibraryFilters: React.FC<LibraryFiltersProps> = ({
   searchQuery,
   onSearchChange,
@@ -40,6 +45,8 @@ const LibraryFilters: React.FC<LibraryFiltersProps> = ({
   onHideIgnoredChange,
   onlyUnplayed,
   onOnlyUnplayedChange,
+  selectedGenre,
+  onGenreChange,
   sortBy,
   sortDirection,
   onSortChange,
@@ -49,6 +56,40 @@ const LibraryFilters: React.FC<LibraryFiltersProps> = ({
   
   // Get the label for the current sort option
   const currentSortLabel = SortOptions.find(option => option.value === sortBy)?.label || 'Sort By';
+
+  // Load preferences from localStorage on component mount
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem(STORAGE_KEY);
+    if (savedPreferences) {
+      try {
+        const { 
+          sortBy: savedSortBy, 
+          sortDirection: savedSortDirection,
+          hideIgnored: savedHideIgnored,
+          onlyUnplayed: savedOnlyUnplayed
+        } = JSON.parse(savedPreferences);
+        
+        // Apply saved preferences if they exist
+        if (savedSortBy) onSortChange(savedSortBy);
+        // We don't need to set the direction separately as onSortChange handles that
+        if (savedHideIgnored !== undefined && savedHideIgnored !== hideIgnored) onHideIgnoredChange();
+        if (savedOnlyUnplayed !== undefined && savedOnlyUnplayed !== onlyUnplayed) onOnlyUnplayedChange();
+      } catch (e) {
+        console.error("Error loading library preferences", e);
+      }
+    }
+  }, []);
+
+  // Save preferences to localStorage whenever they change
+  useEffect(() => {
+    const preferences = {
+      sortBy,
+      sortDirection,
+      hideIgnored,
+      onlyUnplayed
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+  }, [sortBy, sortDirection, hideIgnored, onlyUnplayed]);
 
   return (
     <div className="w-full space-y-4 mb-6">
@@ -110,16 +151,51 @@ const LibraryFilters: React.FC<LibraryFiltersProps> = ({
         </Button>
 
         {/* Reset filters button - only show if filters are applied */}
-        {(searchQuery || hideIgnored || onlyUnplayed) && (
+        {(searchQuery || hideIgnored || onlyUnplayed || selectedGenre) && (
           <Button 
             variant="ghost" 
-            onClick={onResetFilters}
+            onClick={() => {
+              onResetFilters();
+              if (onGenreChange) onGenreChange('');
+            }}
             className="text-unplayed-red hover:text-unplayed-red/70"
           >
-            <X className="mr-1 h-4 w-4" /> Clear
+            <X className="mr-1 h-4 w-4" /> Clear All
           </Button>
         )}
       </div>
+
+      {/* Active filters display */}
+      {(selectedGenre || hideIgnored || onlyUnplayed) && (
+        <div className="flex flex-wrap gap-2">
+          {selectedGenre && (
+            <Badge 
+              className="bg-unplayed-amber hover:bg-unplayed-amber/80 text-black"
+              onClick={() => onGenreChange?.('')}
+            >
+              Genre: {selectedGenre} <X size={12} className="ml-1" />
+            </Badge>
+          )}
+          
+          {hideIgnored && (
+            <Badge 
+              className="bg-unplayed-mint/80 hover:bg-unplayed-mint/60"
+              onClick={onHideIgnoredChange}
+            >
+              Hiding Ignored Games <X size={12} className="ml-1" />
+            </Badge>
+          )}
+          
+          {onlyUnplayed && (
+            <Badge 
+              className="bg-unplayed-mint/80 hover:bg-unplayed-mint/60"
+              onClick={onOnlyUnplayedChange}
+            >
+              Unplayed Only <X size={12} className="ml-1" />
+            </Badge>
+          )}
+        </div>
+      )}
 
       {/* Expanded filters section */}
       {filtersVisible && (

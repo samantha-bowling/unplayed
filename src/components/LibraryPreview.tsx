@@ -5,11 +5,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import { Maximize, LayoutGrid, List } from 'lucide-react';
+import { Maximize, LayoutGrid, List, Loader2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { LibraryGame } from '@/hooks/use-library-data';
 
 interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
+  viewMode?: 'grid' | 'zen';
+  onViewModeChange?: (mode: 'grid' | 'zen') => void;
+  games?: LibraryGame[];
+  isLoading?: boolean;
 }
 
 // Helper function to generate positions based on grid
@@ -56,7 +61,11 @@ const generateZenPositions = (count: number, isFullScreen: boolean) => {
 
 const LibraryPreview = ({
   isDemo = false,
-  zenModeFullScreen = false
+  zenModeFullScreen = false,
+  viewMode: propViewMode,
+  onViewModeChange,
+  games: propGames,
+  isLoading = false
 }: LibraryPreviewProps) => {
   const {
     signInWithSteam
@@ -72,8 +81,10 @@ const LibraryPreview = ({
     updateComponentSettings
   } = useFullScreenMode();
 
-  // Initialize viewMode from FullScreenMode context if available, otherwise default to 'grid'
-  const [viewMode, setViewMode] = useState<'grid' | 'zen'>(focusedComponent === 'library' && componentSettings.library?.viewMode || 'grid');
+  // Initialize viewMode from props if available, otherwise from FullScreenMode context, or default to 'grid'
+  const [viewMode, setViewMode] = useState<'grid' | 'zen'>(
+    propViewMode || (focusedComponent === 'library' && componentSettings.library?.viewMode) || 'grid'
+  );
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const [zenPositions, setZenPositions] = useState<any[]>([]);
 
@@ -83,8 +94,11 @@ const LibraryPreview = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
 
-  // Get games from unplayedData, but we'll take 10 games for demo display
-  const sampleGames = unplayedData.library.slice(0, 10);
+  // Use games from props if available, otherwise use unplayedData
+  const displayGames = propGames || unplayedData.library;
+  
+  // Get sample games (up to 10 for demo display, or the actual games passed via props)
+  const sampleGames = propGames ? displayGames.slice(0, Math.min(displayGames.length, 30)) : displayGames.slice(0, 10);
 
   // Update the context whenever viewMode changes
   useEffect(() => {
@@ -93,7 +107,12 @@ const LibraryPreview = ({
         viewMode
       });
     }
-  }, [viewMode, focusedComponent, updateComponentSettings]);
+    
+    // Also update the parent component if onViewModeChange is provided
+    if (onViewModeChange) {
+      onViewModeChange(viewMode);
+    }
+  }, [viewMode, focusedComponent, updateComponentSettings, onViewModeChange]);
 
   // Generate new positions when switching to zen mode or when full screen changes
   useEffect(() => {
@@ -131,7 +150,22 @@ const LibraryPreview = ({
       const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
       setZenPositions(newPositions);
     }
+    
+    // Update the parent component if onViewModeChange is provided
+    if (onViewModeChange) {
+      onViewModeChange(newMode);
+    }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-unplayed-mint mb-4" />
+        <p className="text-gray-400">Loading your game collection...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`${showFullScreenMode ? 'library-fullscreen' : 'terminal-container w-full'} ${isDemo ? 'relative' : ''}`}>
@@ -173,64 +207,77 @@ const LibraryPreview = ({
       {/* Grid view mode */}
       {viewMode === 'grid' ? (
         <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4 ${showFullScreenMode ? 'p-8 pt-0' : ''}`}>
-          {sampleGames.map(game => (
-            <div 
-              key={game.id}
-              className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${showFullScreenMode ? 'library-game-fullscreen' : ''}`}
-              onMouseEnter={() => setHoveredGame(game.id)}
-              onMouseLeave={() => setHoveredGame(null)}
-            >
-              <img 
-                src={game.image} 
-                alt={game.title} 
-                className="w-full h-auto object-cover" 
-              />
-              
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === game.id || showFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
-                <p className="text-white text-xs font-medium truncate">{game.title}</p>
-                <p className="text-unplayed-mint text-xs">Never played</p>
-              </div>
-              
+          {sampleGames.map(game => {
+            // Handle both LibraryGame and GameListItem types
+            const gameId = 'id' in game ? game.id : game.gameId;
+            const title = 'name' in game ? game.name : game.title;
+            const image = 'image_url' in game ? (game.image_url || game.header_image) : game.image;
+            
+            return (
               <div 
-                className="absolute top-1 right-1 bg-unplayed-red/80 rounded-full w-3 h-3" 
-                title="Unplayed"
-              ></div>
-            </div>
-          ))}
+                key={gameId}
+                className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${showFullScreenMode ? 'library-game-fullscreen' : ''}`}
+                onMouseEnter={() => setHoveredGame(gameId)}
+                onMouseLeave={() => setHoveredGame(null)}
+              >
+                <img 
+                  src={image || '/placeholder.svg'} 
+                  alt={title} 
+                  className="w-full h-auto object-cover" 
+                />
+                
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === gameId || showFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
+                  <p className="text-white text-xs font-medium truncate">{title}</p>
+                  <p className="text-unplayed-mint text-xs">Never played</p>
+                </div>
+                
+                <div 
+                  className="absolute top-1 right-1 bg-unplayed-red/80 rounded-full w-3 h-3" 
+                  title="Unplayed"
+                ></div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         // Enhanced Zen view mode
         <div className={`${showFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
-          {sampleGames.map((game, index) => (
-            <div 
-              key={game.id}
-              className="absolute transition-all zen-game-item"
-              style={{
-                top: zenPositions[index]?.top || '50%',
-                left: zenPositions[index]?.left || '50%',
-                transform: 'translate(-50%, -50%)',
-                animationDelay: `${zenPositions[index]?.delay || index}s`,
-                zIndex: Math.floor(Math.random() * 10),
-                opacity: 0,
-                animation: `zen-float ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
-                            zen-fade-in 2s ease-out forwards`
-              }}
-            >
-              <p 
-                className="text-unplayed-mint whitespace-nowrap text-glow"
+          {sampleGames.map((game, index) => {
+            // Handle both LibraryGame and GameListItem types
+            const gameId = 'id' in game ? game.id : game.gameId;
+            const title = 'name' in game ? game.name : game.title;
+            
+            return (
+              <div 
+                key={gameId}
+                className="absolute transition-all zen-game-item"
                 style={{
-                  fontSize: zenPositions[index]?.fontSize || '1rem'
+                  top: zenPositions[index]?.top || '50%',
+                  left: zenPositions[index]?.left || '50%',
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: `${zenPositions[index]?.delay || index}s`,
+                  zIndex: Math.floor(Math.random() * 10),
+                  opacity: 0,
+                  animation: `zen-float ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
+                              zen-fade-in 2s ease-out forwards`
                 }}
               >
-                {game.title}
-              </p>
-            </div>
-          ))}
+                <p 
+                  className="text-unplayed-mint whitespace-nowrap text-glow"
+                  style={{
+                    fontSize: zenPositions[index]?.fontSize || '1rem'
+                  }}
+                >
+                  {title}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
       
-      {/* Only show these controls when not in full screen mode */}
-      {!showFullScreenMode && (
+      {/* Only show these controls when not in full screen mode and when not using as a view mode in library page */}
+      {!showFullScreenMode && !propGames && (
         <div className="text-center mt-6 flex flex-col items-center">
           <p className="text-gray-400">
             Showing {sampleGames.length} of {unplayedData.totalGames} unplayed games

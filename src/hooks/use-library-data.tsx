@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -39,24 +39,57 @@ type FilterOptions = {
   search: string;
   hideIgnored: boolean;
   onlyUnplayed: boolean;
+  selectedGenre: string;
   genres: string[];
   categories: string[];
 };
+
+// Storage key for persisting view preferences
+const STORAGE_KEY = "unplayed-library-view-preferences";
 
 export function useLibraryData() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
+  // Load persisted sort settings from localStorage
+  const loadPersistedSettings = () => {
+    try {
+      const savedPreferences = localStorage.getItem(STORAGE_KEY);
+      if (savedPreferences) {
+        const parsed = JSON.parse(savedPreferences);
+        return {
+          sortBy: parsed.sortBy || 'name',
+          sortDirection: parsed.sortDirection || 'asc',
+          viewMode: parsed.viewMode || 'grid'
+        };
+      }
+    } catch (e) {
+      console.error("Error loading view preferences", e);
+    }
+    
+    return { sortBy: 'name' as SortOption, sortDirection: 'asc' as SortDirection, viewMode: 'grid' as 'grid' | 'zen' };
+  };
+  
+  const persistedSettings = loadPersistedSettings();
+  
   // State for filtering and sorting
-  const [sortBy, setSortBy] = useState<SortOption>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortBy, setSortBy] = useState<SortOption>(persistedSettings.sortBy);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(persistedSettings.sortDirection);
+  const [viewMode, setViewMode] = useState<'grid' | 'zen'>(persistedSettings.viewMode);
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     hideIgnored: false,
     onlyUnplayed: false,
+    selectedGenre: '',
     genres: [],
     categories: [],
   });
+
+  // Save sort and view settings to localStorage when they change
+  useEffect(() => {
+    const preferences = { sortBy, sortDirection, viewMode };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+  }, [sortBy, sortDirection, viewMode]);
 
   // Fetch all user games with joined game data
   const { data, isLoading, error } = useQuery({
@@ -134,7 +167,14 @@ export function useLibraryData() {
       );
     }
 
-    // Filter by genres
+    // Filter by selected genre
+    if (filters.selectedGenre) {
+      result = result.filter(game => 
+        game.genres && game.genres.includes(filters.selectedGenre)
+      );
+    }
+
+    // Filter by genres list
     if (filters.genres.length > 0) {
       result = result.filter(game => 
         game.genres && filters.genres.some(genre => game.genres?.includes(genre))
@@ -254,6 +294,10 @@ export function useLibraryData() {
   const toggleOnlyUnplayed = useCallback(() => {
     setFilters(prev => ({ ...prev, onlyUnplayed: !prev.onlyUnplayed }));
   }, []);
+  
+  const updateSelectedGenre = useCallback((genre: string) => {
+    setFilters(prev => ({ ...prev, selectedGenre: genre }));
+  }, []);
 
   const updateGenreFilters = useCallback((genres: string[]) => {
     setFilters(prev => ({ ...prev, genres }));
@@ -262,12 +306,17 @@ export function useLibraryData() {
   const updateCategoryFilters = useCallback((categories: string[]) => {
     setFilters(prev => ({ ...prev, categories }));
   }, []);
+  
+  const updateViewMode = useCallback((mode: 'grid' | 'zen') => {
+    setViewMode(mode);
+  }, []);
 
   const resetFilters = useCallback(() => {
     setFilters({
       search: '',
       hideIgnored: false,
       onlyUnplayed: false,
+      selectedGenre: '',
       genres: [],
       categories: [],
     });
@@ -284,6 +333,11 @@ export function useLibraryData() {
     }
   }, [sortBy]);
 
+  // Find a game by id (for jumping to/highlighting games)
+  const findGameById = useCallback((gameId: number) => {
+    return filteredAndSortedGames.find(game => game.id === gameId);
+  }, [filteredAndSortedGames]);
+
   return {
     games: filteredAndSortedGames,
     isLoading,
@@ -293,6 +347,7 @@ export function useLibraryData() {
     updateSearchFilter,
     toggleHideIgnored,
     toggleOnlyUnplayed,
+    updateSelectedGenre,
     updateGenreFilters,
     updateCategoryFilters,
     resetFilters,
@@ -300,10 +355,14 @@ export function useLibraryData() {
     sortBy,
     sortDirection,
     updateSort,
+    // View Mode
+    viewMode,
+    updateViewMode,
     // Actions
     markAsPlayed,
     toggleGameHidden,
     saveGameNote,
+    findGameById,
   };
 }
 

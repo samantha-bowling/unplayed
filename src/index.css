@@ -106,7 +106,7 @@
   }
 
   .text-glow {
-    text-shadow: 0 0 10px rgba(163, 247, 191, 0.5);
+    text-shadow: 0 0 8px rgba(163, 247, 191, 0.6);
   }
   
   /* Add header spacing utility class */
@@ -200,13 +200,17 @@ body.fullscreen-mode {
     transform: translate(-50%, -50%);
   }
   100% {
-    transform: translate(-50%, -50%) translate(20px, 15px);
+    transform: translate(-50%, -54%);
   }
 }
 
 @keyframes zen-fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 0.8; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0.9;
+  }
 }
 
 .animate-fade-in {
@@ -244,6 +248,23 @@ body.fullscreen-mode {
   opacity: 1 !important;
   z-index: 50 !important;
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+/* Game highlighting styles */
+.highlight-game {
+  animation: highlight-pulse 1.5s ease-in-out 3;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(163, 247, 191, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(163, 247, 191, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(163, 247, 191, 0);
+  }
 }
 
 @layer utilities {

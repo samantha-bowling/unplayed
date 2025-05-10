@@ -6,11 +6,13 @@ import useUnplayedData from '@/hooks/use-unplayed-data';
 
 interface GenreHoardingProps extends WithDemoProps {
   onGenreSelect?: (genre: string) => void;
+  activeGenre?: string | null;
 }
 
 const GenreHoarding = ({
   isDemo = false,
-  onGenreSelect
+  onGenreSelect,
+  activeGenre = null
 }: GenreHoardingProps) => {
   const {
     signInWithSteam
@@ -62,7 +64,9 @@ const GenreHoarding = ({
               {genreData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={entry.color}
+                  fill={activeGenre === entry.name ? '#FF6B6B' : entry.color}
+                  stroke={activeGenre === entry.name ? '#FFFFFF' : 'none'}
+                  strokeWidth={activeGenre === entry.name ? 2 : 0}
                   className="hover:opacity-80 transition-opacity"
                 />
               ))}
@@ -96,12 +100,33 @@ const GenreHoarding = ({
                 cursor: 'pointer'
               }}
               onClick={(data) => handleGenreClick(data)}
+              formatter={(value, entry: any) => {
+                const isActive = value === activeGenre;
+                return (
+                  <span style={{ color: isActive ? '#FF6B6B' : 'white', fontWeight: isActive ? 'bold' : 'normal' }}>
+                    {value}
+                  </span>
+                );
+              }}
             />
           </PieChart>
         </ResponsiveContainer>
       </div>
       
-      {mostHoardedGenre.name !== 'None' && (
+      {activeGenre ? (
+        <div className="mt-4 text-center p-2 bg-black/30 rounded-lg border border-unplayed-mint/20">
+          <p className="text-sm">
+            Filtering by <span className="text-unplayed-amber font-medium">{activeGenre}</span>
+            <button 
+              onClick={() => onGenreSelect?.('')} 
+              className="ml-2 text-unplayed-red hover:underline"
+              aria-label="Clear filter"
+            >
+              Clear filter
+            </button>
+          </p>
+        </div>
+      ) : mostHoardedGenre.name !== 'None' && (
         <div className="mt-4 text-center p-2 bg-black/30 rounded-lg border border-unplayed-mint/20">
           <p className="text-sm">
             You hoard <span className="text-unplayed-amber font-medium">{mostHoardedGenre.name}</span> games
