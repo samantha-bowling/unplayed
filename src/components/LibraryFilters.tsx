@@ -1,17 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, X, ChevronDown, Check } from 'lucide-react';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import React from 'react';
+import { Search, X, SlidersHorizontal, ArrowDownAZ, ArrowUpZA, EyeOff, Clock, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SortOption } from '@/hooks/use-library-data';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { SortOption } from '@/hooks/use-library-data';
 
 interface LibraryFiltersProps {
   searchQuery: string;
@@ -20,25 +14,15 @@ interface LibraryFiltersProps {
   onHideIgnoredChange: () => void;
   onlyUnplayed: boolean;
   onOnlyUnplayedChange: () => void;
-  selectedGenre?: string;
-  onGenreChange?: (genre: string) => void;
+  selectedGenre: string;
+  onGenreChange: (genre: string) => void;
   sortBy: SortOption;
   sortDirection: 'asc' | 'desc';
   onSortChange: (option: SortOption) => void;
   onResetFilters: () => void;
 }
 
-const SortOptions: { label: string; value: SortOption }[] = [
-  { label: 'Game Name', value: 'name' },
-  { label: 'Dust Score', value: 'dust_score' },
-  { label: 'Date Acquired', value: 'acquisition_date' },
-  { label: 'Playtime', value: 'playtime_minutes' },
-  { label: 'Last Played', value: 'last_played_date' },
-];
-
-const STORAGE_KEY = "unplayed-library-preferences";
-
-const LibraryFilters: React.FC<LibraryFiltersProps> = ({
+const LibraryFilters = ({
   searchQuery,
   onSearchChange,
   hideIgnored,
@@ -50,177 +34,151 @@ const LibraryFilters: React.FC<LibraryFiltersProps> = ({
   sortBy,
   sortDirection,
   onSortChange,
-  onResetFilters
-}) => {
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  
-  // Get the label for the current sort option
-  const currentSortLabel = SortOptions.find(option => option.value === sortBy)?.label || 'Sort By';
+  onResetFilters,
+}: LibraryFiltersProps) => {
+  // Count active filters
+  const activeFilterCount = (hideIgnored ? 1 : 0) + 
+                           (onlyUnplayed ? 1 : 0) + 
+                           (selectedGenre ? 1 : 0);
 
-  // Load preferences from localStorage on component mount
-  useEffect(() => {
-    const savedPreferences = localStorage.getItem(STORAGE_KEY);
-    if (savedPreferences) {
-      try {
-        const { 
-          sortBy: savedSortBy, 
-          sortDirection: savedSortDirection,
-          hideIgnored: savedHideIgnored,
-          onlyUnplayed: savedOnlyUnplayed
-        } = JSON.parse(savedPreferences);
-        
-        // Apply saved preferences if they exist
-        if (savedSortBy) onSortChange(savedSortBy);
-        // We don't need to set the direction separately as onSortChange handles that
-        if (savedHideIgnored !== undefined && savedHideIgnored !== hideIgnored) onHideIgnoredChange();
-        if (savedOnlyUnplayed !== undefined && savedOnlyUnplayed !== onlyUnplayed) onOnlyUnplayedChange();
-      } catch (e) {
-        console.error("Error loading library preferences", e);
-      }
-    }
-  }, []);
-
-  // Save preferences to localStorage whenever they change
-  useEffect(() => {
-    const preferences = {
-      sortBy,
-      sortDirection,
-      hideIgnored,
-      onlyUnplayed
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-  }, [sortBy, sortDirection, hideIgnored, onlyUnplayed]);
+  const sortOptions = [
+    { id: 'name', label: 'Name', icon: sortBy === 'name' && sortDirection === 'asc' ? <ArrowDownAZ size={16} /> : <ArrowUpZA size={16} /> },
+    { id: 'dust_score', label: 'Dust Score', icon: <Archive size={16} /> },
+    { id: 'acquisition_date', label: 'Date Added', icon: <Clock size={16} /> },
+    { id: 'playtime_minutes', label: 'Playtime', icon: <Clock size={16} /> },
+  ];
 
   return (
-    <div className="w-full space-y-4 mb-6">
-      {/* Search and main filters bar */}
-      <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
+    <div className="mb-6 bg-black/30 border border-gray-800 rounded-lg p-4 animate-fade-in">
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Search input */}
         <div className="relative flex-grow">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
           <Input
-            placeholder="Search your library..."
+            type="text"
+            placeholder="Search your game library..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 bg-background/50 border-border/50 focus-visible:border-unplayed-mint"
+            className="pl-10 bg-black/30 border-gray-700 focus:border-unplayed-mint focus:ring-1 focus:ring-unplayed-mint transition-all"
           />
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           {searchQuery && (
-            <button 
+            <button
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors"
               onClick={() => onSearchChange('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
             >
-              <X size={16} />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        {/* Sort dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="min-w-32 justify-between">
-              <span>{currentSortLabel}</span> 
-              <span className="ml-2 opacity-70">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-              <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuGroup>
-              {SortOptions.map((option) => (
-                <DropdownMenuItem 
-                  key={option.value} 
-                  onClick={() => onSortChange(option.value)}
-                  className="flex items-center justify-between"
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={hideIgnored ? "default" : "outline"}
+                  size="sm"
+                  onClick={onHideIgnoredChange}
+                  className={hideIgnored ? "bg-unplayed-mint hover:bg-unplayed-mint/90 transition-colors" : ""}
                 >
-                  {option.label}
-                  {option.value === sortBy && (
-                    <Check className="h-4 w-4 text-unplayed-mint" />
-                  )}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                  <EyeOff className="h-4 w-4 mr-1" />
+                  Hide Ignored
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Hide games you've marked as ignored</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-        {/* Filters toggle */}
-        <Button 
-          variant="outline"
-          onClick={() => setFiltersVisible(!filtersVisible)}
-          className={filtersVisible ? 'bg-unplayed-mint/20 border-unplayed-mint' : ''}
-        >
-          <SlidersHorizontal className="mr-2 h-4 w-4" /> 
-          Filters
-        </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={onlyUnplayed ? "default" : "outline"}
+                  size="sm"
+                  onClick={onOnlyUnplayedChange}
+                  className={onlyUnplayed ? "bg-unplayed-mint hover:bg-unplayed-mint/90 transition-colors" : ""}
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Only Unplayed
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Show only games with 0 minutes played</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-        {/* Reset filters button - only show if filters are applied */}
-        {(searchQuery || hideIgnored || onlyUnplayed || selectedGenre) && (
-          <Button 
-            variant="ghost" 
-            onClick={() => {
-              onResetFilters();
-              if (onGenreChange) onGenreChange('');
-            }}
-            className="text-unplayed-red hover:text-unplayed-red/70"
-          >
-            <X className="mr-1 h-4 w-4" /> Clear All
-          </Button>
-        )}
+          {/* Sort options */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="group">
+                  <SlidersHorizontal className="h-4 w-4 mr-1 group-hover:text-unplayed-mint transition-colors" />
+                  Sort
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="flex flex-col p-1">
+                <div className="p-1 font-medium text-sm">Sort library by:</div>
+                <div className="flex flex-col w-full">
+                  {sortOptions.map((option) => (
+                    <Button
+                      key={option.id}
+                      variant="ghost"
+                      size="sm"
+                      className={`justify-start ${sortBy === option.id ? 'text-unplayed-mint' : ''}`}
+                      onClick={() => onSortChange(option.id as SortOption)}
+                    >
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
+                      {sortBy === option.id && (
+                        <span className="ml-auto text-xs">
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Reset filters button */}
+          {activeFilterCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onResetFilters}
+              className="text-gray-400 hover:text-white"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Reset {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Active filters display */}
-      {(selectedGenre || hideIgnored || onlyUnplayed) && (
-        <div className="flex flex-wrap gap-2">
+      {(selectedGenre) && (
+        <div className="mt-3 flex flex-wrap gap-2 items-center">
+          <span className="text-sm text-gray-400">Active filters:</span>
+          
           {selectedGenre && (
             <Badge 
-              className="bg-unplayed-amber hover:bg-unplayed-amber/80 text-black"
-              onClick={() => onGenreChange?.('')}
+              variant="outline"
+              className="bg-unplayed-mint/10 border-unplayed-mint/30 text-unplayed-mint flex items-center gap-1"
             >
-              Genre: {selectedGenre} <X size={12} className="ml-1" />
+              Genre: {selectedGenre}
+              <button onClick={() => onGenreChange('')} className="ml-1 hover:text-white">
+                <X size={14} />
+              </button>
             </Badge>
           )}
-          
-          {hideIgnored && (
-            <Badge 
-              className="bg-unplayed-mint/80 hover:bg-unplayed-mint/60"
-              onClick={onHideIgnoredChange}
-            >
-              Hiding Ignored Games <X size={12} className="ml-1" />
-            </Badge>
-          )}
-          
-          {onlyUnplayed && (
-            <Badge 
-              className="bg-unplayed-mint/80 hover:bg-unplayed-mint/60"
-              onClick={onOnlyUnplayedChange}
-            >
-              Unplayed Only <X size={12} className="ml-1" />
-            </Badge>
-          )}
-        </div>
-      )}
-
-      {/* Expanded filters section */}
-      {filtersVisible && (
-        <div className="p-4 border rounded-lg bg-background/50 animate-in fade-in">
-          <h3 className="text-sm font-medium mb-3">Filter Options</h3>
-          
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={hideIgnored ? "default" : "outline"}
-              size="sm"
-              onClick={onHideIgnoredChange}
-              className={hideIgnored ? "bg-unplayed-mint hover:bg-unplayed-mint/90" : ""}
-            >
-              {hideIgnored ? "Hiding Ignored Games" : "Hide Ignored Games"}
-            </Button>
-            
-            <Button
-              variant={onlyUnplayed ? "default" : "outline"}
-              size="sm"
-              onClick={onOnlyUnplayedChange}
-              className={onlyUnplayed ? "bg-unplayed-mint hover:bg-unplayed-mint/90" : ""}
-            >
-              {onlyUnplayed ? "Showing Unplayed Only" : "Show Unplayed Only"}
-            </Button>
-          </div>
         </div>
       )}
     </div>

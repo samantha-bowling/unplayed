@@ -17,7 +17,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import FullScreenModeToggle from '@/components/FullScreenModeToggle';
 import { Link } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock, Archive, Info, Sparkles } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const LibraryPage: React.FC = () => {
   const { isFullScreenMode, componentSettings } = useFullScreenMode();
@@ -49,6 +55,18 @@ const LibraryPage: React.FC = () => {
     saveGameNote,
     findGameById
   } = useLibraryData();
+
+  // Get motivational message based on library size
+  const getMotivationalMessage = () => {
+    const gameCount = games.length;
+    const unplayedCount = games.filter(g => !g.userGame.playtime_minutes || g.userGame.playtime_minutes === 0).length;
+    
+    if (unplayedCount === 0) return "Impressive! You've played all your games. Time to add more?";
+    if (unplayedCount <= 5) return "You're so close to tackling your entire backlog. Keep it up!";
+    if (unplayedCount <= 20) return "Your backlog is manageable. Pick something from the Shelf Life section!";
+    if (unplayedCount <= 50) return "You've got quite the collection. Try the Random Picker to decide what's next!";
+    return "That's an epic backlog! Let's organize and conquer it one game at a time.";
+  };
 
   // Handle mark as played action
   const handleMarkAsPlayed = (userGameId: string) => {
@@ -144,6 +162,13 @@ const LibraryPage: React.FC = () => {
   // Handle genre selection from the pie chart
   const handleGenreSelect = (genre: string) => {
     updateSelectedGenre(genre);
+    
+    // Scroll to game grid when selecting a genre
+    if (gameGridRef.current) {
+      setTimeout(() => {
+        gameGridRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
   };
   
   // Handle jumping to a game in the library
@@ -159,9 +184,12 @@ const LibraryPage: React.FC = () => {
         const gameElement = document.getElementById(`game-${gameId}`);
         if (gameElement) {
           gameElement.classList.add('highlight-game');
+          // Create a pulsing effect
+          gameElement.style.animation = 'pulse 2s ease-in-out 3';
           setTimeout(() => {
             gameElement.classList.remove('highlight-game');
-          }, 3000);
+            gameElement.style.animation = '';
+          }, 6000);
         }
       }, 500);
     }
@@ -217,14 +245,26 @@ const LibraryPage: React.FC = () => {
             </div>
             
             {/* Backlog Command Center Header - Unplayed Summary Widget */}
-            <div className="bg-black/30 border border-unplayed-mint/20 rounded-lg p-4 mb-6">
+            <div className="bg-black/30 border border-unplayed-mint/20 rounded-lg p-4 mb-6 transform transition-all duration-300 hover:border-unplayed-mint/40">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex-grow">
-                  <h2 className="text-xl font-medium mb-1">
-                    Welcome back, Commander of the Backlog
+                  <h2 className="text-xl font-medium mb-1 flex items-center">
+                    <span>Welcome back, Commander of the Backlog</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="ml-2 text-unplayed-mint/60 hover:text-unplayed-mint transition-colors">
+                            <Info size={16} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          <p className="text-sm">Your game library at a glance. Use the tools below to explore and organize your collection.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </h2>
                   <p className="text-gray-400">
-                    Manage your unplayed games and conquer your backlog.
+                    {getMotivationalMessage()}
                   </p>
                 </div>
                 
@@ -235,7 +275,8 @@ const LibraryPage: React.FC = () => {
                 <div className="w-full md:w-auto">
                   <Link to="/spend">
                     <Button variant="outline" className="w-full md:w-auto">
-                      View My Most Expensive Unplayed
+                      <Archive className="mr-2 h-4 w-4" />
+                      View Most Expensive Unplayed
                     </Button>
                   </Link>
                 </div>
@@ -244,14 +285,18 @@ const LibraryPage: React.FC = () => {
             
             {/* Two-column layout for Genres and Shelf Life on desktop, stacked on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <GenreHoarding 
-                onGenreSelect={handleGenreSelect} 
-                activeGenre={filters.selectedGenre} 
-              />
-              <ShelfLife 
-                onJumpToGame={handleJumpToGame} 
-                onMarkAsPlayed={handleMarkAsPlayedFromShelf} 
-              />
+              <div className="transition-transform duration-300 hover:scale-[1.01]">
+                <GenreHoarding 
+                  onGenreSelect={handleGenreSelect} 
+                  activeGenre={filters.selectedGenre} 
+                />
+              </div>
+              <div className="transition-transform duration-300 hover:scale-[1.01]">
+                <ShelfLife 
+                  onJumpToGame={handleJumpToGame} 
+                  onMarkAsPlayed={handleMarkAsPlayedFromShelf} 
+                />
+              </div>
             </div>
             
             {/* Library filters */}
@@ -270,19 +315,23 @@ const LibraryPage: React.FC = () => {
               onResetFilters={resetFilters}
             />
             
-            {/* Section header for library */}
-            <h2 className="text-xl font-medium mb-4 text-unplayed-mint">
-              Explore Your Unplayed Realms
-            </h2>
-            
-            {/* Library view toggle */}
-            <div className="flex justify-end mb-4">
+            {/* Section header for library with game count */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-medium text-unplayed-mint flex items-center">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Explore Your Collection
+                {!isLoading && games.length > 0 && (
+                  <span className="ml-2 text-sm text-gray-400">({games.length} games)</span>
+                )}
+              </h2>
+              
+              {/* Library view toggle */}
               <div className="flex space-x-2">
                 <Button
                   variant={viewMode === 'grid' ? "default" : "outline"}
                   size="sm"
                   onClick={() => updateViewMode('grid')}
-                  className={viewMode === 'grid' ? "bg-unplayed-mint hover:bg-unplayed-mint/90" : ""}
+                  className={viewMode === 'grid' ? "bg-unplayed-mint hover:bg-unplayed-mint/90 transition-all" : "transition-all"}
                 >
                   Grid View
                 </Button>
@@ -290,7 +339,7 @@ const LibraryPage: React.FC = () => {
                   variant={viewMode === 'zen' ? "default" : "outline"}
                   size="sm"
                   onClick={() => updateViewMode('zen')}
-                  className={viewMode === 'zen' ? "bg-unplayed-mint hover:bg-unplayed-mint/90" : ""}
+                  className={viewMode === 'zen' ? "bg-unplayed-mint hover:bg-unplayed-mint/90 transition-all" : "transition-all"}
                 >
                   Zen View
                 </Button>
@@ -317,13 +366,6 @@ const LibraryPage: React.FC = () => {
                 />
               )}
             </div>
-
-            {/* Loading state */}
-            {isLoading && (
-              <div className="flex justify-center items-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin text-unplayed-mint" />
-              </div>
-            )}
 
             {/* Error message */}
             {error && (
