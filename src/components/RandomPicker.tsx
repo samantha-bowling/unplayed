@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { ChevronDown, X, Clock, MousePointer, Maximize } from 'lucide-react';
-import { useZenMode } from '@/context/ZenModeContext';
-import ZenModeToggle from './ZenModeToggle';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import FullScreenModeToggle from './FullScreenModeToggle';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -103,9 +104,11 @@ const moodCategories = [{
   name: 'Quick Play',
   icon: '⚡'
 }];
+
 interface RandomPickerProps {
   fullScreen?: boolean;
 }
+
 const RandomPicker = ({
   fullScreen = false
 }: RandomPickerProps) => {
@@ -117,12 +120,12 @@ const RandomPicker = ({
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   
   const {
-    isZenMode,
-    enterZenMode
-  } = useZenMode();
+    isFullScreenMode
+  } = useFullScreenMode();
 
-  // Determine if we should show in full screen zen mode
-  const isFullScreenMode = fullScreen && isZenMode;
+  // Determine if we should show in full screen mode
+  const showFullScreenMode = fullScreen && isFullScreenMode;
+  
   const handleSpin = () => {
     if (isSpinning) return;
     
@@ -142,20 +145,22 @@ const RandomPicker = ({
       setIsSpinning(false);
     }, 2000);
   };
+  
   const handleFilterSelect = (filterId: string) => {
     setSelectedFilter(filterId);
     setIsDropdownOpen(false);
   };
+  
   return <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
-      {/* Show the zen mode toggle in the corner when in full screen mode */}
-      {isFullScreenMode && <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
-          <ZenModeToggle />
+      {/* Show the full screen mode toggle in the corner when in full screen mode */}
+      {showFullScreenMode && <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
+          <FullScreenModeToggle />
         </div>}
       
       <div className="flex justify-between items-center mb-4">
         <h3 className="terminal-header text-2xl mb-4">Random Game Picker</h3>
         
-        {!isFullScreenMode}
+        {!showFullScreenMode}
       </div>
       
       {/* Filter controls */}
@@ -195,7 +200,7 @@ const RandomPicker = ({
           {isSpinning ? 'Selecting...' : 'Select Game.exe'}
         </button>
         
-        {!isFullScreenMode && !selectedGame}
+        {!showFullScreenMode && !selectedGame}
       </div>
       
       {/* Game display area */}
@@ -248,4 +253,5 @@ const RandomPicker = ({
         </div>}
     </div>;
 };
+
 export default RandomPicker;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -120,7 +121,7 @@ const LibraryPreview = ({
     updateComponentSettings
   } = useFullScreenMode();
 
-  // Initialize viewMode from ZenMode context if available, otherwise default to 'grid'
+  // Initialize viewMode from FullScreenMode context if available, otherwise default to 'grid'
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>(
     (focusedComponent === 'library' && componentSettings.library?.viewMode) || 'grid'
   );
@@ -132,7 +133,7 @@ const LibraryPreview = ({
   const positionsGeneratedRef = useRef(false);
 
   // Determine if we should show in full screen mode
-  const isFullScreenMode = zenModeFullScreen && isFullScreenMode;
+  const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
   
   // Update the context whenever viewMode changes
   useEffect(() => {
@@ -176,16 +177,16 @@ const LibraryPreview = ({
   };
 
   return (
-    <div className={`${isFullScreenMode ? 'library-fullscreen' : 'terminal-container w-full'} ${isDemo ? 'relative' : ''}`}>
+    <div className={`${showFullScreenMode ? 'library-fullscreen' : 'terminal-container w-full'} ${isDemo ? 'relative' : ''}`}>
       {/* Show the full screen mode toggle in the corner when in full screen mode */}
-      {isFullScreenMode && (
+      {showFullScreenMode && (
         <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
           <FullScreenModeToggle />
         </div>
       )}
       
       {/* View mode controls - show in both regular and full screen mode */}
-      <div className={`flex justify-between items-center mb-4 ${isFullScreenMode ? 'px-8 pt-8' : ''}`}>
+      <div className={`flex justify-between items-center mb-4 ${showFullScreenMode ? 'px-8 pt-8' : ''}`}>
         <h3 className="terminal-header text-2xl">Your Unplayed Library</h3>
         
         <div className="flex space-x-2">
@@ -204,17 +205,17 @@ const LibraryPreview = ({
       
       {/* Grid view mode */}
       {viewMode === 'grid' ? (
-        <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4 ${isFullScreenMode ? 'p-8 pt-0' : ''}`}>
+        <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4 ${showFullScreenMode ? 'p-8 pt-0' : ''}`}>
           {sampleGames.map(game => (
             <div
               key={game.id}
-              className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${isFullScreenMode ? 'library-game-fullscreen' : ''}`}
+              className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${showFullScreenMode ? 'library-game-fullscreen' : ''}`}
               onMouseEnter={() => setHoveredGame(game.id)}
               onMouseLeave={() => setHoveredGame(null)}
             >
               <img src={game.image} alt={game.title} className="w-full h-auto object-cover" />
               
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === game.id || isFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
+              <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === game.id || showFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
                 <p className="text-white text-xs font-medium truncate">{game.title}</p>
                 <p className="text-unplayed-mint text-xs">Never played</p>
               </div>
@@ -225,7 +226,7 @@ const LibraryPreview = ({
         </div>
       ) : (
         // Enhanced Zen view mode
-        <div className={`${isFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
+        <div className={`${showFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
           {sampleGames.map((game, index) => (
             <div
               key={game.id}
@@ -251,7 +252,7 @@ const LibraryPreview = ({
       )}
       
       {/* Only show these controls when not in full screen mode */}
-      {!isFullScreenMode && (
+      {!showFullScreenMode && (
         <div className="text-center mt-6">
           <p className="text-gray-400">
             Showing 10 of {isDemo ? demoData.totalGames : 137} unplayed games

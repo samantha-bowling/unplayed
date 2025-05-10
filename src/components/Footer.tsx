@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useZenMode } from "@/context/ZenModeContext";
+import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import { Link } from "react-router-dom";
@@ -9,8 +9,8 @@ const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
   const {
-    isZenMode
-  } = useZenMode();
+    isFullScreenMode
+  } = useFullScreenMode();
 
   const openPrivacyPolicy = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -24,8 +24,8 @@ const Footer = () => {
     setTermsOfServiceOpen(true);
   };
 
-  // Hide footer in zen mode
-  if (isZenMode) {
+  // Hide footer in full screen mode
+  if (isFullScreenMode) {
     return null;
   }
 
