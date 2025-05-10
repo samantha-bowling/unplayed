@@ -1,11 +1,10 @@
 
-import { useEffect, useState } from "react";
+import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import {
   Tooltip,
   TooltipContent,
@@ -14,26 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const SupportPage = () => {
-  const {
-    isFullScreenMode,
-    toggleFullScreenMode
-  } = useFullScreenMode();
-  const [isFullScreenModeActive, setIsFullScreenModeActive] = useState(false);
-
-  // Enable full screen mode effect for this page by default
-  useEffect(() => {
-    if (!isFullScreenMode) {
-      toggleFullScreenMode();
-      setIsFullScreenModeActive(true);
-    }
-
-    // Cleanup - return to previous state if needed
-    return () => {
-      if (isFullScreenModeActive) {
-        toggleFullScreenMode();
-      }
-    };
-  }, []);
+  const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
   
   return <div className="min-h-screen flex flex-col">
       <Header />
