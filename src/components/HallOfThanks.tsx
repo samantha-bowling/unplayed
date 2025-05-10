@@ -33,9 +33,9 @@ const HallOfThanks = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h2 className="text-3xl font-bold text-center mb-8 terminal-header text-unplayed-mint">
+      <h1 className="text-4xl md:text-5xl font-bold text-center mb-8 text-unplayed-mint">
         Hall of Thanks <span className="animate-pulse">🧡</span>
-      </h2>
+      </h1>
       
       {loading ? (
         <div className="text-center py-12">
