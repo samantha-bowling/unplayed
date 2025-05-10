@@ -18,6 +18,7 @@ export const usePickerData = () => {
   const [scope, setScope] = useState<PickerScope>('unplayed');
   const [activeMood, setActiveMood] = useState<string | null>(null);
   const [preventDuplicates, setPreventDuplicates] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   
   // Get recent pick IDs for duplicate prevention
   const recentPickIds = useMemo(() => {
@@ -41,13 +42,20 @@ export const usePickerData = () => {
       moodFiltered = filterGamesByMood(moodFiltered, activeMood);
     }
     
+    // Filter by additional source filters if present
+    if (sourceFilter === 'shelfLife' && unplayedData.shelfLife) {
+      // Get the ids of the oldest games from shelfLife
+      const oldestGameIds = new Set(unplayedData.shelfLife.map(game => game.id));
+      moodFiltered = moodFiltered.filter(game => oldestGameIds.has(game.id));
+    }
+    
     // Finally, filter out recent picks if enabled
     if (preventDuplicates && user) {
       return filterOutRecentPicks(moodFiltered, recentPickIds);
     }
     
     return moodFiltered;
-  }, [unplayedData, scope, activeMood, recentPickIds, preventDuplicates, user]);
+  }, [unplayedData, scope, activeMood, recentPickIds, preventDuplicates, user, sourceFilter]);
 
   // Select a random game from the filtered pool
   const selectRandomGame = (): GameListItem | null => {
@@ -60,7 +68,10 @@ export const usePickerData = () => {
     if (user && selectedGame) {
       savePick({
         gameId: selectedGame.id,
-        filters: activeMood ? { mood: activeMood } : undefined
+        filters: {
+          mood: activeMood || undefined,
+          source: sourceFilter || undefined
+        }
       });
     }
     
@@ -75,6 +86,8 @@ export const usePickerData = () => {
     setScope,
     activeMood,
     setActiveMood,
+    sourceFilter,
+    setSourceFilter,
     preventDuplicates,
     setPreventDuplicates,
     selectRandomGame,

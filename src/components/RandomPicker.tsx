@@ -11,6 +11,7 @@ import GameSpinner from './GameSpinner';
 import MoodFilterDropdown from './MoodFilterDropdown';
 import SelectedGame from './SelectedGame';
 import RecentlySelected from './RecentlySelected';
+import { PickerNavigationState } from '@/utils/navigation';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -49,10 +50,12 @@ const selectionQuips = [
 
 interface RandomPickerProps {
   fullScreen?: boolean;
+  initialFilters?: PickerNavigationState | null;
 }
 
 const RandomPicker = ({
-  fullScreen = false
+  fullScreen = false,
+  initialFilters = null
 }: RandomPickerProps) => {
   const {
     games,
@@ -81,6 +84,30 @@ const RandomPicker = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
   
+  // Apply initial filters when component mounts or initialFilters changes
+  useEffect(() => {
+    if (initialFilters) {
+      // Apply genre or mood filter if provided
+      if (initialFilters.mood) {
+        setActiveMood(initialFilters.mood);
+      } else if (initialFilters.genre) {
+        // Find appropriate mood for the genre
+        const genreMood = initialFilters.genre.toLowerCase();
+        setActiveMood(genreMood);
+      }
+
+      // Auto-spin if requested
+      if (initialFilters.shouldAutoSpin) {
+        // Small delay to ensure filters are applied
+        const timer = setTimeout(() => {
+          handleSpin();
+        }, 300);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [initialFilters]);
+
   const handleSpin = () => {
     if (isSpinning) return;
     
