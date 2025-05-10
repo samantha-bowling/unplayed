@@ -8,11 +8,16 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import LibraryPreview from '@/components/LibraryPreview';
 import LibraryFilters from '@/components/LibraryFilters';
 import GameGrid from '@/components/GameGrid';
+import UnplayedCounter from '@/components/UnplayedCounter';
+import GenreHoarding from '@/components/GenreHoarding';
+import ShelfLife from '@/components/ShelfLife';
 import useLibraryData from '@/hooks/use-library-data';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import FullScreenModeToggle from '@/components/FullScreenModeToggle';
+import { Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 const LibraryPage: React.FC = () => {
   const { isFullScreenMode, componentSettings } = useFullScreenMode();
@@ -143,6 +148,38 @@ const LibraryPage: React.FC = () => {
               </div>
             </div>
             
+            {/* Backlog Command Center Header - Unplayed Summary Widget */}
+            <div className="bg-black/30 border border-unplayed-mint/20 rounded-lg p-4 mb-6">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex-grow">
+                  <h2 className="text-xl font-medium mb-1">
+                    Welcome back, Commander of the Backlog
+                  </h2>
+                  <p className="text-gray-400">
+                    Manage your unplayed games and conquer your backlog.
+                  </p>
+                </div>
+                
+                <div className="w-full md:w-auto">
+                  <UnplayedCounter compact={true} />
+                </div>
+                
+                <div className="w-full md:w-auto">
+                  <Link to="/spend">
+                    <Button variant="outline" className="w-full md:w-auto">
+                      View My Most Expensive Unplayed
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            
+            {/* Two-column layout for Genres and Shelf Life on desktop, stacked on mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <GenreHoarding onGenreSelect={(genre) => console.log(`Selected genre: ${genre}`)} />
+              <ShelfLife onJumpToGame={(gameId) => console.log(`Jump to game: ${gameId}`)} />
+            </div>
+            
             {/* Library filters */}
             <LibraryFilters
               searchQuery={filters.search}
@@ -157,6 +194,11 @@ const LibraryPage: React.FC = () => {
               onResetFilters={resetFilters}
             />
             
+            {/* Section header for library */}
+            <h2 className="text-xl font-medium mb-4 text-unplayed-mint">
+              Explore Your Unplayed Realms
+            </h2>
+            
             {/* Game grid */}
             <GameGrid 
               games={games}
@@ -165,6 +207,13 @@ const LibraryPage: React.FC = () => {
               onToggleHidden={handleToggleHidden}
               onSaveNote={handleSaveNote}
             />
+
+            {/* Loading state */}
+            {isLoading && (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-unplayed-mint" />
+              </div>
+            )}
 
             {/* Error message */}
             {error && (

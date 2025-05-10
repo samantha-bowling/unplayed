@@ -1,6 +1,19 @@
 
 import { useState } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
+import { Button } from '@/components/ui/button';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Check, ArrowDown } from 'lucide-react';
+
+interface ShelfLifeProps {
+  onJumpToGame?: (gameId: number) => void;
+  onMarkAsPlayed?: (gameId: number) => void;
+}
 
 const calculateAge = (dateString: string) => {
   const addedDate = new Date(dateString);
@@ -17,27 +30,50 @@ const calculateAge = (dateString: string) => {
   return `${age} years`;
 };
 
-const ShelfLife = () => {
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+};
+
+const ShelfLife = ({ onJumpToGame, onMarkAsPlayed }: ShelfLifeProps) => {
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const { data: unplayedData } = useUnplayedData();
   
   // Use shelf life data from unplayedData
   const oldestGames = unplayedData.shelfLife;
 
+  const handleMarkAsPlayed = (gameId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onMarkAsPlayed) {
+      onMarkAsPlayed(gameId);
+    }
+  };
+
+  const handleJumpToGame = (gameId: number) => {
+    if (onJumpToGame) {
+      onJumpToGame(gameId);
+    }
+  };
+
   return (
-    <div className="terminal-container w-full">
+    <div className="terminal-container w-full h-full">
       <h3 className="terminal-header text-2xl mb-2">Shelf Life</h3>
-      <p className="text-sm text-gray-400 mb-6">Your oldest unplayed games, aging like forgotten vintages</p>
+      <p className="text-sm text-gray-400 mb-6">Oldest Games Still Sealed in Digital Shrink Wrap</p>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         {oldestGames.map((game, index) => (
           <div 
             key={game.id}
-            className={`flex items-center p-3 rounded-lg transition-all duration-300 ${
+            className={`flex items-center p-3 rounded-lg transition-all duration-300 cursor-pointer ${
               hoveredGame === game.id 
                 ? 'bg-unplayed-mint/10 border border-unplayed-mint/30' 
                 : 'bg-black/30 border border-transparent'
             }`}
+            onClick={() => handleJumpToGame(game.id)}
             onMouseEnter={() => setHoveredGame(game.id)}
             onMouseLeave={() => setHoveredGame(null)}
           >
@@ -51,12 +87,22 @@ const ShelfLife = () => {
             
             <div className="ml-4 flex-grow">
               <h4 className="text-white font-medium">{game.title}</h4>
-              <p className="text-xs text-gray-400">
-                Added on {new Date(game.addedDate).toLocaleDateString()}
-              </p>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-400">
+                      Added on {new Date(game.addedDate).toLocaleDateString()}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Owned since: {formatDate(game.addedDate)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             
-            <div className="text-right">
+            <div className="text-right flex items-center gap-2">
               <span className={`text-lg font-vt ${
                 index === 0 ? 'text-unplayed-red' : 
                 index === 1 ? 'text-unplayed-amber' : 
@@ -64,10 +110,43 @@ const ShelfLife = () => {
               }`}>
                 {calculateAge(game.addedDate)}
               </span>
+
+              <div className={`flex-shrink-0 transition-opacity duration-200 ${hoveredGame === game.id ? 'opacity-100' : 'opacity-0'}`}>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-8 w-8 p-0"
+                  title="Jump to game in library"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleJumpToGame(game.id);
+                  }}
+                >
+                  <ArrowDown className="h-4 w-4 text-unplayed-mint" />
+                </Button>
+                
+                {onMarkAsPlayed && (
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                    title="Mark as played"
+                    onClick={(e) => handleMarkAsPlayed(game.id, e)}
+                  >
+                    <Check className="h-4 w-4 text-unplayed-mint" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         ))}
       </div>
+      
+      {oldestGames.length === 0 && (
+        <div className="text-center p-6">
+          <p className="text-gray-400">No unplayed games found in your library.</p>
+        </div>
+      )}
     </div>
   );
 };

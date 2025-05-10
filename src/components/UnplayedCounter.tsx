@@ -13,10 +13,12 @@ import { InfoIcon } from 'lucide-react';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
+  compact?: boolean;
 }
 
 const UnplayedCounter = ({
   count,
+  compact = false,
   isDemo = false
 }: UnplayedCounterProps) => {
   const {
@@ -25,6 +27,9 @@ const UnplayedCounter = ({
   
   // Use the provided count or fall back to unplayed data
   const actualCount = count ?? unplayedData.unplayedGames;
+  const totalGames = unplayedData.totalGames;
+  const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
+  
   const [animatedCount, setAnimatedCount] = useState(0);
   
   // Get the potential gameplay hours with HLTB data - with fallback if not available
@@ -63,6 +68,46 @@ const UnplayedCounter = ({
     return () => clearInterval(timer);
   }, [actualCount, potentialHours]);
 
+  // Render compact version for the library page header
+  if (compact) {
+    return (
+      <div className="flex items-center justify-between gap-4 px-4 py-2 rounded-md bg-black/40 border border-unplayed-mint/30 min-w-[250px]">
+        <div>
+          <div className="text-2xl font-bold font-vt text-unplayed-mint">
+            {animatedCount}
+          </div>
+          <div className="text-sm text-gray-400">
+            Unplayed Games
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="ml-1 text-gray-500 hover:text-gray-400">
+                    <InfoIcon size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    Includes games with 0 recorded minutes of playtime
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+        
+        <div className="text-right">
+          <div className="text-lg font-medium text-unplayed-amber">
+            {unplayedPercentage}%
+          </div>
+          <div className="text-xs text-gray-400">
+            of library
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original full-size version
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <h3 className="terminal-header text-2xl mb-2">Unplayed Games</h3>
