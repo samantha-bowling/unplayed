@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import { useZenMode } from "@/context/ZenModeContext";
 import {
   Tooltip,
@@ -35,8 +36,10 @@ const SupportPage = () => {
   }, []);
   
   return <div className="min-h-screen flex flex-col">
-      {/* Hero section */}
-      <section className="flex-grow flex flex-col items-center justify-center px-4 py-12 text-center relative overflow-hidden">
+      <Header />
+      
+      {/* Hero section - Add pt-24 for header spacing */}
+      <section className="flex-grow flex flex-col items-center justify-center px-4 py-12 pt-24 text-center relative overflow-hidden">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint">
           Support Unplayed
         </h1>
@@ -61,7 +64,7 @@ const SupportPage = () => {
         </TooltipProvider>
       </section>
 
-      {/* Hall of Thanks section - moved up */}
+      {/* Hall of Thanks section */}
       <section className="py-8 px-4 mb-8">
         <HallOfThanks />
       </section>

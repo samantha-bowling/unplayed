@@ -19,14 +19,14 @@ const Header = () => {
   // Hide header in zen mode if it's fully activated
   if (isZenMode) {
     return (
-      <div className="w-full px-4 py-2 flex justify-end absolute top-0 left-0 z-10 opacity-0 hover:opacity-100 transition-opacity duration-300">
+      <div className="fixed w-full px-4 py-2 flex justify-end top-0 left-0 z-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
         <ZenModeToggle />
       </div>
     );
   }
 
   return (
-    <header className="w-full px-4 py-4 flex items-center justify-between">
+    <header className="fixed top-0 left-0 w-full px-4 py-4 flex items-center justify-between z-50 glass-panel bg-black/60 backdrop-blur-md border-b border-white/10">
       <div className="flex items-center">
         <Link to="/" className="text-2xl font-space font-bold">
           <span className="text-unplayed-mint">unplayed</span>
