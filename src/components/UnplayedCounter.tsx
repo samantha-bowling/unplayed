@@ -1,21 +1,23 @@
-
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import useUnplayedData from '@/hooks/use-unplayed-data';
-
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
 }
-
-const UnplayedCounter = ({ count, isDemo = false }: UnplayedCounterProps) => {
-  const { data: unplayedData } = useUnplayedData();
+const UnplayedCounter = ({
+  count,
+  isDemo = false
+}: UnplayedCounterProps) => {
+  const {
+    data: unplayedData
+  } = useUnplayedData();
   // Use the provided count or fall back to unplayed data
   const actualCount = count ?? unplayedData.unplayedGames;
-  
   const [animatedCount, setAnimatedCount] = useState(0);
-  const { signInWithSteam } = useAuth();
-  
+  const {
+    signInWithSteam
+  } = useAuth();
   useEffect(() => {
     // Use a more reasonable animation duration for better performance
     const duration = 1500;
@@ -23,22 +25,17 @@ const UnplayedCounter = ({ count, isDemo = false }: UnplayedCounterProps) => {
     const totalFrames = Math.round(duration / frameDuration);
     const increment = actualCount / totalFrames;
     let currentFrame = 0;
-    
     const timer = setInterval(() => {
       currentFrame++;
       const value = Math.min(Math.round(increment * currentFrame), actualCount);
       setAnimatedCount(value);
-      
       if (currentFrame === totalFrames) {
         clearInterval(timer);
       }
     }, frameDuration);
-    
     return () => clearInterval(timer);
   }, [actualCount]);
-  
-  return (
-    <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
+  return <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <h3 className="terminal-header text-2xl mb-2">Unplayed Games</h3>
       
       <div className="terminal-content flex flex-col items-center py-6">
@@ -58,19 +55,10 @@ const UnplayedCounter = ({ count, isDemo = false }: UnplayedCounterProps) => {
           of potential gameplay
         </div>
         
-        {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-auto pt-4 text-center flex justify-center">
-            <button 
-              onClick={() => signInWithSteam()} 
-              className="text-sm text-unplayed-mint hover:underline"
-            >
-              Connect to Steam...
-            </button>
-          </div>
-        )}
+        {isDemo && !document.cookie.includes("demo_note_dismissed") && <div className="mt-auto pt-4 text-center flex justify-center">
+            <button onClick={() => signInWithSteam()} className="text-sm text-unplayed-mint hover:underline">Connect to Steam to see your Unplayed Games</button>
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default withDemoIndicator(UnplayedCounter);
