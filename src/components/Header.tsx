@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -14,6 +15,9 @@ const Header = () => {
   const { user, profile, signOut, isLoading } = useAuth();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
+
+  // Check if user has admin role
+  const isAdmin = profile?.roles?.includes('admin') || user?.app_metadata?.roles?.includes('admin');
 
   // Hide header in full screen mode if it's fully activated
   if (isFullScreenMode) {
@@ -39,6 +43,10 @@ const Header = () => {
           <>
             <NavLink href="/library" label="Library" />
             <NavLink href="/picker" label="Random Picker" />
+            {/* Show Debug menu item for admin users only */}
+            {isAdmin && (
+              <NavLink href="/auth-debug" label="Debug" />
+            )}
           </>
         )}
         <NavLink href="/support" label="Support" />
@@ -99,6 +107,10 @@ const Header = () => {
               <>
                 <NavLink href="/library" label="Library" />
                 <NavLink href="/picker" label="Random Picker" />
+                {/* Show Debug menu item for admin users only in mobile menu too */}
+                {isAdmin && (
+                  <NavLink href="/auth-debug" label="Debug" />
+                )}
               </>
             )}
             <NavLink href="/support" label="Support" />

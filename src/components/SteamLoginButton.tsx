@@ -2,36 +2,23 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
-import { HelpCircle } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface SteamLoginButtonProps {
   className?: string;
   redirectPath?: string;
   fullWidth?: boolean;
   centered?: boolean;
-  showDebugLink?: boolean; // Renamed prop for clarity
 }
 
 const SteamLoginButton = ({ 
   className = '', 
   redirectPath = '/',
   fullWidth = false,
-  centered = false,
-  showDebugLink = false // Default to false for safety
+  centered = false
 }: SteamLoginButtonProps) => {
   const { signInWithSteam } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Only show debug link in development environment by default
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const shouldShowDebugLink = showDebugLink || isDevelopment;
 
   const handleSteamLogin = async () => {
     try {
@@ -47,7 +34,7 @@ const SteamLoginButton = ({
   };
 
   return (
-    <div className={`relative ${centered ? 'mx-auto' : ''}`}>
+    <div className={`${centered ? 'mx-auto' : ''}`}>
       <button 
         onClick={handleSteamLogin}
         className={`${fullWidth ? 'w-full' : ''} 
@@ -63,25 +50,6 @@ const SteamLoginButton = ({
           className={`${fullWidth ? 'w-full' : 'w-auto'} h-auto`}
         />
       </button>
-      
-      {shouldShowDebugLink && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button 
-                onClick={() => navigate('/auth-debug')}
-                className="absolute -top-2 -right-2 text-gray-400 hover:text-unplayed-mint" 
-                aria-label="Auth Debug"
-              >
-                <HelpCircle size={16} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Auth Diagnostic Tools</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
     </div>
   );
 };
