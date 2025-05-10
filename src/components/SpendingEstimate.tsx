@@ -61,8 +61,8 @@ const SpendingEstimate = ({
 
   return (
     <div className="terminal-container equal-height-container">
-      <h3 className="terminal-header text-2xl mb-4 flex items-center justify-between">
-        <span>Spending Estimate</span>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="terminal-header text-2xl">Spending Estimate</h3>
         {!isDemo && user && (
           <TooltipProvider>
             <Tooltip>
@@ -86,7 +86,7 @@ const SpendingEstimate = ({
             </Tooltip>
           </TooltipProvider>
         )}
-      </h3>
+      </div>
       
       <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
