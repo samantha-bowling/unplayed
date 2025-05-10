@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 
@@ -65,19 +64,17 @@ const SpendingEstimate = ({ amount }: SpendingEstimateProps) => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-gray-300 mb-6 text-center">
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <p className="text-gray-300 mb-6">
               Do you really want to see how much money you've spent on games you've never played?
             </p>
             
             <button 
               onClick={() => setIsVisible(true)}
-              className="btn-primary mx-auto"
+              className="btn-primary"
             >
               Show Me The Damage
             </button>
-            
-            <div className="mt-auto"></div>
           </div>
         )}
       </div>
