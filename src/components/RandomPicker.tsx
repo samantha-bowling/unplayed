@@ -1,9 +1,16 @@
 
-import { useState, useEffect } from 'react';
-import { ChevronDown, X, Clock, MousePointer, Maximize } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronDown, X, Clock, MousePointer, Maximize, ExternalLink } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
 import useUnplayedData from '@/hooks/use-unplayed-data';
+import useGamePicks, { GamePickFilters } from '@/hooks/use-game-picks';
+import { Button } from '@/components/ui/button';
+import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import { GameListItem } from '@/types/unplayed-data.types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -72,14 +79,17 @@ const RandomPicker = ({
 }: RandomPickerProps) => {
   const { data: unplayedData } = useUnplayedData();
   const [isSpinning, setIsSpinning] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<any>(null);
+  const [selectedGame, setSelectedGame] = useState<GameListItem | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [spinHistory, setSpinHistory] = useState<Array<any>>([]);
+  const [spinHistory, setSpinHistory] = useState<Array<GameListItem>>([]);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
+  const [recentPickIds, setRecentPickIds] = useState<number[]>([]);
+  const [libraryScope, setLibraryScope] = useState<'unplayed' | 'all'>('unplayed');
   
-  // Get games from unplayedData
-  const sampleGames = unplayedData.library;
+  // Auth and Game Picks
+  const { user } = useAuth();
+  const { picks, savePick, isLoadingPicks } = useGamePicks();
   
   const {
     isFullScreenMode
@@ -87,6 +97,15 @@ const RandomPicker = ({
 
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
+
+  // Effect to load pick history if the user is logged in
+  useEffect(() => {
+    if (picks && picks.length > 0) {
+      // Extract recent pick IDs to prevent duplicates
+      const recentIds = picks.map(pick => pick.game_id);
+      setRecentPickIds(recentIds);
+    }
+  }, [picks]);
   
   const handleSpin = () => {
     if (isSpinning) return;
@@ -98,12 +117,53 @@ const RandomPicker = ({
     setIsSpinning(true);
     setSelectedGame(null);
 
+    // Get games from proper data source
+    const gamePool = libraryScope === 'unplayed' 
+      ? unplayedData.gamesList.filter(game => game.playtime === 0)
+      : unplayedData.gamesList;
+    
+    // Apply mood filter if selected
+    const filteredGames = selectedFilter 
+      ? filterGamesByMood(gamePool, selectedFilter) 
+      : gamePool;
+    
+    // Filter out recent picks to prevent duplicates
+    const eligibleGames = filterOutRecentPicks(filteredGames, recentPickIds);
+    
+    // Handle empty filtered results
+    if (eligibleGames.length === 0) {
+      setTimeout(() => {
+        setIsSpinning(false);
+        toast({
+          title: "No matching games found",
+          description: `Try a different mood or library filter.`,
+          variant: "destructive"
+        });
+      }, 2000);
+      return;
+    }
+
     // Simulate picking random game
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * sampleGames.length);
-      const newSelectedGame = sampleGames[randomIndex];
+      const randomIndex = Math.floor(Math.random() * eligibleGames.length);
+      const newSelectedGame = eligibleGames[randomIndex];
       setSelectedGame(newSelectedGame);
+      
+      // Save to local history
       setSpinHistory(prev => [newSelectedGame, ...prev].slice(0, 5));
+      
+      // Save to database if user is logged in
+      if (user && newSelectedGame) {
+        const filters: GamePickFilters = {};
+        if (selectedFilter) {
+          filters.mood = selectedFilter;
+        }
+        savePick({
+          gameId: newSelectedGame.id,
+          filters
+        });
+      }
+      
       setIsSpinning(false);
     }, 2000);
   };
@@ -111,6 +171,18 @@ const RandomPicker = ({
   const handleFilterSelect = (filterId: string) => {
     setSelectedFilter(filterId);
     setIsDropdownOpen(false);
+  };
+  
+  const handlePlayGame = () => {
+    if (!selectedGame) return;
+    
+    const steamUrl = `steam://run/${selectedGame.id}`;
+    window.open(steamUrl, '_blank');
+    
+    toast({
+      title: "Launching game",
+      description: `Opening ${selectedGame.title} in Steam`,
+    });
   };
   
   return <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
@@ -122,7 +194,19 @@ const RandomPicker = ({
       <div className="flex justify-between items-center mb-4">
         <h3 className="terminal-header text-2xl mb-4">Random Game Picker</h3>
         
-        {!showFullScreenMode}
+        {!showFullScreenMode && <div className="flex items-center gap-2">
+          <Tabs 
+            defaultValue="unplayed" 
+            value={libraryScope}
+            onValueChange={(value) => setLibraryScope(value as 'unplayed' | 'all')}
+            className="w-[260px]"
+          >
+            <TabsList>
+              <TabsTrigger value="unplayed">Unplayed Only</TabsTrigger>
+              <TabsTrigger value="all">Full Library</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>}
       </div>
       
       {/* Filter controls */}
@@ -183,12 +267,19 @@ const RandomPicker = ({
             </div>
             
             <div className="flex justify-between space-x-2">
-              <button className="btn-primary flex-grow">
+              <Button 
+                className="btn-primary flex-grow"
+                onClick={handlePlayGame}
+                disabled={!selectedGame.id}
+              >
                 Play Now
-              </button>
-              <button className="btn-secondary flex-grow" onClick={handleSpin}>
+              </Button>
+              <Button 
+                className="btn-secondary flex-grow" 
+                onClick={handleSpin}
+              >
                 Roll Again
-              </button>
+              </Button>
             </div>
             
             <div className="mt-4 text-center">
@@ -203,14 +294,40 @@ const RandomPicker = ({
       </div>
       
       {/* History section */}
-      {spinHistory.length > 0 && <div>
+      {((spinHistory.length > 0) || (picks && picks.length > 0)) && <div>
           <h4 className="text-lg font-medium text-gray-300 mb-3">Recently Selected</h4>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-            {spinHistory.map((game, index) => <div key={`history-${index}`} className="bg-black/30 rounded p-2 text-sm flex items-center">
+            {user ? (
+              isLoadingPicks ? (
+                <div className="col-span-full text-center py-2">Loading pick history...</div>
+              ) : picks && picks.length > 0 ? (
+                picks.slice(0, 5).map((pick, index) => (
+                  <div key={pick.id} className="bg-black/30 rounded p-2 text-sm flex items-center">
+                    <div className="w-8 h-8 flex items-center justify-center bg-gray-900 rounded mr-2">
+                      {pick.filters?.mood && moodCategories.find(cat => cat.id === pick.filters.mood)?.icon}
+                    </div>
+                    <div className="overflow-hidden">
+                      <span className="text-gray-300 truncate block">{
+                        // Find game in library by ID
+                        unplayedData.gamesList.find(game => game.id === pick.game_id)?.title || 
+                        `Game #${pick.game_id}`
+                      }</span>
+                      <span className="text-gray-500 text-xs">
+                        {new Date(pick.picked_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-2 text-gray-400">No previous picks found</div>
+              )
+            ) : spinHistory.map((game, index) => (
+              <div key={`history-${index}`} className="bg-black/30 rounded p-2 text-sm flex items-center">
                 <img src={game.image} alt={game.title} className="w-8 h-8 object-cover rounded mr-2" />
                 <span className="text-gray-300 truncate">{game.title}</span>
-              </div>)}
+              </div>
+            ))}
           </div>
         </div>}
     </div>;
