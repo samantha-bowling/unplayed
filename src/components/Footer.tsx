@@ -1,29 +1,42 @@
+
 import { useState } from "react";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
+import AboutDialog from "./AboutDialog";
 import { Link } from "react-router-dom";
+
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const {
     isFullScreenMode
   } = useFullScreenMode();
+  
   const openPrivacyPolicy = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log("Opening Privacy Policy dialog");
     setPrivacyPolicyOpen(true);
   };
+  
   const openTermsOfService = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log("Opening Terms of Service dialog");
     setTermsOfServiceOpen(true);
+  };
+  
+  const openAbout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log("Opening About dialog");
+    setAboutOpen(true);
   };
 
   // Hide footer in full screen mode
   if (isFullScreenMode) {
     return null;
   }
+  
   return <footer className="w-full p-6 mt-16 relative z-10">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
@@ -42,10 +55,9 @@ const Footer = () => {
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openTermsOfService}>
               Terms of Service
             </a>
-            <Link to="/about" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openAbout}>
               About
-            </Link>
-            
+            </a>
           </div>
         </div>
         
@@ -62,6 +74,8 @@ const Footer = () => {
       {/* Dialog components with increased z-index */}
       <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />
       <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />
+      <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
     </footer>;
 };
+
 export default Footer;
