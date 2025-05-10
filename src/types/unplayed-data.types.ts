@@ -19,10 +19,22 @@ export interface GameDustData {
   imageUrl: string | null;
 }
 
+// Define a normalized game item structure that works across both real and demo data
+export interface GameListItem {
+  id: number;
+  title: string;
+  playtimeMinutes: number;
+  imageUrl: string | null;
+  price?: number;
+  releaseDate?: string | null;
+}
+
 // Export the data type so components can use it for typing props
 export type UnplayedDataType = DemoDataType & {
   // Extended dust data
   dustScoreBreakdown?: DustScoreBreakdown;
   topDustContributors?: GameDustData[];
   avgDustScore?: number;
+  // Ensure gamesList is always available
+  gamesList: GameListItem[];
 };

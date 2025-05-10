@@ -19,6 +19,7 @@ export interface DemoDataType {
     image: string;
     playtime: number;
   }>;
+  // We'll add gamesList in useUnplayedData by transforming the library
 }
 
 export const DEMO_DATA: DemoDataType = {

@@ -55,11 +55,27 @@ export const useSpendingData = () => {
   
   // In demo mode, return demo data immediately
   if (isDemo) {
+    // We can now safely use gamesList since we've normalized the data in useUnplayedData
+    const topSpendingGames = unplayedData?.gamesList
+      ? unplayedData.gamesList
+          .filter(game => game.playtimeMinutes === 0)
+          .map(game => ({
+            id: game.id,
+            title: game.title,
+            price: game.price || 0,
+            originalPrice: null,
+            discount: null,
+            imageUrl: game.imageUrl,
+            currency: 'USD'
+          }))
+          .sort((a, b) => b.price - a.price)
+      : [];
+    
     return {
       data: {
         totalSpent: demoData.totalSpent,
         totalSaved: null,
-        topSpendingGames: [],
+        topSpendingGames,
         priceDistribution: [],
         currency: 'USD',
         refreshedAt: new Date().toISOString(),
