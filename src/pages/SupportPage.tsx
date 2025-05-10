@@ -1,13 +1,14 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import { useZenMode } from "@/context/ZenModeContext";
-
 const SupportPage = () => {
-  const { isZenMode, toggleZenMode } = useZenMode();
+  const {
+    isZenMode,
+    toggleZenMode
+  } = useZenMode();
   const [isZenModeActive, setIsZenModeActive] = useState(false);
 
   // Enable zen mode effect for this page by default
@@ -16,7 +17,7 @@ const SupportPage = () => {
       toggleZenMode();
       setIsZenModeActive(true);
     }
-    
+
     // Cleanup - return to previous state if needed
     return () => {
       if (isZenModeActive) {
@@ -24,9 +25,7 @@ const SupportPage = () => {
       }
     };
   }, []);
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       {/* Hero section */}
       <section className="flex-grow flex flex-col items-center justify-center px-4 py-20 text-center relative overflow-hidden">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint">
@@ -37,12 +36,7 @@ const SupportPage = () => {
           Like Unplayed? It's built by a nostalgic gamer and powered by love, caffeine, and indecision.
         </p>
         
-        <a 
-          href="https://donate.stripe.com/6oE4jHd5H9ZhbrW5kk" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="inline-block"
-        >
+        <a href="https://donate.stripe.com/6oE4jHd5H9ZhbrW5kk" target="_blank" rel="noopener noreferrer" className="inline-block">
           <Button className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-bold py-3 px-6 rounded-md text-lg">
             Donate via Stripe 💖
           </Button>
@@ -55,7 +49,7 @@ const SupportPage = () => {
             Donations help cover hosting, updates, coffee, and support new features
             for fellow indecisive gamers everywhere.
           </p>
-          <div className="mt-4 text-4xl">🎮 ☕ 💻</div>
+          
         </div>
       </section>
 
@@ -65,8 +59,6 @@ const SupportPage = () => {
       </section>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default SupportPage;
