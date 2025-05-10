@@ -98,7 +98,8 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
         </div>
       ))}
       
-      <style jsx>{`
+      <style>
+        {`
         @keyframes zen-float-complex {
           0% {
             transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
@@ -107,7 +108,8 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
             transform: translate(calc(-50% + var(--anim-x, 2%)), calc(-50% + var(--anim-y, 2%))) rotate(var(--rotation, 0deg));
           }
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

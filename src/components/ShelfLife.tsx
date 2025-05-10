@@ -1,12 +1,15 @@
+
 import { useState } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, ArrowDown, Clock, Info } from 'lucide-react';
+import { Check, ArrowDown, Clock, Info, Terminal } from 'lucide-react';
+
 interface ShelfLifeProps {
   onJumpToGame?: (gameId: number) => void;
   onMarkAsPlayed?: (gameId: number) => void;
 }
+
 const calculateAge = (dateString: string) => {
   const addedDate = new Date(dateString);
   const today = new Date();
@@ -25,6 +28,7 @@ const calculateAge = (dateString: string) => {
     return `${months} ${months === 1 ? 'month' : 'months'}`;
   }
 };
+
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
@@ -33,6 +37,7 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   });
 };
+
 const ShelfLife = ({
   onJumpToGame,
   onMarkAsPlayed
@@ -44,35 +49,31 @@ const ShelfLife = ({
 
   // Use shelf life data from unplayedData
   const oldestGames = unplayedData.shelfLife;
+
   const handleMarkAsPlayed = (gameId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (onMarkAsPlayed) {
       onMarkAsPlayed(gameId);
     }
   };
+
   const handleJumpToGame = (gameId: number) => {
     if (onJumpToGame) {
       onJumpToGame(gameId);
     }
   };
-  return <div className="terminal-container w-full h-full">
+
+  return (
+    <div className="terminal-container w-full h-full">
       <div className="terminal-header flex justify-between items-center mb-2">
-        <h3 className="text-2xl">Shelf Life</h3>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button className="text-unplayed-mint/60 hover:text-unplayed-mint transition-colors">
-                
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              <p className="text-sm">These are your oldest unplayed games. Click on a game to find it in your library or mark it as played.</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <h3 className="text-2xl flex items-center">
+          Shelf Life<Terminal className="h-4 w-4 ml-1 text-unplayed-mint/80 animate-pulse" />
+        </h3>
       </div>
       <div className="flex items-center mb-6">
-        <p className="text-sm text-gray-400">Oldest Games Still Sealed in Digital Shrink Wrap</p>
+        <p className="text-sm text-gray-400">
+          Oldest Games Still Sealed in Digital Shrink Wrap
+        </p>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -88,10 +89,25 @@ const ShelfLife = ({
       </div>
       
       <div className="space-y-3">
-        {oldestGames.map((game, index) => <div key={game.id} className={`flex items-center p-3 rounded-lg transition-all duration-300 cursor-pointer ${hoveredGame === game.id ? 'bg-unplayed-mint/10 border border-unplayed-mint/30' : 'bg-black/30 border border-transparent'}`} onClick={() => handleJumpToGame(game.id)} onMouseEnter={() => setHoveredGame(game.id)} onMouseLeave={() => setHoveredGame(null)}>
+        {oldestGames.map((game, index) => (
+          <div 
+            key={game.id} 
+            className={`flex items-center p-3 rounded-lg transition-all duration-300 cursor-pointer ${
+              hoveredGame === game.id 
+                ? 'bg-unplayed-mint/10 border border-unplayed-mint/30' 
+                : 'bg-black/30 border border-transparent'
+            }`}
+            onClick={() => handleJumpToGame(game.id)}
+            onMouseEnter={() => setHoveredGame(game.id)}
+            onMouseLeave={() => setHoveredGame(null)}
+          >
             <div className="flex-shrink-0 w-16 h-12 overflow-hidden rounded">
-              <img src={game.imageUrl} alt={game.title} className="w-full h-full object-cover" loading="lazy" // Add lazy loading for better performance
-          />
+              <img 
+                src={game.imageUrl} 
+                alt={game.title} 
+                className="w-full h-full object-cover" 
+                loading="lazy"
+              />
             </div>
             
             <div className="ml-4 flex-grow">
@@ -123,10 +139,16 @@ const ShelfLife = ({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Jump to game in library" onClick={e => {
-                    e.stopPropagation();
-                    handleJumpToGame(game.id);
-                  }}>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0" 
+                        title="Jump to game in library" 
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleJumpToGame(game.id);
+                        }}
+                      >
                         <ArrowDown className="h-4 w-4 text-unplayed-mint" />
                       </Button>
                     </TooltipTrigger>
@@ -136,10 +158,17 @@ const ShelfLife = ({
                   </Tooltip>
                 </TooltipProvider>
                 
-                {onMarkAsPlayed && <TooltipProvider>
+                {onMarkAsPlayed && (
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Mark as played" onClick={e => handleMarkAsPlayed(game.id, e)}>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-8 w-8 p-0" 
+                          title="Mark as played" 
+                          onClick={e => handleMarkAsPlayed(game.id, e)}
+                        >
                           <Check className="h-4 w-4 text-unplayed-mint" />
                         </Button>
                       </TooltipTrigger>
@@ -147,19 +176,27 @@ const ShelfLife = ({
                         <p>Mark as played</p>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>}
+                  </TooltipProvider>
+                )}
               </div>
             </div>
-          </div>)}
+          </div>
+        ))}
       </div>
       
-      {oldestGames.length === 0 && <div className="text-center p-6">
+      {oldestGames.length === 0 && (
+        <div className="text-center p-6">
           <p className="text-gray-400">No unplayed games found in your library.</p>
-        </div>}
+        </div>
+      )}
       
-      {oldestGames.length > 0 && oldestGames.length < 5 && <div className="text-center p-4 mt-4 border-t border-gray-800">
+      {oldestGames.length > 0 && oldestGames.length < 5 && (
+        <div className="text-center p-4 mt-4 border-t border-gray-800">
           <p className="text-unplayed-mint text-sm">Nice work! You're tackling your oldest games.</p>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default ShelfLife;
