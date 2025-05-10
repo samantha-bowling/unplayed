@@ -2,7 +2,7 @@
 import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { SunDust, Clock, Play } from 'lucide-react';
+import { Wind, Clock, Play } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -41,7 +41,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
     <Card className="terminal-container">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <SunDust className="h-5 w-5 text-unplayed-mint" />
+          <Wind className="h-5 w-5 text-unplayed-mint" />
           Dust Score Breakdown
         </CardTitle>
         <CardDescription>
@@ -68,7 +68,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={ageScorePercent} className="h-2 bg-gray-700" indicatorClassName="bg-unplayed-amber" />
+              <Progress value={ageScorePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-amber mt-[-8px] rounded-full" style={{ width: `${ageScorePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
                 {ageScorePercent}% of your total score comes from game age
               </p>
@@ -91,7 +92,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={ownershipScorePercent} className="h-2 bg-gray-700" indicatorClassName="bg-unplayed-mint" />
+              <Progress value={ownershipScorePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-mint mt-[-8px] rounded-full" style={{ width: `${ownershipScorePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
                 {ownershipScorePercent}% of your total score comes from ownership time
               </p>
@@ -114,7 +116,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={playtimeFactorPercent} className="h-2 bg-gray-700" indicatorClassName="bg-unplayed-pink" />
+              <Progress value={playtimeFactorPercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-pink mt-[-8px] rounded-full" style={{ width: `${playtimeFactorPercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
                 Playtime reduces your dust score by {(100 - playtimeFactorPercent)}%
               </p>

@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, SunDust } from "lucide-react";
+import { Loader2, Wind } from "lucide-react";
 import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
 import DustScorePerGame from "@/components/dust/DustScorePerGame";
@@ -37,7 +37,7 @@ const DustPage = () => {
             </div>
           ) : !user ? (
             <div className="terminal-container p-8 text-center">
-              <SunDust className="w-16 h-16 mx-auto text-unplayed-mint mb-4" />
+              <Wind className="w-16 h-16 mx-auto text-unplayed-mint mb-4" />
               <h2 className="text-2xl font-bold text-white mb-2">Connect Your Account</h2>
               <p className="text-gray-400 mb-6">
                 Sign in with Steam to see your personalized dust report.
