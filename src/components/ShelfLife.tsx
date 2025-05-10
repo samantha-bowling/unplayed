@@ -4,7 +4,7 @@ import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, ArrowDown, Info } from 'lucide-react';
-import SectionHeading from '@/components/ui/SectionHeading'; // Add this import at the top
+import SectionHeading from '@/components/ui/SectionHeading';
 
 interface ShelfLifeProps {
   onJumpToGame?: (gameId: number) => void;
