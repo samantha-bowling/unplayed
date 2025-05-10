@@ -5,11 +5,11 @@ import {
   ListStart, ListEnd, Clock, Hourglass, Zap, BadgeCheck, Stars, Settings,
   SlidersHorizontal, Code, Puzzle, Wrench, Sparkles, Brain, Dice5, Ghost,
   Moon, Sun, Coffee, Headphones, Archive, Cloud, FolderOpen, Download,
-  Bird, Egg, Cat, Dog, Fish, Panda, Rabbit, Rat, Shell, Shrimp, Snail,
+  Bird, Egg, Cat, Dog, Fish, Rabbit, Rat, Shell, Snail,
   Squirrel, Turtle, Worm, Bug, HandHelping, HandMetal, Heart, HeartHandshake,
   Laugh, LeafyGreen, PartyPopper, Smile, Star, ThumbsUp, FileCode, FileHeart,
-  Cake, Cherry, Cookie, Grapes, Pizza, Lollipop, Popcorn, Candy, IceCreamCone,
-  Popsicle, Castle, Flame, Flower, Gem, Gift, Gpu, Headset, Joystick, Swords,
+  Cake, Cherry, Cookie, Pizza, Lollipop, Popcorn, Candy, IceCreamCone,
+  Popsicle, Castle, Flame, Flower, Gem, Gift, Headset, Joystick, Swords,
   Skull, WandSparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,11 +20,11 @@ const ICONS = [
   ListStart, ListEnd, Clock, Hourglass, Zap, BadgeCheck, Stars, Settings,
   SlidersHorizontal, Code, Puzzle, Wrench, Sparkles, Brain, Dice5, Ghost,
   Moon, Sun, Coffee, Headphones, Archive, Cloud, FolderOpen, Download,
-  Bird, Egg, Cat, Dog, Fish, Panda, Rabbit, Rat, Shell, Shrimp, Snail,
+  Bird, Egg, Cat, Dog, Fish, Rabbit, Rat, Shell, Snail,
   Squirrel, Turtle, Worm, Bug, HandHelping, HandMetal, Heart, HeartHandshake,
   Laugh, LeafyGreen, PartyPopper, Smile, Star, ThumbsUp, FileCode, FileHeart,
-  Cake, Cherry, Cookie, Grapes, Pizza, Lollipop, Popcorn, Candy, IceCreamCone,
-  Popsicle, Castle, Flame, Flower, Gem, Gift, Gpu, Headset, Joystick, Swords,
+  Cake, Cherry, Cookie, Pizza, Lollipop, Popcorn, Candy, IceCreamCone,
+  Popsicle, Castle, Flame, Flower, Gem, Gift, Headset, Joystick, Swords,
   Skull, WandSparkles
 ];
 
