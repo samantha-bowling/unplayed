@@ -18,9 +18,9 @@ export const useUnplayedData = () => {
   
   // Query for real data when authenticated and not in demo mode
   const { 
-    data, 
-    isLoading, 
-    error 
+    data: userGamesData, 
+    isLoading: isLoadingUserGames, 
+    error: userGamesError 
   } = useQuery({
     queryKey: ['unplayedData', user?.id, isDemo],
     queryFn: async () => {
@@ -54,10 +54,45 @@ export const useUnplayedData = () => {
       
       if (userGamesError) throw userGamesError;
 
-      return transformUserGameData(userGamesData);
+      return userGamesData;
     },
     enabled: !!user && !isDemo,
   });
+
+  // Query for game time estimates when authenticated and not in demo mode
+  const {
+    data: gameEstimatesData,
+    isLoading: isLoadingEstimates,
+  } = useQuery({
+    queryKey: ['gameEstimates', userGamesData, isDemo],
+    queryFn: async () => {
+      if (!userGamesData || userGamesData.length === 0) return {};
+      
+      // Get all game_ids from the user's library
+      const gameIds = userGamesData.map(game => game.game_id);
+      
+      // Fetch game estimates data from Supabase
+      const { data: estimatesData, error: estimatesError } = await supabase
+        .from('game_estimates')
+        .select('*')
+        .in('game_id', gameIds);
+      
+      if (estimatesError) throw estimatesError;
+      
+      // Convert to a map for easier lookup
+      const estimatesMap = {};
+      estimatesData?.forEach(estimate => {
+        estimatesMap[estimate.game_id] = estimate;
+      });
+      
+      return estimatesMap;
+    },
+    enabled: !!userGamesData && userGamesData.length > 0 && !!user && !isDemo,
+  });
+  
+  // Combine the loading states
+  const isLoading = isLoadingUserGames || isLoadingEstimates;
+  const error = userGamesError;
 
   // If in demo mode or while loading, return demo data
   if (isDemo) {
@@ -67,9 +102,14 @@ export const useUnplayedData = () => {
       error: null
     };
   }
+  
+  // Transform real data if available, otherwise fall back to demo data during loading
+  const data = userGamesData 
+    ? transformUserGameData(userGamesData, gameEstimatesData || {}) 
+    : demoData;
 
   return {
-    data: data || demoData, // Fall back to demo data while loading or on error
+    data,
     isLoading,
     error
   };
@@ -77,8 +117,9 @@ export const useUnplayedData = () => {
 
 /**
  * Transforms Supabase data to match the DemoDataType structure
+ * Now with HLTB data integration
  */
-const transformUserGameData = (data: any[]): UnplayedDataType => {
+const transformUserGameData = (data: any[], estimatesMap: Record<string, any>): UnplayedDataType => {
   if (!data || data.length === 0) {
     // Return empty data structure if no data
     return {
@@ -108,6 +149,16 @@ const transformUserGameData = (data: any[]): UnplayedDataType => {
   // Extract dust score (use highest if multiple)
   const dustScore = data.reduce((highest, item) => 
     Math.max(highest, item.dust_score || 0), 0);
+  
+  // Calculate total potential gameplay hours using HLTB data with fallback
+  const potentialGameplayHours = data
+    .filter(item => !item.playtime_minutes || item.playtime_minutes === 0)
+    .reduce((sum, item) => {
+      const estimate = estimatesMap[item.game_id];
+      // Use main_hours if available, otherwise fall back to 12.5 hours
+      const gameHours = estimate?.main_hours || 12.5;
+      return sum + gameHours;
+    }, 0);
   
   // Create genre aggregation
   const genreCounts = new Map<string, number>();
@@ -182,6 +233,7 @@ const transformUserGameData = (data: any[]): UnplayedDataType => {
     dustScore,
     totalPlaytime,
     totalSpent,
+    potentialGameplayHours, // New field with HLTB data
     genres,
     shelfLife,
     library

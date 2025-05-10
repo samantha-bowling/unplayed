@@ -33,6 +33,44 @@ export type Database = {
         }
         Relationships: []
       }
+      game_estimates: {
+        Row: {
+          completionist_hours: number | null
+          confidence: number | null
+          game_id: number
+          hltb_title: string | null
+          last_updated: string | null
+          main_extra_hours: number | null
+          main_hours: number | null
+        }
+        Insert: {
+          completionist_hours?: number | null
+          confidence?: number | null
+          game_id: number
+          hltb_title?: string | null
+          last_updated?: string | null
+          main_extra_hours?: number | null
+          main_hours?: number | null
+        }
+        Update: {
+          completionist_hours?: number | null
+          confidence?: number | null
+          game_id?: number
+          hltb_title?: string | null
+          last_updated?: string | null
+          main_extra_hours?: number | null
+          main_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_estimates_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: true
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_picks: {
         Row: {
           filters: Json | null
