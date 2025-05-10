@@ -110,6 +110,33 @@ export type Database = {
           },
         ]
       }
+      game_prices: {
+        Row: {
+          app_id: number
+          currency: string | null
+          discount_percent: number | null
+          final_price_cents: number | null
+          initial_price_cents: number | null
+          last_checked: string | null
+        }
+        Insert: {
+          app_id: number
+          currency?: string | null
+          discount_percent?: number | null
+          final_price_cents?: number | null
+          initial_price_cents?: number | null
+          last_checked?: string | null
+        }
+        Update: {
+          app_id?: number
+          currency?: string | null
+          discount_percent?: number | null
+          final_price_cents?: number | null
+          initial_price_cents?: number | null
+          last_checked?: string | null
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           categories: string[] | null

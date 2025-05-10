@@ -12,3 +12,6 @@ verify_jwt = true
 
 [functions.backfill-hltb-estimates]
 verify_jwt = true
+
+[functions.refresh-game-price]
+verify_jwt = true
