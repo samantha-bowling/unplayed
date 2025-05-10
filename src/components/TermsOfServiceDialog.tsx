@@ -24,7 +24,7 @@ const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps)
             <span className="text-unplayed-pink">– Unplayed.wtf</span>
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-400">
-            Effective Date: May 8, 2025 | Last Updated: May 8, 2025
+            Effective Date: May 8, 2025 | Last Updated: May 10, 2025
           </DialogDescription>
         </DialogHeader>
         
@@ -42,8 +42,11 @@ const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps)
           
           <div>
             <h3 className="text-lg font-bold text-white mb-2">2. Account & Login</h3>
-            <p>
+            <p className="mb-1">
               Unplayed uses Steam OpenID for authentication. You are responsible for any activity that occurs under your Steam-linked session.
+            </p>
+            <p>
+              We never collect or store your Steam password. All authentication is handled securely via Steam's OpenID system.
             </p>
           </div>
           
@@ -68,15 +71,21 @@ const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps)
           
           <div>
             <h3 className="text-lg font-bold text-white mb-2">5. Steam API Usage</h3>
-            <p>
+            <p className="mb-1">
               Unplayed uses Valve's Steam Web API in accordance with its Terms of Use. We are not affiliated with or endorsed by Valve Corporation.
+            </p>
+            <p>
+              We only access Steam Data with your explicit permission and do not store or display private profile data unless you have made your Steam profile public.
             </p>
           </div>
           
           <div>
             <h3 className="text-lg font-bold text-white mb-2">6. Disclaimers</h3>
+            <p className="mb-1">
+              Unplayed is provided "as is" without warranties of any kind. We do not guarantee uninterrupted service or data accuracy.
+            </p>
             <p>
-              Unplayed is provided "as is" without warranties of any kind. We do not guarantee uninterrupted service or data accuracy (e.g., Steam data inconsistencies).
+              Steam Data is provided by Valve Corporation and may be incomplete, delayed, or unavailable at times due to API limitations or user privacy settings.
             </p>
           </div>
           
@@ -89,8 +98,11 @@ const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps)
           
           <div>
             <h3 className="text-lg font-bold text-white mb-2">8. Termination</h3>
-            <p>
+            <p className="mb-1">
               We reserve the right to suspend or terminate your access to Unplayed for any reason, especially in case of misuse or violation of these Terms.
+            </p>
+            <p>
+              If you violate the Steam Subscriber Agreement or Steam Web API Terms, your access to Unplayed may also be revoked.
             </p>
           </div>
           
