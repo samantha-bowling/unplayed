@@ -7,7 +7,7 @@ interface DonorGridProps {
   donors: Tables<"donors">[];
 }
 
-// Generate positions for floating donor names
+// Generate more dynamic positions for floating donor names
 const generateZenPositions = (count: number) => {
   const positions = [];
   const gridSize = Math.ceil(Math.sqrt(count * 2)); // Create a grid with enough cells
@@ -34,12 +34,22 @@ const generateZenPositions = (count: number) => {
       const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.5 - cellWidth * 0.25);
       const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.5 - cellHeight * 0.25);
       
+      // Create more varied animation patterns
+      const animationDirectionX = Math.random() > 0.5 ? 1 : -1;
+      const animationDirectionY = Math.random() > 0.5 ? 1 : -1;
+      const animationDistance = 2 + Math.random() * 3; // 2-5% movement range
+      
       positions.push({
         left: `${randX}%`,
         top: `${randY}%`,
         delay: i * 0.5, // Stagger the animations
         duration: 3 + Math.random() * 2, // Random duration between 3-5s
-        fontSize: `${0.9 + Math.random() * 0.4}rem` // Random font size between 0.9-1.3rem
+        fontSize: `${0.9 + Math.random() * 0.4}rem`, // Random font size between 0.9-1.3rem
+        animDirectionX: animationDirectionX,
+        animDirectionY: animationDirectionY,
+        animDistance: animationDistance,
+        initialRotation: Math.random() * 6 - 3, // Slight rotation between -3 and 3 degrees
+        hoverColor: Math.random() > 0.5 ? 'text-unplayed-mint hover:text-unplayed-pink' : 'text-unplayed-mint hover:text-unplayed-amber'
       });
     }
   }
@@ -67,20 +77,37 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
           style={{
             top: positions[index]?.top || '50%',
             left: positions[index]?.left || '50%',
-            transform: 'translate(-50%, -50%)',
+            transform: `translate(-50%, -50%) rotate(${positions[index]?.initialRotation || 0}deg)`,
             animationDelay: `${positions[index]?.delay || index * 0.5}s`,
             zIndex: Math.floor(Math.random() * 10) + 5, // Higher z-index than icons
             opacity: 0,
-            animation: `zen-float ${positions[index]?.duration || 4}s ease-in-out infinite alternate, 
-                       zen-fade-in 1.5s ease-out forwards`,
-          }}
+            animation: `
+              zen-float-complex ${positions[index]?.duration || 4}s ease-in-out infinite alternate, 
+              zen-fade-in 1.5s ease-out forwards
+            `,
+            // Define custom animation properties in style
+            // These will be picked up by our updated keyframes in index.css
+            '--anim-x': `${positions[index]?.animDirectionX * positions[index]?.animDistance || 2}%`,
+            '--anim-y': `${positions[index]?.animDirectionY * positions[index]?.animDistance || 2}%`,
+          } as React.CSSProperties}
         >
-          <p className="whitespace-nowrap text-unplayed-mint text-glow" 
+          <p className={`whitespace-nowrap text-glow transition-all duration-300 ${positions[index]?.hoverColor || 'text-unplayed-mint'}`} 
              style={{ fontSize: positions[index]?.fontSize || '1rem' }}>
             {donor.display_name}
           </p>
         </div>
       ))}
+      
+      <style jsx>{`
+        @keyframes zen-float-complex {
+          0% {
+            transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
+          }
+          100% {
+            transform: translate(calc(-50% + var(--anim-x, 2%)), calc(-50% + var(--anim-y, 2%))) rotate(var(--rotation, 0deg));
+          }
+        }
+      `}</style>
     </div>
   );
 };

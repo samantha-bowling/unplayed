@@ -87,7 +87,6 @@ const DustScoreMeter = ({
           </Tooltip>
         </TooltipProvider>
       </div>
-      <p className="text-sm text-gray-400">unplayed time × days since added</p>
       
       <div className="terminal-content flex flex-col items-center">
         <div className="relative w-48 h-48 mb-4">
@@ -109,13 +108,22 @@ const DustScoreMeter = ({
             />
           </svg>
           
-          {/* Center text */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={`${getSeverityColor()} text-4xl font-bold font-vt`}>
-              {animatedScore}
-            </span>
-            <span className="text-gray-400 text-xs mt-1">DUST UNITS</span>
-          </div>
+          {/* Center text with tooltip */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
+                  <span className={`${getSeverityColor()} text-4xl font-bold font-vt`}>
+                    {animatedScore}
+                  </span>
+                  <span className="text-gray-400 text-xs mt-1">DUST UNITS</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-center">
+                <p className="text-sm">unplayed time × days since added</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
         <div className="text-center mt-2">

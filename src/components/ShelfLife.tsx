@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
@@ -83,7 +82,21 @@ const ShelfLife = ({ onJumpToGame, onMarkAsPlayed }: ShelfLifeProps) => {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <p className="text-sm text-gray-400 mb-6">Oldest Games Still Sealed in Digital Shrink Wrap</p>
+      <div className="flex items-center mb-6">
+        <p className="text-sm text-gray-400">Oldest Games Still Sealed in Digital Shrink Wrap</p>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="ml-2 text-gray-500 hover:text-gray-400">
+                <Info size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="text-sm">These games have been in your library the longest without being played.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
       
       <div className="space-y-3">
         {oldestGames.map((game, index) => (

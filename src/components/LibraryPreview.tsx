@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +16,7 @@ interface LibraryPreviewProps extends WithDemoProps {
   isLoading?: boolean;
 }
 
-// Helper function to generate positions based on grid
+// Helper function to generate positions based on grid with enhanced animations
 const generateZenPositions = (count: number, isFullScreen: boolean) => {
   const positions = [];
   const gridSize = Math.ceil(Math.sqrt(count * 2)); // Create a grid with enough cells
@@ -43,6 +42,12 @@ const generateZenPositions = (count: number, isFullScreen: boolean) => {
     if (i < shuffledGrid.length) {
       const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.5 - cellWidth * 0.25);
       const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.5 - cellHeight * 0.25);
+      
+      // Create more varied animation patterns
+      const animationDirectionX = Math.random() > 0.5 ? 1 : -1;
+      const animationDirectionY = Math.random() > 0.5 ? 1 : -1;
+      const animationDistance = 2 + Math.random() * 3; // 2-5% movement range
+      
       positions.push({
         left: `${randX}%`,
         top: `${randY}%`,
@@ -51,8 +56,13 @@ const generateZenPositions = (count: number, isFullScreen: boolean) => {
         duration: 3 + Math.random() * 2,
         // Random duration between 3-5s
         fontSize: isFullScreen ? `${1 + Math.random() * 0.5}rem` :
-        // Larger font in fullscreen: 1-1.5rem
-        `${0.75 + Math.random() * 0.25}rem` // Normal size: 0.75-1rem
+          // Larger font in fullscreen: 1-1.5rem
+          `${0.75 + Math.random() * 0.25}rem`, // Normal size: 0.75-1rem
+        animDirectionX: animationDirectionX,
+        animDirectionY: animationDirectionY,
+        animDistance: animationDistance,
+        initialRotation: Math.random() * 6 - 3, // Slight rotation between -3 and 3 degrees
+        hoverColor: Math.random() > 0.5 ? 'hover:text-unplayed-pink' : 'hover:text-unplayed-amber'
       });
     }
   }
@@ -254,16 +264,21 @@ const LibraryPreview = ({
                 style={{
                   top: zenPositions[index]?.top || '50%',
                   left: zenPositions[index]?.left || '50%',
-                  transform: 'translate(-50%, -50%)',
+                  transform: `translate(-50%, -50%) rotate(${zenPositions[index]?.initialRotation || 0}deg)`,
                   animationDelay: `${zenPositions[index]?.delay || index}s`,
                   zIndex: Math.floor(Math.random() * 10),
                   opacity: 0,
-                  animation: `zen-float ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
-                              zen-fade-in 2s ease-out forwards`
-                }}
+                  animation: `
+                    zen-float-complex ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
+                    zen-fade-in 2s ease-out forwards
+                  `,
+                  // Define custom animation properties in style
+                  '--anim-x': `${zenPositions[index]?.animDirectionX * zenPositions[index]?.animDistance || 2}%`,
+                  '--anim-y': `${zenPositions[index]?.animDirectionY * zenPositions[index]?.animDistance || 2}%`,
+                } as React.CSSProperties}
               >
                 <p 
-                  className="text-unplayed-mint whitespace-nowrap text-glow"
+                  className={`text-unplayed-mint whitespace-nowrap text-glow transition-colors duration-300 ${zenPositions[index]?.hoverColor || ''}`}
                   style={{
                     fontSize: zenPositions[index]?.fontSize || '1rem'
                   }}
@@ -273,6 +288,17 @@ const LibraryPreview = ({
               </div>
             );
           })}
+          
+          <style jsx>{`
+            @keyframes zen-float-complex {
+              0% {
+                transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
+              }
+              100% {
+                transform: translate(calc(-50% + var(--anim-x, 2%)), calc(-50% + var(--anim-y, 2%))) rotate(var(--rotation, 0deg));
+              }
+            }
+          `}</style>
         </div>
       )}
       
