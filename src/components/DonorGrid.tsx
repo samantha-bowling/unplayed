@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Tables } from "@/integrations/supabase/types";
+import FloatingIcons from "./FloatingIcons";
 
 interface DonorGridProps {
   donors: Tables<"donors">[];
@@ -56,6 +57,9 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
 
   return (
     <div className="relative h-[500px] rounded-xl overflow-hidden border border-gray-800 bg-black/40">
+      {/* Add our new FloatingIcons component */}
+      <FloatingIcons count={donors.length} />
+      
       {donors.map((donor, index) => (
         <div
           key={donor.id}
@@ -65,7 +69,7 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
             left: positions[index]?.left || '50%',
             transform: 'translate(-50%, -50%)',
             animationDelay: `${positions[index]?.delay || index * 0.5}s`,
-            zIndex: Math.floor(Math.random() * 10),
+            zIndex: Math.floor(Math.random() * 10) + 5, // Higher z-index than icons
             opacity: 0,
             animation: `zen-float ${positions[index]?.duration || 4}s ease-in-out infinite alternate, 
                        zen-fade-in 1.5s ease-out forwards`,

@@ -228,3 +228,14 @@ body.zen-mode {
   z-index: 50 !important;
   text-shadow: 0 0 15px rgba(163, 247, 191, 0.8);
 }
+
+/* Zen view icon items - similar to game items but with some differences */
+.zen-icon-item {
+  transition: all 0.5s ease;
+}
+
+.zen-icon-item:hover {
+  opacity: 1 !important;
+  z-index: 50 !important;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
