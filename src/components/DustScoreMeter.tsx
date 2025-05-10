@@ -108,12 +108,12 @@ const DustScoreMeter = ({ score, isDemo = false }: DustScoreProps) => {
         </div>
         
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-auto pt-4 text-center">
+          <div className="mt-auto pt-4 text-center flex justify-center">
             <button 
               onClick={() => signInWithSteam()} 
               className="text-sm text-unplayed-mint hover:underline"
             >
-              Connect Steam to see your actual dust score
+              Connect to Steam...
             </button>
           </div>
         )}

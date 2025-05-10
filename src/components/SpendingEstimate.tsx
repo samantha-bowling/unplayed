@@ -40,7 +40,7 @@ const SpendingEstimate = ({ amount }: SpendingEstimateProps) => {
     <div className="terminal-container equal-height-container">
       <h3 className="terminal-header text-2xl mb-4">Spending Estimate</h3>
       
-      <div className="terminal-content">
+      <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
           <div className="animate-fade-in flex flex-col h-full">
             <div className="flex flex-col items-center py-4">
@@ -65,14 +65,14 @@ const SpendingEstimate = ({ amount }: SpendingEstimateProps) => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 flex flex-col h-full">
-            <p className="text-gray-300 mb-4">
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-gray-300 mb-6 text-center">
               Do you really want to see how much money you've spent on games you've never played?
             </p>
             
             <button 
               onClick={() => setIsVisible(true)}
-              className="btn-primary mr-2 mx-auto"
+              className="btn-primary mx-auto"
             >
               Show Me The Damage
             </button>

@@ -82,8 +82,8 @@ const LibraryPreview = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
   
-  // Get games from unplayedData
-  const sampleGames = unplayedData.library;
+  // Get games from unplayedData, but we'll take 10 games for demo display
+  const sampleGames = unplayedData.library.slice(0, 10);
   
   // Update the context whenever viewMode changes
   useEffect(() => {
@@ -150,6 +150,16 @@ const LibraryPreview = ({
               Zen
             </ToggleGroupItem>
           </ToggleGroup>
+          
+          {!showFullScreenMode && (
+            <button 
+              onClick={handleEnterFullScreen} 
+              className="px-3 py-1 bg-black/30 border border-unplayed-mint/30 rounded-md hover:bg-black/50 transition-colors duration-200 flex items-center" 
+              title="Enter full-screen mode"
+            >
+              <Maximize className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
       
@@ -203,29 +213,24 @@ const LibraryPreview = ({
       
       {/* Only show these controls when not in full screen mode */}
       {!showFullScreenMode && (
-        <div className="text-center mt-6">
+        <div className="text-center mt-6 flex flex-col items-center">
           <p className="text-gray-400">
             Showing {sampleGames.length} of {unplayedData.totalGames} unplayed games
           </p>
-          <div className="flex justify-center gap-2 mt-3">
-            {isDemo ? (
-              <button onClick={() => signInWithSteam()} className="btn-secondary">
-                Connect Steam to View Your Library
+          {isDemo ? (
+            <div className="mt-auto pt-4 text-center flex justify-center">
+              <button 
+                onClick={() => signInWithSteam()} 
+                className="text-sm text-unplayed-mint hover:underline"
+              >
+                Connect to Steam...
               </button>
-            ) : (
-              <button className="btn-secondary">
-                View Full Library
-              </button>
-            )}
-            <button 
-              onClick={handleEnterFullScreen} 
-              className="btn-primary flex items-center" 
-              title="Enter full-screen mode"
-            >
-              <Maximize className="h-4 w-4 mr-1" />
-              Full Screen
+            </div>
+          ) : (
+            <button className="btn-secondary mt-4">
+              View Full Library
             </button>
-          </div>
+          )}
         </div>
       )}
     </div>

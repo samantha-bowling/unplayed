@@ -47,11 +47,21 @@ const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
             <Tooltip 
               formatter={(value) => [`${value} games`, 'Count']}
               contentStyle={{ 
-                backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+                backgroundColor: 'rgba(20, 20, 20, 0.9)', 
                 borderColor: '#A3F7BF',
                 borderRadius: '8px',
-                fontFamily: 'IBM Plex Mono'
+                fontFamily: 'IBM Plex Mono',
+                color: 'white',
+                padding: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
               }}
+              itemStyle={{ color: '#A3F7BF' }}
+              labelStyle={{ color: 'white' }}
+              position={{ x: 0, y: 0 }}
+              offset={10}
+              coordinate={{ x: 0, y: 0 }}
+              cursor={{ fill: 'transparent' }}
+              allowEscapeViewBox={{ x: true, y: true }}
             />
             <Legend 
               layout="horizontal" 
@@ -72,7 +82,7 @@ const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
             onClick={() => signInWithSteam()} 
             className="text-sm text-unplayed-mint hover:underline"
           >
-            Connect Steam to see your genre breakdown
+            Connect to Steam...
           </button>
         </div>
       )}
