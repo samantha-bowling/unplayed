@@ -3,6 +3,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import useUnplayedData from '@/hooks/use-unplayed-data';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { createPickerNavigation } from '@/utils/navigation';
 
 interface GenreHoardingProps extends WithDemoProps {
   onGenreSelect?: (genre: string) => void;
@@ -20,6 +23,7 @@ const GenreHoarding = ({
   const {
     data: unplayedData
   } = useUnplayedData();
+  const navigate = useNavigate();
 
   // Use genre data from unplayedData
   const genreData = unplayedData.genres;
@@ -36,6 +40,15 @@ const GenreHoarding = ({
     if (onGenreSelect && data && data.name) {
       onGenreSelect(data.name);
     }
+  };
+  
+  // Handle navigate to picker with selected genre
+  const handlePickFromGenre = (genre: string) => {
+    navigate('/picker', createPickerNavigation({
+      genre,
+      source: 'genre',
+      shouldAutoSpin: true
+    }));
   };
   
   return (
@@ -115,23 +128,45 @@ const GenreHoarding = ({
       
       {activeGenre ? (
         <div className="mt-4 text-center p-2 bg-black/30 rounded-lg border border-unplayed-mint/20">
-          <p className="text-sm">
-            Filtering by <span className="text-unplayed-amber font-medium">{activeGenre}</span>
-            <button 
-              onClick={() => onGenreSelect?.('')} 
-              className="ml-2 text-unplayed-red hover:underline"
-              aria-label="Clear filter"
-            >
-              Clear filter
-            </button>
-          </p>
+          <div className="flex flex-col sm:flex-row gap-2 items-center justify-center">
+            <p className="text-sm">
+              Filtering by <span className="text-unplayed-amber font-medium">{activeGenre}</span>
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-xs px-2 py-1 h-auto"
+                onClick={() => handlePickFromGenre(activeGenre)}
+              >
+                Pick from this genre
+              </Button>
+              <button 
+                onClick={() => onGenreSelect?.('')} 
+                className="text-xs text-unplayed-red hover:underline"
+                aria-label="Clear filter"
+              >
+                Clear filter
+              </button>
+            </div>
+          </div>
         </div>
       ) : mostHoardedGenre.name !== 'None' && (
         <div className="mt-4 text-center p-2 bg-black/30 rounded-lg border border-unplayed-mint/20">
-          <p className="text-sm">
-            You hoard <span className="text-unplayed-amber font-medium">{mostHoardedGenre.name}</span> games
-            <span className="text-gray-400"> ({mostHoardedGenre.value} games)</span>
-          </p>
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <p className="text-sm">
+              You hoard <span className="text-unplayed-amber font-medium">{mostHoardedGenre.name}</span> games
+              <span className="text-gray-400"> ({mostHoardedGenre.value} games)</span>
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-xs px-2 py-1 h-auto"
+              onClick={() => handlePickFromGenre(mostHoardedGenre.name)}
+            >
+              Pick from this genre
+            </Button>
+          </div>
         </div>
       )}
       

@@ -9,6 +9,12 @@ export interface PickerNavigationState {
   shouldAutoSpin?: boolean;
 }
 
+// Interface for game pick filters
+export interface GamePickFilters {
+  mood?: string;
+  source?: string;
+}
+
 /**
  * Creates navigation options with picker filter state
  * @param filterState State to preserve during navigation

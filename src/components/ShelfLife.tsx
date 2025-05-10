@@ -4,6 +4,8 @@ import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, ArrowDown, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { createPickerNavigation } from '@/utils/navigation';
 
 interface ShelfLifeProps {
   onJumpToGame?: (gameId: number) => void;
@@ -46,6 +48,7 @@ const ShelfLife = ({
   const {
     data: unplayedData
   } = useUnplayedData();
+  const navigate = useNavigate();
 
   // Use shelf life data from unplayedData
   const oldestGames = unplayedData.shelfLife;
@@ -63,10 +66,27 @@ const ShelfLife = ({
     }
   };
 
+  // Navigate to picker with shelfLife filter
+  const handlePickFromOldest = () => {
+    navigate('/picker', createPickerNavigation({
+      source: 'shelfLife',
+      shouldAutoSpin: true
+    }));
+  };
+
   return (
     <div className="terminal-container w-full h-full">
       <div className="flex justify-between items-center mb-2">
         <h3 className="terminal-header text-2xl">Shelf Life</h3>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="text-xs"
+          onClick={handlePickFromOldest}
+          disabled={oldestGames.length === 0}
+        >
+          Pick from oldest games
+        </Button>
       </div>
       <div className="flex items-center mb-6">
         <p className="text-sm text-gray-400">
