@@ -8,6 +8,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import SectionHeading from '@/components/ui/SectionHeading';
 
 interface SpendingEstimateProps {
   amount?: number;
@@ -61,8 +62,6 @@ const SpendingEstimate = ({
 
   return (
     <div className="terminal-container equal-height-container">
-import SectionHeading from '@/components/ui/SectionHeading'; // Add this import at the top
-
 <SectionHeading
   actions={
     !isDemo && user && (
