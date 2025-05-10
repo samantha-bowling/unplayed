@@ -32,7 +32,7 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
   if (compact) {
     return (
       <div className="bg-black/30 rounded p-2 text-sm flex items-center">
-        <img src={game.image} alt={game.title} className="w-8 h-8 object-cover rounded mr-2" />
+        <img src={game.imageUrl || ''} alt={game.title} className="w-8 h-8 object-cover rounded mr-2" />
         <div className="overflow-hidden">
           <span className="text-gray-300 truncate block">{game.title}</span>
           {pick && (
@@ -50,13 +50,13 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
 
   return (
     <div className="pixel-card">
-      <img src={game.image} alt={game.title} className="w-full h-36 object-cover rounded-md mb-2" />
+      <img src={game.imageUrl || ''} alt={game.title} className="w-full h-36 object-cover rounded-md mb-2" />
       
       <h4 className="text-lg font-medium text-white mb-1">{game.title}</h4>
       
       <div className="flex items-center text-gray-400 text-sm mb-2">
         <Clock className="h-4 w-4 mr-1" />
-        <span>{game.playtime === 0 ? 'Never played' : `${game.playtime} hrs`}</span>
+        <span>{game.playtimeMinutes === 0 ? 'Never played' : `${Math.round(game.playtimeMinutes/60)} hrs`}</span>
       </div>
       
       {pick && pick.filters?.mood && (

@@ -32,7 +32,7 @@ export const usePickerData = () => {
     // First filter by scope (unplayed vs all)
     let gamePool = unplayedData.gamesList;
     if (scope === 'unplayed') {
-      gamePool = gamePool.filter(game => game.playtime === 0);
+      gamePool = gamePool.filter(game => game.playtimeMinutes === 0);
     }
     
     // Then filter by mood if selected

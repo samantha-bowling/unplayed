@@ -1,16 +1,14 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, X, Clock, MousePointer, Maximize, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, X, Clock, MousePointer, ExternalLink } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import useUnplayedData from '@/hooks/use-unplayed-data';
-import useGamePicks, { GamePickFilters } from '@/hooks/use-game-picks';
 import { Button } from '@/components/ui/button';
-import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
-import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import usePickerData from '@/hooks/use-picker-data';
+import GamePickCard from './GamePickCard';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -77,19 +75,25 @@ interface RandomPickerProps {
 const RandomPicker = ({
   fullScreen = false
 }: RandomPickerProps) => {
-  const { data: unplayedData } = useUnplayedData();
+  const {
+    games,
+    totalGames,
+    isLoading,
+    scope,
+    setScope,
+    activeMood,
+    setActiveMood,
+    preventDuplicates,
+    setPreventDuplicates,
+    selectRandomGame,
+    recentPicks,
+  } = usePickerData();
+
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedGame, setSelectedGame] = useState<GameListItem | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [spinHistory, setSpinHistory] = useState<Array<GameListItem>>([]);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
-  const [recentPickIds, setRecentPickIds] = useState<number[]>([]);
-  const [libraryScope, setLibraryScope] = useState<'unplayed' | 'all'>('unplayed');
-  
-  // Auth and Game Picks
-  const { user } = useAuth();
-  const { picks, savePick, isLoadingPicks } = useGamePicks();
   
   const {
     isFullScreenMode
@@ -97,15 +101,6 @@ const RandomPicker = ({
 
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
-
-  // Effect to load pick history if the user is logged in
-  useEffect(() => {
-    if (picks && picks.length > 0) {
-      // Extract recent pick IDs to prevent duplicates
-      const recentIds = picks.map(pick => pick.game_id);
-      setRecentPickIds(recentIds);
-    }
-  }, [picks]);
   
   const handleSpin = () => {
     if (isSpinning) return;
@@ -117,59 +112,31 @@ const RandomPicker = ({
     setIsSpinning(true);
     setSelectedGame(null);
 
-    // Get games from proper data source
-    const gamePool = libraryScope === 'unplayed' 
-      ? unplayedData.gamesList.filter(game => game.playtime === 0)
-      : unplayedData.gamesList;
-    
-    // Apply mood filter if selected
-    const filteredGames = selectedFilter 
-      ? filterGamesByMood(gamePool, selectedFilter) 
-      : gamePool;
-    
-    // Filter out recent picks to prevent duplicates
-    const eligibleGames = filterOutRecentPicks(filteredGames, recentPickIds);
-    
-    // Handle empty filtered results
-    if (eligibleGames.length === 0) {
-      setTimeout(() => {
+    // Simulate picking random game
+    setTimeout(() => {
+      const newSelectedGame = selectRandomGame();
+      
+      if (!newSelectedGame) {
         setIsSpinning(false);
         toast({
           title: "No matching games found",
           description: `Try a different mood or library filter.`,
           variant: "destructive"
         });
-      }, 2000);
-      return;
-    }
-
-    // Simulate picking random game
-    setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * eligibleGames.length);
-      const newSelectedGame = eligibleGames[randomIndex];
+        return;
+      }
+      
       setSelectedGame(newSelectedGame);
       
       // Save to local history
       setSpinHistory(prev => [newSelectedGame, ...prev].slice(0, 5));
-      
-      // Save to database if user is logged in
-      if (user && newSelectedGame) {
-        const filters: GamePickFilters = {};
-        if (selectedFilter) {
-          filters.mood = selectedFilter;
-        }
-        savePick({
-          gameId: newSelectedGame.id,
-          filters
-        });
-      }
       
       setIsSpinning(false);
     }, 2000);
   };
   
   const handleFilterSelect = (filterId: string) => {
-    setSelectedFilter(filterId);
+    setActiveMood(filterId);
     setIsDropdownOpen(false);
   };
   
@@ -197,8 +164,8 @@ const RandomPicker = ({
         {!showFullScreenMode && <div className="flex items-center gap-2">
           <Tabs 
             defaultValue="unplayed" 
-            value={libraryScope}
-            onValueChange={(value) => setLibraryScope(value as 'unplayed' | 'all')}
+            value={scope}
+            onValueChange={(value) => setScope(value as 'unplayed' | 'all')}
             className="w-[260px]"
           >
             <TabsList>
@@ -216,7 +183,7 @@ const RandomPicker = ({
             onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
             className="btn-primary flex items-center"
           >
-            {selectedFilter ? moodCategories.find(cat => cat.id === selectedFilter)?.name : 'Mood'} 
+            {activeMood ? moodCategories.find(cat => cat.id === activeMood)?.name : 'Mood'} 
             <ChevronDown className="ml-2 h-4 w-4" />
           </button>
           
@@ -226,8 +193,8 @@ const RandomPicker = ({
                     <span className="mr-2">{category.icon}</span>
                     {category.name}
                   </button>)}
-                {selectedFilter && <button onClick={() => {
-              setSelectedFilter(null);
+                {activeMood && <button onClick={() => {
+              setActiveMood(null);
               setIsDropdownOpen(false);
             }} className="block w-full text-left px-4 py-2 text-sm text-unplayed-red hover:bg-unplayed-red/10">
                     <X className="inline mr-2 h-4 w-4" />
@@ -246,7 +213,19 @@ const RandomPicker = ({
           {isSpinning ? 'Selecting...' : 'Select Game.exe'}
         </button>
         
-        {!showFullScreenMode && !selectedGame}
+        {!showFullScreenMode && !selectedGame && (
+          <div className="flex items-center ml-2 text-sm">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={preventDuplicates}
+                onChange={() => setPreventDuplicates(!preventDuplicates)}
+                className="mr-1 h-4 w-4"
+              />
+              <span className="text-gray-400">Prevent duplicates</span>
+            </label>
+          </div>
+        )}
       </div>
       
       {/* Game display area */}
@@ -255,7 +234,7 @@ const RandomPicker = ({
             <div className="text-4xl text-unplayed-amber animate-spin">⚙️</div>
             <p className="ml-4 text-lg text-gray-300 animate-pulse">{currentQuip}</p>
           </div> : selectedGame ? <div className="pixel-card animate-fade-in">
-            <img src={selectedGame.image} alt={selectedGame.title} className="w-full h-48 object-cover rounded-md mb-4" />
+            <img src={selectedGame.imageUrl || ''} alt={selectedGame.title} className="w-full h-48 object-cover rounded-md mb-4" />
             
             <h3 className="text-xl font-bold text-white mb-2">{selectedGame.title}</h3>
             
@@ -294,37 +273,22 @@ const RandomPicker = ({
       </div>
       
       {/* History section */}
-      {((spinHistory.length > 0) || (picks && picks.length > 0)) && <div>
+      {((spinHistory.length > 0) || (recentPicks && recentPicks.length > 0)) && <div>
           <h4 className="text-lg font-medium text-gray-300 mb-3">Recently Selected</h4>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-            {user ? (
-              isLoadingPicks ? (
-                <div className="col-span-full text-center py-2">Loading pick history...</div>
-              ) : picks && picks.length > 0 ? (
-                picks.slice(0, 5).map((pick, index) => (
-                  <div key={pick.id} className="bg-black/30 rounded p-2 text-sm flex items-center">
-                    <div className="w-8 h-8 flex items-center justify-center bg-gray-900 rounded mr-2">
-                      {pick.filters?.mood && moodCategories.find(cat => cat.id === pick.filters.mood)?.icon}
-                    </div>
-                    <div className="overflow-hidden">
-                      <span className="text-gray-300 truncate block">{
-                        // Find game in library by ID
-                        unplayedData.gamesList.find(game => game.id === pick.game_id)?.title || 
-                        `Game #${pick.game_id}`
-                      }</span>
-                      <span className="text-gray-500 text-xs">
-                        {new Date(pick.picked_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-2 text-gray-400">No previous picks found</div>
-              )
+            {recentPicks && recentPicks.length > 0 ? (
+              recentPicks.slice(0, 5).map((pick, index) => (
+                <GamePickCard 
+                  key={pick.id} 
+                  game={pick.game || { id: pick.game_id, title: `Game #${pick.game_id}` } as GameListItem} 
+                  pick={pick}
+                  compact={true}
+                />
+              ))
             ) : spinHistory.map((game, index) => (
               <div key={`history-${index}`} className="bg-black/30 rounded p-2 text-sm flex items-center">
-                <img src={game.image} alt={game.title} className="w-8 h-8 object-cover rounded mr-2" />
+                <img src={game.imageUrl || ''} alt={game.title} className="w-8 h-8 object-cover rounded mr-2" />
                 <span className="text-gray-300 truncate">{game.title}</span>
               </div>
             ))}
