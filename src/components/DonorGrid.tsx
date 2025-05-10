@@ -1,88 +1,82 @@
 
 import { useEffect, useState } from "react";
 import { Tables } from "@/integrations/supabase/types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface DonorGridProps {
   donors: Tables<"donors">[];
 }
 
-// Array of emoji fallbacks for donors without avatars
-const emojiOptions = ["🎮", "👾", "🕹️", "🎯", "🎲", "🧩", "🎪", "🏆", "🎨", "🎭", "🎧"];
+// Generate positions for floating donor names
+const generateZenPositions = (count: number) => {
+  const positions = [];
+  const gridSize = Math.ceil(Math.sqrt(count * 2)); // Create a grid with enough cells
+  const cellWidth = 100 / gridSize;
+  const cellHeight = 100 / gridSize;
 
-// Get a consistent emoji for a donor based on their name
-const getEmojiForName = (name: string): string => {
-  const charSum = name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return emojiOptions[charSum % emojiOptions.length];
-};
-
-// Get random position for floating effect
-const getRandomPosition = () => {
-  return {
-    left: `${Math.random() * 80 + 10}%`,
-    top: `${Math.random() * 80 + 10}%`,
-    animationDelay: `${Math.random() * 5}s`,
-    animationDuration: `${Math.random() * 10 + 15}s`,
-  };
-};
-
-const DonorCard = ({ donor }: { donor: Tables<"donors"> }) => {
-  const [position, setPosition] = useState(getRandomPosition());
-
-  // Regenerate position when donor changes
-  useEffect(() => {
-    setPosition(getRandomPosition());
-  }, [donor.id]);
-
-  return (
-    <div
-      className="absolute transform transition-transform hover:scale-110"
-      style={{
-        ...position,
-        animation: `float ${position.animationDuration} ease-in-out infinite`,
-      }}
-    >
-      <Card className="bg-gray-800/60 border-gray-700 backdrop-blur-sm">
-        <CardContent className="p-4 flex items-center space-x-3">
-          <Avatar className="h-10 w-10 bg-unplayed-mint/20">
-            <AvatarFallback className="text-lg">
-              {getEmojiForName(donor.display_name)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-white">{donor.display_name}</span>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Create a grid of possible positions
+  const grid = [];
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      grid.push({
+        x: j * cellWidth + (cellWidth * 0.5),
+        y: i * cellHeight + (cellHeight * 0.5),
+      });
+    }
+  }
+  
+  // Shuffle the grid to get random positions
+  const shuffledGrid = [...grid].sort(() => Math.random() - 0.5);
+  
+  // Take the positions we need
+  for (let i = 0; i < count; i++) {
+    if (i < shuffledGrid.length) {
+      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.5 - cellWidth * 0.25);
+      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.5 - cellHeight * 0.25);
+      
+      positions.push({
+        left: `${randX}%`,
+        top: `${randY}%`,
+        delay: i * 0.5, // Stagger the animations
+        duration: 3 + Math.random() * 2, // Random duration between 3-5s
+        fontSize: `${0.9 + Math.random() * 0.4}rem` // Random font size between 0.9-1.3rem
+      });
+    }
+  }
+  
+  return positions;
 };
 
 const DonorGrid = ({ donors }: DonorGridProps) => {
+  const [positions, setPositions] = useState<any[]>([]);
+  
+  // Generate positions when donors change
+  useEffect(() => {
+    setPositions(generateZenPositions(donors.length));
+  }, [donors.length]);
+
   return (
-    <div className="relative h-[500px] rounded-xl overflow-hidden border border-gray-800">
-      {donors.map((donor) => (
-        <DonorCard key={donor.id} donor={donor} />
+    <div className="relative h-[500px] rounded-xl overflow-hidden border border-gray-800 bg-black/40">
+      {donors.map((donor, index) => (
+        <div
+          key={donor.id}
+          className="absolute transition-all duration-300 zen-game-item"
+          style={{
+            top: positions[index]?.top || '50%',
+            left: positions[index]?.left || '50%',
+            transform: 'translate(-50%, -50%)',
+            animationDelay: `${positions[index]?.delay || index * 0.5}s`,
+            zIndex: Math.floor(Math.random() * 10),
+            opacity: 0,
+            animation: `zen-float ${positions[index]?.duration || 4}s ease-in-out infinite alternate, 
+                       zen-fade-in 1.5s ease-out forwards`,
+          }}
+        >
+          <p className="whitespace-nowrap text-unplayed-mint text-glow" 
+             style={{ fontSize: positions[index]?.fontSize || '1rem' }}>
+            {donor.display_name}
+          </p>
+        </div>
       ))}
-      
-      {/* Add floating animations */}
-      <style>
-        {`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          25% {
-            transform: translateY(-15px) rotate(2deg);
-          }
-          50% {
-            transform: translateY(5px) rotate(-1deg);
-          }
-          75% {
-            transform: translateY(-8px) rotate(1deg);
-          }
-        }
-      `}
-      </style>
     </div>
   );
 };

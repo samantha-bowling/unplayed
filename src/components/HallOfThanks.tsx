@@ -33,8 +33,8 @@ const HallOfThanks = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h2 className="text-3xl font-bold text-center mb-8 text-unplayed-mint">
-        Hall of Thanks 🧡
+      <h2 className="text-3xl font-bold text-center mb-8 terminal-header text-unplayed-mint">
+        Hall of Thanks <span className="animate-pulse">🧡</span>
       </h2>
       
       {loading ? (
@@ -46,8 +46,8 @@ const HallOfThanks = () => {
           <p className="text-red-400">{error}</p>
         </div>
       ) : donors.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-gray-700 rounded-lg">
-          <p className="text-xl text-gray-300">No supporters yet? Be the first!</p>
+        <div className="text-center py-12 border border-dashed border-unplayed-mint/30 rounded-lg bg-black/30">
+          <p className="text-xl text-unplayed-mint">No supporters yet? Be the first!</p>
           <p className="mt-2 text-gray-400">
             Your name could be floating here in pixel glory.
           </p>
