@@ -1,5 +1,6 @@
 
-import { UnplayedDataType } from '@/types/unplayed-data.types';
+import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
+import { buildGamesList, createEmptyGamesList } from './normalize-games';
 
 /**
  * Transforms Supabase data to match the DemoDataType structure
@@ -17,7 +18,8 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
       potentialGameplayHours: 0,
       genres: [],
       shelfLife: [],
-      library: []
+      library: [],
+      gamesList: createEmptyGamesList() // Add empty gamesList
     };
   }
 
@@ -114,6 +116,9 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
       playtime: item.playtime_minutes || 0
     }));
   
+  // Create normalized gamesList
+  const gamesList = buildGamesList(data);
+  
   return {
     unplayedGames,
     totalGames: data.length,
@@ -123,6 +128,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     potentialGameplayHours,
     genres,
     shelfLife,
-    library
+    library,
+    gamesList
   };
 };

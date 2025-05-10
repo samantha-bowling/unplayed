@@ -6,27 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { transformUserGameData } from '@/utils/transform-unplayed-data';
-
-/**
- * Helper function to normalize demo game data to match the real data structure
- */
-const normalizeDemoGames = (demoData) => {
-  // Map the library array to match our GameListItem structure
-  const gamesList: GameListItem[] = demoData.library.map(game => ({
-    id: game.id,
-    title: game.title,
-    playtimeMinutes: game.playtime,
-    imageUrl: game.image,
-    // Add some mock price data for consistency
-    price: Math.floor(Math.random() * 60) + 5, // Random price between $5-$65
-    releaseDate: null
-  }));
-  
-  return {
-    ...demoData,
-    gamesList
-  };
-};
+import { normalizeDemoGames } from '@/utils/normalize-games';
 
 /**
  * Custom hook to provide unplayed game data, either from real API calls or demo data

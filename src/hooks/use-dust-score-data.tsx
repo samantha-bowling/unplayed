@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { supabase } from '@/integrations/supabase/client';
-import { UnplayedDataType, DustScoreBreakdown, GameDustData } from '@/types/unplayed-data.types';
+import { UnplayedDataType, DustScoreBreakdown, GameDustData, GameListItem } from '@/types/unplayed-data.types';
+import { normalizeDemoGames } from '@/utils/normalize-games';
 
 /**
  * Custom hook to provide detailed dust score data
@@ -120,8 +121,12 @@ const useDustScoreData = () => {
   
   // If in demo mode, return demo data enhanced with dust details
   if (isDemo) {
+    // First normalize demo data to ensure gamesList exists
+    const normalizedDemoData = normalizeDemoGames(demoData);
+    
+    // Then enhance with dust-specific data
     const enhancedDemoData: UnplayedDataType = {
-      ...demoData,
+      ...normalizedDemoData,
       dustScoreBreakdown: demoDustBreakdown,
       topDustContributors: demoTopContributors,
       avgDustScore: 29.7 // Fixed average for demo mode
