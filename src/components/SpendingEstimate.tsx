@@ -8,7 +8,6 @@ import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import SectionHeading from '@/components/ui/SectionHeading';
 
 interface SpendingEstimateProps {
   amount?: number;
@@ -62,35 +61,33 @@ const SpendingEstimate = ({
 
   return (
     <div className="terminal-container equal-height-container">
-<SectionHeading
-  actions={
-    !isDemo && user && (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={handleRefresh}
-              disabled={isRefreshing || !isVisible}
-            >
-              <RefreshCcw
-                size={16}
-                className={`text-gray-400 hover:text-unplayed-mint ${isRefreshing ? 'animate-spin' : ''}`}
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Refresh price data from Steam store</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )
-  }
->
-  Spending Estimate
-</SectionHeading>
+      <h3 className="terminal-header text-2xl mb-4 flex items-center justify-between">
+        <span>Spending Estimate</span>
+        {!isDemo && user && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 w-7 p-0" 
+                  onClick={handleRefresh}
+                  disabled={isRefreshing || !isVisible}
+                >
+                  <RefreshCcw 
+                    size={16} 
+                    className={`text-gray-400 hover:text-unplayed-mint ${isRefreshing ? 'animate-spin' : ''}`} 
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh price data from Steam store</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </h3>
+      
       <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
           <div className="animate-fade-in flex flex-col h-full">
