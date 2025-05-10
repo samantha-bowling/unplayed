@@ -2,12 +2,17 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
 }
 
-const UnplayedCounter = ({ count = 42, isDemo = false }: UnplayedCounterProps) => {
+const UnplayedCounter = ({ count, isDemo = false }: UnplayedCounterProps) => {
+  const { demoData } = useDemoMode();
+  // Use the provided count or fall back to demo data if in demo mode
+  const actualCount = count ?? (isDemo ? demoData.unplayedGames : 0);
+  
   const [animatedCount, setAnimatedCount] = useState(0);
   const { signInWithSteam } = useAuth();
   
@@ -16,12 +21,12 @@ const UnplayedCounter = ({ count = 42, isDemo = false }: UnplayedCounterProps) =
     const duration = 1500;
     const frameDuration = 1000 / 60;
     const totalFrames = Math.round(duration / frameDuration);
-    const increment = count / totalFrames;
+    const increment = actualCount / totalFrames;
     let currentFrame = 0;
     
     const timer = setInterval(() => {
       currentFrame++;
-      const value = Math.min(Math.round(increment * currentFrame), count);
+      const value = Math.min(Math.round(increment * currentFrame), actualCount);
       setAnimatedCount(value);
       
       if (currentFrame === totalFrames) {
@@ -30,7 +35,7 @@ const UnplayedCounter = ({ count = 42, isDemo = false }: UnplayedCounterProps) =
     }, frameDuration);
     
     return () => clearInterval(timer);
-  }, [count]);
+  }, [actualCount]);
   
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>

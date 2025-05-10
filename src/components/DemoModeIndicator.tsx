@@ -4,7 +4,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
 
 export const DemoModeIndicator: React.FC = () => {
-  const { isDemo } = useDemoMode();
+  const { isDemo, demoData } = useDemoMode();
   const { user, signInWithSteam } = useAuth();
   
   if (!isDemo) return null;
@@ -14,7 +14,7 @@ export const DemoModeIndicator: React.FC = () => {
       <div className="flex items-center">
         <span className="text-unplayed-amber mr-2">📊</span>
         <span className="text-sm">
-          {!user ? 'Example Data - Connect your Steam account to see your real stats' : 'Preview Mode'}
+          {!user ? `Example Data (${demoData.unplayedGames} unplayed games) - Connect your Steam account to see your real stats` : 'Preview Mode'}
         </span>
       </div>
       {!user && (

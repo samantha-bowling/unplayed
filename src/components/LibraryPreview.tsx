@@ -1,8 +1,8 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useZenMode } from '@/context/ZenModeContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import ZenModeToggle from './ZenModeToggle';
 import { Maximize, LayoutGrid, List } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -111,6 +111,7 @@ const LibraryPreview = ({
   zenModeFullScreen = false
 }: LibraryPreviewProps) => {
   const { signInWithSteam } = useAuth();
+  const { demoData } = useDemoMode();
   const {
     isZenMode,
     enterZenMode,
@@ -253,7 +254,7 @@ const LibraryPreview = ({
       {!isFullScreenMode && (
         <div className="text-center mt-6">
           <p className="text-gray-400">
-            Showing 10 of 137 unplayed games
+            Showing 10 of {isDemo ? demoData.totalGames : 137} unplayed games
           </p>
           <div className="flex justify-center gap-2 mt-3">
             {isDemo ? (

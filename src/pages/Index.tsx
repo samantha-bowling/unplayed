@@ -1,3 +1,4 @@
+
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -10,16 +11,13 @@ import Footer from "../components/Footer";
 import ZenModeWrapper from "@/components/ZenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useZenMode } from "@/context/ZenModeContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import SteamLoginButton from "@/components/SteamLoginButton";
 
 const Index = () => {
-  const {
-    user
-  } = useAuth();
-  const {
-    isZenMode,
-    focusedComponent
-  } = useZenMode();
+  const { user } = useAuth();
+  const { demoData } = useDemoMode();
+  const { isZenMode, focusedComponent } = useZenMode();
 
   // In Zen Mode, show only the focused component
   if (isZenMode && focusedComponent) {

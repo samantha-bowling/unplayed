@@ -1,20 +1,24 @@
-
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 
 interface DustScoreProps extends WithDemoProps {
   score?: number;
 }
 
-const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
+const DustScoreMeter = ({ score, isDemo = false }: DustScoreProps) => {
+  const { demoData } = useDemoMode();
+  // Use the provided score or fall back to demo data if in demo mode
+  const actualScore = score ?? (isDemo ? demoData.dustScore : 0);
+  
   const [animatedScore, setAnimatedScore] = useState(0);
   const { signInWithSteam } = useAuth();
   
   useEffect(() => {
     const duration = 2000;
     const start = 0;
-    const end = score;
+    const end = actualScore;
     const frameDuration = 1000 / 60;
     const totalFrames = Math.round(duration / frameDuration);
     const increment = (end - start) / totalFrames;
@@ -31,20 +35,20 @@ const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
     }, frameDuration);
     
     return () => clearInterval(timer);
-  }, [score]);
+  }, [actualScore]);
   
   // Calculate severity level for the score
   const getSeverityColor = () => {
-    if (score < 100) return 'text-green-400';
-    if (score < 200) return 'text-yellow-400';
-    if (score < 500) return 'text-orange-400';
+    if (actualScore < 100) return 'text-green-400';
+    if (actualScore < 200) return 'text-yellow-400';
+    if (actualScore < 500) return 'text-orange-400';
     return 'text-unplayed-red';
   };
   
   const getSeverityText = () => {
-    if (score < 100) return 'Minimal Dust';
-    if (score < 200) return 'Dusty Collection';
-    if (score < 500) return 'Dust Storm Warning';
+    if (actualScore < 100) return 'Minimal Dust';
+    if (actualScore < 200) return 'Dusty Collection';
+    if (actualScore < 500) return 'Dust Storm Warning';
     return 'Digital Hoarding Detected';
   };
 
@@ -75,7 +79,7 @@ const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
               cy="50"
               r="45"
               fill="none"
-              stroke={score < 100 ? '#A3F7BF' : score < 200 ? '#FFD866' : score < 500 ? '#FF9F39' : '#FF3C38'}
+              stroke={actualScore < 100 ? '#A3F7BF' : actualScore < 200 ? '#FFD866' : actualScore < 500 ? '#FF9F39' : '#FF3C38'}
               strokeWidth="8"
               strokeDasharray={`${(animatedScore / 1000) * 283} 283`}
               className="transition-all duration-300"
@@ -94,9 +98,9 @@ const DustScoreMeter = ({ score = 237, isDemo = false }: DustScoreProps) => {
         <div className="text-center mt-2">
           <p className={`${getSeverityColor()} text-xl font-medium`}>{getSeverityText()}</p>
           <p className="text-sm text-gray-400 mt-2">
-            {score < 200 
+            {actualScore < 200 
               ? "Not bad, but there's potential for exploration." 
-              : score < 500 
+              : actualScore < 500 
                 ? "Your backlog is growing. Time to dive in?" 
                 : "Warning: Critical clutter detected in your library."}
           </p>
