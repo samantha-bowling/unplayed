@@ -1,3 +1,4 @@
+
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
 import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
@@ -101,8 +102,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
       );
     }
     
-    // In production, check if user has admin role in their profile
-    const isAdmin = profile?.user_metadata?.role === 'admin';
+    // In production, check if user has admin role in their user_metadata
+    // Fix: Use the user object instead of profile for user_metadata
+    const isAdmin = user?.user_metadata?.role === 'admin';
     
     if (!isAdmin) {
       return <Navigate to="/" replace />;
