@@ -2,16 +2,16 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
 }
 
 const UnplayedCounter = ({ count, isDemo = false }: UnplayedCounterProps) => {
-  const { demoData } = useDemoMode();
-  // Use the provided count or fall back to demo data if in demo mode
-  const actualCount = count ?? (isDemo ? demoData.unplayedGames : 0);
+  const { data: unplayedData } = useUnplayedData();
+  // Use the provided count or fall back to unplayed data
+  const actualCount = count ?? unplayedData.unplayedGames;
   
   const [animatedCount, setAnimatedCount] = useState(0);
   const { signInWithSteam } = useAuth();

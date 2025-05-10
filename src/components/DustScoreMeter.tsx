@@ -2,16 +2,16 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 interface DustScoreProps extends WithDemoProps {
   score?: number;
 }
 
 const DustScoreMeter = ({ score, isDemo = false }: DustScoreProps) => {
-  const { demoData } = useDemoMode();
-  // Use the provided score or fall back to demo data if in demo mode
-  const actualScore = score ?? (isDemo ? demoData.dustScore : 0);
+  const { data: unplayedData } = useUnplayedData();
+  // Use the provided score or fall back to unplayed data
+  const actualScore = score ?? unplayedData.dustScore;
   
   const [animatedScore, setAnimatedScore] = useState(0);
   const { signInWithSteam } = useAuth();

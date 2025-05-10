@@ -2,19 +2,21 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 interface GenreHoardingProps extends WithDemoProps {}
 
 const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
   const { signInWithSteam } = useAuth();
-  const { demoData } = useDemoMode();
+  const { data: unplayedData } = useUnplayedData();
   
-  // Use genre data from demo context
-  const genreData = demoData.genres;
+  // Use genre data from unplayedData
+  const genreData = unplayedData.genres;
   
+  // Find the most hoarded genre
   const mostHoardedGenre = genreData.reduce((prev, current) => 
-    (prev.value > current.value) ? prev : current
+    (prev.value > current.value) ? prev : current, 
+    { name: 'None', value: 0, color: '#A3F7BF' }
   );
 
   return (

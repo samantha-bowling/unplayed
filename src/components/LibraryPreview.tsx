@@ -3,63 +3,10 @@ import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 import FullScreenModeToggle from './FullScreenModeToggle';
 import { Maximize, LayoutGrid, List } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-
-// Sample data - in a real app, this would come from the Steam API
-const sampleGames = [{
-  id: 1,
-  title: "The Witcher 3: Wild Hunt",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 2,
-  title: "Hades",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 3,
-  title: "Stardew Valley",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 4,
-  title: "Cyberpunk 2077",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 5,
-  title: "Hollow Knight",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 6,
-  title: "Disco Elysium",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/632470/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 7,
-  title: "Divinity: Original Sin 2",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/435150/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 8,
-  title: "Red Dead Redemption 2",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 9,
-  title: "Civilization VI",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/289070/capsule_184x69.jpg",
-  playtime: 0
-}, {
-  id: 10,
-  title: "Terraria",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/105600/capsule_184x69.jpg",
-  playtime: 0
-}];
 
 interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
@@ -112,7 +59,7 @@ const LibraryPreview = ({
   zenModeFullScreen = false
 }: LibraryPreviewProps) => {
   const { signInWithSteam } = useAuth();
-  const { demoData } = useDemoMode();
+  const { data: unplayedData } = useUnplayedData();
   const {
     isFullScreenMode,
     enterFullScreenMode,
@@ -135,6 +82,9 @@ const LibraryPreview = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
   
+  // Get games from unplayedData
+  const sampleGames = unplayedData.library;
+  
   // Update the context whenever viewMode changes
   useEffect(() => {
     if (focusedComponent === 'library') {
@@ -149,7 +99,7 @@ const LibraryPreview = ({
       setZenPositions(newPositions);
       positionsGeneratedRef.current = true;
     }
-  }, [viewMode, isFullScreenMode]);
+  }, [viewMode, isFullScreenMode, sampleGames.length]);
   
   // When entering full screen, make sure the context has the current view mode
   const handleEnterFullScreen = () => {
@@ -255,7 +205,7 @@ const LibraryPreview = ({
       {!showFullScreenMode && (
         <div className="text-center mt-6">
           <p className="text-gray-400">
-            Showing 10 of {isDemo ? demoData.totalGames : 137} unplayed games
+            Showing {sampleGames.length} of {unplayedData.totalGames} unplayed games
           </p>
           <div className="flex justify-center gap-2 mt-3">
             {isDemo ? (

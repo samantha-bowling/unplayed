@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 const calculateAge = (dateString: string) => {
   const addedDate = new Date(dateString);
@@ -19,10 +19,10 @@ const calculateAge = (dateString: string) => {
 
 const ShelfLife = () => {
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
-  const { demoData } = useDemoMode();
+  const { data: unplayedData } = useUnplayedData();
   
-  // Use shelf life data from the demo context
-  const oldestGames = demoData.shelfLife;
+  // Use shelf life data from unplayedData
+  const oldestGames = unplayedData.shelfLife;
 
   return (
     <div className="terminal-container w-full">

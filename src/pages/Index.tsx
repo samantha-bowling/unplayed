@@ -12,11 +12,13 @@ import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useDemoMode } from "@/context/DemoModeContext";
+import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 
 const Index = () => {
   const { user } = useAuth();
-  const { demoData } = useDemoMode();
+  const { isDemo } = useDemoMode();
+  const { data: unplayedData, isLoading } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
 
   // In Full Screen Mode, show only the focused component
@@ -68,9 +70,9 @@ const Index = () => {
             </h2>
             
             <div className="dashboard-grid">
-              <UnplayedCounter />
-              <DustScoreMeter />
-              <SpendingEstimate />
+              <UnplayedCounter count={unplayedData.unplayedGames} />
+              <DustScoreMeter score={unplayedData.dustScore} />
+              <SpendingEstimate amount={unplayedData.totalSpent} />
             </div>
             
             <div className="mt-4">

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -8,6 +9,7 @@ import LibraryPreview from '@/components/LibraryPreview';
 import LibraryFilters from '@/components/LibraryFilters';
 import GameGrid from '@/components/GameGrid';
 import useLibraryData from '@/hooks/use-library-data';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import FullScreenModeToggle from '@/components/FullScreenModeToggle';
@@ -15,6 +17,7 @@ import FullScreenModeToggle from '@/components/FullScreenModeToggle';
 const LibraryPage: React.FC = () => {
   const { isFullScreenMode, componentSettings } = useFullScreenMode();
   const { toast } = useToast();
+  const { data: unplayedData } = useUnplayedData();
   
   // Get library data and actions from our hook
   const { 

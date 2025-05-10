@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { ChevronDown, X, Clock, MousePointer, Maximize } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -69,7 +70,7 @@ interface RandomPickerProps {
 const RandomPicker = ({
   fullScreen = false
 }: RandomPickerProps) => {
-  const { demoData } = useDemoMode();
+  const { data: unplayedData } = useUnplayedData();
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -77,8 +78,8 @@ const RandomPicker = ({
   const [spinHistory, setSpinHistory] = useState<Array<any>>([]);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   
-  // Get games from demo data
-  const sampleGames = demoData.library;
+  // Get games from unplayedData
+  const sampleGames = unplayedData.library;
   
   const {
     isFullScreenMode

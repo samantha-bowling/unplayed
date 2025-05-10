@@ -6,9 +6,11 @@ import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
 import RandomPicker from '@/components/RandomPicker';
 import { withDemoIndicator } from '@/components/withDemoIndicator';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 const PickerPage: React.FC = () => {
   const { isFullScreenMode } = useFullScreenMode();
+  const { data: unplayedData } = useUnplayedData();
 
   // In Full Screen Mode, render only the RandomPicker component
   if (isFullScreenMode) {

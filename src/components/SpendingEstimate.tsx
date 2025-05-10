@@ -1,18 +1,18 @@
 
 import { useState, useEffect } from 'react';
-import { useDemoMode } from '@/context/DemoModeContext';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 
 interface SpendingEstimateProps {
   amount?: number;
 }
 
 const SpendingEstimate = ({ amount }: SpendingEstimateProps) => {
-  const { demoData } = useDemoMode();
+  const { data: unplayedData } = useUnplayedData();
   const [isVisible, setIsVisible] = useState(false);
   const [animatedAmount, setAnimatedAmount] = useState(0);
   
-  // Use amount from props if provided, otherwise use demoData
-  const spendingAmount = amount !== undefined ? amount : demoData.totalSpent;
+  // Use amount from props if provided, otherwise use unplayedData
+  const spendingAmount = amount !== undefined ? amount : unplayedData.totalSpent;
   
   useEffect(() => {
     if (isVisible) {
