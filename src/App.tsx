@@ -30,7 +30,11 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
-                <Route path="/auth-debug" element={<AuthDebugPage />} />
+                <Route path="/auth-debug" element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AuthDebugPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/support" element={<SupportPage />} />
                 {/* Protected routes */}
                 <Route path="/library" element={

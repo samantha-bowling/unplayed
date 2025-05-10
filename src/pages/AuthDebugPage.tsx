@@ -1,14 +1,26 @@
 
 import AuthDebug from "@/components/AuthDebug";
 import { Separator } from "@/components/ui/separator";
+import { AlertTriangle } from "lucide-react";
 
 /**
  * Authentication Debug Page
  * A dedicated page for troubleshooting Steam Auth and authentication flows
+ * This is intended for developers and administrators only
  */
 const AuthDebugPage = () => {
   return (
     <div className="container mx-auto py-8">
+      <div className="bg-red-900/30 border border-red-700 rounded-md mb-6 p-4">
+        <div className="flex items-center">
+          <AlertTriangle className="h-6 w-6 text-red-400 mr-2 flex-shrink-0" />
+          <h2 className="font-bold text-red-300">Developer/Admin Tool Only</h2>
+        </div>
+        <p className="text-red-200 mt-2 pl-8">
+          This page exposes sensitive debugging information and is not intended for regular users.
+        </p>
+      </div>
+
       <h1 className="text-3xl font-bold text-unplayed-mint mb-4">Authentication Debug</h1>
       <p className="text-gray-300 mb-6">
         This page provides tools for diagnosing and troubleshooting authentication issues.

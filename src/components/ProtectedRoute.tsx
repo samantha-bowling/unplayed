@@ -1,20 +1,22 @@
-
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
 import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
-  requiredRole?: string; // For future role-based access control
+  requiredRole?: string; // For role-based access control
 };
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, authStatus } = useAuth();
+  const { user, authStatus, profile } = useAuth();
   const { isLoading, hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const location = useLocation();
+  
+  // Check if we're in development environment
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Show appropriate loading state based on enhanced status
   if (isLoading) {
@@ -82,8 +84,30 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     // Save the current location to redirect back after login
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} state={{ from: location }} replace />;
   }
-
-  // Add future role-based access control here
+  
+  // Check for admin role if required
+  if (requiredRole === 'admin') {
+    // In development, allow access
+    if (isDevelopment) {
+      // Show an admin warning banner for the children
+      return (
+        <div>
+          <div className="bg-amber-900/50 border border-amber-700 text-amber-200 p-2 text-center text-sm">
+            <AlertTriangle className="inline-block mr-2 h-4 w-4" />
+            Developer Tool - This page would be restricted in production
+          </div>
+          {children}
+        </div>
+      );
+    }
+    
+    // In production, check if user has admin role in their profile
+    const isAdmin = profile?.user_metadata?.role === 'admin';
+    
+    if (!isAdmin) {
+      return <Navigate to="/" replace />;
+    }
+  }
   
   return <>{children}</>;
 };

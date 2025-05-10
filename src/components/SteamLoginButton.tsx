@@ -14,8 +14,8 @@ interface SteamLoginButtonProps {
   className?: string;
   redirectPath?: string;
   fullWidth?: boolean;
-  centered?: boolean; // New prop to control centering
-  showDebugLink?: boolean; // New prop to show debug link
+  centered?: boolean;
+  showDebugLink?: boolean; // Renamed prop for clarity
 }
 
 const SteamLoginButton = ({ 
@@ -23,11 +23,15 @@ const SteamLoginButton = ({
   redirectPath = '/',
   fullWidth = false,
   centered = false,
-  showDebugLink = true
+  showDebugLink = false // Default to false for safety
 }: SteamLoginButtonProps) => {
   const { signInWithSteam } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Only show debug link in development environment by default
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const shouldShowDebugLink = showDebugLink || isDevelopment;
 
   const handleSteamLogin = async () => {
     try {
@@ -60,7 +64,7 @@ const SteamLoginButton = ({
         />
       </button>
       
-      {showDebugLink && (
+      {shouldShowDebugLink && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
