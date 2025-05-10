@@ -39,7 +39,7 @@ const SupportPage = () => {
       <Header />
       
       {/* Hero section - Using our header spacing utility class */}
-      <section className="flex-grow flex flex-col items-center justify-center px-4 py-12 header-spacing text-center relative overflow-hidden">
+      <section className="navbar-offset flex-grow flex flex-col items-center justify-center px-4 pb-12 text-center relative overflow-hidden">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint">
           Support Unplayed
         </h1>
