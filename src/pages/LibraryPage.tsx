@@ -73,6 +73,26 @@ const LibraryPage: React.FC = () => {
     );
   };
 
+  // Create a lookup function to find userGameId by game.id
+  const findUserGameIdByGameId = (gameId: number): string | null => {
+    const game = games.find(g => g.id === gameId);
+    return game ? game.userGame.id : null;
+  };
+
+  // Wrapper for ShelfLife component that translates game_id to userGame.id
+  const handleMarkAsPlayedFromShelf = (gameId: number) => {
+    const userGameId = findUserGameIdByGameId(gameId);
+    if (userGameId) {
+      handleMarkAsPlayed(userGameId);
+    } else {
+      toast({
+        title: "Error",
+        description: "Could not find the game in your library.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle toggle hidden action
   const handleToggleHidden = (userGameId: string, hidden: boolean) => {
     toggleGameHidden.mutate(
@@ -230,7 +250,7 @@ const LibraryPage: React.FC = () => {
               />
               <ShelfLife 
                 onJumpToGame={handleJumpToGame} 
-                onMarkAsPlayed={handleMarkAsPlayed} 
+                onMarkAsPlayed={handleMarkAsPlayedFromShelf} 
               />
             </div>
             
