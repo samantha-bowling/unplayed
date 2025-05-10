@@ -3,7 +3,7 @@ import { useState } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, ArrowDown, Clock, Info, Terminal } from 'lucide-react';
+import { Check, ArrowDown, Info } from 'lucide-react';
 
 interface ShelfLifeProps {
   onJumpToGame?: (gameId: number) => void;
@@ -66,9 +66,7 @@ const ShelfLife = ({
   return (
     <div className="terminal-container w-full h-full">
       <div className="terminal-header flex justify-between items-center mb-2">
-        <h3 className="text-2xl flex items-center">
-          Shelf Life<Terminal className="h-4 w-4 ml-1 text-unplayed-mint/80 animate-pulse" />
-        </h3>
+        <h3 className="text-2xl">Shelf Life</h3>
       </div>
       <div className="flex items-center mb-6">
         <p className="text-sm text-gray-400">
@@ -114,7 +112,6 @@ const ShelfLife = ({
               <h4 className="text-white font-medium truncate">{game.title}</h4>
               
               <div className="flex items-center text-xs text-gray-400">
-                <Clock className="h-3 w-3 mr-1" />
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
