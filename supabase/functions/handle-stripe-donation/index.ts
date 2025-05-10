@@ -25,16 +25,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
   
+  console.log("====== Webhook handler started ======");
+  console.log(`Request method: ${req.method}`);
+  console.log(`Request URL: ${req.url}`);
+  
   try {
     // Get the signature from the headers
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
+      console.error("No Stripe signature found in request headers");
+      console.log("Headers received:", Object.fromEntries(req.headers.entries()));
       throw new Error("No Stripe signature found in request");
     }
     
     // Get the webhook secret from environment variables
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (!webhookSecret) {
+      console.error("Stripe webhook secret is not configured in environment variables");
       throw new Error("Stripe webhook secret is not configured");
     }
     
@@ -42,24 +49,41 @@ serve(async (req) => {
     
     // Read the request body
     const body = await req.text();
+    console.log("Request body length:", body.length);
     
     // Verify the webhook signature using the async method
-    const event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret,
-    );
+    let event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        webhookSecret,
+      );
+      console.log("Stripe signature verified successfully");
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err.message);
+      throw new Error(`Webhook signature verification failed: ${err.message}`);
+    }
     
-    console.log(`Event received: ${event.type}`);
+    console.log(`Event received: ${event.type}, id: ${event.id}`);
     
     // Handle checkout session completed event
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       
       console.log("Processing checkout session:", session.id);
+      console.log("Session details:", JSON.stringify({
+        customer: session.customer,
+        customer_details: session.customer_details,
+        payment_status: session.payment_status,
+        amount_total: session.amount_total,
+        custom_fields: session.custom_fields,
+      }));
       
       // Extract custom fields from the session
       const customFields = session.custom_fields || [];
+      console.log("Custom fields found:", JSON.stringify(customFields));
+      
       const displayNameField = customFields.find(
         (field) => field.key === "display_name" || field.label === "Hall of Thanks Display Name"
       );
@@ -71,30 +95,39 @@ serve(async (req) => {
       
       console.log("Display name for donor:", displayName);
       
-      // Save donor information to the database
-      const { data, error } = await supabaseAdmin
-        .from("donors")
-        .insert({
-          display_name: displayName,
-          source: "stripe",
-          created_at: new Date().toISOString(),
-          approved: true, // Auto-approve for now
-        });
-      
-      if (error) {
-        console.error("Error saving donor:", error);
-        throw new Error(`Error saving donor: ${error.message}`);
+      try {
+        // Save donor information to the database
+        const { data, error } = await supabaseAdmin
+          .from("donors")
+          .insert({
+            display_name: displayName,
+            source: "stripe",
+            created_at: new Date().toISOString(),
+            approved: true, // Auto-approve for now
+          });
+        
+        if (error) {
+          console.error("Error saving donor:", error);
+          throw new Error(`Error saving donor: ${error.message}`);
+        }
+        
+        console.log("Donor saved successfully with display name:", displayName);
+      } catch (dbError) {
+        console.error("Database operation failed:", dbError);
+        throw new Error(`Database operation failed: ${dbError.message}`);
       }
-      
-      console.log("Donor saved successfully:", displayName);
+    } else {
+      console.log(`Ignoring event type: ${event.type} - we only process checkout.session.completed`);
     }
     
+    console.log("====== Webhook handler completed successfully ======");
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (err) {
     console.error(`Webhook error: ${err.message}`);
+    console.error("====== Webhook handler failed ======");
     return new Response(
       JSON.stringify({ error: err.message }),
       {
