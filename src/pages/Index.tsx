@@ -1,3 +1,4 @@
+
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -119,7 +120,7 @@ const Index = () => {
               <SteamLoginButton centered />
             </div>
             
-            <p className="text-sm text-gray-500 mt-4">We use Steam's Web API. Your account details are safe.</p>
+            <p className="text-sm text-gray-500 mt-4 mb-2">We use Steam's Web API. Your account details are safe.</p>
           </div>
         </section>
         
