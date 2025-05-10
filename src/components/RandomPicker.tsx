@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { ChevronDown, X, Clock, MousePointer, Maximize } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
+import { useDemoMode } from '@/context/DemoModeContext';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -39,49 +39,6 @@ const selectionQuips = [
   "Booting up the illusion of control..."
 ];
 
-// Sample data - in a real app, this would come from the Steam API
-const sampleGames = [{
-  id: 1,
-  title: "The Witcher 3: Wild Hunt",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 2,
-  title: "Hades",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 3,
-  title: "Stardew Valley",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 4,
-  title: "Cyberpunk 2077",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 5,
-  title: "Hollow Knight",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 6,
-  title: "Disco Elysium",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/632470/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 7,
-  title: "Divinity: Original Sin 2",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/435150/capsule_616x353.jpg",
-  playtime: 0
-}, {
-  id: 8,
-  title: "Red Dead Redemption 2",
-  image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg",
-  playtime: 0
-}];
-
 // Categories for the mood-based filtering
 const moodCategories = [{
   id: 'cozy',
@@ -112,12 +69,16 @@ interface RandomPickerProps {
 const RandomPicker = ({
   fullScreen = false
 }: RandomPickerProps) => {
+  const { demoData } = useDemoMode();
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [spinHistory, setSpinHistory] = useState<Array<any>>([]);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
+  
+  // Get games from demo data
+  const sampleGames = demoData.library;
   
   const {
     isFullScreenMode

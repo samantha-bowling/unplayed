@@ -1,39 +1,6 @@
 
 import { useState } from 'react';
-
-// Sample data - in a real app, this would come from the Steam API
-const oldestGames = [
-  {
-    id: 1,
-    title: "Half-Life 2",
-    addedDate: "2015-06-12",
-    imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/220/capsule_184x69.jpg"
-  },
-  {
-    id: 2,
-    title: "Deus Ex: Human Revolution",
-    addedDate: "2016-02-18",
-    imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/238010/capsule_184x69.jpg"
-  },
-  {
-    id: 3,
-    title: "Portal 2",
-    addedDate: "2016-11-05",
-    imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_184x69.jpg"
-  },
-  {
-    id: 4,
-    title: "BioShock Infinite",
-    addedDate: "2017-05-24",
-    imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/8870/capsule_184x69.jpg"
-  },
-  {
-    id: 5,
-    title: "Mass Effect 2",
-    addedDate: "2018-01-10",
-    imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/24980/capsule_184x69.jpg"
-  }
-];
+import { useDemoMode } from '@/context/DemoModeContext';
 
 const calculateAge = (dateString: string) => {
   const addedDate = new Date(dateString);
@@ -52,6 +19,10 @@ const calculateAge = (dateString: string) => {
 
 const ShelfLife = () => {
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
+  const { demoData } = useDemoMode();
+  
+  // Use shelf life data from the demo context
+  const oldestGames = demoData.shelfLife;
 
   return (
     <div className="terminal-container w-full">

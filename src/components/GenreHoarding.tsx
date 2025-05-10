@@ -2,21 +2,17 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-
-// Sample data - in a real app, this would come from the Steam API
-const genreData = [
-  { name: 'RPG', value: 32, color: '#A3F7BF' },
-  { name: 'Action', value: 23, color: '#EF5DFF' },
-  { name: 'Strategy', value: 18, color: '#FFD866' },
-  { name: 'Simulation', value: 12, color: '#FF3C38' },
-  { name: 'Adventure', value: 10, color: '#61DAFB' },
-  { name: 'Other', value: 5, color: '#6C757D' }
-];
+import { useDemoMode } from '@/context/DemoModeContext';
 
 interface GenreHoardingProps extends WithDemoProps {}
 
 const GenreHoarding = ({ isDemo = false }: GenreHoardingProps) => {
   const { signInWithSteam } = useAuth();
+  const { demoData } = useDemoMode();
+  
+  // Use genre data from demo context
+  const genreData = demoData.genres;
+  
   const mostHoardedGenre = genreData.reduce((prev, current) => 
     (prev.value > current.value) ? prev : current
   );

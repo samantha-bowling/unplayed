@@ -1,22 +1,13 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { useAuth } from './AuthContext';
-
-// Demo data that will be shared across components
-export const DEMO_DATA = {
-  unplayedGames: 42,
-  dustScore: 237,
-  totalGames: 137,
-  totalPlaytime: 523, // hours
-  totalSpent: 2175.89, // dollars
-  // Add more shared demo data as needed
-};
+import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 
 interface DemoModeContextType {
   isDemo: boolean;
   isDemoExplicit: boolean;
   setIsDemoExplicit: (value: boolean) => void;
-  demoData: typeof DEMO_DATA;
+  demoData: DemoDataType;
 }
 
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);

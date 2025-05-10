@@ -1,25 +1,30 @@
 
 import { useState, useEffect } from 'react';
+import { useDemoMode } from '@/context/DemoModeContext';
 
 interface SpendingEstimateProps {
   amount?: number;
 }
 
-const SpendingEstimate = ({ amount = 1298.75 }: SpendingEstimateProps) => {
+const SpendingEstimate = ({ amount }: SpendingEstimateProps) => {
+  const { demoData } = useDemoMode();
   const [isVisible, setIsVisible] = useState(false);
   const [animatedAmount, setAnimatedAmount] = useState(0);
+  
+  // Use amount from props if provided, otherwise use demoData
+  const spendingAmount = amount !== undefined ? amount : demoData.totalSpent;
   
   useEffect(() => {
     if (isVisible) {
       const duration = 2000;
       const frameDuration = 1000 / 60;
       const totalFrames = Math.round(duration / frameDuration);
-      const increment = amount / totalFrames;
+      const increment = spendingAmount / totalFrames;
       let currentFrame = 0;
       
       const timer = setInterval(() => {
         currentFrame++;
-        const value = Math.min(increment * currentFrame, amount);
+        const value = Math.min(increment * currentFrame, spendingAmount);
         setAnimatedAmount(value);
         
         if (currentFrame === totalFrames) {
@@ -29,7 +34,7 @@ const SpendingEstimate = ({ amount = 1298.75 }: SpendingEstimateProps) => {
       
       return () => clearInterval(timer);
     }
-  }, [isVisible, amount]);
+  }, [isVisible, spendingAmount]);
 
   return (
     <div className="terminal-container equal-height-container">
