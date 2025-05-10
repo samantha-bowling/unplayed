@@ -27,6 +27,8 @@ export interface GameListItem {
   imageUrl: string | null;
   price?: number;
   releaseDate?: string | null;
+  genres?: string[]; // Adding genres property
+  categories?: string[]; // Adding categories for completeness
 }
 
 // Export the data type so components can use it for typing props

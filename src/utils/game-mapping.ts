@@ -48,6 +48,7 @@ export const filterGamesByMood = (
   if (relevantGenres.length === 0) return games;
   
   return games.filter(game => {
+    // Check if game has genres property before accessing it
     if (!game.genres) return false;
     
     return game.genres.some(genre => 

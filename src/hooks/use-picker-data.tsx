@@ -13,7 +13,7 @@ type PickerScope = 'unplayed' | 'all';
  */
 export const usePickerData = () => {
   const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
-  const { picks, isLoadingPicks } = useGamePicks();
+  const { picks, isLoadingPicks, savePick } = useGamePicks();
   const { user } = useAuth();
   const [scope, setScope] = useState<PickerScope>('unplayed');
   const [activeMood, setActiveMood] = useState<string | null>(null);
@@ -54,7 +54,17 @@ export const usePickerData = () => {
     if (!filteredGames.length) return null;
     
     const randomIndex = Math.floor(Math.random() * filteredGames.length);
-    return filteredGames[randomIndex];
+    const selectedGame = filteredGames[randomIndex];
+    
+    // If user is authenticated, save the pick to the database
+    if (user && selectedGame) {
+      savePick({
+        gameId: selectedGame.id,
+        filters: activeMood ? { mood: activeMood } : undefined
+      });
+    }
+    
+    return selectedGame;
   };
   
   return {
