@@ -38,8 +38,8 @@ const SupportPage = () => {
   return <div className="min-h-screen flex flex-col">
       <Header />
       
-      {/* Hero section - Add pt-24 for header spacing */}
-      <section className="flex-grow flex flex-col items-center justify-center px-4 py-12 pt-24 text-center relative overflow-hidden">
+      {/* Hero section - Using our new utility class */}
+      <section className="flex-grow flex flex-col items-center justify-center px-4 py-12 header-spacing text-center relative overflow-hidden">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint">
           Support Unplayed
         </h1>

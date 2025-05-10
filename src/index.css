@@ -108,6 +108,11 @@
   .text-glow {
     text-shadow: 0 0 10px rgba(163, 247, 191, 0.5);
   }
+  
+  /* Add header spacing utility class */
+  .header-spacing {
+    @apply pt-24;
+  }
 }
 
 /* Add zen mode styles */

@@ -33,8 +33,8 @@ const Index = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        {/* Hero section */}
-        <section className="w-full py-8 px-4">
+        {/* Hero section - Add header spacing */}
+        <section className="w-full py-8 px-4 header-spacing">
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
               Your PC games are gathering dust.
