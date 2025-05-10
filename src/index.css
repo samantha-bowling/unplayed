@@ -115,13 +115,14 @@
   }
 }
 
-/* Add zen mode styles */
-body.zen-mode {
-  overflow: hidden;
+/* Convert zen mode styles to full screen mode */
+body.fullscreen-mode {
+  /* Allow scrolling but keep the immersive look */
+  overflow-y: auto;
   background-color: rgba(0, 0, 0, 0.95);
 }
 
-.zen-mode-container {
+.fullscreen-mode-container {
   padding: 0;
   margin: 0;
   min-height: 100vh;
@@ -129,18 +130,18 @@ body.zen-mode {
   background-color: rgba(0, 0, 0, 0.95);
 }
 
-.zen-mode-container .terminal-container {
+.fullscreen-mode-container .terminal-container {
   border-width: 1px;
   box-shadow: 0 4px 30px rgba(96, 240, 201, 0.1);
 }
 
-/* Ensure zen mode toggle is always visible but subtle until hovered */
-.zen-mode .header-container {
+/* Ensure full screen mode toggle is always visible but subtle until hovered */
+.fullscreen-mode .header-container {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.zen-mode .header-container:hover {
+.fullscreen-mode .header-container:hover {
   opacity: 1;
 }
 
@@ -153,7 +154,7 @@ body.zen-mode {
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.95);
   z-index: 100;
-  overflow-y: auto;
+  overflow-y: auto; /* Allow scrolling in full screen mode */
   padding: 2rem;
   display: flex;
   flex-direction: column;

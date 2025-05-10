@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useZenMode } from '@/context/ZenModeContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import ZenModeToggle from './ZenModeToggle';
+import FullScreenModeToggle from './FullScreenModeToggle';
 import { Maximize, LayoutGrid, List } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
@@ -113,12 +113,12 @@ const LibraryPreview = ({
   const { signInWithSteam } = useAuth();
   const { demoData } = useDemoMode();
   const {
-    isZenMode,
-    enterZenMode,
+    isFullScreenMode,
+    enterFullScreenMode,
     focusedComponent,
     componentSettings,
     updateComponentSettings
-  } = useZenMode();
+  } = useFullScreenMode();
 
   // Initialize viewMode from ZenMode context if available, otherwise default to 'grid'
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>(
@@ -131,8 +131,8 @@ const LibraryPreview = ({
   // Ref to track if positions have been generated
   const positionsGeneratedRef = useRef(false);
 
-  // Determine if we should show in full screen zen mode
-  const isFullScreenMode = zenModeFullScreen && isZenMode;
+  // Determine if we should show in full screen mode
+  const isFullScreenMode = zenModeFullScreen && isFullScreenMode;
   
   // Update the context whenever viewMode changes
   useEffect(() => {
@@ -152,7 +152,7 @@ const LibraryPreview = ({
   
   // When entering full screen, make sure the context has the current view mode
   const handleEnterFullScreen = () => {
-    enterZenMode('library', { viewMode });
+    enterFullScreenMode('library', { viewMode });
     
     // Regenerate positions for zen mode when entering fullscreen
     if (viewMode === 'zen') {
@@ -177,10 +177,10 @@ const LibraryPreview = ({
 
   return (
     <div className={`${isFullScreenMode ? 'library-fullscreen' : 'terminal-container w-full'} ${isDemo ? 'relative' : ''}`}>
-      {/* Show the zen mode toggle in the corner when in full screen mode */}
+      {/* Show the full screen mode toggle in the corner when in full screen mode */}
       {isFullScreenMode && (
         <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
-          <ZenModeToggle />
+          <FullScreenModeToggle />
         </div>
       )}
       
@@ -250,7 +250,7 @@ const LibraryPreview = ({
         </div>
       )}
       
-      {/* Only show these controls when not in full screen zen mode */}
+      {/* Only show these controls when not in full screen mode */}
       {!isFullScreenMode && (
         <div className="text-center mt-6">
           <p className="text-gray-400">

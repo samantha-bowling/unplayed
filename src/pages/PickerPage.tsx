@@ -2,27 +2,27 @@
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ZenModeWrapper from '@/components/ZenModeWrapper';
+import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
 import RandomPicker from '@/components/RandomPicker';
 import { withDemoIndicator } from '@/components/withDemoIndicator';
-import { useZenMode } from '@/context/ZenModeContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 
 const PickerPage: React.FC = () => {
-  const { isZenMode } = useZenMode();
+  const { isFullScreenMode } = useFullScreenMode();
 
-  // In Zen Mode, render only the RandomPicker component
-  if (isZenMode) {
+  // In Full Screen Mode, render only the RandomPicker component
+  if (isFullScreenMode) {
     return (
-      <ZenModeWrapper>
+      <FullScreenModeWrapper>
         <div className="min-h-screen flex items-center justify-center">
           <RandomPicker fullScreen={true} />
         </div>
-      </ZenModeWrapper>
+      </FullScreenModeWrapper>
     );
   }
 
   return (
-    <ZenModeWrapper>
+    <FullScreenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
         
@@ -39,7 +39,7 @@ const PickerPage: React.FC = () => {
         
         <Footer />
       </div>
-    </ZenModeWrapper>
+    </FullScreenModeWrapper>
   );
 };
 

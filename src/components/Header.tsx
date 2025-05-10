@@ -1,26 +1,25 @@
-
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useZenMode } from '@/context/ZenModeContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import ZenModeToggle from './ZenModeToggle';
+import FullScreenModeToggle from './FullScreenModeToggle';
 import SteamLoginButton from './SteamLoginButton';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, signOut, isLoading } = useAuth();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
-  const { isZenMode } = useZenMode();
+  const { isFullScreenMode } = useFullScreenMode();
 
-  // Hide header in zen mode if it's fully activated
-  if (isZenMode) {
+  // Hide header in full screen mode if it's fully activated
+  if (isFullScreenMode) {
     return (
       <div className="fixed w-full px-4 py-2 flex justify-end top-0 left-0 z-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
-        <ZenModeToggle />
+        <FullScreenModeToggle />
       </div>
     );
   }
@@ -45,7 +44,7 @@ const Header = () => {
         <NavLink href="/support" label="Support" />
 
         {/* Add Zen Mode Toggle to header */}
-        <ZenModeToggle />
+        <FullScreenModeToggle />
 
         {isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
@@ -83,7 +82,7 @@ const Header = () => {
       </div>
 
       <div className="md:hidden flex items-center space-x-2">
-        <ZenModeToggle />
+        <FullScreenModeToggle />
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
           className="text-unplayed-mint p-2"

@@ -1,20 +1,19 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ZenModeWrapper from '@/components/ZenModeWrapper';
+import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
 import { withDemoIndicator } from '@/components/withDemoIndicator';
-import { useZenMode } from '@/context/ZenModeContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import LibraryPreview from '@/components/LibraryPreview';
 import LibraryFilters from '@/components/LibraryFilters';
 import GameGrid from '@/components/GameGrid';
 import useLibraryData from '@/hooks/use-library-data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import ZenModeToggle from '@/components/ZenModeToggle';
+import FullScreenModeToggle from '@/components/FullScreenModeToggle';
 
 const LibraryPage: React.FC = () => {
-  const { isZenMode, componentSettings } = useZenMode();
+  const { isFullScreenMode, componentSettings } = useFullScreenMode();
   const { toast } = useToast();
   
   // Get library data and actions from our hook
@@ -106,25 +105,25 @@ const LibraryPage: React.FC = () => {
     );
   };
 
-  // In Zen Mode, render only the LibraryPreview component
-  if (isZenMode) {
+  // In Full Screen Mode, render only the LibraryPreview component
+  if (isFullScreenMode) {
     return (
-      <ZenModeWrapper>
+      <FullScreenModeWrapper>
         <div className="min-h-screen flex items-center justify-center">
           <LibraryPreview zenModeFullScreen={true} />
           
-          {/* Add Zen Mode toggle in the corner */}
+          {/* Add Full Screen Mode toggle in the corner */}
           <div className="absolute top-4 right-4 z-10">
-            <ZenModeToggle />
+            <FullScreenModeToggle />
           </div>
         </div>
-      </ZenModeWrapper>
+      </FullScreenModeWrapper>
     );
   }
 
   // Regular view with header and footer
   return (
-    <ZenModeWrapper>
+    <FullScreenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
         
@@ -137,7 +136,7 @@ const LibraryPage: React.FC = () => {
               </h1>
               
               <div className="flex items-center space-x-2">
-                <ZenModeToggle />
+                <FullScreenModeToggle />
               </div>
             </div>
             
@@ -183,7 +182,7 @@ const LibraryPage: React.FC = () => {
         
         <Footer />
       </div>
-    </ZenModeWrapper>
+    </FullScreenModeWrapper>
   );
 };
 

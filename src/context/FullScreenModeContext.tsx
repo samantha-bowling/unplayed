@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Define available components for zen mode focus
+// Define available components for full screen mode focus
 export type FocusableComponent = 'library' | 'picker' | null;
 
 // Define types for component-specific settings
@@ -14,33 +14,33 @@ type ComponentSettings = {
   }
 };
 
-interface ZenModeContextType {
-  isZenMode: boolean;
-  toggleZenMode: () => void;
+interface FullScreenModeContextType {
+  isFullScreenMode: boolean;
+  toggleFullScreenMode: () => void;
   focusedComponent: FocusableComponent;
   setFocusedComponent: (component: FocusableComponent) => void;
-  enterZenMode: (component: FocusableComponent, settings?: any) => void;
+  enterFullScreenMode: (component: FocusableComponent, settings?: any) => void;
   componentSettings: ComponentSettings;
   updateComponentSettings: (component: FocusableComponent, settings: any) => void;
 }
 
-const ZenModeContext = createContext<ZenModeContextType | undefined>(undefined);
+const FullScreenModeContext = createContext<FullScreenModeContextType | undefined>(undefined);
 
-export const ZenModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isZenMode, setIsZenMode] = useState(false);
+export const FullScreenModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isFullScreenMode, setIsFullScreenMode] = useState(false);
   const [focusedComponent, setFocusedComponent] = useState<FocusableComponent>(null);
   const [componentSettings, setComponentSettings] = useState<ComponentSettings>({
     library: { viewMode: 'grid' }, // Default value
     picker: {}
   });
 
-  const toggleZenMode = () => {
-    setIsZenMode(prev => !prev);
-    if (isZenMode) setFocusedComponent(null); // Clear focused component when exiting zen mode
+  const toggleFullScreenMode = () => {
+    setIsFullScreenMode(prev => !prev);
+    if (isFullScreenMode) setFocusedComponent(null); // Clear focused component when exiting full screen mode
   };
   
-  const enterZenMode = (component: FocusableComponent, settings?: any) => {
-    setIsZenMode(true);
+  const enterFullScreenMode = (component: FocusableComponent, settings?: any) => {
+    setIsFullScreenMode(true);
     setFocusedComponent(component);
     
     // If settings are provided, update them for the component
@@ -65,7 +65,7 @@ export const ZenModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
-        toggleZenMode();
+        toggleFullScreenMode();
         e.preventDefault(); // Prevent browser default action
       }
     };
@@ -75,24 +75,24 @@ export const ZenModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   return (
-    <ZenModeContext.Provider value={{ 
-      isZenMode, 
-      toggleZenMode, 
+    <FullScreenModeContext.Provider value={{ 
+      isFullScreenMode, 
+      toggleFullScreenMode, 
       focusedComponent, 
       setFocusedComponent,
-      enterZenMode,
+      enterFullScreenMode,
       componentSettings,
       updateComponentSettings 
     }}>
       {children}
-    </ZenModeContext.Provider>
+    </FullScreenModeContext.Provider>
   );
 };
 
-export const useZenMode = () => {
-  const context = useContext(ZenModeContext);
+export const useFullScreenMode = () => {
+  const context = useContext(FullScreenModeContext);
   if (context === undefined) {
-    throw new Error("useZenMode must be used within a ZenModeProvider");
+    throw new Error("useFullScreenMode must be used within a FullScreenModeProvider");
   }
   return context;
 };

@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { Maximize, Minimize } from 'lucide-react';
-import { useZenMode } from '@/context/ZenModeContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-const ZenModeToggle: React.FC = () => {
-  const { isZenMode, toggleZenMode } = useZenMode();
+const FullScreenModeToggle: React.FC = () => {
+  const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
   
   return (
     <TooltipProvider>
@@ -15,10 +15,10 @@ const ZenModeToggle: React.FC = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={toggleZenMode}
+            onClick={toggleFullScreenMode}
             className="bg-black/50 border-gray-700 hover:bg-black/70"
           >
-            {isZenMode ? (
+            {isFullScreenMode ? (
               <Minimize size={18} />
             ) : (
               <Maximize size={18} />
@@ -26,11 +26,11 @@ const ZenModeToggle: React.FC = () => {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{isZenMode ? 'Exit Zen Mode (Ctrl+Shift+Z)' : 'Enter Zen Mode (Ctrl+Shift+Z)'}</p>
+          <p>{isFullScreenMode ? 'Exit Full Screen Mode (Ctrl+Shift+Z)' : 'Enter Full Screen Mode (Ctrl+Shift+Z)'}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 };
 
-export default ZenModeToggle;
+export default FullScreenModeToggle;

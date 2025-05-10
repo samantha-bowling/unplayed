@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import { useZenMode } from "@/context/ZenModeContext";
+import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import {
   Tooltip,
   TooltipContent,
@@ -15,22 +15,22 @@ import {
 
 const SupportPage = () => {
   const {
-    isZenMode,
-    toggleZenMode
-  } = useZenMode();
-  const [isZenModeActive, setIsZenModeActive] = useState(false);
+    isFullScreenMode,
+    toggleFullScreenMode
+  } = useFullScreenMode();
+  const [isFullScreenModeActive, setIsFullScreenModeActive] = useState(false);
 
-  // Enable zen mode effect for this page by default
+  // Enable full screen mode effect for this page by default
   useEffect(() => {
-    if (!isZenMode) {
-      toggleZenMode();
-      setIsZenModeActive(true);
+    if (!isFullScreenMode) {
+      toggleFullScreenMode();
+      setIsFullScreenModeActive(true);
     }
 
     // Cleanup - return to previous state if needed
     return () => {
-      if (isZenModeActive) {
-        toggleZenMode();
+      if (isFullScreenModeActive) {
+        toggleFullScreenMode();
       }
     };
   }, []);
@@ -38,7 +38,7 @@ const SupportPage = () => {
   return <div className="min-h-screen flex flex-col">
       <Header />
       
-      {/* Hero section - Using our new utility class */}
+      {/* Hero section - Using our header spacing utility class */}
       <section className="flex-grow flex flex-col items-center justify-center px-4 py-12 header-spacing text-center relative overflow-hidden">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint">
           Support Unplayed
