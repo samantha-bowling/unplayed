@@ -245,3 +245,8 @@ body.fullscreen-mode {
   z-index: 50 !important;
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
 }
+
+/* Utility class for spacing content below the fixed nav */
+.navbar-offset {
+  padding-top: 6rem; /* Adjust this value if your nav height changes */
+}
