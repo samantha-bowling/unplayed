@@ -38,11 +38,13 @@ serve(async (req) => {
       throw new Error("Stripe webhook secret is not configured");
     }
     
+    console.log("Processing webhook with signature:", signature.substring(0, 20) + "...");
+    
     // Read the request body
     const body = await req.text();
     
-    // Verify the webhook signature
-    const event = stripe.webhooks.constructEvent(
+    // Verify the webhook signature using the async method
+    const event = await stripe.webhooks.constructEventAsync(
       body,
       signature,
       webhookSecret,
@@ -54,6 +56,8 @@ serve(async (req) => {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       
+      console.log("Processing checkout session:", session.id);
+      
       // Extract custom fields from the session
       const customFields = session.custom_fields || [];
       const displayNameField = customFields.find(
@@ -64,6 +68,8 @@ serve(async (req) => {
       const displayName = displayNameField?.text?.value || 
                          session.customer_details?.name || 
                          "Anonymous Supporter";
+      
+      console.log("Display name for donor:", displayName);
       
       // Save donor information to the database
       const { data, error } = await supabaseAdmin
