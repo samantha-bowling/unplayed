@@ -16,8 +16,8 @@ const Header = () => {
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
 
-  // Check if user has admin role
-  const isAdmin = profile?.roles?.includes('admin') || user?.app_metadata?.roles?.includes('admin');
+  // Check if user has admin role - only using app_metadata since profile.roles doesn't exist
+  const isAdmin = user?.app_metadata?.roles?.includes('admin');
 
   // Hide header in full screen mode if it's fully activated
   if (isFullScreenMode) {
@@ -129,7 +129,7 @@ const Header = () => {
                   )}
                 </Avatar>
                 <div className="text-sm text-gray-300">
-                  {profile?.steam_name || 'Gamer'}
+                  {profile?.steam_name || 'User'}
                 </div>
                 
                 {/* Demo Mode toggle for logged-in users on mobile */}
