@@ -84,8 +84,10 @@ serve(async (req) => {
       const customFields = session.custom_fields || [];
       console.log("Custom fields found:", JSON.stringify(customFields));
       
+      // Updated to match the actual key from the Stripe event data
       const displayNameField = customFields.find(
-        (field) => field.key === "display_name" || field.label === "Hall of Thanks Display Name"
+        (field) => field.key === "hallofthanksdisplayname" || 
+                  (field.label && field.label.custom === "Hall of Thanks Display Name")
       );
       
       // Get display name from custom field
