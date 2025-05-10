@@ -128,6 +128,7 @@ const transformUserGameData = (data: any[], estimatesMap: Record<string, any>): 
       dustScore: 0,
       totalPlaytime: 0,
       totalSpent: 0,
+      potentialGameplayHours: 0, // Added to match DemoDataType
       genres: [],
       shelfLife: [],
       library: []
@@ -233,7 +234,7 @@ const transformUserGameData = (data: any[], estimatesMap: Record<string, any>): 
     dustScore,
     totalPlaytime,
     totalSpent,
-    potentialGameplayHours, // New field with HLTB data
+    potentialGameplayHours, // Now properly including the HLTB data
     genres,
     shelfLife,
     library

@@ -27,8 +27,8 @@ const UnplayedCounter = ({
   const actualCount = count ?? unplayedData.unplayedGames;
   const [animatedCount, setAnimatedCount] = useState(0);
   
-  // Get the potential gameplay hours with HLTB data
-  const potentialHours = unplayedData.potentialGameplayHours || actualCount * 12.5;
+  // Get the potential gameplay hours with HLTB data - with fallback if not available
+  const potentialHours = unplayedData.potentialGameplayHours ?? actualCount * 12.5;
   const [animatedHours, setAnimatedHours] = useState(0);
   
   const {

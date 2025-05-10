@@ -5,6 +5,7 @@ export interface DemoDataType {
   dustScore: number;
   totalPlaytime: number; // in hours
   totalSpent: number; // in dollars
+  potentialGameplayHours: number; // Added for HLTB integration
   genres: Array<{ name: string; value: number; color: string }>;
   shelfLife: Array<{ 
     id: number;
@@ -26,6 +27,7 @@ export const DEMO_DATA: DemoDataType = {
   dustScore: 237,
   totalPlaytime: 523, // in hours
   totalSpent: 2175.89, // in dollars
+  potentialGameplayHours: 137 * 12.5, // Added: average of 12.5 hours per unplayed game
 
   // Genre data for pie chart
   genres: [
