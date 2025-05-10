@@ -6,11 +6,22 @@ const SUPABASE_URL = "https://gwmygthanyycveyqqspr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bXlndGhhbnl5Y3ZleXFxc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTAxMjUsImV4cCI6MjA2MjMyNjEyNX0.zrL5sYy8LE4ErMRL-W-yuZZR10EYyrgIS9Kj-EfUw80";
 const STEAM_API_KEY = "38839F6C16BC7EC93D3A2DA41DEE8D70";
 
-// Updated: The deployed URL of this edge function on the new domain
-const STEAM_RETURN_URL = "https://unplayed.wtf/api/auth/steam/callback";
+// Use environment variable for the return URL with fallback
+const STEAM_RETURN_URL = Deno.env.get("STEAM_RETURN_URL") || "https://unplayed.wtf/api/auth/steam/callback";
 
-// The frontend URL - unchanged
-const FRONTEND_URL = "https://unplayed.wtf";
+// The frontend URL - dynamic based on the domain
+const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
+
+// Get the domain for realm from the return URL
+const getDomainFromUrl = (url) => {
+  try {
+    const urlObj = new URL(url);
+    return `${urlObj.protocol}//${urlObj.hostname}`;
+  } catch (e) {
+    console.error("Failed to parse URL:", e);
+    return "https://unplayed.wtf";
+  }
+};
 
 // Steam OpenID endpoint
 const STEAM_LOGIN_URL = "https://steamcommunity.com/openid/login";
@@ -66,11 +77,16 @@ async function handleLogin(req: Request) {
     // Generate a state parameter to prevent CSRF attacks and store the redirectTo
     const state = btoa(JSON.stringify({ redirectTo }));
     
+    // Get the domain to use as realm from the return URL
+    const realm = getDomainFromUrl(STEAM_RETURN_URL);
+    
+    console.log(`Using realm: ${realm} and return URL: ${STEAM_RETURN_URL}`);
+    
     const params = new URLSearchParams({
       'openid.ns': 'http://specs.openid.net/auth/2.0',
       'openid.mode': 'checkid_setup',
       'openid.return_to': `${STEAM_RETURN_URL}?state=${encodeURIComponent(state)}`,
-      'openid.realm': 'https://unplayed.wtf', // Updated: Use the unplayed.wtf domain as realm
+      'openid.realm': realm,
       'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
       'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
     });
@@ -780,13 +796,18 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
 
 // Health check endpoint
 async function handleHealthCheck() {
-  return new Response(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }), {
+  return new Response(JSON.stringify({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    steam_return_url: STEAM_RETURN_URL,
+    frontend_url: FRONTEND_URL
+  }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
   });
 }
 
-// New debug endpoint for troubleshooting the edge function environment
+// Debug endpoint for troubleshooting the edge function environment
 async function handleDebug(req: Request) {
   // Get request information
   const url = new URL(req.url);
@@ -795,6 +816,8 @@ async function handleDebug(req: Request) {
   // Check for environment variables
   const serviceRoleKeyPresent = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const steamApiKeyPresent = !!STEAM_API_KEY;
+  const steamReturnUrlValue = STEAM_RETURN_URL;
+  const frontendUrlValue = FRONTEND_URL;
   
   // Construct debug information
   const debugInfo = {
@@ -802,10 +825,11 @@ async function handleDebug(req: Request) {
     environment: {
       deno: Deno.version,
       supabaseUrl: SUPABASE_URL,
-      steamReturnUrl: STEAM_RETURN_URL,
-      frontendUrl: FRONTEND_URL,
+      steamReturnUrl: steamReturnUrlValue,
+      frontendUrl: frontendUrlValue,
       serviceRoleKeyPresent,
       steamApiKeyPresent,
+      realm: getDomainFromUrl(STEAM_RETURN_URL)
     },
     config: {
       corsHeaders,
@@ -829,7 +853,7 @@ async function handleDebug(req: Request) {
   };
   
   return new Response(
-    JSON.stringify(debugInfo),
+    JSON.stringify(debugInfo, null, 2),
     {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

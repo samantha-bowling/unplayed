@@ -31,11 +31,12 @@ const SteamLoginButton = ({
 
   const handleSteamLogin = async () => {
     try {
+      console.log("[Steam Login Button] Initiating Steam login, redirectPath:", redirectPath);
       setIsLoading(true);
       await signInWithSteam(redirectPath);
       // Note: This code will not execute immediately as the user will be redirected to Steam
     } catch (error) {
-      console.error('Error during Steam login:', error);
+      console.error('[Steam Login Button] Error during Steam login:', error);
       setIsLoading(false);
       navigate('/auth');
     }
@@ -50,6 +51,7 @@ const SteamLoginButton = ({
                    flex items-center justify-center transition-opacity hover:opacity-90 ${className}
                    ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         disabled={isLoading}
+        aria-label="Sign in through Steam"
       >
         <img 
           src="/lovable-uploads/0b70a4e5-f3cb-44e0-bb0b-bf29ee038fa3.png"
