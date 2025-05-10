@@ -13,6 +13,7 @@ export interface PickerNavigationState {
 export interface GamePickFilters {
   mood?: string;
   source?: string;
+  genre?: string;
 }
 
 /**
