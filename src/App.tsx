@@ -14,6 +14,7 @@ import LibraryPage from "./pages/LibraryPage";
 import PickerPage from "./pages/PickerPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
 import SupportPage from "./pages/SupportPage";
+import DustPage from "./pages/DustPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,11 @@ const App = () => (
                 <Route path="/picker" element={
                   <ProtectedRoute>
                     <PickerPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dust" element={
+                  <ProtectedRoute>
+                    <DustPage />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
