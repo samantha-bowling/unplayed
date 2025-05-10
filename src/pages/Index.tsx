@@ -34,7 +34,7 @@ const Index = () => {
         <Header />
         
         {/* Hero section - Add header spacing */}
-        <section className="w-full py-8 px-4 header-spacing">
+        <section className="w-full navbar-offset pb-8 px-4">
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
               Your PC games are gathering dust.
