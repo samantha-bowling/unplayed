@@ -85,6 +85,14 @@ Deno.serve(async (req) => {
           // Calculate clean score (percentage of games played)
           const cleanScore = totalGames > 0 ? Math.round((playedGames / totalGames) * 100) : 0;
 
+          // Get previous rankings for this user
+          const { data: previousEntry } = await supabase
+            .from('leaderboard_snapshots')
+            .select('ranking')
+            .eq('user_id', user.id)
+            .order('snapshot_date', { ascending: false })
+            .limit(1);
+
           // Add to batch for upsert
           leaderboardEntries.push({
             user_id: user.id,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,8 @@ export type LeaderboardEntry = {
   unplayed_games: number;
   library_value_cents: number | null;
   ranking: number | null;
+  previous_ranking: number | null; // Added to track previous ranking
+  rank_change: number | null;      // Added to track rank change
   snapshot_date: string;
   user_id: string;
 };
@@ -58,6 +59,34 @@ export const useLeaderboardData = (type: LeaderboardType) => {
         .single();
       
       if (error) throw error;
+      return data.snapshot_date;
+    },
+    staleTime: 60 * 1000, // 1 min stale
+    gcTime: 5 * 60 * 1000 // 5 min in cache
+  });
+
+  // Query for previous snapshot date (for calculating rank changes)
+  const previousSnapshotQuery = useQuery({
+    queryKey: ['leaderboard-previous-snapshot', lastUpdatedQuery.data],
+    enabled: !!lastUpdatedQuery.data,
+    queryFn: async () => {
+      const currentDate = lastUpdatedQuery.data;
+      if (!currentDate) return null;
+      
+      const { data, error } = await supabase
+        .from('leaderboard_snapshots')
+        .select('snapshot_date')
+        .lt('snapshot_date', currentDate)
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) {
+        // It's possible there is no previous snapshot yet
+        console.log('No previous snapshot found');
+        return null;
+      }
+      
       return data.snapshot_date;
     },
     staleTime: 60 * 1000, // 1 min stale
@@ -129,6 +158,38 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     if (hasMore && results.length > 0) {
       const lastItem = results[results.length - 1];
       nextCursor = `${lastItem[orderByColumn]}|${lastItem.user_id}`;
+    }
+    
+    // If we have a previous snapshot, fetch rank information to calculate changes
+    if (previousSnapshotQuery.data) {
+      const previousDate = previousSnapshotQuery.data;
+      
+      // For each user in our results, get their previous ranking
+      for (const entry of results) {
+        try {
+          const { data: previousData } = await supabase
+            .from('leaderboard_snapshots')
+            .select('ranking')
+            .eq('user_id', entry.user_id)
+            .eq('snapshot_date', previousDate)
+            .single();
+          
+          if (previousData && entry.ranking !== null) {
+            // Store previous ranking
+            entry.previous_ranking = previousData.ranking;
+            // Calculate rank change (positive means improved, negative means dropped)
+            entry.rank_change = previousData.ranking !== null ? 
+                previousData.ranking - entry.ranking : null;
+          } else {
+            entry.previous_ranking = null;
+            entry.rank_change = null;
+          }
+        } catch (error) {
+          // User might not have existed in the previous snapshot
+          entry.previous_ranking = null;
+          entry.rank_change = null;
+        }
+      }
     }
     
     return {
@@ -207,6 +268,11 @@ export const useLeaderboardData = (type: LeaderboardType) => {
       date: lastUpdatedQuery.data,
       isLoading: lastUpdatedQuery.isLoading,
       error: lastUpdatedQuery.error
+    },
+    previousSnapshot: {
+      date: previousSnapshotQuery.data,
+      isLoading: previousSnapshotQuery.isLoading,
+      error: previousSnapshotQuery.error
     },
     pagination: {
       hasMore: queryResult.data?.hasMore || false,

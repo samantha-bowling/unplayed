@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/pagination";
 import { Clock, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import RankChangeIndicator from "@/components/RankChangeIndicator";
 
 const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState<"dust" | "clean">("dust");
@@ -134,6 +136,7 @@ const LeaderboardPage = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-16">Rank</TableHead>
+                          <TableHead className="w-12">Change</TableHead>
                           <TableHead>Player</TableHead>
                           <TableHead className="text-right">Dust Score</TableHead>
                           <TableHead className="text-right hidden md:table-cell">Games</TableHead>
@@ -154,6 +157,9 @@ const LeaderboardPage = () => {
                               <TableCell className="font-medium">
                                 {globalRank}
                                 {isCurrentUser && <span className="ml-1 text-unplayed-mint">•</span>}
+                              </TableCell>
+                              <TableCell>
+                                <RankChangeIndicator change={entry.rank_change} />
                               </TableCell>
                               <TableCell>
                                 {entry.is_anonymous ? 
@@ -229,6 +235,7 @@ const LeaderboardPage = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-16">Rank</TableHead>
+                          <TableHead className="w-12">Change</TableHead>
                           <TableHead>Player</TableHead>
                           <TableHead className="text-right">Clean Score</TableHead>
                           <TableHead className="text-right hidden md:table-cell">Games</TableHead>
@@ -249,6 +256,9 @@ const LeaderboardPage = () => {
                               <TableCell className="font-medium">
                                 {globalRank}
                                 {isCurrentUser && <span className="ml-1 text-unplayed-mint">•</span>}
+                              </TableCell>
+                              <TableCell>
+                                <RankChangeIndicator change={entry.rank_change} />
                               </TableCell>
                               <TableCell>
                                 {entry.is_anonymous ? 
