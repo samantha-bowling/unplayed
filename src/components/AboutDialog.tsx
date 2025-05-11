@@ -200,17 +200,6 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
                 </p>
               </AccordionContent>
             </AccordionItem>
-            
-            <AccordionItem value="creators">
-              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                Who made unplayed?
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                <p>
-                  fourzerofive (wife, creator, fun maker)
-                </p>
-              </AccordionContent>
-            </AccordionItem>
           </Accordion>
         </div>
       </DialogContent>
@@ -219,3 +208,4 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
 };
 
 export default AboutDialog;
+
