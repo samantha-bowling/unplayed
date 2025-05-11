@@ -575,7 +575,7 @@ async function handleCallback(request: Request) {
       // First, see if we already have this Steam ID in our database
       const { data: existingUserData, error: lookupError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, last_sync')
         .eq('steam_id', steamId)
         .maybeSingle();
       
@@ -584,6 +584,7 @@ async function handleCallback(request: Request) {
       }
       
       let userId: string;
+      let shouldImportLibrary = true;
       
       if (!existingUserData) {
         // New user - create Supabase auth account and profile
@@ -609,19 +610,23 @@ async function handleCallback(request: Request) {
         }
         
         console.log(`[Steam Auth] Created new user with ID: ${userId}`);
-        
-        // Process game library data in the background if available
-        if (steamUserData.library?.games?.length > 0) {
-          try {
-            EdgeRuntime.waitUntil(processGameLibrary(supabase, userId, steamId, steamUserData.library));
-          } catch (error) {
-            console.error("Error starting game library import:", error);
-            // Non-fatal error, continue with auth flow
-          }
-        }
+        // For new users, always import library
+        shouldImportLibrary = true;
       } else {
         // Existing user - update their profile data
         userId = existingUserData.id;
+        
+        // Rate limiting: Check if we've synced recently (within last 2 minutes)
+        const lastSync = existingUserData.last_sync ? new Date(existingUserData.last_sync) : null;
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // 2 minutes ago
+        
+        if (lastSync && lastSync > twoMinutesAgo) {
+          console.log(`[Steam Auth] Skipping library import - last sync was recent: ${lastSync.toISOString()}`);
+          shouldImportLibrary = false;
+        } else {
+          console.log(`[Steam Auth] Library import allowed - last sync: ${lastSync?.toISOString() || 'never'}`);
+          shouldImportLibrary = true;
+        }
         
         const { error: updateError } = await supabase
           .from('users')
@@ -638,15 +643,21 @@ async function handleCallback(request: Request) {
         }
         
         console.log(`[Steam Auth] Updated existing user with ID: ${userId}`);
-        
-        // Update their game library in the background
-        if (steamUserData.library?.games?.length > 0) {
-          try {
+      }
+      
+      // Process game library data in the background if available AND allowed by rate limiting
+      if (shouldImportLibrary && steamUserData.library?.games?.length > 0) {
+        try {
+          if (existingUserData) {
+            // Update existing user's library
             EdgeRuntime.waitUntil(updateGameLibrary(supabase, userId, steamId, steamUserData.library));
-          } catch (error) {
-            console.error("Error starting game library update:", error);
-            // Non-fatal error, continue
+          } else {
+            // Import library for new user
+            EdgeRuntime.waitUntil(processGameLibrary(supabase, userId, steamId, steamUserData.library));
           }
+        } catch (error) {
+          console.error("Error starting game library import/update:", error);
+          // Non-fatal error, continue with auth flow
         }
       }
       
