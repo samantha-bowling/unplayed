@@ -18,3 +18,6 @@ verify_jwt = true
 
 [functions.refresh-game-price]
 verify_jwt = true
+
+[functions.calculate-leaderboard-rankings]
+verify_jwt = true

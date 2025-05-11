@@ -197,6 +197,59 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_snapshots: {
+        Row: {
+          clean_score: number
+          dust_score: number
+          id: string
+          is_anonymous: boolean
+          library_value_cents: number | null
+          played_games: number
+          ranking: number | null
+          snapshot_date: string
+          total_games: number
+          unplayed_games: number
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          clean_score: number
+          dust_score: number
+          id?: string
+          is_anonymous?: boolean
+          library_value_cents?: number | null
+          played_games?: number
+          ranking?: number | null
+          snapshot_date?: string
+          total_games?: number
+          unplayed_games?: number
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          clean_score?: number
+          dust_score?: number
+          id?: string
+          is_anonymous?: boolean
+          library_value_cents?: number | null
+          played_games?: number
+          ranking?: number | null
+          snapshot_date?: string
+          total_games?: number
+          unplayed_games?: number
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_games: {
         Row: {
           acquisition_date: string | null
@@ -259,6 +312,7 @@ export type Database = {
           created_at: string
           id: string
           last_sync: string | null
+          leaderboard_visibility: string
           steam_avatar: string | null
           steam_id: string
           steam_name: string
@@ -268,6 +322,7 @@ export type Database = {
           created_at?: string
           id: string
           last_sync?: string | null
+          leaderboard_visibility?: string
           steam_avatar?: string | null
           steam_id: string
           steam_name: string
@@ -277,6 +332,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_sync?: string | null
+          leaderboard_visibility?: string
           steam_avatar?: string | null
           steam_id?: string
           steam_name?: string
