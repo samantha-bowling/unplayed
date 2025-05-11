@@ -13,7 +13,7 @@ const TermsOfServiceDialog = ({
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <span className="text-unplayed-mint">✅ Terms of Service</span>
-            <span className="text-unplayed-pink">– Unplayed.wtf</span>
+            <span className="text-unplayed-pink">– unplayed</span>
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-400">
             Effective Date: May 8, 2025 | Last Updated: May 10, 2025
