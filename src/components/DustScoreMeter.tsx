@@ -149,7 +149,6 @@ const DustScoreMeter = ({
             <CleanScoreMeterSmall 
               score={data.cleanScore || 0} 
               tier={data.cleanTier}
-              isDemo={isDemo} 
             />
           </div>
         )}

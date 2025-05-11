@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from '../withDemoIndicator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Sparkle } from 'lucide-react';
 
 interface CleanScoreMeterSmallProps extends WithDemoProps {
   score: number;
@@ -65,7 +65,9 @@ const CleanScoreMeterSmall = ({
 
         {/* Sparkles for high scores */}
         {showSparkles && (
-          <div className="absolute -top-1 -right-1 animate-pulse">✨</div>
+          <div className="absolute -top-1 -right-1 animate-pulse">
+            <Sparkle size={16} className="text-yellow-300" />
+          </div>
         )}
       </div>
       
