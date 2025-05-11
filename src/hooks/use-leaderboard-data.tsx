@@ -117,7 +117,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   ): Promise<LeaderboardQueryResult> => {
     let query = supabase
       .from('leaderboard_snapshots')
-      .select('id, username, is_anonymous, dust_score, clean_score, total_games, played_games, unplayed_games, library_value_cents, ranking, snapshot_date, user_id');
+      .select('id, username, is_anonymous, dust_score, clean_score, total_games, played_games, unplayed_games, library_value_cents, ranking, previous_ranking, rank_change, snapshot_date, user_id');
     
     // Apply timeframe filter if needed
     if (timeframeFilter) {
@@ -189,6 +189,13 @@ export const useLeaderboardData = (type: LeaderboardType) => {
           entry.previous_ranking = null;
           entry.rank_change = null;
         }
+      }
+    }
+    
+    // If rank_change is null but we have previous_ranking and ranking, calculate it
+    for (const entry of results) {
+      if (entry.rank_change === null && entry.previous_ranking !== null && entry.ranking !== null) {
+        entry.rank_change = entry.previous_ranking - entry.ranking;
       }
     }
     

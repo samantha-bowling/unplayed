@@ -205,6 +205,8 @@ export type Database = {
           is_anonymous: boolean
           library_value_cents: number | null
           played_games: number
+          previous_ranking: number | null
+          rank_change: number | null
           ranking: number | null
           snapshot_date: string
           total_games: number
@@ -219,6 +221,8 @@ export type Database = {
           is_anonymous?: boolean
           library_value_cents?: number | null
           played_games?: number
+          previous_ranking?: number | null
+          rank_change?: number | null
           ranking?: number | null
           snapshot_date?: string
           total_games?: number
@@ -233,6 +237,8 @@ export type Database = {
           is_anonymous?: boolean
           library_value_cents?: number | null
           played_games?: number
+          previous_ranking?: number | null
+          rank_change?: number | null
           ranking?: number | null
           snapshot_date?: string
           total_games?: number

@@ -37,6 +37,21 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${eligibleUsers.length} eligible users`);
 
+    // Get the previous snapshot date (for calculating rank changes)
+    const { data: previousSnapshotData, error: previousError } = await supabase
+      .from('leaderboard_snapshots')
+      .select('snapshot_date')
+      .order('snapshot_date', { ascending: false })
+      .limit(1);
+
+    if (previousError) throw previousError;
+
+    const previousSnapshotDate = previousSnapshotData && previousSnapshotData.length > 0 
+      ? previousSnapshotData[0].snapshot_date 
+      : null;
+
+    console.log(`Previous snapshot date: ${previousSnapshotDate || 'none'}`);
+
     // Process users in batches
     const batches = [];
     for (let i = 0; i < eligibleUsers.length; i += BATCH_SIZE) {
@@ -90,8 +105,11 @@ Deno.serve(async (req) => {
             .from('leaderboard_snapshots')
             .select('ranking')
             .eq('user_id', user.id)
-            .order('snapshot_date', { ascending: false })
+            .eq('snapshot_date', previousSnapshotDate)
             .limit(1);
+
+          // Store previous ranking if it exists
+          const previousRanking = previousEntry && previousEntry.length > 0 ? previousEntry[0].ranking : null;
 
           // Add to batch for upsert
           leaderboardEntries.push({
@@ -105,6 +123,7 @@ Deno.serve(async (req) => {
             library_value_cents: libraryValueCents,
             username: user.leaderboard_visibility === 'public' ? user.steam_name : null,
             is_anonymous: user.leaderboard_visibility === 'anonymous',
+            previous_ranking: previousRanking, // Store the previous ranking
           });
         } catch (err) {
           console.error(`Error processing user ${user.id}:`, err);
@@ -137,6 +156,45 @@ Deno.serve(async (req) => {
     const { error: cleanRankError } = await supabase.rpc('update_leaderboard_clean_rankings', { snapshot_timestamp: timestamp });
     if (cleanRankError) {
       console.error('Error updating clean rankings:', cleanRankError);
+    }
+
+    // Calculate rank changes by comparing new rankings with previous ones
+    if (previousSnapshotDate) {
+      console.log('Calculating rank changes...');
+      
+      // We need to use raw SQL for this more complex update
+      const { error: rankChangeError } = await supabase.rpc('update_rank_changes', { 
+        current_snapshot: timestamp,
+        previous_snapshot: previousSnapshotDate 
+      });
+      
+      if (rankChangeError) {
+        console.error('Error calculating rank changes:', rankChangeError);
+        
+        // Fallback: manually update rank changes
+        console.log('Using fallback method to calculate rank changes...');
+        
+        const { data: currentEntries } = await supabase
+          .from('leaderboard_snapshots')
+          .select('id, user_id, ranking, previous_ranking')
+          .eq('snapshot_date', timestamp);
+          
+        if (currentEntries) {
+          for (const entry of currentEntries) {
+            if (entry.previous_ranking !== null && entry.ranking !== null) {
+              const rankChange = entry.previous_ranking - entry.ranking; // Positive means improved rank
+              
+              await supabase
+                .from('leaderboard_snapshots')
+                .update({ rank_change: rankChange })
+                .eq('id', entry.id);
+            }
+          }
+          console.log('Finished fallback rank change calculations');
+        }
+      } else {
+        console.log('Rank changes calculated successfully');
+      }
     }
 
     return new Response(JSON.stringify({ 
