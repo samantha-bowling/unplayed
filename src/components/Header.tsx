@@ -49,6 +49,7 @@ const Header = () => {
             )}
           </>
         )}
+        <NavLink href="/leaderboard" label="Leaderboard" />
         <NavLink href="/support" label="Support" />
 
         {/* Add Zen Mode Toggle to header */}
@@ -113,6 +114,7 @@ const Header = () => {
                 )}
               </>
             )}
+            <NavLink href="/leaderboard" label="Leaderboard" />
             <NavLink href="/support" label="Support" />
             
             {isLoading ? (

@@ -14,6 +14,7 @@ import LibraryPage from "./pages/LibraryPage";
 import PickerPage from "./pages/PickerPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
 import SupportPage from "./pages/SupportPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -38,6 +39,7 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/support" element={<SupportPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
                 {/* Protected routes */}
                 <Route path="/library" element={
                   <ProtectedRoute>
