@@ -40,7 +40,8 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   };
 
   const orderByColumn = type === 'dust' ? 'dust_score' : 'clean_score';
-  const orderDirection = type === 'dust' ? 'desc' : 'desc'; // Higher is better for both
+  // Fix: Remove comparison that causes the TypeScript error
+  const orderDirection = 'desc'; // Higher is better for both dust and clean scores
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['leaderboard', type, timeframe],
