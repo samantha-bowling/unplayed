@@ -13,13 +13,18 @@ import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 import SteamLoginButton from '@/components/SteamLoginButton';
+import SteamPrivacyChecklist from '@/components/SteamPrivacyChecklist';
+import SteamPrivacyError from '@/components/SteamPrivacyError';
+import DemoModeFallback from '@/components/DemoModeFallback';
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
-  const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile } = useAuth();
+  const [libraryPrivacyError, setLibraryPrivacyError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile, refreshProfile } = useAuth();
   const { hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const { toast } = useToast();
   const location = useLocation();
@@ -32,11 +37,25 @@ const AuthPage = () => {
     '/';
 
   useEffect(() => {
-    // If user is already logged in, show success animation then redirect
-    if (authStatus === AuthStatus.AUTHENTICATED && user && !showSuccessAnimation) {
+    // Check for library privacy error based on user status and library sync status
+    if (user && profile && enhancedStatus === EnhancedAuthStatus.PROFILE_LOADED && !showSuccessAnimation) {
+      // If we have a user and profile, but no library data, it's likely a privacy issue
+      if (profile.steam_id && !profile.last_sync) {
+        console.log('Detected potential library privacy issue');
+        setLibraryPrivacyError(true);
+      } else {
+        setLibraryPrivacyError(false);
+        setShowSuccessAnimation(true);
+      }
+    }
+  }, [user, profile, enhancedStatus, showSuccessAnimation]);
+
+  // If user is already logged in, show success animation then redirect
+  useEffect(() => {
+    if (authStatus === AuthStatus.AUTHENTICATED && user && !showSuccessAnimation && !libraryPrivacyError) {
       setShowSuccessAnimation(true);
     }
-  }, [authStatus, user, navigate, from, showSuccessAnimation]);
+  }, [authStatus, user, showSuccessAnimation, libraryPrivacyError]);
 
   // Check for auth errors in URL
   useEffect(() => {
@@ -69,6 +88,38 @@ const AuthPage = () => {
         return "Loading your game library...";
       default:
         return "Processing...";
+    }
+  };
+
+  // Handle retry for privacy error
+  const handleRetryLibraryAccess = async () => {
+    setIsRetrying(true);
+    try {
+      await refreshProfile();
+      // After refresh, check if we now have library data
+      if (profile?.last_sync) {
+        setLibraryPrivacyError(false);
+        setShowSuccessAnimation(true);
+        toast({
+          title: 'Success!',
+          description: 'We can now access your game library.',
+        });
+      } else {
+        toast({
+          title: 'Still Unable to Access Library',
+          description: 'Please check your Steam privacy settings and try again.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh your profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRetrying(false);
     }
   };
 
@@ -124,6 +175,22 @@ const AuthPage = () => {
           
           <div className="space-y-6">
             <AnimatePresence>
+              {/* Steam Privacy Error */}
+              {libraryPrivacyError && (
+                <motion.div
+                  key="privacy-error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <SteamPrivacyError 
+                    onRetry={handleRetryLibraryAccess} 
+                    isLoading={isRetrying} 
+                  />
+                  <DemoModeFallback />
+                </motion.div>
+              )}
+              
               {/* Show the Steam Loader during loading states */}
               {[EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) && (
                 <motion.div 
@@ -143,13 +210,15 @@ const AuthPage = () => {
             </AnimatePresence>
 
             <AnimatePresence>
-              {!hasError && enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && (
+              {!hasError && enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && !libraryPrivacyError && (
                 <motion.div
                   key="auth-content"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
+                  <SteamPrivacyChecklist />
+                  
                   <p className="text-gray-300 text-center">
                     To access your Steam library data, please authenticate with your Steam account.
                   </p>
@@ -178,7 +247,7 @@ const AuthPage = () => {
                     error={hasError ? { 
                       code: 'unknown', 
                       message: 'Unknown authentication error',
-                      timestamp: Date.now() // Added the required timestamp property
+                      timestamp: Date.now()
                     } : null}
                     onRetry={retry}
                   />
@@ -187,7 +256,7 @@ const AuthPage = () => {
             </AnimatePresence>
             
             <AnimatePresence>
-              {enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && (
+              {enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && !libraryPrivacyError && (
                 <motion.div
                   className="flex justify-center"
                   initial={{ opacity: 0, y: 10 }}
