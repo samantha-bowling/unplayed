@@ -24,20 +24,7 @@ const PickerGameCard: React.FC<PickerGameCardProps> = ({
   
   return (
     <div className="relative">
-      <GameCard 
-        id={game.id.toString()}
-        gameId={game.id}
-        title={game.title}
-        imageUrl={game.imageUrl}
-        dustScore={game.dustScore}
-        playtimeMinutes={game.playtimeMinutes}
-        isHidden={game.isHidden}
-        notes={game.notes}
-        onMarkAsPlayed={() => {}}
-        onToggleHidden={() => {}}
-        onSaveNote={() => {}}
-        onClick={onClick}
-      />
+      <GameCard game={game} onClick={onClick} />
       {isPreviouslyPicked && lastPickedAt && (
         <PreviouslyPickedBadge pickedAt={lastPickedAt} />
       )}
