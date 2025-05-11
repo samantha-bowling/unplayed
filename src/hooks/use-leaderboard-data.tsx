@@ -27,6 +27,13 @@ type PaginationState = {
   page: number;
 };
 
+// Define the type for the query result
+type LeaderboardQueryResult = {
+  data: LeaderboardEntry[];
+  hasMore: boolean;
+  nextCursor: string | null;
+};
+
 const PAGE_SIZE = 20;
 
 export const useLeaderboardData = (type: LeaderboardType) => {
@@ -60,7 +67,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   const fetchLeaderboardPage = async (
     cursorValue: string | null, 
     timeframeFilter: string | null
-  ) => {
+  ): Promise<LeaderboardQueryResult> => {
     let query = supabase
       .from('leaderboard_snapshots')
       .select('id, username, is_anonymous, dust_score, clean_score, total_games, played_games, unplayed_games, library_value_cents, ranking, snapshot_date, user_id');
@@ -113,7 +120,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     };
   };
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery<LeaderboardQueryResult, Error>({
     queryKey: ['leaderboard', type, timeframe, pagination.page],
     queryFn: async () => {
       const timeFilter = getTimeframeFilter();
@@ -122,8 +129,9 @@ export const useLeaderboardData = (type: LeaderboardType) => {
       return result;
     },
     staleTime: 60 * 1000, // 1 min stale
-    cacheTime: 5 * 60 * 1000, // 5 min in cache
+    gcTime: 5 * 60 * 1000, // 5 min in cache (replaced cacheTime)
     refetchOnWindowFocus: false,
+    refetchOnMount: false, // Added to optimize refetch behavior
     onSuccess: (data) => {
       // Prefetch next page if there's more data
       if (data.hasMore) {
@@ -133,6 +141,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
             const timeFilter = getTimeframeFilter();
             return await fetchLeaderboardPage(data.nextCursor, timeFilter);
           },
+          gcTime: 5 * 60 * 1000, // Match parent query's gcTime for consistency
         });
       }
     }
