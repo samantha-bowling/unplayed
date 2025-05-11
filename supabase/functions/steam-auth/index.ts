@@ -1,22 +1,76 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
 
 const SUPABASE_URL = "https://gwmygthanyycveyqqspr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bXlndGhhbnl5Y3ZleXFxc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTAxMjUsImV4cCI6MjA2MjMyNjEyNX0.zrL5sYy8LE4ErMRL-W-yuZZR10EYyrgIS9Kj-EfUw80";
 const STEAM_API_KEY = "38839F6C16BC7EC93D3A2DA41DEE8D70";
 
-// Improved environment variable handling with better fallbacks
-const STEAM_RETURN_URL = Deno.env.get("STEAM_RETURN_URL") || "https://unplayed.wtf/api/auth/steam/callback";
-const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
+// Dynamic environment detection and URL configuration
+const getEnvironment = (request: Request) => {
+  const host = request.headers.get('host') || '';
+  const origin = request.headers.get('origin') || '';
+  const referer = request.headers.get('referer') || '';
+  const sourceHeader = request.headers.get('x-steam-auth-source') || '';
+  
+  console.log(`[Steam Auth] Detecting environment:
+    Host: ${host}
+    Origin: ${origin}
+    Referer: ${referer}
+    Source: ${sourceHeader}
+  `);
 
-// Log the environment variables for debugging
-console.log(`[Steam Auth] Environment variables:
-  STEAM_RETURN_URL: ${STEAM_RETURN_URL}
-  FRONTEND_URL: ${FRONTEND_URL}
-  SUPABASE_SERVICE_ROLE_KEY present: ${!!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`);
+  // Check if running in specific environments
+  const isNetlifyPreview = host.includes('netlify.app') && !host.includes('unplayed.wtf');
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+  const isProduction = host.includes('unplayed.wtf') || sourceHeader === 'netlify';
+  
+  return { isNetlifyPreview, isLocalhost, isProduction };
+};
+
+// Get environment-appropriate URLs for auth flow
+const getConfiguredUrls = (request: Request) => {
+  // First check environment variables (highest priority)
+  const envFrontendUrl = Deno.env.get("FRONTEND_URL");
+  const envReturnUrl = Deno.env.get("STEAM_RETURN_URL");
+  
+  // Then determine environment
+  const { isNetlifyPreview, isLocalhost, isProduction } = getEnvironment(request);
+  
+  // Default production URLs as fallback
+  const PROD_FRONTEND_URL = "https://unplayed.wtf";
+  const PROD_RETURN_URL = "https://unplayed.wtf/api/auth/steam/callback";
+  
+  // Set appropriate URLs based on environment
+  let frontendUrl = envFrontendUrl || PROD_FRONTEND_URL;
+  let returnUrl = envReturnUrl || PROD_RETURN_URL;
+  
+  // Override if in Netlify preview or development
+  if (isNetlifyPreview) {
+    const host = request.headers.get('host') || '';
+    const origin = request.headers.get('origin') || '';
+    // Use netlify preview URL if available
+    frontendUrl = origin || `https://${host}`;
+    returnUrl = `${frontendUrl}/api/auth/steam/callback`;
+  } else if (isLocalhost) {
+    const host = request.headers.get('host') || '';
+    const protocol = host.startsWith('localhost') ? 'http://' : 'https://';
+    frontendUrl = `${protocol}${host}`;
+    returnUrl = `${frontendUrl}/api/auth/steam/callback`;
+  }
+  
+  console.log(`[Steam Auth] Using URLs:
+    Frontend URL: ${frontendUrl}
+    Return URL: ${returnUrl}
+    From environment vars: ${!!envFrontendUrl}, ${!!envReturnUrl}
+    Environment: ${isProduction ? 'Production' : isNetlifyPreview ? 'Preview' : isLocalhost ? 'Local' : 'Unknown'}
+  `);
+  
+  return { frontendUrl, returnUrl };
+};
 
 // Get the domain for realm from the return URL - Improved implementation
-const getDomainFromUrl = (url) => {
+const getDomainFromUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
     console.log(`[Steam Auth] Parsing URL: ${url}, resulting domain: ${urlObj.protocol}//${urlObj.hostname}`);
@@ -41,31 +95,53 @@ type AuthError = {
   code: string;
   message: string;
   details?: any;
+  errorId?: string;
 }
 
 type SteamAPIError = {
   type: 'steam_api_error';
   message: string;
   details?: any;
+  errorId?: string;
 }
 
 type TokenError = {
   type: 'token_error';
   message: string;
   details?: any;
+  errorId?: string;
 }
 
 type DatabaseError = {
   type: 'database_error';
   message: string;
   details?: any;
+  errorId?: string;
 }
 
 // Function to generate an error redirect URL - Enhanced with more detailed errors
-function generateErrorRedirect(code: string, message: string, details?: any): string {
-  const url = new URL(FRONTEND_URL + '/auth');
+function generateErrorRedirect(req: Request, code: string, message: string, details?: any): string {
+  // Generate a unique error ID for tracking
+  const errorId = uuidv4();
+  
+  // Get the appropriate frontend URL based on environment
+  const { frontendUrl } = getConfiguredUrls(req);
+  
+  // Log the error with the unique ID for tracking
+  console.error(`[${errorId}] Steam Auth Error:`, { 
+    code, 
+    message, 
+    details,
+    timestamp: new Date().toISOString(),
+    headers: Object.fromEntries([...req.headers.entries()])
+  });
+  
+  // Create the error URL - direct to login-error page
+  const url = new URL(`${frontendUrl}/login-error`);
   url.searchParams.append('error_code', code);
   url.searchParams.append('error_message', encodeURIComponent(message));
+  url.searchParams.append('error_id', errorId);
+  
   if (details) {
     try {
       url.searchParams.append('error_details', encodeURIComponent(JSON.stringify(details)));
@@ -81,9 +157,10 @@ function generateErrorRedirect(code: string, message: string, details?: any): st
 // Function to handle the authentication URL generation - with improved logging and error handling
 async function handleLogin(req: Request) {
   try {
+    const { frontendUrl, returnUrl } = getConfiguredUrls(req);
     const url = new URL(req.url);
     const redirectTo = url.searchParams.get('redirectTo') || '';
-    const origin = req.headers.get('origin') || FRONTEND_URL;
+    const origin = req.headers.get('origin') || frontendUrl;
 
     // Log request details for debugging
     console.log(`[Steam Auth] Login request:
@@ -94,17 +171,21 @@ async function handleLogin(req: Request) {
     `);
     
     // Generate a state parameter to prevent CSRF attacks and store the redirectTo
-    const state = btoa(JSON.stringify({ redirectTo }));
+    const state = btoa(JSON.stringify({ 
+      redirectTo,
+      source: req.headers.get('referer') || 'direct',
+      timestamp: Date.now()
+    }));
     
     // Get the domain to use as realm from the return URL
-    const realm = getDomainFromUrl(STEAM_RETURN_URL);
+    const realm = getDomainFromUrl(returnUrl);
     
-    console.log(`[Steam Auth] Using realm: ${realm} and return URL: ${STEAM_RETURN_URL}`);
+    console.log(`[Steam Auth] Using realm: ${realm} and return URL: ${returnUrl}`);
     
     const params = new URLSearchParams({
       'openid.ns': 'http://specs.openid.net/auth/2.0',
       'openid.mode': 'checkid_setup',
-      'openid.return_to': `${STEAM_RETURN_URL}?state=${encodeURIComponent(state)}`,
+      'openid.return_to': `${returnUrl}?state=${encodeURIComponent(state)}`,
       'openid.realm': realm,
       'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
       'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
@@ -129,7 +210,8 @@ async function handleLogin(req: Request) {
           type: 'auth_error',
           code: 'login_url_generation_failed',
           message: 'Failed to generate login URL',
-          details: error.message
+          details: error.message,
+          errorId: uuidv4()
         }
       }),
       {
@@ -196,7 +278,8 @@ async function verifyAuthentication(params: URLSearchParams, retryCount = 0): Pr
       type: 'auth_error',
       code: 'verification_failed',
       message: 'Steam authentication verification failed',
-      details: error.message
+      details: error.message,
+      errorId: uuidv4()
     } as AuthError;
   }
 }
@@ -233,7 +316,8 @@ async function getSteamUserInfo(steamId: string): Promise<any> {
     throw {
       type: 'steam_api_error',
       message: 'Failed to fetch user info from Steam API',
-      details: error.message
+      details: error.message,
+      errorId: uuidv4()
     } as SteamAPIError;
   }
 }
@@ -400,7 +484,8 @@ async function createSupabaseUser(steamId: string, steamName: string, steamAvata
       type: 'auth_error',
       code: 'user_creation_failed',
       message: `Failed to create user account: ${error.message}`,
-      details: error
+      details: error,
+      errorId: uuidv4()
     };
   }
 }
@@ -410,6 +495,7 @@ async function handleCallback(request: Request) {
   try {
     const url = new URL(request.url);
     const params = url.searchParams;
+    const { frontendUrl } = getConfiguredUrls(request);
     
     console.log(`[Steam Auth] Received authentication callback from Steam
       URL: ${request.url}
@@ -419,12 +505,14 @@ async function handleCallback(request: Request) {
     // Get state parameter (if it exists)
     const stateParam = params.get('state');
     let redirectTo = '';
+    let source = 'direct';
     
     if (stateParam) {
       try {
         const stateObj = JSON.parse(atob(decodeURIComponent(stateParam)));
         redirectTo = stateObj.redirectTo || '';
-        console.log(`[Steam Auth] Retrieved redirect URL from state: ${redirectTo}`);
+        source = stateObj.source || 'direct';
+        console.log(`[Steam Auth] Retrieved redirect URL from state: ${redirectTo}, source: ${source}`);
       } catch (e) {
         console.error("Failed to parse state parameter:", e);
       }
@@ -435,7 +523,7 @@ async function handleCallback(request: Request) {
     if (!claimed_id) {
       console.error("Missing claimed_id in Steam response");
       return Response.redirect(
-        generateErrorRedirect('invalid_response', 'Invalid authentication response from Steam'), 
+        generateErrorRedirect(request, 'invalid_response', 'Invalid authentication response from Steam'), 
         302
       );
     }
@@ -447,19 +535,19 @@ async function handleCallback(request: Request) {
     if (!isValid) {
       console.error("Steam authentication verification failed");
       return Response.redirect(
-        generateErrorRedirect('verification_failed', 'Authentication verification failed with Steam'), 
+        generateErrorRedirect(request, 'verification_failed', 'Authentication verification failed with Steam'), 
         302
       );
     }
 
-    // Extract the Steam ID from the claimed_id
+    // Extract the Steam ID from the claimed_id using regex for safety
     // Format: http://steamcommunity.com/openid/id/[STEAM_ID]
-    const steamId = claimed_id.split('/').pop();
+    const steamId = claimed_id.match(/\/(\d{17})$/)?.[1];
     
     if (!steamId) {
-      console.error("Could not extract Steam ID from claimed_id");
+      console.error("Could not extract Steam ID from claimed_id:", claimed_id);
       return Response.redirect(
-        generateErrorRedirect('missing_steam_id', 'Could not extract Steam ID from the response'), 
+        generateErrorRedirect(request, 'missing_steam_id', 'Could not extract Steam ID from the response'), 
         302
       );
     }
@@ -473,7 +561,7 @@ async function handleCallback(request: Request) {
     if (!steamUserData) {
       console.error("Failed to fetch Steam user data");
       return Response.redirect(
-        generateErrorRedirect('missing_user_info', 'Could not fetch Steam user info'), 
+        generateErrorRedirect(request, 'missing_user_info', 'Could not fetch Steam user info'), 
         302
       );
     }
@@ -567,7 +655,7 @@ async function handleCallback(request: Request) {
       if (!serviceRoleKey) {
         console.error("[Steam Auth] SERVICE ROLE KEY IS MISSING FOR SESSION CREATION");
         return Response.redirect(
-          generateErrorRedirect('auth_setup_error', 'Server authentication configuration error'),
+          generateErrorRedirect(request, 'auth_setup_error', 'Server authentication configuration error'),
           302
         );
       }
@@ -581,14 +669,14 @@ async function handleCallback(request: Request) {
         type: 'magiclink',
         email: `steam_${steamId}@unplayed.wtf`,
         options: {
-          redirectTo: FRONTEND_URL + (redirectTo || '/')
+          redirectTo: frontendUrl + (redirectTo || '/')
         }
       });
       
       if (signInError || !signInData) {
         console.error("[Steam Auth] Error generating auth link:", signInError);
         return Response.redirect(
-          generateErrorRedirect('session_creation_error', 'Failed to create authentication session'),
+          generateErrorRedirect(request, 'session_creation_error', 'Failed to create authentication session'),
           302
         );
       }
@@ -605,13 +693,22 @@ async function handleCallback(request: Request) {
           (error) => console.error("[Steam Auth] Failed to update last_sync timestamp:", error)
         );
         
-      // Redirect with the token parameters
-      const redirectUrl = new URL(FRONTEND_URL + (redirectTo || '/'));
+      // Build a more robust redirect URL
+      const fallbackPath = '/';
+      const targetPath = redirectTo || fallbackPath;
+      
+      // Determine the appropriate URL depending on environment
+      const redirectUrl = new URL(frontendUrl + targetPath);
       
       // Add JWT and user data parameters for better client handling
       redirectUrl.searchParams.append('steam_id', steamId);
       redirectUrl.searchParams.append('user_id', userId);
       redirectUrl.searchParams.append('auth_success', 'true');
+      
+      // Add analytics tracking for the source
+      if (source) {
+        redirectUrl.searchParams.append('auth_source', source);
+      }
       
       console.log(`[Steam Auth] Authentication successful. Redirecting to: ${redirectUrl.toString()}`);
       
@@ -624,7 +721,7 @@ async function handleCallback(request: Request) {
       const errorMessage = error.message || 'Authentication process failed';
       
       return Response.redirect(
-        generateErrorRedirect(errorCode, errorMessage, error),
+        generateErrorRedirect(request, errorCode, errorMessage, error),
         302
       );
     }
@@ -632,7 +729,7 @@ async function handleCallback(request: Request) {
   } catch (error) {
     console.error("[Steam Auth] Callback error:", error);
     return Response.redirect(
-      generateErrorRedirect('callback_error', 'Error processing authentication callback', error),
+      generateErrorRedirect(request, 'callback_error', 'Error processing authentication callback', error),
       302
     );
   }
@@ -832,19 +929,33 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
   }
 }
 
-// Health check endpoint - Enhanced with more diagnostic information
+// Health Check endpoint - Enhanced with more diagnostic information
 async function handleHealthCheck(req: Request) {
+  const { frontendUrl, returnUrl } = getConfiguredUrls(req);
+  const { isNetlifyPreview, isLocalhost, isProduction } = getEnvironment(req);
+  
   const url = new URL(req.url);
   const headers = Object.fromEntries(req.headers.entries());
   
   return new Response(JSON.stringify({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    steam_return_url: STEAM_RETURN_URL,
-    frontend_url: FRONTEND_URL,
-    origin: headers['origin'] || 'Unknown',
-    host: headers['host'] || 'Unknown',
-    request_url: req.url,
+    environment: {
+      isProduction,
+      isNetlifyPreview,
+      isLocalhost,
+      detected_env: isProduction ? 'production' : isNetlifyPreview ? 'preview' : isLocalhost ? 'local' : 'unknown'
+    },
+    urls: {
+      steam_return_url: returnUrl,
+      frontend_url: frontendUrl,
+    },
+    request: {
+      origin: headers['origin'] || 'Unknown',
+      host: headers['host'] || 'Unknown',
+      x_forwarded_host: headers['x-forwarded-host'] || 'Not set',
+      url: req.url,
+    },
     env_vars: {
       steam_return_url_set: !!Deno.env.get("STEAM_RETURN_URL"),
       frontend_url_set: !!Deno.env.get("FRONTEND_URL"),
@@ -861,19 +972,19 @@ async function handleDebug(req: Request) {
   // Get request information
   const url = new URL(req.url);
   const headers = Object.fromEntries(req.headers.entries());
+  const { frontendUrl, returnUrl } = getConfiguredUrls(req);
+  const { isNetlifyPreview, isLocalhost, isProduction } = getEnvironment(req);
   
   // Check for environment variables
   const serviceRoleKeyPresent = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const steamApiKeyPresent = !!STEAM_API_KEY;
-  const steamReturnUrlValue = STEAM_RETURN_URL;
-  const frontendUrlValue = FRONTEND_URL;
   
   // Check for potential configuration issues
   const potentialIssues = [];
   if (!serviceRoleKeyPresent) {
     potentialIssues.push("SUPABASE_SERVICE_ROLE_KEY is missing");
   }
-  if (steamReturnUrlValue === "https://unplayed.wtf/api/auth/steam/callback" && headers['host']?.includes('localhost')) {
+  if (returnUrl === "https://unplayed.wtf/api/auth/steam/callback" && headers['host']?.includes('localhost')) {
     potentialIssues.push("Using production STEAM_RETURN_URL in development environment");
   }
   
@@ -881,13 +992,16 @@ async function handleDebug(req: Request) {
   const debugInfo = {
     timestamp: new Date().toISOString(),
     environment: {
+      isProduction,
+      isNetlifyPreview,
+      isLocalhost,
+      detected_env: isProduction ? 'production' : isNetlifyPreview ? 'preview' : isLocalhost ? 'local' : 'unknown',
       deno: Deno.version,
-      supabaseUrl: SUPABASE_URL,
-      steamReturnUrl: steamReturnUrlValue,
-      frontendUrl: frontendUrlValue,
+      frontendUrl,
+      returnUrl,
       serviceRoleKeyPresent,
       steamApiKeyPresent,
-      realm: getDomainFromUrl(STEAM_RETURN_URL),
+      realm: getDomainFromUrl(returnUrl),
       potentialIssues
     },
     config: {
@@ -905,6 +1019,8 @@ async function handleDebug(req: Request) {
         'host': headers['host'],
         'x-netlify-source': headers['x-netlify-source'],
         'x-steam-auth-source': headers['x-steam-auth-source'],
+        'x-forwarded-host': headers['x-forwarded-host'],
+        'x-forwarded-proto': headers['x-forwarded-proto']
       },
       path: url.pathname,
       query: Object.fromEntries(url.searchParams.entries()),
@@ -950,7 +1066,8 @@ serve(async (req) => {
             type: 'not_found',
             code: 'invalid_endpoint',
             message: 'Endpoint not found',
-            requestedPath: url.pathname
+            requestedPath: url.pathname,
+            errorId: uuidv4()
           }
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -959,13 +1076,15 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("[Steam Auth] Unhandled error in request handler:", error);
+    const errorId = uuidv4();
     return new Response(JSON.stringify({ 
       error: {
         type: 'server_error',
         code: 'unhandled_error',
         message: 'Internal server error',
         details: error.message || String(error),
-        path: url.pathname
+        path: url.pathname,
+        errorId
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

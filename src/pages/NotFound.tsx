@@ -6,6 +6,7 @@ import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Home, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AuthErrorHandler from "@/components/AuthErrorHandler";
 
 const NotFound = () => {
   const location = useLocation();
@@ -26,11 +27,17 @@ const NotFound = () => {
 
     // Check if this 404 is likely auth-related
     const hasAuthParams = location.search.includes('auth_success') || 
-                          location.search.includes('error_code') ||
+                          location.search.includes('error_code') || 
                           location.search.includes('steam_id');
     
     if (hasAuthParams || location.pathname.includes('/auth')) {
       setIsAuthRelated(true);
+      
+      // If we have error codes but ended up here, redirect to login-error page
+      if (location.search.includes('error_code')) {
+        navigate(`/login-error${location.search}`);
+        return;
+      }
       
       // Show toast for auth-related errors
       toast({
@@ -39,7 +46,7 @@ const NotFound = () => {
         variant: "destructive",
       });
     }
-  }, [location.pathname, location.search, toast]);
+  }, [location.pathname, location.search, toast, navigate]);
 
   return (
     <FullScreenModeWrapper>

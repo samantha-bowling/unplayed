@@ -17,6 +17,7 @@ import SupportPage from "./pages/SupportPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
+import LoginErrorPage from "./pages/LoginErrorPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/login-error" element={<LoginErrorPage />} />
                 <Route path="/auth-debug" element={
                   <ProtectedRoute requiredRole="admin">
                     <AuthDebugPage />
