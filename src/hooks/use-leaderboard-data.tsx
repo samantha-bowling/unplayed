@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -120,38 +120,38 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     };
   };
 
-  const { data, isLoading, error, refetch } = useQuery<LeaderboardQueryResult, Error>({
+  const timeFilter = getTimeframeFilter();
+
+  const queryResult = useQuery<LeaderboardQueryResult, Error>({
     queryKey: ['leaderboard', type, timeframe, pagination.page],
     queryFn: async () => {
-      const timeFilter = getTimeframeFilter();
-      const result = await fetchLeaderboardPage(pagination.cursor, timeFilter);
-      
-      return result;
+      return await fetchLeaderboardPage(pagination.cursor, timeFilter);
     },
     staleTime: 60 * 1000, // 1 min stale
     gcTime: 5 * 60 * 1000, // 5 min in cache (replaced cacheTime)
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Added to optimize refetch behavior
-    onSuccess: (data) => {
-      // Prefetch next page if there's more data
-      if (data.hasMore) {
-        queryClient.prefetchQuery({
-          queryKey: ['leaderboard', type, timeframe, pagination.page + 1],
-          queryFn: async () => {
-            const timeFilter = getTimeframeFilter();
-            return await fetchLeaderboardPage(data.nextCursor, timeFilter);
-          },
-          gcTime: 5 * 60 * 1000, // Match parent query's gcTime for consistency
-        });
-      }
-    }
+    refetchOnMount: false // Optimize refetch behavior
   });
 
+  // Move prefetching logic to useEffect
+  useEffect(() => {
+    // Only prefetch if we have data and there's more to fetch
+    if (queryResult.data?.hasMore && queryResult.data?.nextCursor) {
+      queryClient.prefetchQuery({
+        queryKey: ['leaderboard', type, timeframe, pagination.page + 1],
+        queryFn: async () => {
+          return await fetchLeaderboardPage(queryResult.data.nextCursor, timeFilter);
+        },
+        gcTime: 5 * 60 * 1000 // Match parent query's gcTime for consistency
+      });
+    }
+  }, [queryResult.data, type, timeframe, pagination.page, queryClient, timeFilter]);
+
   const loadNextPage = () => {
-    if (data?.hasMore) {
+    if (queryResult.data?.hasMore) {
       setPagination({
-        cursor: data.nextCursor,
-        hasMore: data.hasMore,
+        cursor: queryResult.data.nextCursor,
+        hasMore: queryResult.data.hasMore,
         page: pagination.page + 1
       });
     }
@@ -172,21 +172,21 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   };
 
   // Find user rank in the current data
-  const leaderboardEntries = data?.data || [];
+  const leaderboardEntries = queryResult.data?.data || [];
   const userRank = user && leaderboardEntries.length > 0 
     ? leaderboardEntries.findIndex(entry => entry.user_id === user.id) + 1 
     : null;
 
   return {
     data: leaderboardEntries,
-    isLoading,
-    error,
-    refetch,
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
     timeframe,
     setTimeframe: changeTimeframe,
     userRank,
     pagination: {
-      hasMore: data?.hasMore || false,
+      hasMore: queryResult.data?.hasMore || false,
       page: pagination.page,
       loadNextPage
     }
