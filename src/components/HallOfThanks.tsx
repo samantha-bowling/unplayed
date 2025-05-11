@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DonorGrid from "./DonorGrid";
 import { Tables } from "@/integrations/supabase/types";
-import { Heart } from "lucide-react";
+import { Heart, Crown, Sparkles } from "lucide-react";
+import { Separator } from "./ui/separator";
 
 const HallOfThanks = () => {
   const [donors, setDonors] = useState<Tables<"donors">[]>([]);
@@ -32,6 +33,13 @@ const HallOfThanks = () => {
     fetchDonors();
   }, []);
 
+  // Count donors by tier
+  const tierCounts = {
+    legendary: donors.filter(d => d.tier === "legendary").length,
+    radiant: donors.filter(d => d.tier === "radiant").length,
+    appreciated: donors.filter(d => d.tier === "appreciated" || !d.tier).length,
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <h1 className="text-4xl md:text-5xl font-bold text-center mb-8 text-unplayed-mint relative">
@@ -44,6 +52,26 @@ const HallOfThanks = () => {
           />
         </span>
       </h1>
+
+      {/* Tier legend */}
+      <div className="flex flex-wrap justify-center gap-6 mb-6">
+        <div className="flex items-center">
+          <Crown className="h-5 w-5 mr-2 text-unplayed-amber" />
+          <span className="text-unplayed-amber font-medium">Legendary Supporters</span>
+          <span className="text-gray-400 ml-2 text-sm">{tierCounts.legendary}</span>
+        </div>
+        <div className="flex items-center">
+          <Sparkles className="h-5 w-5 mr-2 text-unplayed-mint" />
+          <span className="text-unplayed-mint font-medium">Radiant Supporters</span>
+          <span className="text-gray-400 ml-2 text-sm">{tierCounts.radiant}</span>
+        </div>
+        <div className="flex items-center">
+          <span className="text-gray-300 font-medium">Appreciated Supporters</span>
+          <span className="text-gray-400 ml-2 text-sm">{tierCounts.appreciated}</span>
+        </div>
+      </div>
+      
+      <Separator className="mb-6 bg-gray-800" />
       
       {loading ? (
         <div className="text-center py-12">

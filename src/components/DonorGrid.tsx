@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Tables } from "@/integrations/supabase/types";
 import FloatingIcons from "./FloatingIcons";
+import DonorCard from "./DonorCard";
 
 interface DonorGridProps {
   donors: Tables<"donors">[];
@@ -49,7 +50,6 @@ const generateZenPositions = (count: number) => {
         animDirectionY: animationDirectionY,
         animDistance: animationDistance,
         initialRotation: Math.random() * 6 - 3, // Slight rotation between -3 and 3 degrees
-        hoverColor: Math.random() > 0.5 ? 'text-unplayed-mint hover:text-unplayed-pink' : 'text-unplayed-mint hover:text-unplayed-amber'
       });
     }
   }
@@ -57,8 +57,39 @@ const generateZenPositions = (count: number) => {
   return positions;
 };
 
+// Sort donors by tier importance
+const sortDonorsByTier = (donors: Tables<"donors">[]) => {
+  return [...donors].sort((a, b) => {
+    // Define tier importance (higher values are more important)
+    const tierValue = {
+      legendary: 3,
+      radiant: 2,
+      appreciated: 1,
+      null: 0
+    };
+    
+    // Get tier values, defaulting to 0 if undefined
+    const tierA = tierValue[a.tier as keyof typeof tierValue] || 0;
+    const tierB = tierValue[b.tier as keyof typeof tierValue] || 0;
+    
+    // First sort by tier
+    if (tierA !== tierB) {
+      return tierB - tierA; // Higher value tiers first
+    }
+    
+    // Within same tier, sort by amount if available
+    if (a.amount_cents && b.amount_cents) {
+      return b.amount_cents - a.amount_cents;
+    }
+    
+    // If same tier and amounts not available or equal, sort by creation date
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+};
+
 const DonorGrid = ({ donors }: DonorGridProps) => {
   const [positions, setPositions] = useState<any[]>([]);
+  const sortedDonors = sortDonorsByTier(donors);
   
   // Generate positions when donors change
   useEffect(() => {
@@ -67,35 +98,25 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
 
   return (
     <div className="relative h-[500px] rounded-xl overflow-hidden border border-gray-800 bg-black/40">
-      {/* Add our new FloatingIcons component */}
+      {/* Add our FloatingIcons component */}
       <FloatingIcons count={donors.length} />
       
-      {donors.map((donor, index) => (
-        <div
+      {sortedDonors.map((donor, index) => (
+        <DonorCard 
           key={donor.id}
-          className="absolute transition-all duration-300 zen-game-item"
-          style={{
-            top: positions[index]?.top || '50%',
-            left: positions[index]?.left || '50%',
-            transform: `translate(-50%, -50%) rotate(${positions[index]?.initialRotation || 0}deg)`,
-            animationDelay: `${positions[index]?.delay || index * 0.5}s`,
-            zIndex: Math.floor(Math.random() * 10) + 5, // Higher z-index than icons
-            opacity: 0,
-            animation: `
-              zen-float-complex ${positions[index]?.duration || 4}s ease-in-out infinite alternate, 
-              zen-fade-in 1.5s ease-out forwards
-            `,
-            // Define custom animation properties in style
-            // These will be picked up by our updated keyframes in index.css
-            '--anim-x': `${positions[index]?.animDirectionX * positions[index]?.animDistance || 2}%`,
-            '--anim-y': `${positions[index]?.animDirectionY * positions[index]?.animDistance || 2}%`,
-          } as React.CSSProperties}
-        >
-          <p className={`whitespace-nowrap text-glow transition-all duration-300 ${positions[index]?.hoverColor || 'text-unplayed-mint'}`} 
-             style={{ fontSize: positions[index]?.fontSize || '1rem' }}>
-            {donor.display_name}
-          </p>
-        </div>
+          donor={donor}
+          position={positions[index] || {
+            top: '50%',
+            left: '50%',
+            delay: index * 0.5,
+            duration: 4,
+            fontSize: '1rem',
+            animDirectionX: 1,
+            animDirectionY: 1,
+            animDistance: 2,
+            initialRotation: 0
+          }}
+        />
       ))}
       
       <style>

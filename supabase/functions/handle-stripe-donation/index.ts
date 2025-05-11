@@ -90,15 +90,26 @@ serve(async (req) => {
                   (field.label && field.label.custom === "Hall of Thanks Display Name")
       );
       
-      // Get display name from custom field
+      // Get thank you message if available
+      const thankYouField = customFields.find(
+        (field) => field.key === "thankyoumessage" ||
+                  (field.label && field.label.custom === "Thank You Note")
+      );
+      
+      // Get display name and thank you message from custom fields
       const displayName = displayNameField?.text?.value || 
                          session.customer_details?.name || 
                          "Anonymous Supporter";
+                         
+      const thankYouMessage = thankYouField?.text?.value || null;
       
       console.log("Display name for donor:", displayName);
+      if (thankYouMessage) {
+        console.log("Thank you message:", thankYouMessage);
+      }
       
       try {
-        // Save donor information to the database
+        // Save donor information to the database with the amount
         const { data, error } = await supabaseAdmin
           .from("donors")
           .insert({
@@ -106,6 +117,9 @@ serve(async (req) => {
             source: "stripe",
             created_at: new Date().toISOString(),
             approved: true, // Auto-approve for now
+            amount_cents: session.amount_total || null,
+            donation_id: session.id,
+            thank_you_message: thankYouMessage,
           });
         
         if (error) {
@@ -114,6 +128,10 @@ serve(async (req) => {
         }
         
         console.log("Donor saved successfully with display name:", displayName);
+        console.log("Donation amount:", session.amount_total ? `${session.amount_total / 100} ${session.currency}` : "Unknown");
+        
+        // Trigger tier calculation (will implement this later)
+        // await recalculateTiers();
       } catch (dbError) {
         console.error("Database operation failed:", dbError);
         throw new Error(`Database operation failed: ${dbError.message}`);

@@ -7,6 +7,9 @@ verify_jwt = false
 [functions.handle-stripe-donation]
 verify_jwt = false
 
+[functions.calculate-donor-tiers]
+verify_jwt = true
+
 [functions.fetch-hltb-estimate]
 verify_jwt = true
 

@@ -1,15 +1,45 @@
+
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCallback } from "react";
+
 const SupportPage = () => {
   const {
     isFullScreenMode,
     toggleFullScreenMode
   } = useFullScreenMode();
+
+  // Admin function to trigger tier calculation
+  const calculateTiers = useCallback(async () => {
+    try {
+      toast.info("Calculating donor tiers...");
+      
+      // Call the calculate-donor-tiers function
+      const { data, error } = await supabase.functions.invoke("calculate-donor-tiers");
+      
+      if (error) {
+        console.error("Error calculating tiers:", error);
+        toast.error("Failed to calculate donor tiers");
+        return;
+      }
+      
+      toast.success("Donor tiers calculated successfully!");
+      console.log("Tier calculation result:", data);
+      
+      // Reload the page to see updated tiers
+      window.location.reload();
+    } catch (err) {
+      console.error("Error calling tier calculation:", err);
+      toast.error("Error occurred while calculating tiers");
+    }
+  }, []);
+
   return <div className="min-h-screen flex flex-col">
       <Header />
       
@@ -35,6 +65,18 @@ const SupportPage = () => {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+
+        {/* Hidden admin button - For development only */}
+        <div className="fixed bottom-4 right-4 z-10 opacity-20 hover:opacity-100 transition-opacity">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs border-gray-700 bg-black/50"
+            onClick={calculateTiers}
+          >
+            Recalculate Tiers
+          </Button>
+        </div>
       </section>
 
       {/* Hall of Thanks section */}

@@ -11,25 +11,43 @@ export type Database = {
     Tables: {
       donors: {
         Row: {
+          amount_cents: number | null
           approved: boolean
           created_at: string
           display_name: string
+          donation_id: string | null
+          hidden: boolean | null
           id: string
           source: string
+          thank_you_message: string | null
+          tier: string | null
+          tier_updated_at: string | null
         }
         Insert: {
+          amount_cents?: number | null
           approved?: boolean
           created_at?: string
           display_name: string
+          donation_id?: string | null
+          hidden?: boolean | null
           id?: string
           source?: string
+          thank_you_message?: string | null
+          tier?: string | null
+          tier_updated_at?: string | null
         }
         Update: {
+          amount_cents?: number | null
           approved?: boolean
           created_at?: string
           display_name?: string
+          donation_id?: string | null
+          hidden?: boolean | null
           id?: string
           source?: string
+          thank_you_message?: string | null
+          tier?: string | null
+          tier_updated_at?: string | null
         }
         Relationships: []
       }
