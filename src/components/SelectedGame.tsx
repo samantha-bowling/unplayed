@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Clock } from 'lucide-react';
+import { Clock, ExternalLink } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
+import GameReviewCard from './GameReviewCard';
+import useSteamReviews from '@/hooks/use-steam-reviews';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -11,6 +13,18 @@ interface SelectedGameProps {
 }
 
 const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAgain }) => {
+  const [showReview, setShowReview] = useState(false);
+  const { 
+    review, 
+    isLoading, 
+    hasReviews,
+    cycleNextReview 
+  } = useSteamReviews(showReview ? game.id : null);
+
+  const handleGetReason = () => {
+    setShowReview(true);
+  };
+
   return (
     <div className="pixel-card animate-fade-in">
       <img 
@@ -49,6 +63,26 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
           Fate has spoken: Play <span className="text-unplayed-pink">{game.title}</span>
         </p>
       </div>
+      
+      {!showReview ? (
+        <div className="mt-4 text-center">
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleGetReason}
+            className="text-sm"
+          >
+            Give me a reason to play
+          </Button>
+        </div>
+      ) : (
+        <GameReviewCard 
+          review={review} 
+          isLoading={isLoading}
+          onGetAnotherReview={cycleNextReview}
+          gameId={game.id}
+        />
+      )}
     </div>
   );
 };
