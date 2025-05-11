@@ -1,11 +1,10 @@
-
 import { useState, useMemo } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import useGamePicks from '@/hooks/use-game-picks';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
 import { useAuth } from '@/context/AuthContext';
-import { GamePickFilters } from '@/utils/navigation';
+import { GamePickFilters } from '@/types/picks.types';
 
 type PickerScope = 'unplayed' | 'all';
 

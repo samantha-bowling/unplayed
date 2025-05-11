@@ -1,23 +1,10 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { GameListItem } from '@/types/unplayed-data.types';
-
-export type GamePickFilters = {
-  mood?: string;
-  genre?: string;
-};
-
-export type GamePick = {
-  id: string;
-  game_id: number;
-  picked_at: string;
-  filters: GamePickFilters;
-  game?: GameListItem;
-};
+import { GamePick, GamePickFilters } from '@/types/picks.types';
 
 /**
  * Custom hook for managing game picks

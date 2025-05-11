@@ -1,5 +1,5 @@
-
 import { NavigateOptions } from "react-router-dom";
+import { GamePickFilters } from '@/types/picks.types';
 
 // Types for picker navigation state
 export interface PickerNavigationState {
@@ -7,13 +7,6 @@ export interface PickerNavigationState {
   mood?: string;
   source?: 'genre' | 'shelfLife' | 'library';
   shouldAutoSpin?: boolean;
-}
-
-// Interface for game pick filters
-export interface GamePickFilters {
-  mood?: string;
-  source?: string;
-  genre?: string;
 }
 
 /**

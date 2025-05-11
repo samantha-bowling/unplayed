@@ -1,10 +1,10 @@
 
 import React from 'react';
-import GameCard from '@/components/GameCard';
+import GamePickCard from '@/components/GamePickCard';
 import PreviouslyPickedBadge from '@/components/PreviouslyPickedBadge';
 import usePreviouslyPicked from '@/hooks/use-previously-picked';
 import { GameListItem } from '@/types/unplayed-data.types';
-import { GamePick } from '@/hooks/use-game-picks';
+import { GamePick } from '@/types/picks.types';
 
 interface PickerGameCardProps {
   game: GameListItem;
@@ -24,7 +24,11 @@ const PickerGameCard: React.FC<PickerGameCardProps> = ({
   
   return (
     <div className="relative">
-      <GameCard game={game} onClick={onClick} />
+      <GamePickCard 
+        game={game}
+        compact={false}
+        onClick={onClick}
+      />
       {isPreviouslyPicked && lastPickedAt && (
         <PreviouslyPickedBadge pickedAt={lastPickedAt} />
       )}
