@@ -66,6 +66,47 @@ const AuthPage = () => {
               variant: 'destructive',
             });
           } else if (data.session) {
+            // Validate that the user's email matches the expected format with steam_id
+            if (steamId) {
+              const expectedEmail = `steam_${steamId}@unplayed.wtf`;
+              
+              // Get the current user to verify the email
+              const { data: userData, error: userError } = await supabase.auth.getUser();
+              
+              if (userError) {
+                console.error('Error validating user:', userError);
+                toast({
+                  title: 'Authentication Error',
+                  description: 'Failed to validate user identity: ' + userError.message,
+                  variant: 'destructive',
+                });
+                
+                // Sign out if we couldn't validate the user
+                await supabase.auth.signOut();
+                setSessionEstablished(false);
+                setIsLoading(false);
+                return;
+              }
+              
+              // Check if the email matches our expected format
+              if (userData.user?.email !== expectedEmail) {
+                console.error('Session mismatch: Email does not match expected Steam ID format');
+                toast({
+                  title: 'Authentication Error',
+                  description: 'Session mismatch. Please try again.',
+                  variant: 'destructive',
+                });
+                
+                // Sign out in case of mismatch
+                await supabase.auth.signOut();
+                setSessionEstablished(false);
+                setIsLoading(false);
+                return;
+              }
+              
+              console.log('Steam ID validation successful');
+            }
+            
             console.log('Session established successfully:', data.session.user?.id);
             setSessionEstablished(true);
             
@@ -91,7 +132,7 @@ const AuthPage = () => {
     };
     
     establishSession();
-  }, [accessToken, refreshToken, sessionEstablished, toast]);
+  }, [accessToken, refreshToken, sessionEstablished, toast, steamId]);
   
   // Handle automatic redirection after successful authentication
   useEffect(() => {
