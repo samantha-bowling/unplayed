@@ -10,24 +10,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Medal } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import CleanScoreMeterSmall from './dust/CleanScoreMeterSmall';
 
-interface DustScoreProps extends WithDemoProps {
+interface CleanScoreProps extends WithDemoProps {
   score?: number;
 }
 
-const DustScoreMeter = ({
+const CleanScoreMeter = ({
   score,
   isDemo = false
-}: DustScoreProps) => {
+}: CleanScoreProps) => {
   const {
     data
   } = useDustScoreData();
   
-  // Use the provided score or fall back to unplayed data
-  const actualScore = score ?? data.dustScore;
+  // Use the provided score or fall back to data
+  const actualScore = score ?? data.cleanScore ?? 0;
+  const cleanTier = data.cleanTier;
   const [animatedScore, setAnimatedScore] = useState(0);
   
   const {
@@ -54,28 +54,18 @@ const DustScoreMeter = ({
     return () => clearInterval(timer);
   }, [actualScore]);
 
-  // Calculate severity level for the score - UPDATED with new tiers
-  const getSeverityColor = () => {
-    if (actualScore < 200) return 'text-green-400';
-    if (actualScore < 500) return 'text-orange-400';
-    if (actualScore < 1000) return 'text-amber-600';
-    return 'text-unplayed-red';
-  };
-  
-  const getSeverityText = () => {
-    if (actualScore < 200) return 'Freshly Polished ✨';
-    if (actualScore < 500) return 'Dust Storm Brewing 🌬️';
-    if (actualScore < 1000) return 'Duststorm Warning 🌪️';
-    return 'Hoarder\'s Horizon 🤍';
-  };
+  // Calculate tier color and text
+  const getTierColor = () => cleanTier?.color || '#22d3ee';
+  const getTierName = () => cleanTier?.name || 'Calculating...';
 
-  // Show clean score if available and the user is logged in
-  const showCleanScore = (data.cleanScore !== undefined) && user;
+  // Clean streak display
+  const cleanStreak = data.cleanStreak || 0;
+  const hasCleanStreak = cleanStreak > 1; // Only show if streak > 1 day
 
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <div className="mb-4 flex items-center">
-        <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
+        <h3 className="terminal-header text-2xl mb-0">Clean Score™</h3>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -85,8 +75,9 @@ const DustScoreMeter = ({
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p>
-                Dust Score calculates how much your games are "gathering dust" based on ownership time and lack of playtime.
-                Higher scores indicate more neglected games.
+                Clean Score measures how well you're engaging with your game library based on
+                completion rate, engagement depth, and recent activity.
+                Higher scores indicate more active playing habits.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -106,9 +97,9 @@ const DustScoreMeter = ({
               cy="50" 
               r="45" 
               fill="none" 
-              stroke={actualScore < 200 ? '#A3F7BF' : actualScore < 500 ? '#FF9F39' : actualScore < 1000 ? '#F6AD55' : '#FF3C38'} 
+              stroke={getTierColor()} 
               strokeWidth="8" 
-              strokeDasharray={`${Math.min(animatedScore / 1000, 1) * 283} 283`} 
+              strokeDasharray={`${Math.min(animatedScore / 100, 1) * 283} 283`} 
               className="transition-all duration-300" 
             />
           </svg>
@@ -118,47 +109,54 @@ const DustScoreMeter = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-                  <span className={`${getSeverityColor()} text-4xl font-bold font-vt`}>
+                  <span className="text-4xl font-bold font-vt" style={{ color: getTierColor() }}>
                     {animatedScore}
                   </span>
-                  <span className="text-gray-400 text-xs mt-1">DUST UNITS</span>
+                  <span className="text-gray-400 text-xs mt-1">CLEAN SCORE</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-center">
-                <p className="text-sm">unplayed time × days since added</p>
+                <p className="text-sm">completion × engagement × recency</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {/* Sparkles for high scores (90+) */}
+          {actualScore >= 90 && (
+            <>
+              <div className="absolute top-0 right-4 animate-pulse">✨</div>
+              <div className="absolute bottom-8 left-0 animate-pulse delay-300">✨</div>
+              <div className="absolute top-12 left-4 animate-pulse delay-700">✨</div>
+            </>
+          )}
         </div>
         
         <div className="text-center mt-2">
-          <p className={`${getSeverityColor()} text-xl font-medium`}>{getSeverityText()}</p>
+          <p className="text-xl font-medium" style={{ color: getTierColor() }}>{getTierName()}</p>
+          
+          {hasCleanStreak && (
+            <div className="flex items-center justify-center gap-1 mt-2 text-amber-300">
+              <Medal size={16} className="animate-pulse" />
+              <span className="text-sm">Clean Streak: {cleanStreak} days</span>
+            </div>
+          )}
+          
           <p className="text-sm text-gray-400 mt-2">
-            {actualScore < 200 
-              ? "Your library is in good shape! Keep it up." 
-              : actualScore < 500 
-                ? "Some games could use your attention soon." 
-                : actualScore < 1000 
-                  ? "Warning: Your backlog is getting out of control." 
-                  : "Critical: Your library has reached dust apocalypse levels."}
+            {actualScore < 25 
+              ? "You're barely playing your games. Time to dust off some titles!" 
+              : actualScore < 50 
+                ? "You're making some progress. Keep up the momentum." 
+                : actualScore < 75 
+                  ? "You're doing well at playing your library. Nice balance!" 
+                  : "Outstanding! You're getting great value from your collection."}
           </p>
         </div>
-        
-        {showCleanScore && (
-          <div className="mt-6 pt-3 border-t border-gray-700 w-full">
-            <CleanScoreMeterSmall 
-              score={data.cleanScore || 0} 
-              tier={data.cleanTier}
-              isDemo={isDemo} 
-            />
-          </div>
-        )}
         
         {user && !isDemo && (
           <div className="mt-4 pt-2">
             <Link 
               to="/dust" 
-              className="px-4 py-2 bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint text-sm rounded-md transition-colors"
+              className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-sm rounded-md transition-colors"
             >
               View Detailed Report
             </Link>
@@ -169,9 +167,9 @@ const DustScoreMeter = ({
           <div className="mt-auto pt-4 text-center flex justify-center">
             <button 
               onClick={() => signInWithSteam()} 
-              className="text-sm text-unplayed-mint hover:underline"
+              className="text-sm text-cyan-400 hover:underline"
             >
-              Connect to Steam to see your Dust Score
+              Connect to Steam to see your Clean Score
             </button>
           </div>
         )}
@@ -180,4 +178,4 @@ const DustScoreMeter = ({
   );
 };
 
-export default withDemoIndicator(DustScoreMeter);
+export default withDemoIndicator(CleanScoreMeter);

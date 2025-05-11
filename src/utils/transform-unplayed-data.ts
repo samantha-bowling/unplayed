@@ -1,6 +1,71 @@
 
-import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
+import { UnplayedDataType, GameListItem, CleanScoreBreakdown, CleanScoreTier } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
+
+// Clean Score tiers configuration
+const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
+  { name: 'Pristine Collection', color: '#4ade80', range: [90, 100] },
+  { name: 'Dust-Free Shelf', color: '#22d3ee', range: [75, 89] },
+  { name: 'Reasonably Clean', color: '#60a5fa', range: [50, 74] },
+  { name: 'Needs a Wipe', color: '#f59e0b', range: [25, 49] },
+  { name: 'Filthy Casual', color: '#f87171', range: [0, 24] }
+];
+
+// Helper function to calculate clean score
+const calculateCleanScore = (
+  playedGames: number, 
+  totalGames: number,
+  totalPlaytime: number,
+  averageExpectedPlaytime: number = 12.5, // Default expected playtime per game in hours
+  recentlyPlayedGames: number
+): { 
+  cleanScore: number, 
+  breakdown: CleanScoreBreakdown, 
+  tier: CleanScoreTier 
+} => {
+  // Handle edge case of small libraries
+  if (totalGames < 5) {
+    // Small library bonus to avoid unfair scores
+    const smallLibraryBonus = 1.2;
+    totalGames = Math.max(5, totalGames); // Minimum denominator of 5 games
+    playedGames = Math.min(playedGames * smallLibraryBonus, totalGames);
+  }
+  
+  // Calculate the three components
+  const completionRate = totalGames > 0 ? playedGames / totalGames : 0;
+  
+  // Calculate engagement factor with safeguards
+  let engagementFactor = 0;
+  if (totalGames > 0) {
+    const expectedTotalPlaytime = averageExpectedPlaytime * totalGames;
+    engagementFactor = expectedTotalPlaytime > 0 
+      ? Math.min(totalPlaytime / expectedTotalPlaytime, 1) 
+      : 0;
+  }
+  
+  // Calculate recency factor with decay
+  const recencyFactor = totalGames > 0 ? Math.min(recentlyPlayedGames / totalGames, 1) : 0;
+  
+  // Calculate overall clean score using the weighted formula
+  const cleanScore = Math.round(
+    (completionRate * 0.4 + engagementFactor * 0.3 + recencyFactor * 0.3) * 100
+  );
+  
+  // Determine tier
+  const tier = CLEAN_SCORE_TIERS.find(
+    tier => cleanScore >= tier.range[0] && cleanScore <= tier.range[1]
+  ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1]; // Default to lowest tier
+  
+  return {
+    cleanScore,
+    breakdown: {
+      completionRate: Math.round(completionRate * 100),
+      engagementFactor: Math.round(engagementFactor * 100),
+      recencyFactor: Math.round(recencyFactor * 100)
+    },
+    tier
+  };
+};
 
 /**
  * Transforms Supabase data to match the DemoDataType structure
@@ -19,12 +84,22 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
       genres: [],
       shelfLife: [],
       library: [],
-      gamesList: createEmptyGamesList() // Add empty gamesList
+      gamesList: createEmptyGamesList(),
+      cleanScore: 0,
+      cleanScoreBreakdown: {
+        completionRate: 0,
+        engagementFactor: 0,
+        recencyFactor: 0
+      },
+      cleanTier: CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1], // Lowest tier for empty library
+      cleanStreak: 0,
+      recentlyPlayedCount: 0
     };
   }
 
   // Calculate unplayed games
   const unplayedGames = data.filter(item => !item.playtime_minutes || item.playtime_minutes === 0).length;
+  const playedGames = data.length - unplayedGames;
   
   // Calculate total playtime (convert minutes to hours)
   const totalPlaytime = data.reduce((sum, item) => sum + (item.playtime_minutes || 0), 0) / 60;
@@ -48,6 +123,27 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
       const gameHours = estimate?.main_hours || 12.5;
       return sum + gameHours;
     }, 0);
+  
+  // Calculate recently played games (in the last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const recentlyPlayedCount = data.filter(item => {
+    if (!item.last_played_date) return false;
+    const lastPlayed = new Date(item.last_played_date);
+    return lastPlayed >= thirtyDaysAgo;
+  }).length;
+  
+  // Clean streak (would usually come from database, but creating a simulated value)
+  const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
+  
+  // Calculate clean score
+  const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier } = calculateCleanScore(
+    playedGames,
+    data.length,
+    totalPlaytime,
+    12.5,
+    recentlyPlayedCount
+  );
   
   // Create genre aggregation
   const genreCounts = new Map<string, number>();
@@ -129,6 +225,11 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     genres,
     shelfLife,
     library,
-    gamesList
+    gamesList,
+    cleanScore,
+    cleanScoreBreakdown,
+    cleanTier,
+    cleanStreak,
+    recentlyPlayedCount
   };
 };

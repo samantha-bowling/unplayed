@@ -8,6 +8,20 @@ export interface DustScoreBreakdown {
   playtimeFactor: number;
 }
 
+// New type for clean score breakdown
+export interface CleanScoreBreakdown {
+  completionRate: number;
+  engagementFactor: number;
+  recencyFactor: number;
+}
+
+// Clean Score tier information
+export interface CleanScoreTier {
+  name: string;
+  color: string;
+  range: [number, number];
+}
+
 // Extended type for per-game dust data
 export interface GameDustData {
   id: number;
@@ -35,6 +49,11 @@ export interface GameListItem {
 export type UnplayedDataType = DemoDataType & {
   // Extended dust data
   dustScoreBreakdown?: DustScoreBreakdown;
+  cleanScoreBreakdown?: CleanScoreBreakdown;
+  cleanScore?: number;
+  cleanTier?: CleanScoreTier;
+  cleanStreak?: number;
+  recentlyPlayedCount?: number;
   topDustContributors?: GameDustData[];
   avgDustScore?: number;
   // Ensure gamesList is always available

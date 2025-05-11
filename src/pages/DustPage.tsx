@@ -4,8 +4,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wind } from "lucide-react";
+import { Loader2, Wind, Medal } from "lucide-react";
 import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
+import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
 import DustScorePerGame from "@/components/dust/DustScorePerGame";
 import useDustScoreData from "@/hooks/use-dust-score-data";
@@ -51,9 +52,10 @@ const DustPage = () => {
                 onValueChange={setActiveTab}
                 className="space-y-6"
               >
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
-                  <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-                  <TabsTrigger value="contributors">Top Contributors</TabsTrigger>
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
+                  <TabsTrigger value="breakdown">Dust Breakdown</TabsTrigger>
+                  <TabsTrigger value="clean">Clean Score</TabsTrigger>
+                  <TabsTrigger value="contributors">Top Dust</TabsTrigger>
                   <TabsTrigger value="pergame">Per Game</TabsTrigger>
                 </TabsList>
                 
@@ -61,6 +63,15 @@ const DustPage = () => {
                   <DustScoreBreakdown 
                     totalScore={data.dustScore}
                     breakdown={data.dustScoreBreakdown}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="clean" className="space-y-4">
+                  <CleanScoreBreakdown
+                    cleanScore={data.cleanScore || 0}
+                    breakdown={data.cleanScoreBreakdown}
+                    cleanStreak={data.cleanStreak}
+                    recentlyPlayedCount={data.recentlyPlayedCount}
                   />
                 </TabsContent>
                 
