@@ -1,22 +1,14 @@
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 interface TermsOfServiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps) => {
+const TermsOfServiceDialog = ({
+  open,
+  onOpenChange
+}: TermsOfServiceDialogProps) => {
   console.log("TermsOfServiceDialog render: open =", open);
-  
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
@@ -29,9 +21,7 @@ const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps)
         </DialogHeader>
         
         <div className="text-sm text-gray-300 space-y-4 mt-4">
-          <p>
-            Welcome to Unplayed.wtf! By accessing or using our platform, you agree to the following Terms of Service ("Terms").
-          </p>
+          <p>Welcome to unplayed! By accessing or using our platform, you agree to the following Terms of Service ("Terms").</p>
           
           <div>
             <h3 className="text-lg font-bold text-white mb-2">1. Eligibility</h3>
@@ -114,8 +104,6 @@ const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps)
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
-
 export default TermsOfServiceDialog;
