@@ -8,6 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import useLeaderboardData from "@/hooks/use-leaderboard-data";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationNext 
+} from "@/components/ui/pagination";
+import { Loader2 } from "lucide-react";
 
 const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState<"dust" | "clean">("dust");
@@ -20,8 +27,17 @@ const LeaderboardPage = () => {
     error,
     timeframe,
     setTimeframe,
-    userRank
+    userRank,
+    pagination
   } = useLeaderboardData(activeTab);
+
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    await pagination.loadNextPage();
+    setLoadingMore(false);
+  };
 
   if (error) {
     toast({
@@ -90,7 +106,7 @@ const LeaderboardPage = () => {
                 <h2 className="text-2xl font-bold mb-4 text-unplayed-amber">Dust Leaderboard</h2>
                 <p className="text-gray-400 mb-6">Highest dust scores represent users with the most unplayed games.</p>
                 
-                {isLoading ? (
+                {isLoading && pagination.page === 1 ? (
                   <div className="space-y-2">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Skeleton key={i} className="w-full h-12" />
@@ -111,6 +127,8 @@ const LeaderboardPage = () => {
                       <TableBody>
                         {leaderboardData.map((entry, index) => {
                           const isCurrentUser = user && entry.user_id === user.id;
+                          // Calculate the global rank based on pagination
+                          const globalRank = ((pagination.page - 1) * 20) + index + 1;
                           
                           return (
                             <TableRow 
@@ -118,7 +136,7 @@ const LeaderboardPage = () => {
                               className={isCurrentUser ? "bg-unplayed-mint/10" : ""}
                             >
                               <TableCell className="font-medium">
-                                {index + 1}
+                                {globalRank}
                                 {isCurrentUser && <span className="ml-1 text-unplayed-mint">•</span>}
                               </TableCell>
                               <TableCell>
@@ -140,6 +158,32 @@ const LeaderboardPage = () => {
                         })}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination Controls */}
+                    {pagination.hasMore && (
+                      <div className="mt-6">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <button
+                                onClick={handleLoadMore}
+                                disabled={loadingMore || !pagination.hasMore}
+                                className="flex items-center px-4 py-2 text-sm font-medium bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint rounded-md disabled:opacity-50 disabled:pointer-events-none"
+                              >
+                                {loadingMore ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Loading more...
+                                  </>
+                                ) : (
+                                  "Load More Players"
+                                )}
+                              </button>
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="terminal-container bg-black/70 p-4">
@@ -157,7 +201,7 @@ const LeaderboardPage = () => {
                 <h2 className="text-2xl font-bold mb-4 text-unplayed-mint">Clean Score Leaderboard</h2>
                 <p className="text-gray-400 mb-6">Highest clean scores represent users who play most of their games.</p>
                 
-                {isLoading ? (
+                {isLoading && pagination.page === 1 ? (
                   <div className="space-y-2">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Skeleton key={i} className="w-full h-12" />
@@ -178,6 +222,8 @@ const LeaderboardPage = () => {
                       <TableBody>
                         {leaderboardData.map((entry, index) => {
                           const isCurrentUser = user && entry.user_id === user.id;
+                          // Calculate the global rank based on pagination
+                          const globalRank = ((pagination.page - 1) * 20) + index + 1;
                           
                           return (
                             <TableRow 
@@ -185,7 +231,7 @@ const LeaderboardPage = () => {
                               className={isCurrentUser ? "bg-unplayed-mint/10" : ""}
                             >
                               <TableCell className="font-medium">
-                                {index + 1}
+                                {globalRank}
                                 {isCurrentUser && <span className="ml-1 text-unplayed-mint">•</span>}
                               </TableCell>
                               <TableCell>
@@ -207,6 +253,32 @@ const LeaderboardPage = () => {
                         })}
                       </TableBody>
                     </Table>
+                    
+                    {/* Pagination Controls */}
+                    {pagination.hasMore && (
+                      <div className="mt-6">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <button
+                                onClick={handleLoadMore}
+                                disabled={loadingMore || !pagination.hasMore}
+                                className="flex items-center px-4 py-2 text-sm font-medium bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint rounded-md disabled:opacity-50 disabled:pointer-events-none"
+                              >
+                                {loadingMore ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Loading more...
+                                  </>
+                                ) : (
+                                  "Load More Players"
+                                )}
+                              </button>
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="terminal-container bg-black/70 p-4">
