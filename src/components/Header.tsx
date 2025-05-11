@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import FullScreenModeToggle from './FullScreenModeToggle';
 import SteamLoginButton from './SteamLoginButton';
+import DiscordIcon from './icons/DiscordIcon';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -50,9 +52,22 @@ const Header = () => {
         )}
         <NavLink href="/leaderboard" label="Leaderboard" />
         <NavLink href="/support" label="Support" />
+        
+        {/* Discord Link */}
+        <a 
+          href="https://discord.gg/TvcNPryU8N" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200 flex items-center"
+          aria-label="Join our Discord"
+        >
+          <DiscordIcon size={22} />
+        </a>
 
-        {/* Add Zen Mode Toggle to header */}
-        <FullScreenModeToggle />
+        {/* Add Zen Mode Toggle to header with proper padding */}
+        <div className="flex items-center">
+          <FullScreenModeToggle />
+        </div>
 
         {isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
@@ -89,7 +104,18 @@ const Header = () => {
         )}
       </div>
 
-      <div className="md:hidden flex items-center space-x-2">
+      <div className="md:hidden flex items-center space-x-3">
+        {/* Discord Icon for Mobile */}
+        <a 
+          href="https://discord.gg/TvcNPryU8N" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200"
+          aria-label="Join our Discord"
+        >
+          <DiscordIcon size={20} />
+        </a>
+        
         <FullScreenModeToggle />
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 

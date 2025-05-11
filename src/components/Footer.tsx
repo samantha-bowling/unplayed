@@ -1,9 +1,11 @@
+
 import { useState } from "react";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import AboutDialog from "./AboutDialog";
 import { Link } from "react-router-dom";
+import DiscordIcon from "./icons/DiscordIcon";
 
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
@@ -56,6 +58,10 @@ const Footer = () => {
             </a>
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openAbout}>
               About
+            </a>
+            <a href="https://discord.gg/TvcNPryU8N" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm flex items-center gap-1">
+              <DiscordIcon size={16} className="opacity-80" />
+              Discord
             </a>
           </div>
         </div>
