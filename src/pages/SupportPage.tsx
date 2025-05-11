@@ -1,20 +1,15 @@
-
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 const SupportPage = () => {
-  const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
-  
+  const {
+    isFullScreenMode,
+    toggleFullScreenMode
+  } = useFullScreenMode();
   return <div className="min-h-screen flex flex-col">
       <Header />
       
@@ -24,9 +19,7 @@ const SupportPage = () => {
           Support Unplayed
         </h1>
         
-        <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-300">
-          Like Unplayed? It's built by a nostalgic gamer and powered by love, caffeine, and indecision.
-        </p>
+        <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-300">Like Unplayed? It's built by a nostalgic gamer and powered by love, caffeine, and indecision. Keep Unplayed FREE (I hate ads too) by donating today!</p>
         
         <TooltipProvider>
           <Tooltip>
@@ -52,5 +45,4 @@ const SupportPage = () => {
       <Footer />
     </div>;
 };
-
 export default SupportPage;
