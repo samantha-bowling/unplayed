@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -62,7 +61,7 @@ const Header = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="bg-black/50 border-gray-700 hover:bg-black/70"
+                className="h-9 w-9 p-0 flex items-center justify-center bg-black/50 border-gray-700 hover:bg-black/70"
                 asChild
               >
                 <a 
@@ -123,7 +122,7 @@ const Header = () => {
         <Button
           variant="outline"
           size="icon"
-          className="bg-black/50 border-gray-700 hover:bg-black/70"
+          className="h-9 w-9 p-0 flex items-center justify-center bg-black/50 border-gray-700 hover:bg-black/70"
           asChild
         >
           <a 
