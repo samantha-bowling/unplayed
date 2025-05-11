@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
@@ -66,7 +65,7 @@ const Footer = () => {
             Not affiliated with Valve Corporation or Steam. All game images are property of their respective owners.
           </p>
           <p className="mt-2">
-            © {new Date().getFullYear()} Unplayed.wtf - All rights reserved
+            © {new Date().getFullYear()} unplayed.wtf - All rights reserved
           </p>
         </div>
       </div>

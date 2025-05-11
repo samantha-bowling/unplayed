@@ -19,7 +19,7 @@ const SteamPrivacyChecklist = () => {
         </div>
         
         <p className="text-gray-300 mb-3">
-          Steam hides your game library by default. To make Unplayed work:
+          Steam hides your game library by default. To make unplayed work:
         </p>
         
         <ol className="list-decimal list-inside space-y-1 pl-2 text-gray-300">
@@ -55,7 +55,7 @@ const SteamPrivacyChecklist = () => {
         
         <CollapsibleContent className="mt-2 text-xs text-gray-400 bg-black/30 p-3 rounded">
           <p className="mb-2">
-            Unplayed needs to see your Steam library to help you discover games you own but haven't played.
+            unplayed needs to see your Steam library to help you discover games you own but haven't played.
           </p>
           <p className="mb-2">
             Due to Steam's default privacy settings, your game library and playtime data are hidden from third-party apps like ours.

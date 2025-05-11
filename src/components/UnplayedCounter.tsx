@@ -77,7 +77,7 @@ const UnplayedCounter = ({
             {animatedCount}
           </div>
           <div className="text-sm text-gray-400">
-            Unplayed Games
+            unplayed Games
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -110,7 +110,7 @@ const UnplayedCounter = ({
   // Original full-size version
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
-      <h3 className="terminal-header text-2xl mb-2">Unplayed Games</h3>
+      <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
       
       <div className="terminal-content flex flex-col items-center py-6">
         <div className="text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-2">
@@ -154,7 +154,7 @@ const UnplayedCounter = ({
               onClick={() => signInWithSteam()} 
               className="text-sm text-unplayed-mint hover:underline"
             >
-              Connect to Steam to see your Unplayed Games
+              Connect to Steam to see your unplayed Games
             </button>
           </div>
         )}

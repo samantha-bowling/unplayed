@@ -42,7 +42,7 @@ const Index = () => {
               Your PC games are gathering dust.
             </h1>
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-              Unplayed helps you conquer your massive Steam backlog and actually play the games you own.
+              unplayed helps you conquer your massive Steam backlog and actually play the games you own.
             </p>
             <div className="flex justify-center">
               <SteamLoginButton centered />

@@ -21,7 +21,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <span className="text-unplayed-mint">ℹ️ About</span>
-            <span className="text-unplayed-pink">Unplayed.wtf</span>
+            <span className="text-unplayed-pink">unplayed.wtf</span>
           </DialogTitle>
         </DialogHeader>
         
@@ -31,7 +31,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
           </p>
           
           <p>
-            Unplayed is your guilt-free sidekick for the eternal backlog struggle.
+            unplayed is your guilt-free sidekick for the eternal backlog struggle.
           </p>
           
           <p>
