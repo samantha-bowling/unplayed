@@ -1,27 +1,19 @@
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 interface PrivacyPolicyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) => {
+const PrivacyPolicyDialog = ({
+  open,
+  onOpenChange
+}: PrivacyPolicyDialogProps) => {
   console.log("PrivacyPolicyDialog render: open =", open);
-  
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <span className="text-unplayed-mint">📜 Privacy Policy</span>
-            <span className="text-unplayed-pink">– Unplayed.wtf</span>
+            <span className="text-unplayed-pink">– unplayed</span>
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-400">
             Effective Date: May 8, 2025 | Last Updated: May 10, 2025
@@ -89,8 +81,6 @@ const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) =
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
-
 export default PrivacyPolicyDialog;
