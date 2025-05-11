@@ -45,6 +45,24 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     hasMore: true,
     page: 1
   });
+  
+  // Query for the last updated timestamp
+  const lastUpdatedQuery = useQuery({
+    queryKey: ['leaderboard-last-updated'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leaderboard_snapshots')
+        .select('snapshot_date')
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) throw error;
+      return data.snapshot_date;
+    },
+    staleTime: 60 * 1000, // 1 min stale
+    gcTime: 5 * 60 * 1000 // 5 min in cache
+  });
 
   const getTimeframeFilter = () => {
     const now = new Date();
@@ -185,6 +203,11 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     timeframe,
     setTimeframe: changeTimeframe,
     userRank,
+    lastUpdated: {
+      date: lastUpdatedQuery.data,
+      isLoading: lastUpdatedQuery.isLoading,
+      error: lastUpdatedQuery.error
+    },
     pagination: {
       hasMore: queryResult.data?.hasMore || false,
       page: pagination.page,

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -14,7 +13,8 @@ import {
   PaginationItem, 
   PaginationNext 
 } from "@/components/ui/pagination";
-import { Loader2 } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState<"dust" | "clean">("dust");
@@ -28,7 +28,8 @@ const LeaderboardPage = () => {
     timeframe,
     setTimeframe,
     userRank,
-    pagination
+    pagination,
+    lastUpdated
   } = useLeaderboardData(activeTab);
 
   const [loadingMore, setLoadingMore] = useState(false);
@@ -62,6 +63,21 @@ const LeaderboardPage = () => {
         </p>
 
         <div className="max-w-4xl mx-auto">
+          {/* Last Updated Timestamp */}
+          {lastUpdated.date && !lastUpdated.isLoading && (
+            <div className="flex justify-center items-center mb-6 text-sm text-gray-400">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>
+                Last updated: {format(parseISO(lastUpdated.date), "MMMM d, yyyy 'at' h:mm a")}
+              </span>
+            </div>
+          )}
+          {lastUpdated.isLoading && (
+            <div className="flex justify-center items-center mb-6">
+              <Skeleton className="h-4 w-40" />
+            </div>
+          )}
+
           <Tabs 
             defaultValue="dust" 
             className="w-full"

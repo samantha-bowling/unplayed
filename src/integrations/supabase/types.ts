@@ -353,6 +353,14 @@ export type Database = {
         }
         Returns: number
       }
+      update_leaderboard_clean_rankings: {
+        Args: { snapshot_timestamp: string }
+        Returns: undefined
+      }
+      update_leaderboard_dust_rankings: {
+        Args: { snapshot_timestamp: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
