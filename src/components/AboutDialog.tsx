@@ -14,7 +14,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-import { Mail, Discord } from "lucide-react";
+import { Mail } from "lucide-react";
+import DiscordIcon from "./icons/DiscordIcon";
 
 interface AboutDialogProps {
   open: boolean;
@@ -187,8 +188,12 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
                 I have more questions.
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
-                <p className="flex items-center">
-                  Cool, we probably have more answers. Join our Discord server or email us at 
+                <p className="flex items-center gap-1">
+                  Cool, we probably have more answers. 
+                  <a href="https://discord.gg/TvcNPryU8N" target="_blank" rel="noopener noreferrer" className="flex items-center text-unplayed-pink hover:underline">
+                    <DiscordIcon className="h-4 w-4 mr-1" /> Join our Discord server
+                  </a> 
+                  or email us at 
                   <a href="mailto:hello@unplayed.wtf" className="flex items-center ml-1 text-unplayed-pink hover:underline">
                     <Mail className="h-4 w-4 mr-1" />hello@unplayed.wtf
                   </a>
