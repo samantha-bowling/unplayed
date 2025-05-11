@@ -8,6 +8,7 @@ interface DemoModeContextType {
   isDemoExplicit: boolean;
   setIsDemoExplicit: (value: boolean) => void;
   demoData: DemoDataType;
+  enableDemo: () => void;
 }
 
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
@@ -20,12 +21,17 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // When logged in, isDemo depends on user preference
   const isDemo = !user || isDemoExplicit;
   
+  const enableDemo = () => {
+    setIsDemoExplicit(true);
+  };
+  
   return (
     <DemoModeContext.Provider value={{ 
       isDemo, 
       isDemoExplicit, 
       setIsDemoExplicit,
-      demoData: DEMO_DATA
+      demoData: DEMO_DATA,
+      enableDemo
     }}>
       {children}
     </DemoModeContext.Provider>
