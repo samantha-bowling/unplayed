@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
 import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
@@ -35,6 +34,28 @@ const AuthPage = () => {
     (location.state as { from?: { pathname: string } })?.from?.pathname || 
     new URLSearchParams(location.search).get('redirectTo') ||
     '/';
+  
+  // New: Check explicitly for auth_success flag in URL
+  const urlParams = new URLSearchParams(location.search);
+  const hasAuthSuccess = urlParams.get('auth_success') === 'true';
+  const steamId = urlParams.get('steam_id');
+  
+  // Handle automatic redirection after successful authentication
+  useEffect(() => {
+    // Only process if we detected auth_success and we have a user
+    if (hasAuthSuccess && user && !isLoading && !showSuccessAnimation && !libraryPrivacyError) {
+      console.log('Detected successful authentication, proceeding with success animation');
+      setShowSuccessAnimation(true);
+      
+      // Clean auth parameters from URL for cleaner history
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('auth_success');
+      cleanUrl.searchParams.delete('steam_id');
+      cleanUrl.searchParams.delete('user_id');
+      cleanUrl.searchParams.delete('auth_source');
+      window.history.replaceState({}, document.title, cleanUrl.toString());
+    }
+  }, [hasAuthSuccess, user, isLoading, showSuccessAnimation, libraryPrivacyError]);
 
   useEffect(() => {
     // Check for library privacy error based on user status and library sync status
@@ -45,39 +66,24 @@ const AuthPage = () => {
         setLibraryPrivacyError(true);
       } else {
         setLibraryPrivacyError(false);
-        setShowSuccessAnimation(true);
+        
+        // Don't auto-trigger success animation unless we have auth_success flag
+        if (hasAuthSuccess) {
+          setShowSuccessAnimation(true);
+        }
       }
     }
-  }, [user, profile, enhancedStatus, showSuccessAnimation]);
+  }, [user, profile, enhancedStatus, showSuccessAnimation, hasAuthSuccess]);
 
   // If user is already logged in, show success animation then redirect
   useEffect(() => {
-    if (authStatus === AuthStatus.AUTHENTICATED && user && !showSuccessAnimation && !libraryPrivacyError) {
-      setShowSuccessAnimation(true);
+    // Only auto-redirect if user is established and we didn't just finish auth
+    if (authStatus === AuthStatus.AUTHENTICATED && user && !hasAuthSuccess && !showSuccessAnimation && !libraryPrivacyError) {
+      // User is already authenticated but not from a fresh login
+      // Redirect them to the intended page without animation
+      navigate(from, { replace: true });
     }
-  }, [authStatus, user, showSuccessAnimation, libraryPrivacyError]);
-
-  // Check for auth errors in URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const errorCode = params.get('error_code');
-    const errorMessage = params.get('error_message');
-    
-    if (errorCode) {
-      console.error('Authentication error:', errorCode, errorMessage);
-      toast({
-        title: 'Authentication Error',
-        description: errorMessage || 'Failed to authenticate with Steam',
-        variant: 'destructive',
-      });
-      
-      // Clean up error params from URL
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('error_code');
-      newUrl.searchParams.delete('error_message');
-      window.history.replaceState({}, '', newUrl.toString());
-    }
-  }, [location.search, toast]);
+  }, [authStatus, user, showSuccessAnimation, libraryPrivacyError, hasAuthSuccess, navigate, from]);
 
   // Get appropriate loading message based on auth state
   const getLoadingMessage = () => {
@@ -125,6 +131,7 @@ const AuthPage = () => {
 
   // Handle success animation completion
   const handleSuccessAnimationComplete = () => {
+    // Ensure clean navigation with replace to avoid back button issues
     navigate(from, { replace: true });
   };
 

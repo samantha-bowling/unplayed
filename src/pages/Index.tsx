@@ -14,12 +14,26 @@ import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading } = useUnplayedData();
+  const { data: unplayedData, isLoading: dataLoading } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
+  
+  // Show loading state while authentication is in progress
+  // This prevents flickering between demo mode and authenticated mode
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-unplayed-mint mx-auto mb-4" />
+          <p className="text-lg text-unplayed-mint">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   // In Full Screen Mode, show only the focused component
   if (isFullScreenMode && focusedComponent) {
@@ -44,9 +58,11 @@ const Index = () => {
             <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
               unplayed helps you conquer your massive Steam backlog and actually play the games you own.
             </p>
-            <div className="flex justify-center">
-              <SteamLoginButton centered />
-            </div>
+            {!user && (
+              <div className="flex justify-center">
+                <SteamLoginButton centered />
+              </div>
+            )}
           </div>
         </section>
         
@@ -54,7 +70,7 @@ const Index = () => {
         <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
           <div className="max-w-7xl mx-auto">
             {/* Add Demo Mode Banner */}
-            {!user && <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
+            {isDemo && <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
                 <h3 className="text-lg font-medium text-unplayed-amber mb-2">
                   🔍 Demo Mode Active
                 </h3>
@@ -110,21 +126,23 @@ const Index = () => {
         </section>
         
         {/* Call to action */}
-        <section className="w-full py-10 px-4">
-          <div className="max-w-7xl mx-auto text-center">
-            <h2 className="text-3xl font-bold font-space mb-4 text-white">
-              Ready to confront your backlog?
-            </h2>
-            <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-              Connect your Steam account and start using your unplayed games today.
-            </p>
-            <div className="flex justify-center">
-              <SteamLoginButton centered />
+        {!user && (
+          <section className="w-full py-10 px-4">
+            <div className="max-w-7xl mx-auto text-center">
+              <h2 className="text-3xl font-bold font-space mb-4 text-white">
+                Ready to confront your backlog?
+              </h2>
+              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+                Connect your Steam account and start using your unplayed games today.
+              </p>
+              <div className="flex justify-center">
+                <SteamLoginButton centered />
+              </div>
+              
+              <p className="text-sm text-gray-500 mt-4 mb-2">We use Steam's Web API. Your account details are safe.</p>
             </div>
-            
-            <p className="text-sm text-gray-500 mt-4 mb-2">We use Steam's Web API. Your account details are safe.</p>
-          </div>
-        </section>
+          </section>
+        )}
         
         <Footer />
       </div>

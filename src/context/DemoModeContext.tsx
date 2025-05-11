@@ -14,12 +14,12 @@ interface DemoModeContextType {
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
 
 export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   
-  // When not logged in, isDemo is always true
-  // When logged in, isDemo depends on user preference
-  const isDemo = !user || isDemoExplicit;
+  // Only consider user logged out after authentication has finished loading
+  // This fixes the race condition where demo mode is enabled during auth loading
+  const isDemo = (isLoading ? false : !user) || isDemoExplicit;
   
   const enableDemo = () => {
     setIsDemoExplicit(true);

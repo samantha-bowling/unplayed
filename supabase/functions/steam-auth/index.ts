@@ -693,17 +693,21 @@ async function handleCallback(request: Request) {
           (error) => console.error("[Steam Auth] Failed to update last_sync timestamp:", error)
         );
         
-      // Build a more robust redirect URL
-      const fallbackPath = '/';
-      const targetPath = redirectTo || fallbackPath;
+      // Build a more robust redirect URL - MODIFIED to redirect to /auth first
+      const redirectPath = '/auth'; // Always redirect to auth page first
       
       // Determine the appropriate URL depending on environment
-      const redirectUrl = new URL(frontendUrl + targetPath);
+      const redirectUrl = new URL(frontendUrl + redirectPath);
       
       // Add JWT and user data parameters for better client handling
       redirectUrl.searchParams.append('steam_id', steamId);
       redirectUrl.searchParams.append('user_id', userId);
       redirectUrl.searchParams.append('auth_success', 'true');
+      
+      // Pass along the original target destination
+      if (redirectTo) {
+        redirectUrl.searchParams.append('redirectTo', redirectTo);
+      }
       
       // Add analytics tracking for the source
       if (source) {
