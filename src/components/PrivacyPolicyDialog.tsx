@@ -21,10 +21,7 @@ const PrivacyPolicyDialog = ({
         </DialogHeader>
         
         <div className="text-sm text-gray-300 space-y-4 mt-4">
-          <p>
-            Unplayed ("we", "our", or "us") respects your privacy and is committed to protecting it through this Privacy Policy. 
-            This document outlines how we collect, use, and safeguard your data when you use our website and platform (unplayed.wtf).
-          </p>
+          <p>unplayed (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) respects your privacy and is committed to protecting it through this Privacy Policy. This document outlines how we collect, use, and safeguard your data when you use our website and platform (unplayed.wtf).</p>
           
           <div>
             <h3 className="text-lg font-bold text-white mb-2">1. Information We Collect</h3>
@@ -75,9 +72,7 @@ const PrivacyPolicyDialog = ({
           </div>
           
           <div className="pt-2 border-t border-gray-800">
-            <p className="text-gray-400 text-xs italic">
-              Note: Unplayed uses Valve's Steam Web API in accordance with their Terms of Use. We respect Steam's privacy rules and operate well below their API rate limits.
-            </p>
+            <p className="text-gray-400 text-xs italic">Note: unplayed uses Valve's Steam Web API in accordance with their Terms of Use. We respect Steam's privacy rules and operate well below their API rate limits.</p>
           </div>
         </div>
       </DialogContent>
