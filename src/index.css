@@ -213,6 +213,26 @@ body.fullscreen-mode {
   }
 }
 
+/* New Heart Animation */
+@keyframes heart-pulse-glow {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(239, 93, 255, 0.6));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(239, 93, 255, 0.9));
+    transform: scale(1.1);
+  }
+  100% {
+    filter: drop-shadow(0 0 4px rgba(239, 93, 255, 0.6));
+    transform: scale(1);
+  }
+}
+
+.pulsating-heart {
+  animation: heart-pulse-glow 2s infinite ease-in-out;
+}
+
 .animate-fade-in {
   animation: fade-in 0.5s ease-out forwards;
 }
