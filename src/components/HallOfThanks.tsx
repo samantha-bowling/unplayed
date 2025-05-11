@@ -63,27 +63,6 @@ const HallOfThanks = () => {
       ) : (
         <DonorGrid donors={donors} />
       )}
-
-      <style jsx>{`
-        @keyframes pulse-glow {
-          0% {
-            filter: drop-shadow(0 0 4px rgba(239, 93, 255, 0.6));
-            transform: scale(1);
-          }
-          50% {
-            filter: drop-shadow(0 0 10px rgba(239, 93, 255, 0.9));
-            transform: scale(1.1);
-          }
-          100% {
-            filter: drop-shadow(0 0 4px rgba(239, 93, 255, 0.6));
-            transform: scale(1);
-          }
-        }
-
-        .pulsating-heart {
-          animation: pulse-glow 2s infinite ease-in-out;
-        }
-      `}</style>
     </div>
   );
 };
