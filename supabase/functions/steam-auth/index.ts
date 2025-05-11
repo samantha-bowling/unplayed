@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -6,20 +5,25 @@ const SUPABASE_URL = "https://gwmygthanyycveyqqspr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bXlndGhhbnl5Y3ZleXFxc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTAxMjUsImV4cCI6MjA2MjMyNjEyNX0.zrL5sYy8LE4ErMRL-W-yuZZR10EYyrgIS9Kj-EfUw80";
 const STEAM_API_KEY = "38839F6C16BC7EC93D3A2DA41DEE8D70";
 
-// Use environment variable for the return URL with fallback
+// Improved environment variable handling with better fallbacks
 const STEAM_RETURN_URL = Deno.env.get("STEAM_RETURN_URL") || "https://unplayed.wtf/api/auth/steam/callback";
-
-// The frontend URL - dynamic based on the domain
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
 
-// Get the domain for realm from the return URL
+// Log the environment variables for debugging
+console.log(`[Steam Auth] Environment variables:
+  STEAM_RETURN_URL: ${STEAM_RETURN_URL}
+  FRONTEND_URL: ${FRONTEND_URL}
+  SUPABASE_SERVICE_ROLE_KEY present: ${!!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`);
+
+// Get the domain for realm from the return URL - Improved implementation
 const getDomainFromUrl = (url) => {
   try {
     const urlObj = new URL(url);
+    console.log(`[Steam Auth] Parsing URL: ${url}, resulting domain: ${urlObj.protocol}//${urlObj.hostname}`);
     return `${urlObj.protocol}//${urlObj.hostname}`;
   } catch (e) {
-    console.error("Failed to parse URL:", e);
-    return "https://unplayed.wtf";
+    console.error("[Steam Auth] Failed to parse URL:", url, e);
+    return "https://unplayed.wtf"; // Default fallback
   }
 };
 
@@ -57,22 +61,37 @@ type DatabaseError = {
   details?: any;
 }
 
-// Function to generate an error redirect URL
-function generateErrorRedirect(code: string, message: string): string {
+// Function to generate an error redirect URL - Enhanced with more detailed errors
+function generateErrorRedirect(code: string, message: string, details?: any): string {
   const url = new URL(FRONTEND_URL + '/auth');
   url.searchParams.append('error_code', code);
   url.searchParams.append('error_message', encodeURIComponent(message));
+  if (details) {
+    try {
+      url.searchParams.append('error_details', encodeURIComponent(JSON.stringify(details)));
+    } catch (e) {
+      console.error("[Steam Auth] Failed to stringify error details:", e);
+    }
+  }
+  
+  console.log(`[Steam Auth] Generated error redirect URL: ${url.toString()}`);
   return url.toString();
 }
 
-// Function to handle the authentication URL generation
+// Function to handle the authentication URL generation - with improved logging and error handling
 async function handleLogin(req: Request) {
   try {
     const url = new URL(req.url);
     const redirectTo = url.searchParams.get('redirectTo') || '';
+    const origin = req.headers.get('origin') || FRONTEND_URL;
 
-    // Log the request
-    console.log(`Handling login request with redirectTo: ${redirectTo}`);
+    // Log request details for debugging
+    console.log(`[Steam Auth] Login request:
+      Origin: ${origin}
+      URL: ${req.url}
+      Headers: ${JSON.stringify(Object.fromEntries([...req.headers.entries()]), null, 2)}
+      RedirectTo: ${redirectTo}
+    `);
     
     // Generate a state parameter to prevent CSRF attacks and store the redirectTo
     const state = btoa(JSON.stringify({ redirectTo }));
@@ -80,7 +99,7 @@ async function handleLogin(req: Request) {
     // Get the domain to use as realm from the return URL
     const realm = getDomainFromUrl(STEAM_RETURN_URL);
     
-    console.log(`Using realm: ${realm} and return URL: ${STEAM_RETURN_URL}`);
+    console.log(`[Steam Auth] Using realm: ${realm} and return URL: ${STEAM_RETURN_URL}`);
     
     const params = new URLSearchParams({
       'openid.ns': 'http://specs.openid.net/auth/2.0',
@@ -93,7 +112,7 @@ async function handleLogin(req: Request) {
 
     const loginUrl = `${STEAM_LOGIN_URL}?${params.toString()}`;
     
-    console.log(`Generated Steam login URL: ${loginUrl}`);
+    console.log(`[Steam Auth] Generated Steam login URL: ${loginUrl}`);
     
     return new Response(
       JSON.stringify({ url: loginUrl }),
@@ -121,8 +140,8 @@ async function handleLogin(req: Request) {
   }
 }
 
-// Function to verify the OpenID authentication with Steam
-async function verifyAuthentication(params: URLSearchParams): Promise<boolean> {
+// Function to verify the OpenID authentication with Steam - With improved retry logic
+async function verifyAuthentication(params: URLSearchParams, retryCount = 0): Promise<boolean> {
   try {
     // Create a copy of the parameters for verification
     const verifyParams = new URLSearchParams();
@@ -137,7 +156,7 @@ async function verifyAuthentication(params: URLSearchParams): Promise<boolean> {
       }
     }
 
-    console.log("Verifying authentication with Steam...");
+    console.log(`[Steam Auth] Verifying authentication with Steam... (attempt ${retryCount + 1})`);
     
     // Send verification request to Steam with user agent header
     const verifyResponse = await fetch(`${STEAM_LOGIN_URL}`, {
@@ -149,14 +168,30 @@ async function verifyAuthentication(params: URLSearchParams): Promise<boolean> {
       body: verifyParams.toString(),
     });
 
+    if (!verifyResponse.ok) {
+      console.error(`[Steam Auth] Verification failed with status: ${verifyResponse.status}`);
+      if (retryCount < 2) {
+        console.log(`[Steam Auth] Retrying verification (${retryCount + 1}/2)...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        return verifyAuthentication(params, retryCount + 1);
+      }
+      throw new Error(`Verification request failed with status ${verifyResponse.status}`);
+    }
+
     const verifyText = await verifyResponse.text();
+    console.log(`[Steam Auth] Verification response: ${verifyText}`);
     const isValid = verifyText.includes('is_valid:true');
     
-    console.log(`Authentication verification result: ${isValid ? 'Valid' : 'Invalid'}`);
+    console.log(`[Steam Auth] Authentication verification result: ${isValid ? 'Valid' : 'Invalid'}`);
     
     return isValid;
   } catch (error) {
     console.error("Authentication verification failed:", error);
+    if (retryCount < 2) {
+      console.log(`[Steam Auth] Retrying verification after error (${retryCount + 1}/2)...`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      return verifyAuthentication(params, retryCount + 1);
+    }
     throw {
       type: 'auth_error',
       code: 'verification_failed',
@@ -370,13 +405,16 @@ async function createSupabaseUser(steamId: string, steamName: string, steamAvata
   }
 }
 
-// Function to handle the callback from Steam OpenID
+// Function to handle the callback from Steam OpenID - With enhanced error handling
 async function handleCallback(request: Request) {
   try {
     const url = new URL(request.url);
     const params = url.searchParams;
     
-    console.log("Received authentication callback from Steam");
+    console.log(`[Steam Auth] Received authentication callback from Steam
+      URL: ${request.url}
+      Headers: ${JSON.stringify(Object.fromEntries([...request.headers.entries()]), null, 2)}
+    `);
     
     // Get state parameter (if it exists)
     const stateParam = params.get('state');
@@ -386,7 +424,7 @@ async function handleCallback(request: Request) {
       try {
         const stateObj = JSON.parse(atob(decodeURIComponent(stateParam)));
         redirectTo = stateObj.redirectTo || '';
-        console.log(`Retrieved redirect URL from state: ${redirectTo}`);
+        console.log(`[Steam Auth] Retrieved redirect URL from state: ${redirectTo}`);
       } catch (e) {
         console.error("Failed to parse state parameter:", e);
       }
@@ -402,7 +440,7 @@ async function handleCallback(request: Request) {
       );
     }
 
-    console.log(`Processing authentication callback with claimed_id: ${claimed_id}`);
+    console.log(`[Steam Auth] Processing authentication callback with claimed_id: ${claimed_id}`);
     
     // Verify the authentication with Steam
     const isValid = await verifyAuthentication(params);
@@ -426,10 +464,10 @@ async function handleCallback(request: Request) {
       );
     }
 
-    console.log(`Extracted Steam ID: ${steamId}`);
+    console.log(`[Steam Auth] Extracted Steam ID: ${steamId}`);
     
     // Get extended user data from Steam API
-    console.log("Fetching extended Steam user data...");
+    console.log("[Steam Auth] Fetching extended Steam user data...");
     const steamUserData = await getExtendedSteamUserData(steamId);
     
     if (!steamUserData) {
@@ -440,7 +478,7 @@ async function handleCallback(request: Request) {
       );
     }
 
-    console.log(`Successfully retrieved data for user: ${steamUserData.personaname}`);
+    console.log(`[Steam Auth] Successfully retrieved data for user: ${steamUserData.personaname}`);
 
     // Initialize the Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -482,7 +520,7 @@ async function handleCallback(request: Request) {
           throw insertError;
         }
         
-        console.log(`Created new user with ID: ${userId}`);
+        console.log(`[Steam Auth] Created new user with ID: ${userId}`);
         
         // Process game library data in the background if available
         if (steamUserData.library?.games?.length > 0) {
@@ -511,7 +549,7 @@ async function handleCallback(request: Request) {
           // Non-fatal error, continue
         }
         
-        console.log(`Updated existing user with ID: ${userId}`);
+        console.log(`[Steam Auth] Updated existing user with ID: ${userId}`);
         
         // Update their game library in the background
         if (steamUserData.library?.games?.length > 0) {
@@ -527,7 +565,7 @@ async function handleCallback(request: Request) {
       // Verify we have the service role key for auth operations
       const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       if (!serviceRoleKey) {
-        console.error("SERVICE ROLE KEY IS MISSING FOR SESSION CREATION");
+        console.error("[Steam Auth] SERVICE ROLE KEY IS MISSING FOR SESSION CREATION");
         return Response.redirect(
           generateErrorRedirect('auth_setup_error', 'Server authentication configuration error'),
           302
@@ -538,7 +576,7 @@ async function handleCallback(request: Request) {
       const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
       
       // Create a session for the user using admin API
-      console.log(`Creating session for user ID: ${userId}`);
+      console.log(`[Steam Auth] Creating session for user ID: ${userId}`);
       const { data: signInData, error: signInError } = await adminClient.auth.admin.generateLink({
         type: 'magiclink',
         email: `steam_${steamId}@unplayed.wtf`,
@@ -548,14 +586,14 @@ async function handleCallback(request: Request) {
       });
       
       if (signInError || !signInData) {
-        console.error("Error generating auth link:", signInError);
+        console.error("[Steam Auth] Error generating auth link:", signInError);
         return Response.redirect(
           generateErrorRedirect('session_creation_error', 'Failed to create authentication session'),
           302
         );
       }
       
-      console.log("Admin session created successfully");
+      console.log("[Steam Auth] Admin session created successfully");
       
       // Mark the last sync time
       await supabase
@@ -563,38 +601,38 @@ async function handleCallback(request: Request) {
         .update({ last_sync: new Date().toISOString() })
         .eq('id', userId)
         .then(
-          () => console.log("Updated last_sync timestamp"),
-          (error) => console.error("Failed to update last_sync timestamp:", error)
+          () => console.log("[Steam Auth] Updated last_sync timestamp"),
+          (error) => console.error("[Steam Auth] Failed to update last_sync timestamp:", error)
         );
         
       // Redirect with the token parameters
       const redirectUrl = new URL(FRONTEND_URL + (redirectTo || '/'));
       
-      // Add JWT and user data parameters
+      // Add JWT and user data parameters for better client handling
       redirectUrl.searchParams.append('steam_id', steamId);
       redirectUrl.searchParams.append('user_id', userId);
       redirectUrl.searchParams.append('auth_success', 'true');
       
-      console.log(`Authentication successful. Redirecting to: ${redirectUrl.toString()}`);
+      console.log(`[Steam Auth] Authentication successful. Redirecting to: ${redirectUrl.toString()}`);
       
       return Response.redirect(redirectUrl.toString(), 302);
       
     } catch (error) {
-      console.error("Error in authentication process:", error);
+      console.error("[Steam Auth] Error in authentication process:", error);
       
       const errorCode = error.code || 'unknown_error';
       const errorMessage = error.message || 'Authentication process failed';
       
       return Response.redirect(
-        generateErrorRedirect(errorCode, errorMessage),
+        generateErrorRedirect(errorCode, errorMessage, error),
         302
       );
     }
 
   } catch (error) {
-    console.error("Callback error:", error);
+    console.error("[Steam Auth] Callback error:", error);
     return Response.redirect(
-      generateErrorRedirect('callback_error', 'Error processing authentication callback'),
+      generateErrorRedirect('callback_error', 'Error processing authentication callback', error),
       302
     );
   }
@@ -603,7 +641,7 @@ async function handleCallback(request: Request) {
 // Process game library data for a new user
 async function processGameLibrary(supabase: any, userId: string, steamId: string, libraryData: any) {
   try {
-    console.log(`Starting game library import for user: ${userId}`);
+    console.log(`[Steam Auth] Starting game library import for user: ${userId}`);
     const startTime = Date.now();
     
     if (!libraryData?.games || !libraryData.games.length) {
@@ -630,9 +668,9 @@ async function processGameLibrary(supabase: any, userId: string, steamId: string
         .upsert(gameUpserts, { onConflict: 'id' });
       
       if (gamesError) {
-        console.error(`Error upserting games batch ${i}-${i+50}:`, gamesError);
+        console.error(`[Steam Auth] Error upserting games batch ${i}-${i+50}:`, gamesError);
       } else {
-        console.log(`Processed games batch ${i}-${i+50} of ${libraryData.games.length}`);
+        console.log(`[Steam Auth] Processed games batch ${i}-${i+50} of ${libraryData.games.length}`);
       }
     }
     
@@ -658,24 +696,24 @@ async function processGameLibrary(supabase: any, userId: string, steamId: string
         });
       
       if (userGamesError) {
-        console.error(`Error upserting user_games batch ${i}-${i+50}:`, userGamesError);
+        console.error(`[Steam Auth] Error upserting user_games batch ${i}-${i+50}:`, userGamesError);
       } else {
-        console.log(`Processed user_games batch ${i}-${i+50} of ${userGamesData.length}`);
+        console.log(`[Steam Auth] Processed user_games batch ${i}-${i+50} of ${userGamesData.length}`);
       }
     }
     
     const duration = Date.now() - startTime;
-    console.log(`Game library import completed in ${duration}ms for user: ${userId}`);
+    console.log(`[Steam Auth] Game library import completed in ${duration}ms for user: ${userId}`);
     
   } catch (error) {
-    console.error("Error processing game library:", error);
+    console.error("[Steam Auth] Error processing game library:", error);
   }
 }
 
 // Update existing user's game library data
 async function updateGameLibrary(supabase: any, userId: string, steamId: string, libraryData: any) {
   try {
-    console.log(`Starting game library update for user: ${userId}`);
+    console.log(`[Steam Auth] Starting game library update for user: ${userId}`);
     const startTime = Date.now();
     
     if (!libraryData?.games || !libraryData.games.length) {
@@ -700,8 +738,8 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
         .from('games')
         .upsert(gameUpserts, { onConflict: 'id' })
         .then(
-          () => console.log(`Updated games batch ${i}-${i+50} of ${libraryData.games.length}`),
-          (error) => console.error(`Error updating games batch ${i}-${i+50}:`, error)
+          () => console.log(`[Steam Auth] Updated games batch ${i}-${i+50} of ${libraryData.games.length}`),
+          (error) => console.error(`[Steam Auth] Error updating games batch ${i}-${i+50}:`, error)
         );
     }
     
@@ -712,7 +750,7 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
       .eq('user_id', userId);
     
     if (fetchError) {
-      console.error("Error fetching existing user_games:", fetchError);
+      console.error("[Steam Auth] Error fetching existing user_games:", fetchError);
       return;
     }
     
@@ -758,7 +796,7 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
       }
     });
     
-    console.log(`Found ${updates.length} games to update and ${newEntries.length} new games`);
+    console.log(`[Steam Auth] Found ${updates.length} games to update and ${newEntries.length} new games`);
     
     // Process updates in batches
     for (let i = 0; i < updates.length; i += 50) {
@@ -768,8 +806,8 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
         .from('user_games')
         .upsert(updateBatch, { onConflict: 'user_id,game_id' })
         .then(
-          () => console.log(`Updated user_games batch ${i}-${i+50} of ${updates.length}`),
-          (error) => console.error(`Error updating user_games batch ${i}-${i+50}:`, error)
+          () => console.log(`[Steam Auth] Updated user_games batch ${i}-${i+50} of ${updates.length}`),
+          (error) => console.error(`[Steam Auth] Error updating user_games batch ${i}-${i+50}:`, error)
         );
     }
     
@@ -781,33 +819,44 @@ async function updateGameLibrary(supabase: any, userId: string, steamId: string,
         .from('user_games')
         .insert(newBatch)
         .then(
-          () => console.log(`Inserted new user_games batch ${i}-${i+50} of ${newEntries.length}`),
-          (error) => console.error(`Error inserting user_games batch ${i}-${i+50}:`, error)
+          () => console.log(`[Steam Auth] Inserted new user_games batch ${i}-${i+50} of ${newEntries.length}`),
+          (error) => console.error(`[Steam Auth] Error inserting user_games batch ${i}-${i+50}:`, error)
         );
     }
     
     const duration = Date.now() - startTime;
-    console.log(`Game library update completed in ${duration}ms for user: ${userId}`);
+    console.log(`[Steam Auth] Game library update completed in ${duration}ms for user: ${userId}`);
     
   } catch (error) {
-    console.error("Error updating game library:", error);
+    console.error("[Steam Auth] Error updating game library:", error);
   }
 }
 
-// Health check endpoint
-async function handleHealthCheck() {
+// Health check endpoint - Enhanced with more diagnostic information
+async function handleHealthCheck(req: Request) {
+  const url = new URL(req.url);
+  const headers = Object.fromEntries(req.headers.entries());
+  
   return new Response(JSON.stringify({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
     steam_return_url: STEAM_RETURN_URL,
-    frontend_url: FRONTEND_URL
+    frontend_url: FRONTEND_URL,
+    origin: headers['origin'] || 'Unknown',
+    host: headers['host'] || 'Unknown',
+    request_url: req.url,
+    env_vars: {
+      steam_return_url_set: !!Deno.env.get("STEAM_RETURN_URL"),
+      frontend_url_set: !!Deno.env.get("FRONTEND_URL"),
+      service_role_key_set: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    }
   }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
   });
 }
 
-// Debug endpoint for troubleshooting the edge function environment
+// Enhanced debug endpoint for troubleshooting the edge function environment
 async function handleDebug(req: Request) {
   // Get request information
   const url = new URL(req.url);
@@ -819,6 +868,15 @@ async function handleDebug(req: Request) {
   const steamReturnUrlValue = STEAM_RETURN_URL;
   const frontendUrlValue = FRONTEND_URL;
   
+  // Check for potential configuration issues
+  const potentialIssues = [];
+  if (!serviceRoleKeyPresent) {
+    potentialIssues.push("SUPABASE_SERVICE_ROLE_KEY is missing");
+  }
+  if (steamReturnUrlValue === "https://unplayed.wtf/api/auth/steam/callback" && headers['host']?.includes('localhost')) {
+    potentialIssues.push("Using production STEAM_RETURN_URL in development environment");
+  }
+  
   // Construct debug information
   const debugInfo = {
     timestamp: new Date().toISOString(),
@@ -829,7 +887,8 @@ async function handleDebug(req: Request) {
       frontendUrl: frontendUrlValue,
       serviceRoleKeyPresent,
       steamApiKeyPresent,
-      realm: getDomainFromUrl(STEAM_RETURN_URL)
+      realm: getDomainFromUrl(STEAM_RETURN_URL),
+      potentialIssues
     },
     config: {
       corsHeaders,
@@ -861,7 +920,7 @@ async function handleDebug(req: Request) {
   );
 }
 
-// Main handler function
+// Main handler function - Enhanced with better error logging
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -873,7 +932,7 @@ serve(async (req) => {
 
   try {
     // Add request logging for debugging
-    console.log(`Request received: ${req.method} ${url.pathname}`);
+    console.log(`[Steam Auth] Request received: ${req.method} ${url.pathname}`);
     
     switch (path) {
       case 'login':
@@ -881,16 +940,17 @@ serve(async (req) => {
       case 'callback':
         return await handleCallback(req);
       case 'health':
-        return await handleHealthCheck();
+        return await handleHealthCheck(req);
       case 'debug':
         return await handleDebug(req);
       default:
-        console.log(`Unknown path requested: ${path}`);
+        console.log(`[Steam Auth] Unknown path requested: ${path}`);
         return new Response(JSON.stringify({ 
           error: {
             type: 'not_found',
             code: 'invalid_endpoint',
-            message: 'Endpoint not found'
+            message: 'Endpoint not found',
+            requestedPath: url.pathname
           }
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -898,13 +958,14 @@ serve(async (req) => {
         });
     }
   } catch (error) {
-    console.error("Unhandled error in request handler:", error);
+    console.error("[Steam Auth] Unhandled error in request handler:", error);
     return new Response(JSON.stringify({ 
       error: {
         type: 'server_error',
         code: 'unhandled_error',
         message: 'Internal server error',
-        details: error.message || String(error)
+        details: error.message || String(error),
+        path: url.pathname
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

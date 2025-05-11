@@ -15,3 +15,17 @@
   to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/handle-stripe-donation"
   status = 200
   force = true
+
+# Auth route fallback - handle post-authentication redirects  
+[[redirects]]
+  from = "/auth"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Handle all routes by serving the main app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false

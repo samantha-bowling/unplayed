@@ -73,28 +73,27 @@ const DEBUG_AUTH = process.env.NODE_ENV === 'development';
 // Helper function to determine the correct API URL based on environment
 const getSteamAuthUrl = (queryParams: string = ''): string => {
   // Log the environment to help debug production vs development behavior
-  console.log(`[Steam Auth] Getting auth URL in environment: ${process.env.NODE_ENV}, window.location.origin: ${window.location.origin}`);
+  console.log(`[Steam Auth] Environment: ${process.env.NODE_ENV}, Origin: ${window.location.origin}`);
   
-  // In development, use the direct Supabase function URL
-  if (import.meta.env.DEV) {
-    const url = `https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/login${queryParams}`;
-    console.log(`[Steam Auth] Using development URL: ${url}`);
-    return url;
-  }
-  // In production, use the Netlify redirect
+  // Always prefer using API path as it handles both development and production properly
   const url = `/api/auth/steam/login${queryParams}`;
-  console.log(`[Steam Auth] Using production URL: ${url}`);
+  console.log(`[Steam Auth] Using URL: ${url}`);
   return url;
 };
 
-// Helper function to safely fetch and parse JSON responses
+// Enhanced function to safely fetch and parse JSON responses with additional logging
 const fetchAndParseJson = async (url: string, options: RequestInit = {}): Promise<any> => {
   console.log(`[Steam Auth] Fetching URL: ${url}`);
   console.log(`[Steam Auth] Request options:`, JSON.stringify(options, null, 2));
   
   let response: Response;
   try {
-    response = await fetch(url, options);
+    // Add timestamp to prevent caching issues
+    const urlWithTimestamp = url.includes('?') 
+      ? `${url}&_t=${Date.now()}` 
+      : `${url}?_t=${Date.now()}`;
+      
+    response = await fetch(urlWithTimestamp, options);
     console.log(`[Steam Auth] Response status: ${response.status} ${response.statusText}`);
     console.log(`[Steam Auth] Response headers:`, JSON.stringify(Object.fromEntries([...response.headers.entries()]), null, 2));
   } catch (fetchError) {
@@ -422,7 +421,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [session, isLoading]);
 
-  // Process URL parameters for authentication
+  // Process URL parameters for authentication with enhanced error handling
   useEffect(() => {
     const processAuthParams = async () => {
       const url = new URL(window.location.href);
@@ -431,13 +430,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const authSuccess = url.searchParams.get('auth_success');
       const errorCode = url.searchParams.get('error_code');
       const errorMessage = url.searchParams.get('error_message');
+      const errorDetails = url.searchParams.get('error_details');
 
-      // Process error parameters
+      // Enhanced error logging
       if (errorCode) {
-        logAuthEvent('Auth error from URL', { errorCode, errorMessage });
+        let details = null;
+        try {
+          if (errorDetails) {
+            details = JSON.parse(decodeURIComponent(errorDetails));
+          }
+        } catch (e) {
+          console.error('Error parsing error details:', e);
+        }
+        
+        logAuthEvent('Auth error from URL', { errorCode, errorMessage, details });
         setAuthStatus(AuthStatus.ERROR);
         setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
-        recordAuthError(errorCode, errorMessage || 'Authentication error', null);
+        recordAuthError(errorCode, errorMessage || 'Authentication error', details);
         
         toast({
           title: 'Authentication Error',
@@ -449,6 +458,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete('error_code');
         cleanUrl.searchParams.delete('error_message');
+        cleanUrl.searchParams.delete('error_details');
         window.history.replaceState({}, document.title, cleanUrl.toString());
         return;
       }
@@ -632,7 +642,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getProfile();
   }, [user]);
 
-  // Initialize Steam auth flow
+  // Initialize Steam auth flow with better error handling
   const signInWithSteam = async (redirectTo?: string) => {
     try {
       setIsLoading(true);
@@ -652,12 +662,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       logAuthEvent('Fetching Steam login URL', { authUrl });
       
-      // Use our new helper function to safely fetch and parse the response
+      // Use our enhanced helper function to safely fetch and parse the response
       const responseData = await fetchAndParseJson(authUrl, {
         headers: {
           'User-Agent': 'UnplayedWTF Web App',
           'Content-Type': 'application/json',
-        }
+          'X-Client-Info': navigator.userAgent,
+          'X-Debug-Origin': window.location.origin
+        },
+        // Add cache control to prevent caching issues
+        cache: 'no-store'
       });
       
       const { url, error } = responseData;

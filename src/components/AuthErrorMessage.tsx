@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { EnhancedAuthStatus, AuthError } from '@/context/AuthContext';
-import { AlertCircle, ShieldAlert, ServerOff, RefreshCw } from 'lucide-react';
+import { AlertCircle, ShieldAlert, ServerOff, RefreshCw, Unlink, Wifi, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AuthErrorMessageProps {
@@ -37,14 +37,50 @@ export const AuthErrorMessage = ({ errorType, error, onRetry }: AuthErrorMessage
           ]
         };
       case EnhancedAuthStatus.AUTH_ERROR:
+        // Enhanced error matching for Steam auth errors
+        if (error?.code === 'invalid_response' || error?.code === 'verification_failed') {
+          return {
+            icon: <Globe className="h-5 w-5 text-unplayed-red" />,
+            title: "Steam Authentication Failed",
+            message: error?.message || "There was a problem authenticating with Steam.",
+            suggestions: [
+              "Try signing in again",
+              "Make sure cookies are enabled in your browser",
+              "Check your internet connection"
+            ]
+          };
+        } else if (error?.code === 'callback_error' || error?.code === 'auth_setup_error') {
+          return {
+            icon: <Unlink className="h-5 w-5 text-unplayed-red" />,
+            title: "Authentication Connection Error",
+            message: error?.message || "There was a problem connecting to the authentication service.",
+            suggestions: [
+              "Steam servers may be experiencing issues",
+              "Our authentication system may be temporarily unavailable",
+              "Try again in a few moments"
+            ]
+          };
+        } else {
+          return {
+            icon: <AlertCircle className="h-5 w-5 text-unplayed-red" />,
+            title: "Authentication Failed",
+            message: error?.message || "There was a problem authenticating with Steam.",
+            suggestions: [
+              "Steam may be experiencing high traffic",
+              "Your browser might be blocking third-party cookies",
+              "Try using a different browser if the issue persists"
+            ]
+          };
+        }
+      case EnhancedAuthStatus.LIBRARY_ERROR:
         return {
-          icon: <AlertCircle className="h-5 w-5 text-unplayed-red" />,
-          title: "Authentication Failed",
-          message: error?.message || "There was a problem authenticating with Steam.",
+          icon: <Wifi className="h-5 w-5 text-unplayed-amber" />,
+          title: "Library Access Error",
+          message: "We couldn't access your Steam game library. Please check your Steam privacy settings.",
           suggestions: [
-            "Steam may be experiencing high traffic",
-            "Your browser might be blocking third-party cookies",
-            "Try using a different browser if the issue persists"
+            "Set your 'Game details' to public in Steam privacy settings", 
+            "Make sure your profile visibility is set to public",
+            "Try reauthorizing after updating your settings"
           ]
         };
       default:
@@ -83,6 +119,12 @@ export const AuthErrorMessage = ({ errorType, error, onRetry }: AuthErrorMessage
                     <li key={idx}>{suggestion}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+            
+            {error?.code && (
+              <div className="mb-3 p-2 rounded bg-black/20 border border-gray-800">
+                <code className="text-xs text-gray-500">Error code: {error.code}</code>
               </div>
             )}
             
