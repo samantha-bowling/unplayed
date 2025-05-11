@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,6 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick, GamePickFilters } from '@/types/picks.types';
+
+// Type for Supabase-compatible JSON
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 /**
  * Custom hook for managing game picks
@@ -57,7 +61,7 @@ export const useGamePicks = () => {
         .insert({
           user_id: user.id,
           game_id: gameId,
-          filters: filters || {},
+          filters: filters as unknown as Json || {},
         })
         .select();
 

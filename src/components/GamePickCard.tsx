@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { GamePick } from '@/hooks/use-game-picks';
+import { GamePick } from '@/types/picks.types';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { Clock } from 'lucide-react';
 
@@ -17,12 +17,14 @@ interface GamePickCardProps {
   game: GameListItem;
   pick?: GamePick;
   compact?: boolean;
+  onClick?: () => void;
 }
 
 const GamePickCard: React.FC<GamePickCardProps> = ({ 
   game, 
   pick,
-  compact = false 
+  compact = false,
+  onClick
 }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -49,7 +51,7 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
   }
 
   return (
-    <div className="pixel-card">
+    <div className="pixel-card" onClick={onClick}>
       <img src={game.imageUrl || ''} alt={game.title} className="w-full h-36 object-cover rounded-md mb-2" />
       
       <h4 className="text-lg font-medium text-white mb-1">{game.title}</h4>

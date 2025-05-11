@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { GameListItem } from '@/types/unplayed-data.types';
-import { GamePick } from '@/hooks/use-game-picks';
+import { GamePick } from '@/types/picks.types';
 import GamePickCard from './GamePickCard';
 
 interface RecentlySelectedProps {

@@ -1,6 +1,5 @@
-
 import { useMemo } from 'react';
-import { GamePick } from '@/hooks/use-game-picks';
+import { GamePick } from '@/types/picks.types';
 
 interface PreviouslyPickedInfo {
   isPreviouslyPicked: boolean;

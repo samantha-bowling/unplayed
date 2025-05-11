@@ -11,6 +11,8 @@ export interface GamePickFilters {
   genre?: string;
   /** Source of the games (e.g., "shelfLife", "library", "genre") */
   source?: string;
+  /** Support for additional properties for future extension */
+  [key: string]: string | number | boolean | null | object | Array<any> | undefined;
 }
 
 /**
