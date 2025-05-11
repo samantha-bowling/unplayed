@@ -140,7 +140,7 @@ const UnplayedCounter = ({
               <TooltipContent className="max-w-xs">
                 <p>
                   {isDemo 
-                    ? "Based on an average of 12.5 hours per game" 
+                    ? "Based on an average of 12.5 hours per game in Demo Mode" 
                     : "Based on HowLongToBeat.com data where available, otherwise estimated at 12.5 hours per game"}
                 </p>
               </TooltipContent>
