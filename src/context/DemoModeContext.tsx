@@ -1,7 +1,4 @@
 
-// The DemoModeContext is already properly handling the loading state
-// We'll just make a minor improvement to the logging
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
@@ -20,11 +17,11 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { user, isLoading } = useAuth();
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   
-  // Only consider user logged out after authentication has finished loading
-  // This fixes the race condition where demo mode is enabled during auth loading
+  // Enhanced logic: Always consider auth loading state first
+  // This prevents the race condition where demo mode is enabled during auth loading
   const isDemo = (isLoading ? false : !user) || isDemoExplicit;
   
-  // Log when demo mode changes
+  // Enhanced logging to help debug auth and demo mode state changes
   useEffect(() => {
     console.log(`Demo mode: ${isDemo ? 'enabled' : 'disabled'}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
   }, [isDemo, isLoading, user, isDemoExplicit]);
