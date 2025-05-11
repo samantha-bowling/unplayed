@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import FullScreenModeToggle from './FullScreenModeToggle';
 import SteamLoginButton from './SteamLoginButton';
 import DiscordIcon from './icons/DiscordIcon';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -53,21 +55,33 @@ const Header = () => {
         <NavLink href="/leaderboard" label="Leaderboard" />
         <NavLink href="/support" label="Support" />
         
-        {/* Discord Link */}
-        <a 
-          href="https://discord.gg/TvcNPryU8N" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200 flex items-center"
-          aria-label="Join our Discord"
-        >
-          <DiscordIcon size={22} />
-        </a>
+        {/* Discord Link with Button styling to match FullScreenModeToggle */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-black/50 border-gray-700 hover:bg-black/70"
+                asChild
+              >
+                <a 
+                  href="https://discord.gg/TvcNPryU8N" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  aria-label="Join our Discord"
+                >
+                  <DiscordIcon size={18} />
+                </a>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Join our Discord</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-        {/* Add Zen Mode Toggle to header with proper padding */}
-        <div className="flex items-center">
-          <FullScreenModeToggle />
-        </div>
+        <FullScreenModeToggle />
 
         {isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
@@ -105,16 +119,22 @@ const Header = () => {
       </div>
 
       <div className="md:hidden flex items-center space-x-3">
-        {/* Discord Icon for Mobile */}
-        <a 
-          href="https://discord.gg/TvcNPryU8N" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200"
-          aria-label="Join our Discord"
+        {/* Discord Icon for Mobile - Updated to match FullScreenModeToggle */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-black/50 border-gray-700 hover:bg-black/70"
+          asChild
         >
-          <DiscordIcon size={20} />
-        </a>
+          <a 
+            href="https://discord.gg/TvcNPryU8N" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Join our Discord"
+          >
+            <DiscordIcon size={18} />
+          </a>
+        </Button>
         
         <FullScreenModeToggle />
         <button 

@@ -6,6 +6,7 @@ import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import AboutDialog from "./AboutDialog";
 import { Link } from "react-router-dom";
 import DiscordIcon from "./icons/DiscordIcon";
+import { Button } from "@/components/ui/button";
 
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
