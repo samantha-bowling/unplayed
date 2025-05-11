@@ -29,6 +29,13 @@
   status = 200
   force = false
 
+# Admin routes
+[[redirects]]
+  from = "/admin/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
 # Auth route fallback - handle post-authentication redirects  
 [[redirects]]
   from = "/auth/*"

@@ -27,6 +27,33 @@ serve(async (req) => {
   }
   
   try {
+    // Get the JWT from the request headers
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing Authorization header');
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the user is authenticated and has admin role
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error(`Authentication failed: ${authError?.message || 'User not found'}`);
+    }
+    
+    // Check if user has admin role in user_metadata
+    const isAdmin = user.user_metadata?.role === 'admin';
+    
+    if (!isAdmin) {
+      return new Response(JSON.stringify({
+        error: "Unauthorized: Admin role required"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403
+      });
+    }
+    
     console.log("====== Tier calculation started ======");
     
     // Get all donors with amount_cents values

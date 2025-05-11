@@ -1,45 +1,16 @@
 
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useCallback } from "react";
-import { RefreshCw } from "lucide-react";
 
 const SupportPage = () => {
   const {
     isFullScreenMode,
     toggleFullScreenMode
   } = useFullScreenMode();
-
-  // Admin function to trigger tier calculation
-  const calculateTiers = useCallback(async () => {
-    try {
-      toast.info("Calculating donor tiers...");
-      
-      // Call the calculate-donor-tiers function
-      const { data, error } = await supabase.functions.invoke("calculate-donor-tiers");
-      
-      if (error) {
-        console.error("Error calculating tiers:", error);
-        toast.error("Failed to calculate donor tiers");
-        return;
-      }
-      
-      toast.success("Donor tiers calculated successfully!");
-      console.log("Tier calculation result:", data);
-      
-      // Reload the page to see updated tiers
-      window.location.reload();
-    } catch (err) {
-      console.error("Error calling tier calculation:", err);
-      toast.error("Error occurred while calculating tiers");
-    }
-  }, []);
 
   return <div className="min-h-screen flex flex-col">
       <Header />
@@ -71,25 +42,6 @@ const SupportPage = () => {
       {/* Hall of Thanks section */}
       <section className="py-8 px-4 mb-8">
         <HallOfThanks />
-        
-        {/* Admin tools section - More visible but still subtle */}
-        <div className="mt-8 pt-4 border-t border-gray-800">
-          <div className="max-w-7xl mx-auto">
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Admin Tools</h3>
-            <div className="flex items-center">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="border-gray-700 bg-black/50 hover:bg-black/70"
-                onClick={calculateTiers}
-              >
-                <RefreshCw className="mr-2 h-3.5 w-3.5" />
-                Recalculate Donor Tiers
-              </Button>
-              <p className="ml-3 text-xs text-gray-500">Updates donor tier rankings based on donation amounts</p>
-            </div>
-          </div>
-        </div>
       </section>
       
       <Footer />

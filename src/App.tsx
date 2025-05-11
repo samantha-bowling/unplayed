@@ -14,6 +14,7 @@ import LibraryPage from "./pages/LibraryPage";
 import PickerPage from "./pages/PickerPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
 import SupportPage from "./pages/SupportPage";
+import AdminSupportPage from "./pages/AdminSupportPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
@@ -41,6 +42,11 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/support" element={<SupportPage />} />
+                <Route path="/admin/support" element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminSupportPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 {/* Protected routes */}
                 <Route path="/library" element={
