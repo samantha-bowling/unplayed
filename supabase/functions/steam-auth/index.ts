@@ -660,28 +660,34 @@ async function handleCallback(request: Request) {
         );
       }
       
-      // Create admin client for authentication
+      // Create admin client for authentication with service role key
       const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
       
-      // Create a session for the user using admin API
-      console.log(`[Steam Auth] Creating session for user ID: ${userId}`);
-      const { data: signInData, error: signInError } = await adminClient.auth.admin.generateLink({
-        type: 'magiclink',
-        email: `steam_${steamId}@unplayed.wtf`,
+      // Use signInWithEmail to generate proper tokens
+      console.log(`[Steam Auth] Creating session tokens for user ID: ${userId}`);
+      const userEmail = `steam_${steamId}@unplayed.wtf`;
+      
+      // Sign in the user to generate access and refresh tokens
+      const { data: signInData, error: signInError } = await adminClient.auth.signInWithEmail({
+        email: userEmail,
         options: {
-          redirectTo: frontendUrl + (redirectTo || '/')
+          // Skip email confirmation since we're handling it via Steam OpenID
+          emailRedirectTo: frontendUrl + (redirectTo || '/')
         }
       });
       
-      if (signInError || !signInData) {
-        console.error("[Steam Auth] Error generating auth link:", signInError);
+      if (signInError || !signInData || !signInData.session) {
+        console.error("[Steam Auth] Error generating auth tokens:", signInError);
         return Response.redirect(
-          generateErrorRedirect(request, 'session_creation_error', 'Failed to create authentication session'),
+          generateErrorRedirect(request, 'token_generation_error', 'Failed to generate authentication tokens'),
           302
         );
       }
       
-      console.log("[Steam Auth] Admin session created successfully");
+      console.log("[Steam Auth] Session tokens generated successfully");
+      
+      // Extract the tokens from the session
+      const { access_token, refresh_token } = signInData.session;
       
       // Mark the last sync time
       await supabase
@@ -693,13 +699,15 @@ async function handleCallback(request: Request) {
           (error) => console.error("[Steam Auth] Failed to update last_sync timestamp:", error)
         );
         
-      // Build a more robust redirect URL - MODIFIED to redirect to /auth first
+      // Build redirect URL with tokens
       const redirectPath = '/auth'; // Always redirect to auth page first
       
       // Determine the appropriate URL depending on environment
       const redirectUrl = new URL(frontendUrl + redirectPath);
       
-      // Add JWT and user data parameters for better client handling
+      // Add tokens and user data parameters for client-side session establishment
+      redirectUrl.searchParams.append('access_token', access_token);
+      redirectUrl.searchParams.append('refresh_token', refresh_token);
       redirectUrl.searchParams.append('steam_id', steamId);
       redirectUrl.searchParams.append('user_id', userId);
       redirectUrl.searchParams.append('auth_success', 'true');

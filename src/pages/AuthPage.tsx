@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
 import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { SteamIcon } from '@/components/icons/SteamIcon';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 import SteamLoader from '@/components/SteamLoader';
 import AuthErrorMessage from '@/components/AuthErrorMessage';
 import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
@@ -23,22 +24,74 @@ const AuthPage = () => {
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
   const [libraryPrivacyError, setLibraryPrivacyError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [sessionEstablished, setSessionEstablished] = useState(false);
   const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile, refreshProfile } = useAuth();
   const { hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   // Extract the redirect path from location state or query params
   const from = 
     (location.state as { from?: { pathname: string } })?.from?.pathname || 
-    new URLSearchParams(location.search).get('redirectTo') ||
+    searchParams.get('redirectTo') ||
     '/';
   
-  // New: Check explicitly for auth_success flag in URL
-  const urlParams = new URLSearchParams(location.search);
-  const hasAuthSuccess = urlParams.get('auth_success') === 'true';
-  const steamId = urlParams.get('steam_id');
+  // Check for auth tokens in URL
+  const accessToken = searchParams.get('access_token');
+  const refreshToken = searchParams.get('refresh_token');
+  const hasAuthSuccess = searchParams.get('auth_success') === 'true';
+  const steamId = searchParams.get('steam_id');
+  
+  // Handle setting up session from tokens in URL
+  useEffect(() => {
+    const establishSession = async () => {
+      if (accessToken && refreshToken && !sessionEstablished) {
+        console.log('Setting up session from tokens in URL');
+        setIsLoading(true);
+        
+        try {
+          // Set the session using the tokens from the URL
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (error) {
+            console.error('Error setting session:', error);
+            toast({
+              title: 'Authentication Error',
+              description: 'Failed to establish session: ' + error.message,
+              variant: 'destructive',
+            });
+          } else if (data.session) {
+            console.log('Session established successfully:', data.session.user?.id);
+            setSessionEstablished(true);
+            
+            // Clean auth parameters from URL for cleaner history
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('access_token');
+            cleanUrl.searchParams.delete('refresh_token');
+            cleanUrl.searchParams.delete('steam_id');
+            cleanUrl.searchParams.delete('user_id');
+            cleanUrl.searchParams.delete('auth_success');
+            cleanUrl.searchParams.delete('auth_source');
+            window.history.replaceState({}, document.title, cleanUrl.toString());
+            
+            // Show success animation
+            setShowSuccessAnimation(true);
+          }
+        } catch (error) {
+          console.error('Exception during session establishment:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    establishSession();
+  }, [accessToken, refreshToken, sessionEstablished, toast]);
   
   // Handle automatic redirection after successful authentication
   useEffect(() => {
@@ -47,15 +100,17 @@ const AuthPage = () => {
       console.log('Detected successful authentication, proceeding with success animation');
       setShowSuccessAnimation(true);
       
-      // Clean auth parameters from URL for cleaner history
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete('auth_success');
-      cleanUrl.searchParams.delete('steam_id');
-      cleanUrl.searchParams.delete('user_id');
-      cleanUrl.searchParams.delete('auth_source');
-      window.history.replaceState({}, document.title, cleanUrl.toString());
+      // Clean auth parameters from URL if not already done
+      if (!accessToken && !refreshToken) {
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('auth_success');
+        cleanUrl.searchParams.delete('steam_id');
+        cleanUrl.searchParams.delete('user_id');
+        cleanUrl.searchParams.delete('auth_source');
+        window.history.replaceState({}, document.title, cleanUrl.toString());
+      }
     }
-  }, [hasAuthSuccess, user, isLoading, showSuccessAnimation, libraryPrivacyError]);
+  }, [hasAuthSuccess, user, isLoading, showSuccessAnimation, libraryPrivacyError, accessToken, refreshToken]);
 
   useEffect(() => {
     // Check for library privacy error based on user status and library sync status
@@ -78,15 +133,19 @@ const AuthPage = () => {
   // If user is already logged in, show success animation then redirect
   useEffect(() => {
     // Only auto-redirect if user is established and we didn't just finish auth
-    if (authStatus === AuthStatus.AUTHENTICATED && user && !hasAuthSuccess && !showSuccessAnimation && !libraryPrivacyError) {
+    if (authStatus === AuthStatus.AUTHENTICATED && user && !hasAuthSuccess && !accessToken && !showSuccessAnimation && !libraryPrivacyError) {
       // User is already authenticated but not from a fresh login
       // Redirect them to the intended page without animation
       navigate(from, { replace: true });
     }
-  }, [authStatus, user, showSuccessAnimation, libraryPrivacyError, hasAuthSuccess, navigate, from]);
+  }, [authStatus, user, showSuccessAnimation, libraryPrivacyError, hasAuthSuccess, accessToken, navigate, from]);
 
   // Get appropriate loading message based on auth state
   const getLoadingMessage = () => {
+    if (accessToken && refreshToken) {
+      return "Establishing session...";
+    }
+    
     switch (enhancedStatus) {
       case EnhancedAuthStatus.SESSION_LOADING:
         return "Connecting to Steam...";
@@ -171,7 +230,7 @@ const AuthPage = () => {
             >
               <div className={`h-2 w-2 rounded-full ${hasError ? 'bg-unplayed-red animate-pulse' : 'bg-unplayed-mint'}`} />
               <span>{
-                [EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) ? 
+                [EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) || isLoading ? 
                 getLoadingMessage() : 
                 enhancedStatus === EnhancedAuthStatus.PROFILE_LOADED ? 
                 "Profile loaded successfully" : 
@@ -199,7 +258,7 @@ const AuthPage = () => {
               )}
               
               {/* Show the Steam Loader during loading states */}
-              {[EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) && (
+              {([EnhancedAuthStatus.SESSION_LOADING, EnhancedAuthStatus.PROFILE_LOADING].includes(enhancedStatus) || isLoading) && (
                 <motion.div 
                   className="flex flex-col items-center justify-center py-8"
                   initial={{ opacity: 0 }}
@@ -217,7 +276,7 @@ const AuthPage = () => {
             </AnimatePresence>
 
             <AnimatePresence>
-              {!hasError && enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && !libraryPrivacyError && (
+              {!hasError && enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && !libraryPrivacyError && !isLoading && (
                 <motion.div
                   key="auth-content"
                   initial={{ opacity: 0 }}
@@ -263,7 +322,7 @@ const AuthPage = () => {
             </AnimatePresence>
             
             <AnimatePresence>
-              {enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && !libraryPrivacyError && (
+              {enhancedStatus === EnhancedAuthStatus.SESSION_NOT_FOUND && !libraryPrivacyError && !isLoading && (
                 <motion.div
                   className="flex justify-center"
                   initial={{ opacity: 0, y: 10 }}
