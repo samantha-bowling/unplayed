@@ -85,7 +85,7 @@ const Index = () => {
                 <>
                   <button
                     onClick={() => {
-                      fetch("/api/import-library", {
+                      fetch("https://gwmygthanyycveyqqspr.functions.supabase.co/import-library", {
                         method: "POST",
                         body: JSON.stringify({ steamId: steamUser.steamId }),
                         headers: { "Content-Type": "application/json" },
