@@ -12,49 +12,52 @@ serve(async (req) => {
   const { pathname, searchParams } = new URL(req.url);
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  // Step 1: Generate redirect to Steam login
+  // Step 1: Redirect to Steam login
   if (pathname.endsWith("/login")) {
-    const token = crypto.randomUUID();
     const redirectTo = searchParams.get("redirectTo") ?? "/";
-    const returnTo = `${STEAM_RETURN_URL}?token=${token}&redirectTo=${encodeURIComponent(redirectTo)}`;
+    const returnUrl = `${STEAM_RETURN_URL}?redirectTo=${encodeURIComponent(redirectTo)}`;
 
-    const steamLoginUrl = new URL("https://steamcommunity.com/openid/login");
-    steamLoginUrl.searchParams.set("openid.ns", "http://specs.openid.net/auth/2.0");
-    steamLoginUrl.searchParams.set("openid.mode", "checkid_setup");
-    steamLoginUrl.searchParams.set("openid.return_to", returnTo);
-    steamLoginUrl.searchParams.set("openid.realm", FRONTEND_URL);
-    steamLoginUrl.searchParams.set("openid.identity", "http://specs.openid.net/auth/2.0/identifier_select");
-    steamLoginUrl.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
+    const steamLogin = new URL("https://steamcommunity.com/openid/login");
+    steamLogin.searchParams.set("openid.ns", "http://specs.openid.net/auth/2.0");
+    steamLogin.searchParams.set("openid.mode", "checkid_setup");
+    steamLogin.searchParams.set("openid.return_to", returnUrl);
+    steamLogin.searchParams.set("openid.realm", FRONTEND_URL);
+    steamLogin.searchParams.set("openid.identity", "http://specs.openid.net/auth/2.0/identifier_select");
+    steamLogin.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
 
-    return Response.redirect(steamLoginUrl.toString(), 302);
+    return Response.redirect(steamLogin.toString(), 302);
   }
 
-  // Step 2: Handle Steam OpenID callback
+  // Step 2: Handle Steam OpenID return
   if (pathname.endsWith("/callback")) {
-    const params = new URLSearchParams(await req.text());
-    params.set("openid.mode", "check_authentication");
+    const requestUrl = new URL(req.url);
+    const params = requestUrl.searchParams;
+
+    const body = new URLSearchParams();
+    for (const [key, value] of params.entries()) {
+      body.append(key, value);
+    }
+    body.set("openid.mode", "check_authentication");
 
     const response = await fetch("https://steamcommunity.com/openid/login", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
+      body: body.toString(),
     });
 
-    const body = await response.text();
-
-    const claimedId = new URLSearchParams(req.url.split("?")[1]).get("openid.claimed_id");
+    const result = await response.text();
+    const claimedId = params.get("openid.claimed_id");
     const steamId = claimedId?.split("/").pop();
 
-    if (!body.includes("is_valid:true") || !steamId) {
-      console.error("❌ OpenID validation failed or Steam ID missing.");
-      return new Response("Invalid Steam login", { status: 400 });
+    if (!result.includes("is_valid:true") || !steamId) {
+      return new Response("Steam auth failed", { status: 400 });
     }
 
+    // Create or update user in Supabase
     await supabase.from("users").upsert({ steam_id: steamId }, { onConflict: "steam_id" });
 
-    const redirectTo = searchParams.get("redirectTo") ?? "/";
+    const redirectTo = params.get("redirectTo") ?? "/";
     const redirectUrl = `${FRONTEND_URL}${redirectTo}?steamId=${steamId}`;
-
     return Response.redirect(redirectUrl, 302);
   }
 
