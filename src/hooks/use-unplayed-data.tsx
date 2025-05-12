@@ -25,7 +25,6 @@ export const useUnplayedData = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
-      // Fetch user games data from Supabase
       const { data: userGamesData, error: userGamesError } = await supabase
         .from('user_games')
         .select(`
@@ -58,7 +57,7 @@ export const useUnplayedData = () => {
     enabled: !!user && !isDemo,
   });
 
-  // Query for game time estimates when authenticated and not in demo mode
+  // Query for game time estimates
   const {
     data: gameEstimatesData,
     isLoading: isLoadingEstimates,
@@ -67,10 +66,8 @@ export const useUnplayedData = () => {
     queryFn: async () => {
       if (!userGamesData || userGamesData.length === 0) return {};
       
-      // Get all game_ids from the user's library
       const gameIds = userGamesData.map(game => game.game_id);
       
-      // Fetch game estimates data from Supabase
       const { data: estimatesData, error: estimatesError } = await supabase
         .from('game_estimates')
         .select('*')
@@ -78,8 +75,7 @@ export const useUnplayedData = () => {
       
       if (estimatesError) throw estimatesError;
       
-      // Convert to a map for easier lookup
-      const estimatesMap = {};
+      const estimatesMap: Record<number, any> = {};
       estimatesData?.forEach(estimate => {
         estimatesMap[estimate.game_id] = estimate;
       });
@@ -88,37 +84,37 @@ export const useUnplayedData = () => {
     },
     enabled: !!userGamesData && userGamesData.length > 0 && !!user && !isDemo,
   });
-  
-  // Combine the loading states
+
   const isLoading = isLoadingUserGames || isLoadingEstimates;
   const error = userGamesError;
 
-  // If in demo mode or while loading, return normalized demo data
   if (isDemo) {
     return {
       data: normalizeDemoGames(demoData),
       isLoading: false,
-      error: null
+      error: null,
+      lastRefreshed: null
     };
   }
-  
-  // Transform real data if available, otherwise fall back to normalized demo data during loading
+
   const data = userGamesData 
     ? transformUserGameData(userGamesData, gameEstimatesData || {}) 
     : normalizeDemoGames(demoData);
 
-  // Find the most recent update date
-  const lastUpdated = userGamesData?.reduce((latest: Date | null, game) => {
-    const dates = [game.acquisition_date, game.last_played_date].filter(Boolean);
-    const mostRecent = dates.length > 0 ? new Date(Math.max(...dates.map(date => new Date(date).getTime()))) : null;
+  // Calculate lastRefreshed timestamp
+  const lastRefreshed = userGamesData?.reduce((latest: Date | null, game) => {
+    const dates = [game.acquisition_date, game.last_played_date]
+      .filter(Boolean)
+      .map(date => new Date(date));
+    const mostRecent = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
     return !latest || (mostRecent && mostRecent > latest) ? mostRecent : latest;
   }, null);
-  
+
   return {
     data,
     isLoading,
     error,
-    lastRefreshed
+    lastRefreshed,
   };
 };
 
