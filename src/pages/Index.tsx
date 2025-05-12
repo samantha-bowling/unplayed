@@ -186,7 +186,7 @@ return (
 
       <Footer />
     </div>
-  </FullScreenModeWrapper>
-  );
-
+  </FullScreenModeWrapper>;
+);
+  
 export default Index;
