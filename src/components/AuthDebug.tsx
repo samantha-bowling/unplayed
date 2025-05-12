@@ -1,20 +1,71 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthStatus, EnhancedAuthStatus, useAuth } from '@/context/AuthContext';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * AuthDebug component for troubleshooting authentication issues
  * This component provides diagnostics and debugging tools for Steam authentication
  */
 const AuthDebug = () => {
-  const { session, user, authStatus, enhancedStatus, lastError } = useAuth();
+  const { session, user, authStatus, enhancedStatus, lastError, refreshProfile } = useAuth();
   const [debugResults, setDebugResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sessionAge, setSessionAge] = useState<string | null>(null);
+  const { toast } = useToast();
+  
+  // Calculate session age
+  useEffect(() => {
+    if (session?.expires_at) {
+      const updateSessionAge = () => {
+        const expiresAt = session.expires_at;
+        const now = Math.floor(Date.now() / 1000); // Current time in seconds
+        const expiresIn = expiresAt - now;
+        
+        if (expiresIn <= 0) {
+          setSessionAge('Expired');
+        } else {
+          const minutes = Math.floor(expiresIn / 60);
+          const seconds = expiresIn % 60;
+          setSessionAge(`${minutes}m ${seconds}s`);
+        }
+      };
+      
+      updateSessionAge();
+      const interval = setInterval(updateSessionAge, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setSessionAge(null);
+    }
+  }, [session]);
+  
+  // Handle profile refresh
+  const handleRefreshProfile = async () => {
+    setRefreshing(true);
+    try {
+      await refreshProfile();
+      toast({
+        title: "Profile Refreshed",
+        description: "Profile data has been successfully refreshed",
+      });
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+      toast({
+        title: "Refresh Failed",
+        description: String(error) || "Failed to refresh profile data",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
   
   // Test the direct Supabase function URL
   const testSteamAuthEndpoint = async () => {
@@ -115,7 +166,22 @@ const AuthDebug = () => {
                 className={`p-4 border border-gray-700 rounded-md cursor-pointer ${expandedSection === 'auth-status' ? 'bg-gray-800' : ''}`}
                 onClick={() => toggleSection('auth-status')}
               >
-                <h3 className="text-lg font-medium mb-1 text-white">Auth Status</h3>
+                <div className="flex justify-between items-start">
+                  <h3 className="text-lg font-medium mb-1 text-white">Auth Status</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRefreshProfile();
+                    }}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Refreshing...' : 'Refresh Profile'}
+                  </Button>
+                </div>
                 <div className="flex gap-4 mb-2">
                   <span className="text-gray-400">Status:</span>
                   <span className={
@@ -155,12 +221,37 @@ const AuthDebug = () => {
                 onClick={() => toggleSection('session-data')}
               >
                 <h3 className="text-lg font-medium mb-1 text-white">Session Data</h3>
-                <div className="flex gap-4">
-                  <span className="text-gray-400">Session:</span>
-                  <span className={session ? 'text-green-500' : 'text-yellow-500'}>
-                    {session ? 'Active' : 'None'}
-                  </span>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  <div className="flex gap-2">
+                    <span className="text-gray-400">Session:</span>
+                    <span className={session ? 'text-green-500' : 'text-yellow-500'}>
+                      {session ? 'Active' : 'None'}
+                    </span>
+                  </div>
+                  
+                  {session && (
+                    <>
+                      <div className="flex gap-2">
+                        <span className="text-gray-400">Expires in:</span>
+                        <span className={
+                          sessionAge === 'Expired' ? 'text-red-500' : 
+                          (sessionAge && parseInt(sessionAge) < 5) ? 'text-amber-500' : 
+                          'text-green-500'
+                        }>
+                          {sessionAge || 'Unknown'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <span className="text-gray-400">Provider:</span>
+                        <span className="text-blue-400">
+                          {session?.provider_token ? 'Steam' : 'None'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
+                
                 {expandedSection === 'session-data' && (
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">Session Details:</p>
@@ -169,8 +260,8 @@ const AuthDebug = () => {
                         access_token: session.access_token ? '***' : null,
                         refresh_token: session.refresh_token ? '***' : null,
                         expires_at: session.expires_at,
-                        provider_token: session.provider_token,
-                        provider_refresh_token: session.provider_refresh_token,
+                        provider_token: session.provider_token ? '***' : null,
+                        provider_refresh_token: session.provider_refresh_token ? '***' : null,
                       }) : 'No session data'}
                     </pre>
                   </div>
@@ -182,12 +273,33 @@ const AuthDebug = () => {
                 onClick={() => toggleSection('user-data')}
               >
                 <h3 className="text-lg font-medium mb-1 text-white">User Data</h3>
-                <div className="flex gap-4">
-                  <span className="text-gray-400">User:</span>
-                  <span className={user ? 'text-green-500' : 'text-yellow-500'}>
-                    {user ? user.id.substring(0, 8) + '...' : 'Not signed in'}
-                  </span>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  <div className="flex gap-2">
+                    <span className="text-gray-400">User:</span>
+                    <span className={user ? 'text-green-500' : 'text-yellow-500'}>
+                      {user ? user.id.substring(0, 8) + '...' : 'Not signed in'}
+                    </span>
+                  </div>
+                  
+                  {user && user.user_metadata && (
+                    <>
+                      <div className="flex gap-2">
+                        <span className="text-gray-400">Steam ID:</span>
+                        <span className="text-blue-400">
+                          {user.user_metadata.steam_id || 'None'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <span className="text-gray-400">Name:</span>
+                        <span className="text-blue-400">
+                          {user.user_metadata.name || 'None'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
+                
                 {expandedSection === 'user-data' && user && (
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">User Details:</p>
@@ -216,6 +328,14 @@ const AuthDebug = () => {
                     {lastError ? lastError.code : 'None'}
                   </span>
                 </div>
+                
+                {lastError && (
+                  <div className="mt-2 bg-red-900/20 border border-red-800/50 rounded px-3 py-2 flex items-start">
+                    <AlertCircle className="text-red-400 h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
+                    <p className="text-sm text-red-200">{lastError.message}</p>
+                  </div>
+                )}
+                
                 {expandedSection === 'error-data' && lastError && (
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">Error Details:</p>
