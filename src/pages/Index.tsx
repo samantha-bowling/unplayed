@@ -32,7 +32,7 @@ const Index = () => {
   }, [steamUser]);
   
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading } = useUnplayedData();
+  const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   
   // Show loading state while authentication is in progress
@@ -95,6 +95,11 @@ const Index = () => {
                   >
                     {isNewSteamUser ? "Import My Steam Library" : "Refresh My Data"}
                   </button>
+                  {steamUser && lastRefreshed && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Last updated: {lastRefreshed.toLocaleString()}
+                    </p>
+                  )}
                   <button
                     onClick={steamLogout}
                     className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
