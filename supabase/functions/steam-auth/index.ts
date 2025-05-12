@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
-import { create, getNumericDate } from "https://deno.land/x/djwt@v2.9/mod.ts";
+import { create, getNumericDate, verify } from "https://deno.land/x/djwt@v2.9/mod.ts";
 
 const SUPABASE_URL = "https://gwmygthanyycveyqqspr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bXlndGhhbnl5Y3ZleXFxc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTAxMjUsImV4cCI6MjA2MjMyNjEyNX0.zrL5sYy8LE4ErMRL-W-yuZZR10EYyrgIS9Kj-EfUw80";
@@ -70,7 +70,7 @@ const getConfiguredUrls = (request: Request) => {
   return { frontendUrl, returnUrl };
 };
 
-// Get the domain for realm from the return URL - Improved implementation
+// Get the domain for realm from the return URL
 const getDomainFromUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
@@ -141,7 +141,7 @@ const createAdminClient = () => {
   );
 };
 
-// Function to generate an error redirect URL - Enhanced with more detailed errors
+// Function to generate an error redirect URL
 function generateErrorRedirect(req: Request, code: string, message: string, details?: any): string {
   // Generate a unique error ID for tracking
   const errorId = uuidv4();
@@ -176,7 +176,7 @@ function generateErrorRedirect(req: Request, code: string, message: string, deta
   return url.toString();
 }
 
-// Function to handle the authentication URL generation - with improved logging and error handling
+// Function to handle the authentication URL generation
 async function handleLogin(req: Request) {
   try {
     const { frontendUrl, returnUrl } = getConfiguredUrls(req);
@@ -244,7 +244,7 @@ async function handleLogin(req: Request) {
   }
 }
 
-// Function to verify the OpenID authentication with Steam - With improved retry logic
+// Function to verify the OpenID authentication with Steam
 async function verifyAuthentication(params: URLSearchParams, retryCount = 0): Promise<boolean> {
   try {
     // Create a copy of the parameters for verification
@@ -408,7 +408,7 @@ async function getExtendedSteamUserData(steamId: string): Promise<any> {
   }
 }
 
-// Function to create a user directly in Supabase auth system - Now only using admin methods
+// Function to create a user directly in Supabase auth system
 async function createSupabaseUser(steamId: string, steamName: string, steamAvatar: string): Promise<string> {
   try {
     console.log(`Creating new Supabase user for Steam ID: ${steamId}`);
@@ -490,6 +490,96 @@ async function createSupabaseUser(steamId: string, steamName: string, steamAvata
       code: 'user_creation_failed',
       message: `Failed to create user account: ${error.message}`,
       details: error,
+      errorId: uuidv4()
+    };
+  }
+}
+
+// IMPROVED JWT generation function with better error handling
+async function generateJWT(userId: string, steamId: string, steamUserData: any): Promise<string> {
+  try {
+    console.log(`[Steam Auth] Generating JWT for user ID: ${userId}`);
+    
+    // Directly get the JWT secret (without SUPABASE_ prefix, which is reserved)
+    const jwtSecret = Deno.env.get('JWT_SECRET');
+    
+    if (!jwtSecret) {
+      console.error("[Steam Auth] JWT SECRET IS MISSING FOR TOKEN CREATION");
+      throw new Error("Missing JWT secret - Edge function not properly configured");
+    }
+
+    // Validate the JWT secret format - should be a non-empty string
+    if (typeof jwtSecret !== 'string' || jwtSecret.trim().length === 0) {
+      console.error("[Steam Auth] JWT secret is invalid (empty or wrong format)");
+      throw new Error("Invalid JWT secret format");
+    }
+    
+    console.log(`[Steam Auth] JWT secret validated (length: ${jwtSecret.length})`);
+    
+    // Create JWT payload exactly matching Supabase's expected format
+    const payload = {
+      aud: "authenticated",
+      sub: userId,
+      email: `steam_${steamId}@unplayed.wtf`,
+      email_verified: true,
+      app_metadata: {
+        provider: "steam"
+      },
+      user_metadata: {
+        steam_id: steamId,
+        name: steamUserData.personaname,
+        avatar_url: steamUserData.avatarmedium
+      },
+      role: "authenticated",
+      iat: getNumericDate(0),
+      exp: getNumericDate(60 * 60), // 1 hour expiry
+    };
+    
+    // For debugging: log the payload shape (without sensitive data)
+    console.log("[Steam Auth] JWT payload structure:", 
+      JSON.stringify({
+        ...payload,
+        email: "[REDACTED]",
+      }, null, 2)
+    );
+    
+    try {
+      // Create the JWT token using the raw secret string
+      const token = await create(
+        { alg: "HS256", typ: "JWT" },
+        payload,
+        new TextEncoder().encode(jwtSecret)
+      );
+      
+      console.log("[Steam Auth] JWT token generated successfully");
+      
+      // Verify the token we just created to ensure it's valid
+      try {
+        const verified = await verify(token, new TextEncoder().encode(jwtSecret));
+        console.log("[Steam Auth] JWT verification successful:", verified ? "Valid" : "Invalid");
+      } catch (verifyErr) {
+        console.error("[Steam Auth] Warning: Generated JWT failed verification:", verifyErr);
+        // Non-fatal - we'll still return the token but log the issue
+      }
+      
+      return token;
+    } catch (jwtError) {
+      console.error("[Steam Auth] Error in create() JWT function:", jwtError);
+      console.error("[Steam Auth] JWT Error details:", JSON.stringify(jwtError, Object.getOwnPropertyNames(jwtError)));
+      throw new Error(`JWT creation failed: ${jwtError.message || "Unknown error in token generation"}`);
+    }
+  } catch (error) {
+    console.error("[Steam Auth] Fatal error in JWT generation:", error);
+    console.error("[Steam Auth] Error stack:", error.stack);
+    throw {
+      type: 'token_error',
+      message: `Failed to generate authentication token: ${error.message}`,
+      details: {
+        error: String(error),
+        stack: error.stack,
+        hasJwtSecret: !!Deno.env.get('JWT_SECRET'),
+        jwtSecretLength: Deno.env.get('JWT_SECRET')?.length || 0
+      },
       errorId: uuidv4()
     };
   }
@@ -666,91 +756,47 @@ async function handleCallback(request: Request) {
         }
       }
       
-      // Verify we have the JWT secret for token generation
-      const jwtSecret = Deno.env.get('JWT_SECRET');
-      if (!jwtSecret) {
-        console.error("[Steam Auth] JWT SECRET IS MISSING FOR TOKEN CREATION");
-        return Response.redirect(
-          generateErrorRedirect(request, 'auth_setup_error', 'Server authentication configuration error - Missing JWT secret'),
-          302
+      // Generate the JWT token using our improved function
+      const access_token = await generateJWT(userId, steamId, steamUserData);
+      
+      console.log("[Steam Auth] JWT token generated successfully");
+      
+      // Mark the last sync time
+      await supabase
+        .from('users')
+        .update({ last_sync: new Date().toISOString() })
+        .eq('id', userId)
+        .then(
+          () => console.log("[Steam Auth] Updated last_sync timestamp"),
+          (error) => console.error("[Steam Auth] Failed to update last_sync timestamp:", error)
         );
+        
+      // Build redirect URL with tokens
+      const redirectPath = '/auth'; // Always redirect to auth page first
+      
+      // Determine the appropriate URL depending on environment
+      const redirectUrl = new URL(frontendUrl + redirectPath);
+      
+      // Add tokens and user data parameters for client-side session establishment
+      redirectUrl.searchParams.append('access_token', access_token);
+      redirectUrl.searchParams.append('refresh_token', ''); // No refresh token with manual JWT
+      redirectUrl.searchParams.append('steam_id', steamId);
+      redirectUrl.searchParams.append('user_id', userId);
+      redirectUrl.searchParams.append('auth_success', 'true');
+      
+      // Pass along the original target destination
+      if (redirectTo) {
+        redirectUrl.searchParams.append('redirectTo', redirectTo);
       }
       
-      // Manually generate JWT token
-      console.log(`[Steam Auth] Generating JWT for user ID: ${userId}`);
-      
-      try {
-        // Create JWT payload
-        const payload = {
-          aud: "authenticated",
-          sub: userId,
-          email: `steam_${steamId}@unplayed.wtf`,
-          app_metadata: {
-            provider: "steam"
-          },
-          user_metadata: {
-            steam_id: steamId,
-            name: steamUserData.personaname,
-            avatar_url: steamUserData.avatarmedium
-          },
-          role: "authenticated",
-          iat: getNumericDate(0),
-          exp: getNumericDate(60 * 60), // 1 hour expiry
-        };
-        
-        // Create the JWT token
-        const access_token = await create(
-          { alg: "HS256", typ: "JWT" },
-          payload,
-          new TextEncoder().encode(jwtSecret)
-        );
-        
-        console.log("[Steam Auth] JWT token generated successfully");
-        
-        // Mark the last sync time
-        await supabase
-          .from('users')
-          .update({ last_sync: new Date().toISOString() })
-          .eq('id', userId)
-          .then(
-            () => console.log("[Steam Auth] Updated last_sync timestamp"),
-            (error) => console.error("[Steam Auth] Failed to update last_sync timestamp:", error)
-          );
-          
-        // Build redirect URL with tokens
-        const redirectPath = '/auth'; // Always redirect to auth page first
-        
-        // Determine the appropriate URL depending on environment
-        const redirectUrl = new URL(frontendUrl + redirectPath);
-        
-        // Add tokens and user data parameters for client-side session establishment
-        redirectUrl.searchParams.append('access_token', access_token);
-        redirectUrl.searchParams.append('refresh_token', ''); // No refresh token with manual JWT
-        redirectUrl.searchParams.append('steam_id', steamId);
-        redirectUrl.searchParams.append('user_id', userId);
-        redirectUrl.searchParams.append('auth_success', 'true');
-        
-        // Pass along the original target destination
-        if (redirectTo) {
-          redirectUrl.searchParams.append('redirectTo', redirectTo);
-        }
-        
-        // Add analytics tracking for the source
-        if (source) {
-          redirectUrl.searchParams.append('auth_source', source);
-        }
-        
-        console.log(`[Steam Auth] Authentication successful. Redirecting to: ${redirectUrl.toString()}`);
-        
-        return Response.redirect(redirectUrl.toString(), 302);
-      } catch (jwtError) {
-        console.error("[Steam Auth] Error generating JWT:", jwtError);
-        return Response.redirect(
-          generateErrorRedirect(request, 'token_generation_error', 'Failed to generate authentication token'),
-          302
-        );
+      // Add analytics tracking for the source
+      if (source) {
+        redirectUrl.searchParams.append('auth_source', source);
       }
       
+      console.log(`[Steam Auth] Authentication successful. Redirecting to: ${redirectUrl.toString()}`);
+      
+      return Response.redirect(redirectUrl.toString(), 302);
     } catch (error) {
       console.error("[Steam Auth] Error in authentication process:", error);
       
@@ -762,7 +808,6 @@ async function handleCallback(request: Request) {
         302
       );
     }
-
   } catch (error) {
     console.error("[Steam Auth] Callback error:", error);
     return Response.redirect(
@@ -1014,9 +1059,32 @@ async function handleDebug(req: Request) {
   const { isNetlifyPreview, isLocalhost, isProduction } = getEnvironment(req);
   
   // Check for environment variables
+  const jwtSecret = Deno.env.get('JWT_SECRET');
   const serviceRoleKeyPresent = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const steamApiKeyPresent = !!STEAM_API_KEY;
-  const jwtSecretPresent = !!Deno.env.get('JWT_SECRET');
+  const jwtSecretPresent = !!jwtSecret;
+  
+  // Check JWT secret validity
+  let jwtSecretStatus = "Missing";
+  if (jwtSecretPresent) {
+    if (typeof jwtSecret === 'string' && jwtSecret.trim().length > 0) {
+      jwtSecretStatus = `Valid (${jwtSecret.length} characters)`;
+      
+      // Test JWT creation
+      try {
+        const testToken = await create(
+          { alg: "HS256", typ: "JWT" },
+          { test: "payload", exp: getNumericDate(60) },
+          new TextEncoder().encode(jwtSecret)
+        );
+        jwtSecretStatus += " - JWT test: SUCCESS";
+      } catch (e) {
+        jwtSecretStatus += ` - JWT test: FAILED (${e.message})`;
+      }
+    } else {
+      jwtSecretStatus = "Invalid (empty or wrong format)";
+    }
+  }
   
   // Check for potential configuration issues
   const potentialIssues = [];
@@ -1025,6 +1093,8 @@ async function handleDebug(req: Request) {
   }
   if (!jwtSecretPresent) {
     potentialIssues.push("JWT_SECRET is missing");
+  } else if (jwtSecretStatus.includes("Invalid") || jwtSecretStatus.includes("FAILED")) {
+    potentialIssues.push("JWT_SECRET is invalid or cannot create tokens");
   }
   if (returnUrl === "https://unplayed.wtf/api/auth/steam/callback" && headers['host']?.includes('localhost')) {
     potentialIssues.push("Using production STEAM_RETURN_URL in development environment");
@@ -1043,7 +1113,7 @@ async function handleDebug(req: Request) {
       returnUrl,
       serviceRoleKeyPresent,
       steamApiKeyPresent,
-      jwtSecretPresent,
+      jwtSecretStatus,
       realm: getDomainFromUrl(returnUrl),
       potentialIssues
     },
