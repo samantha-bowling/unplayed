@@ -118,7 +118,8 @@ export const useUnplayedData = () => {
     data,
     isLoading,
     error,
-    lastRefreshed: lastUpdated
+    lastRefreshed
   };
+};
 
 export default useUnplayedData;
