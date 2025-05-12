@@ -81,9 +81,7 @@ const FloatingIcons = ({ count }: FloatingIconsProps) => {
   const [positions, setPositions] = useState<any[]>([]);
   
   useEffect(() => {
-    // Use about 30% of donor count for icons, with a minimum of 5 and max of 25
-    const iconCount = Math.min(25, Math.max(5, Math.floor(count * 0.3)));
-    setPositions(generateIconPositions(iconCount));
+    setPositions(generateIconPositions(count));
   }, [count]);
 
   return (

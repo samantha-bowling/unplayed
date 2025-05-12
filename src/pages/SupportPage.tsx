@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import HallOfThanks from "@/components/HallOfThanks";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import FloatingIcons from "@/components/FloatingIcons";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define tier structure based on game count
 interface Tier {
@@ -60,6 +60,31 @@ const SupportPage = () => {
   const [showFinalResult, setShowFinalResult] = useState(false);
   const [animatedAmount, setAnimatedAmount] = useState(0);
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
+  const [totalGameCount, setTotalGameCount] = useState<number>(19400000); // Default value before fetch
+  
+  // Fetch total game count from Supabase
+  useEffect(() => {
+    const fetchTotalGameCount = async () => {
+      try {
+        const { data, error, count } = await supabase
+          .from('user_games')
+          .select('*', { count: 'exact', head: true });
+          
+        if (error) {
+          console.error('Error fetching total game count:', error);
+          return;
+        }
+        
+        if (count !== null) {
+          setTotalGameCount(count);
+        }
+      } catch (err) {
+        console.error('Error in fetchTotalGameCount:', err);
+      }
+    };
+    
+    fetchTotalGameCount();
+  }, []);
   
   // Determine the user's tier based on game count
   useEffect(() => {
@@ -140,12 +165,8 @@ const SupportPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      {/* Hero section with background floating icons */}
+      {/* Hero section */}
       <section className="navbar-offset flex-grow flex flex-col items-center justify-center px-4 pb-8 text-center relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-30">
-          <FloatingIcons count={50} />
-        </div>
-        
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint relative z-10">
           Dust <span className="text-unplayed-pink">≠</span> Free
         </h1>
@@ -319,7 +340,7 @@ const SupportPage = () => {
                               </Button>
                             </a>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-xs bg-gray-900/90 border border-gray-700 text-gray-200 p-3">
+                          <TooltipContent side="top" className="max-w-xs bg-gray-900/90 border border-gray-700 text-gray-200 p-3">
                             <p>Round up to ${suggestedDonation} and cover the cost of your dusty games—plus help us keep the server lights on! 💖</p>
                           </TooltipContent>
                         </Tooltip>
@@ -373,7 +394,7 @@ const SupportPage = () => {
                     </Button>
                   </a>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs bg-gray-900/90 border border-gray-700 text-gray-200 p-3">
+                <TooltipContent side="top" className="max-w-xs bg-gray-900/90 border border-gray-700 text-gray-200 p-3">
                   <div className="flex items-start">
                     <Info className="w-4 h-4 mr-2 mt-1 text-unplayed-mint" />
                     <p>Your donation helps us fight the good fight against dusty Steam libraries. Every penny goes towards our mission of helping gamers actually play their games!</p>
@@ -391,7 +412,9 @@ const SupportPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 1 }}
         >
-          <p>Unplayed is currently hosting over <span className="text-unplayed-mint font-medium">19.4 million</span> dusty games across all users</p>
+          <p>Unplayed is currently hosting over <span className="text-unplayed-mint font-medium">
+            {(totalGameCount).toLocaleString()}
+          </span> dusty games across all users</p>
         </motion.div>
       </section>
 

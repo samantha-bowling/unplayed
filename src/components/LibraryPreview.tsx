@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -7,6 +8,7 @@ import FullScreenModeToggle from './FullScreenModeToggle';
 import { Maximize, LayoutGrid, List, Loader2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LibraryGame } from '@/hooks/use-library-data';
+import FloatingIcons from '@/components/FloatingIcons';
 
 interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
@@ -97,6 +99,7 @@ const LibraryPreview = ({
   );
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const [zenPositions, setZenPositions] = useState<any[]>([]);
+  const [iconCount, setIconCount] = useState(0);
 
   // Ref to track if positions have been generated
   const positionsGeneratedRef = useRef(false);
@@ -131,6 +134,15 @@ const LibraryPreview = ({
       setZenPositions(newPositions);
       positionsGeneratedRef.current = true;
     }
+    
+    // Set icon count for FloatingIcons - about 30% of game count in zen mode
+    if (viewMode === 'zen') {
+      const gameCount = sampleGames.length;
+      const newIconCount = Math.min(25, Math.max(5, Math.floor(gameCount * 0.3)));
+      setIconCount(newIconCount);
+    } else {
+      setIconCount(0);
+    }
   }, [viewMode, isFullScreenMode, sampleGames.length]);
 
   // When entering full screen, make sure the context has the current view mode
@@ -159,6 +171,13 @@ const LibraryPreview = ({
     if (newMode === 'zen') {
       const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
       setZenPositions(newPositions);
+      
+      // Set icon count for FloatingIcons when switching to zen mode
+      const gameCount = sampleGames.length;
+      const newIconCount = Math.min(25, Math.max(5, Math.floor(gameCount * 0.3)));
+      setIconCount(newIconCount);
+    } else {
+      setIconCount(0); // No icons in grid mode
     }
     
     // Update the parent component if onViewModeChange is provided
@@ -252,6 +271,13 @@ const LibraryPreview = ({
       ) : (
         // Enhanced Zen view mode
         <div className={`${showFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
+          {/* Add floating icons in zen mode */}
+          {viewMode === 'zen' && iconCount > 0 && (
+            <div className="absolute inset-0 pointer-events-none opacity-70">
+              <FloatingIcons count={iconCount} />
+            </div>
+          )}
+          
           {sampleGames.map((game, index) => {
             // Handle both LibraryGame and GameListItem types
             const gameId = 'id' in game ? game.id : game.gameId;

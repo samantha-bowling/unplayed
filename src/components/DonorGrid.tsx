@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { Tables } from "@/integrations/supabase/types";
-import FloatingIcons from "./FloatingIcons";
 import DonorCard from "./DonorCard";
 
 interface DonorGridProps {
@@ -98,9 +97,6 @@ const DonorGrid = ({ donors }: DonorGridProps) => {
 
   return (
     <div className="relative h-[500px] rounded-xl overflow-hidden border border-gray-800 bg-black/40">
-      {/* Add our FloatingIcons component */}
-      <FloatingIcons count={donors.length} />
-      
       {sortedDonors.map((donor, index) => (
         <DonorCard 
           key={donor.id}
