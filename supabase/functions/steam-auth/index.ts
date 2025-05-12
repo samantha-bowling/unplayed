@@ -119,6 +119,27 @@ type DatabaseError = {
   errorId?: string;
 }
 
+// Create a shared admin client utility function
+const createAdminClient = () => {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceRoleKey) {
+    console.error("SERVICE ROLE KEY IS MISSING");
+    throw new Error("Service role key not available for admin operations");
+  }
+  
+  return createClient(
+    SUPABASE_URL,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    }
+  );
+};
+
 // Function to generate an error redirect URL - Enhanced with more detailed errors
 function generateErrorRedirect(req: Request, code: string, message: string, details?: any): string {
   // Generate a unique error ID for tracking
@@ -391,25 +412,8 @@ async function createSupabaseUser(steamId: string, steamName: string, steamAvata
   try {
     console.log(`Creating new Supabase user for Steam ID: ${steamId}`);
     
-    // Verify we have the service role key
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!serviceRoleKey) {
-      console.error("SERVICE ROLE KEY IS MISSING");
-      throw new Error("Service role key not available for admin operations");
-    }
-    
     // Create admin client with service role
-    const adminClient = createClient(
-      SUPABASE_URL,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
-        }
-      }
-    );
+    const adminClient = createAdminClient();
     
     // Create a unique, valid email from the Steam ID
     const email = `steam_${steamId}@unplayed.wtf`;
@@ -671,8 +675,21 @@ async function handleCallback(request: Request) {
         );
       }
       
-      // Create admin client for authentication with service role key
-      const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
+      // Create admin client for authentication with service role key - FIX: Add proper auth options
+      const adminClient = createClient(
+        SUPABASE_URL, 
+        serviceRoleKey, 
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+          }
+        }
+      );
+      
+      // Log the type of createSession method to validate it's defined
+      console.log(`[Steam Auth] Admin client createSession type: ${typeof adminClient.auth.admin.createSession}`);
       
       // Use admin.createSession to generate proper tokens
       console.log(`[Steam Auth] Creating session tokens for user ID: ${userId}`);
