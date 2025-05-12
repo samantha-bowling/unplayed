@@ -545,10 +545,18 @@ async function generateJWT(userId: string, steamId: string, steamUserData: any):
     
     try {
       // Create the JWT token using the raw secret string
+      const key = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(jwtSecret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      
       const token = await create(
         { alg: "HS256", typ: "JWT" },
         payload,
-        new TextEncoder().encode(jwtSecret)
+        key
       );
       
       console.log("[Steam Auth] JWT token generated successfully");
