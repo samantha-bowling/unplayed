@@ -1,3 +1,4 @@
+
 import { EnhancedAuthStatus } from '@/context/AuthContext';
 
 type AuthEventType = 
@@ -139,8 +140,15 @@ export const getUserFriendlyErrorMessage = (errorCode: string): string => {
   }
 };
 
+// Add a TypeScript interface for gtag
+interface WindowWithGtag extends Window {
+  gtag?: (...args: any[]) => void;
+}
+
 export const trackAuthStatusChange = (newStatus: EnhancedAuthStatus, userId?: string | null) => {
-  if (!window.gtag) return;
+  // Check if gtag exists in the window object
+  const windowWithGtag = window as WindowWithGtag;
+  if (!windowWithGtag.gtag) return;
 
   let eventName = '';
   let properties = {
@@ -199,6 +207,6 @@ export const trackAuthStatusChange = (newStatus: EnhancedAuthStatus, userId?: st
   }
 
   if (eventName) {
-    window.gtag?.('event', eventName, properties);
+    windowWithGtag.gtag?.('event', eventName, properties);
   }
 };
