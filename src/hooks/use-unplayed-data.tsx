@@ -107,11 +107,18 @@ export const useUnplayedData = () => {
     ? transformUserGameData(userGamesData, gameEstimatesData || {}) 
     : normalizeDemoGames(demoData);
 
+  // Find the most recent update date
+  const lastUpdated = userGamesData?.reduce((latest: Date | null, game) => {
+    const dates = [game.acquisition_date, game.last_played_date].filter(Boolean);
+    const mostRecent = dates.length > 0 ? new Date(Math.max(...dates.map(date => new Date(date).getTime()))) : null;
+    return !latest || (mostRecent && mostRecent > latest) ? mostRecent : latest;
+  }, null);
+  
   return {
     data,
     isLoading,
-    error
+    error,
+    lastRefreshed: lastUpdated
   };
-};
 
 export default useUnplayedData;
