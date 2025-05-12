@@ -58,141 +58,135 @@ const Index = () => {
       </FullScreenModeWrapper>;
   }
   
-  return (
-    <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        {/* Hero section - Add header spacing */}
-        <section className="w-full navbar-offset pb-8 px-4">
-          <div className="max-w-7xl mx-auto text-center">
-           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
+return (
+  <FullScreenModeWrapper>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      {/* Hero section */}
+      <section className="w-full navbar-offset pb-8 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
             {steamUser ? `Welcome, ${steamUser.personaName}` : "Your PC games are gathering dust."}
-            </h1>
-            {steamUser ? (
-              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                {isNewSteamUser
-                  ? "🎉 You made it! It'll take a few minutes to import that massive library of yours. Sit back, relax, and let’s take this ride of shame together."
-                  : "Welcome back! Time to face the backlog."}
-              </p>
-            ) : (
-              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                unplayed helps you conquer your massive Steam backlog and actually play the games you own.
-              </p>
+          </h1>
+          {steamUser ? (
+            <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+              {isNewSteamUser
+                ? "🎉 You made it! It'll take a few minutes to import that massive library of yours. Sit back, relax, and let’s take this ride of shame together."
+                : "Welcome back! Time to face the backlog."}
+            </p>
+          ) : (
+            <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+              unplayed helps you conquer your massive Steam backlog and actually play the games you own.
+            </p>
+          )}
+          <div className="flex justify-center gap-4">
+            {!steamUser && <SteamLoginButton centered />}
+            {steamUser && (
+              <>
+                <button
+                  onClick={() => {
+                    fetch("/api/import-library", {
+                      method: "POST",
+                      body: JSON.stringify({ steamId: steamUser.steamId }),
+                      headers: { "Content-Type": "application/json" },
+                    }).then(() => window.location.reload());
+                  }}
+                  className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
+                >
+                  {isNewSteamUser ? "Import My Steam Library" : "Refresh My Data"}
+                </button>
+                {lastRefreshed && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Last updated: {lastRefreshed.toLocaleString()}
+                  </p>
+                )}
+                <button
+                  onClick={steamLogout}
+                  className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
+                >
+                  Log Out
+                </button>
+              </>
             )}
-            <div className="flex justify-center gap-4">
-              {!steamUser && <SteamLoginButton centered />}
-              {steamUser && (
-                <>
-                  <button
-                    onClick={() => {
-                      fetch("/api/import-library", {
-                        method: "POST",
-                        body: JSON.stringify({ steamId: steamUser.steamId }),
-                        headers: { "Content-Type": "application/json" },
-                      }).then(() => window.location.reload());
-                    }}
-                    className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
-                  >
-                    {isNewSteamUser ? "Import My Steam Library" : "Refresh My Data"}
-                  </button>
-                  {steamUser && lastRefreshed && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Last updated: {lastRefreshed.toLocaleString()}
-                    </p>
-                  )}
-                  <button
-                    onClick={steamLogout}
-                    className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
-                  >
-                    Log Out
-                  </button>
-                </>
-              )}
-            </div>
-        </section>
-      </FullScreenModeWrapper>
-    );
-        
-        {/* Dashboard section */}
-        <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
-          <div className="max-w-7xl mx-auto">
-            {/* Add Demo Mode Banner */}
-            {isDemo && <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
-                <h3 className="text-lg font-medium text-unplayed-amber mb-2">
-                  🔍 Demo Mode Active
-                </h3>
-                <p className="text-sm text-gray-300 mb-4">
-                  You're viewing example data. Connect your Steam account to see your personal gaming stats.
-                </p>
-                
-              </div>}
-            
-            <h2 className="text-3xl font-bold font-space mb-6 text-center">
-              <span className="text-unplayed-mint">Dashboard</span>
-              <span className="text-white">.exe</span>
-            </h2>
-            
-            <div className="dashboard-grid">
-              <UnplayedCounter count={unplayedData.unplayedGames} />
-              <DustScoreMeter score={unplayedData.dustScore} />
-              <SpendingEstimate amount={unplayedData.totalSpent} />
-            </div>
-            
-            <div className="mt-4">
-              <GenreHoarding />
-            </div>
-            
-            <div className="mt-4">
-              <ShelfLife />
-            </div>
           </div>
-        </section>
-        
-        {/* Library preview section */}
-        <section id="library" className="w-full py-8 px-4">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold font-space mb-6 text-center">
-              <span className="text-unplayed-pink">Library</span>
-              <span className="text-white">.exe</span>
-            </h2>
-            
-            <LibraryPreview />
-          </div>
-        </section>
-        
-        {/* Random picker section */}
-        <section id="picker" className="w-full py-8 px-4 bg-black/30">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold font-space mb-6 text-center">
-              <span className="text-unplayed-amber">Picker</span>
-              <span className="text-white">.exe</span>
-            </h2>
-            
-            <RandomPicker />
-          </div>
-        </section>
-        
-        {/* Call to action */}
-        {!user && (
-          <section className="w-full py-10 px-4">
-            <div className="max-w-7xl mx-auto text-center">
-              <h2 className="text-3xl font-bold font-space mb-4 text-white">
-                Ready to confront your backlog?
-              </h2>
-              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                Connect your Steam account and start using your unplayed games today.
+        </div>
+      </section>
+
+      {/* Dashboard section */}
+      <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
+        <div className="max-w-7xl mx-auto">
+          {isDemo && (
+            <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
+              <h3 className="text-lg font-medium text-unplayed-amber mb-2">🔍 Demo Mode Active</h3>
+              <p className="text-sm text-gray-300 mb-4">
+                You're viewing example data. Connect your Steam account to see your personal gaming stats.
               </p>
-              <div className="flex justify-center">
-                <SteamLoginButton centered />
-              </div>
-              
-              <p className="text-sm text-gray-500 mt-4 mb-2">We use Steam's Web API. Your account details are safe.</p>
             </div>
-          </section>
-        )}
-        
-        <Footer />
-      </div>
-    </FullScreenModeWrapper>;
-};
+          )}
+          <h2 className="text-3xl font-bold font-space mb-6 text-center">
+            <span className="text-unplayed-mint">Dashboard</span>
+            <span className="text-white">.exe</span>
+          </h2>
+          <div className="dashboard-grid">
+            <UnplayedCounter count={unplayedData.unplayedGames} />
+            <DustScoreMeter score={unplayedData.dustScore} />
+            <SpendingEstimate amount={unplayedData.totalSpent} />
+          </div>
+          <div className="mt-4">
+            <GenreHoarding />
+          </div>
+          <div className="mt-4">
+            <ShelfLife />
+          </div>
+        </div>
+      </section>
+
+      {/* Library */}
+      <section id="library" className="w-full py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold font-space mb-6 text-center">
+            <span className="text-unplayed-pink">Library</span>
+            <span className="text-white">.exe</span>
+          </h2>
+          <LibraryPreview />
+        </div>
+      </section>
+
+      {/* Picker */}
+      <section id="picker" className="w-full py-8 px-4 bg-black/30">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold font-space mb-6 text-center">
+            <span className="text-unplayed-amber">Picker</span>
+            <span className="text-white">.exe</span>
+          </h2>
+          <RandomPicker />
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      {!user && (
+        <section className="w-full py-10 px-4">
+          <div className="max-w-7xl mx-auto text-center">
+            <h2 className="text-3xl font-bold font-space mb-4 text-white">
+              Ready to confront your backlog?
+            </h2>
+            <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+              Connect your Steam account and start using your unplayed games today.
+            </p>
+            <div className="flex justify-center">
+              <SteamLoginButton centered />
+            </div>
+            <p className="text-sm text-gray-500 mt-4 mb-2">
+              We use Steam's Web API. Your account details are safe.
+            </p>
+          </div>
+        </section>
+      )}
+
+      <Footer />
+    </div>
+  </FullScreenModeWrapper>
+);
+
 export default Index;
