@@ -17,11 +17,13 @@ import { useEffect, useState } from "react";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 import { Loader2 } from "lucide-react";
+import SteamLoader from "@/components/SteamLoader";
 
 const Index = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isNewSteamUser, setIsNewSteamUser] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
@@ -85,16 +87,30 @@ const Index = () => {
                 <>
                   <button
                     onClick={() => {
+                      setIsImporting(true);
+                    
                       fetch("https://gwmygthanyycveyqqspr.functions.supabase.co/import-library", {
                         method: "POST",
-                        body: JSON.stringify({ steamId: steamUser.steamId }),
                         headers: { "Content-Type": "application/json" },
-                      }).then(() => window.location.reload());
+                        body: JSON.stringify({ steamId: steamUser.steamId }),
+                      })
+                        .then(() => window.location.reload())
+                        .catch((err) => {
+                          console.error("Import failed", err);
+                          setIsImporting(false);
+                        });
                     }}
                     className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
                   >
                     {isNewSteamUser ? "Import My Steam Library" : "Refresh My Data"}
                   </button>
+                  
+                  {isImporting && (
+                    <div className="mt-6">
+                      <SteamLoader message="Importing your Steam shame..." size="md" variant="secondary" />
+                    </div>
+                  )}
+
                   {lastRefreshed && (
                     <p className="text-sm text-muted-foreground mt-2">
                       Last updated: {lastRefreshed.toLocaleString()}
