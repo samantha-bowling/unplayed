@@ -674,21 +674,16 @@ async function handleCallback(request: Request) {
       // Create admin client for authentication with service role key
       const adminClient = createClient(SUPABASE_URL, serviceRoleKey);
       
-      // Use signInWithEmail to generate proper tokens
+      // Use admin.createSession to generate proper tokens
       console.log(`[Steam Auth] Creating session tokens for user ID: ${userId}`);
-      const userEmail = `steam_${steamId}@unplayed.wtf`;
       
       // Sign in the user to generate access and refresh tokens
-      const { data: signInData, error: signInError } = await adminClient.auth.signInWithEmail({
-        email: userEmail,
-        options: {
-          // Skip email confirmation since we're handling it via Steam OpenID
-          emailRedirectTo: frontendUrl + (redirectTo || '/')
-        }
+      const { data: sessionData, error: sessionError } = await adminClient.auth.admin.createSession({
+        user_id: userId
       });
       
-      if (signInError || !signInData || !signInData.session) {
-        console.error("[Steam Auth] Error generating auth tokens:", signInError);
+      if (sessionError || !sessionData || !sessionData.session) {
+        console.error("[Steam Auth] Error generating auth tokens:", sessionError);
         return Response.redirect(
           generateErrorRedirect(request, 'token_generation_error', 'Failed to generate authentication tokens'),
           302
@@ -698,7 +693,7 @@ async function handleCallback(request: Request) {
       console.log("[Steam Auth] Session tokens generated successfully");
       
       // Extract the tokens from the session
-      const { access_token, refresh_token } = signInData.session;
+      const { access_token, refresh_token } = sessionData.session;
       
       // Mark the last sync time
       await supabase

@@ -1,4 +1,3 @@
-
 import { EnhancedAuthStatus } from '@/context/AuthContext';
 
 type AuthEventType = 
