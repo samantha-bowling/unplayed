@@ -1,4 +1,3 @@
-
 import { EnhancedAuthStatus } from '@/context/AuthContext';
 
 type AuthEventType = 
@@ -137,5 +136,69 @@ export const getUserFriendlyErrorMessage = (errorCode: string): string => {
       return 'Could not connect to your Steam ID. Please try again.';
     default:
       return 'An error occurred during authentication. Please try again.';
+  }
+};
+
+export const trackAuthStatusChange = (newStatus: EnhancedAuthStatus, userId?: string | null) => {
+  if (!window.gtag) return;
+
+  let eventName = '';
+  let properties = {
+    auth_status: newStatus,
+    user_id: userId || undefined,
+  };
+
+  switch (newStatus) {
+    case EnhancedAuthStatus.INITIAL:
+      eventName = 'auth_status_initial';
+      break;
+    case EnhancedAuthStatus.SESSION_LOADING:
+      eventName = 'auth_session_loading';
+      break;
+    case EnhancedAuthStatus.SESSION_NOT_FOUND:
+      eventName = 'auth_session_not_found';
+      break;
+    case EnhancedAuthStatus.SESSION_FOUND:
+      eventName = 'auth_session_found';
+      break;
+    case EnhancedAuthStatus.PROFILE_LOADING:
+      eventName = 'auth_profile_loading';
+      break;
+    case EnhancedAuthStatus.PROFILE_LOADED:
+      eventName = 'auth_profile_loaded';
+      break;
+    case EnhancedAuthStatus.PROFILE_ERROR:
+      eventName = 'auth_profile_error';
+      break;
+    case EnhancedAuthStatus.AUTH_ERROR:
+      eventName = 'auth_error';
+      break;
+    case EnhancedAuthStatus.LIBRARY_LOADING:
+      eventName = 'auth_library_loading';
+      break;
+    case EnhancedAuthStatus.LIBRARY_READY:
+      eventName = 'auth_library_ready';
+      break;
+    case EnhancedAuthStatus.LIBRARY_ERROR:
+      eventName = 'auth_library_error';
+      break;
+    case EnhancedAuthStatus.LIBRARY_IMPORTING:
+      eventName = 'auth_library_importing';
+      break;
+    case EnhancedAuthStatus.LIBRARY_UPDATING:
+      eventName = 'auth_library_updating';
+      break;
+    case EnhancedAuthStatus.TOKEN_REFRESHING:
+      eventName = 'auth_token_refreshing';
+      break;
+    case EnhancedAuthStatus.TOKEN_REFRESH_ERROR:
+      eventName = 'auth_token_refresh_error';
+      break;
+    default:
+      eventName = 'auth_status_unknown';
+  }
+
+  if (eventName) {
+    window.gtag?.('event', eventName, properties);
   }
 };

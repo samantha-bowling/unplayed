@@ -14,21 +14,21 @@ const SteamLoginButton = ({
   className = '', 
   redirectPath = '/',
   fullWidth = false,
-  centered = true // Changed default to true
+  centered = true
 }: SteamLoginButtonProps) => {
-  const { signInWithSteam } = useAuth();
+  const { signInWithSteam, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleSteamLogin = async () => {
     try {
       console.log("[Steam Login Button] Initiating Steam login, redirectPath:", redirectPath);
-      setIsLoading(true);
+      setButtonLoading(true);
       await signInWithSteam(redirectPath);
       // Note: This code will not execute immediately as the user will be redirected to Steam
     } catch (error) {
       console.error('[Steam Login Button] Error during Steam login:', error);
-      setIsLoading(false);
+      setButtonLoading(false);
       navigate('/auth');
     }
   };
@@ -40,9 +40,9 @@ const SteamLoginButton = ({
         className={`${fullWidth ? 'w-full' : ''} 
                    ${centered ? 'mx-auto' : ''} 
                    relative flex items-center justify-center transition-all hover:opacity-90 ${className}
-                   ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                   ${buttonLoading || isLoading ? 'opacity-50 cursor-not-allowed' : ''}
                    group-hover:shadow-lg group-hover:shadow-unplayed-mint/20 transition-all`}
-        disabled={isLoading}
+        disabled={buttonLoading || isLoading}
         aria-label="Sign in through Steam"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-unplayed-mint/10 to-unplayed-pink/10 opacity-0 group-hover:opacity-100 rounded transition-opacity"></div>
