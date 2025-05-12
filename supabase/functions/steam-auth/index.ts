@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
 
 const SUPABASE_URL = "https://gwmygthanyycveyqqspr.supabase.co";
