@@ -58,10 +58,10 @@ const Index = () => {
       </FullScreenModeWrapper>;
   }
   
-  return <FullScreenModeWrapper>
+  return (
+    <FullScreenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
-        
         {/* Hero section - Add header spacing */}
         <section className="w-full navbar-offset pb-8 px-4">
           <div className="max-w-7xl mx-auto text-center">
@@ -110,7 +110,9 @@ const Index = () => {
               )}
             </div>
         </section>
-
+      </FullScreenModeWrapper>
+    );
+        
         {/* Dashboard section */}
         <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
           <div className="max-w-7xl mx-auto">
