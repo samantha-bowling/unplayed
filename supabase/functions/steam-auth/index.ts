@@ -675,21 +675,12 @@ async function handleCallback(request: Request) {
         );
       }
       
-      // Create admin client for authentication with service role key - FIX: Add proper auth options
-      const adminClient = createClient(
-        SUPABASE_URL, 
-        serviceRoleKey, 
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-            detectSessionInUrl: false
-          }
-        }
-      );
+      // Use the createAdminClient utility function for authentication with service role key
+      const adminClient = createAdminClient();
       
-      // Log the type of createSession method to validate it's defined
+      // Add diagnostic logging to verify the method exists
       console.log(`[Steam Auth] Admin client createSession type: ${typeof adminClient.auth.admin.createSession}`);
+      console.log(`[Steam Auth] Admin client supports createSession: ${!!adminClient.auth.admin?.createSession}`);
       
       // Use admin.createSession to generate proper tokens
       console.log(`[Steam Auth] Creating session tokens for user ID: ${userId}`);
