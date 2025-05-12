@@ -1,9 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
-import * as steam from "https://deno.land/x/openid_steam@v1.0.2/mod.ts";
 
-// Required environment variables
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
@@ -14,48 +12,50 @@ serve(async (req) => {
   const { pathname, searchParams } = new URL(req.url);
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  // 🔹 Step 1: Initiate Steam Login
+  // Step 1: Generate redirect to Steam login
   if (pathname.endsWith("/login")) {
     const token = crypto.randomUUID();
     const redirectTo = searchParams.get("redirectTo") ?? "/";
-    const steamReturnUrl = `${STEAM_RETURN_URL}?token=${token}&redirectTo=${encodeURIComponent(redirectTo)}`;
-    const steamLoginUrl = steam.openid.getRedirectUrl(steamReturnUrl);
+    const returnTo = `${STEAM_RETURN_URL}?token=${token}&redirectTo=${encodeURIComponent(redirectTo)}`;
 
-    return Response.redirect(steamLoginUrl, 302);
+    const steamLoginUrl = new URL("https://steamcommunity.com/openid/login");
+    steamLoginUrl.searchParams.set("openid.ns", "http://specs.openid.net/auth/2.0");
+    steamLoginUrl.searchParams.set("openid.mode", "checkid_setup");
+    steamLoginUrl.searchParams.set("openid.return_to", returnTo);
+    steamLoginUrl.searchParams.set("openid.realm", FRONTEND_URL);
+    steamLoginUrl.searchParams.set("openid.identity", "http://specs.openid.net/auth/2.0/identifier_select");
+    steamLoginUrl.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
+
+    return Response.redirect(steamLoginUrl.toString(), 302);
   }
 
-  // 🔹 Step 2: Handle Steam Callback
+  // Step 2: Handle Steam OpenID callback
   if (pathname.endsWith("/callback")) {
-    try {
-      const verified = await steam.openid.verifyAssertion(req, {
-        apiKey: STEAM_API_KEY,
-      });
+    const params = new URLSearchParams(await req.text());
+    params.set("openid.mode", "check_authentication");
 
-      const steamId = verified.openid.claimed_id?.split("/").pop();
+    const response = await fetch("https://steamcommunity.com/openid/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
 
-      if (!steamId) {
-        console.error("❌ Missing or invalid Steam ID:", verified.openid);
-        return new Response("Invalid Steam ID", { status: 400 });
-      }
+    const body = await response.text();
 
-      const { error } = await supabase
-        .from("users")
-        .upsert({ steam_id: steamId }, { onConflict: "steam_id" });
+    const claimedId = new URLSearchParams(req.url.split("?")[1]).get("openid.claimed_id");
+    const steamId = claimedId?.split("/").pop();
 
-      if (error) {
-        console.error("❌ Error saving user:", error.message);
-        return new Response("Could not create user", { status: 500 });
-      }
-
-      const sessionToken = crypto.randomUUID();
-      const redirectTo = searchParams.get("redirectTo") ?? "/";
-      const redirectUrl = `${FRONTEND_URL}${redirectTo}?steamId=${steamId}&token=${sessionToken}`;
-
-      return Response.redirect(redirectUrl, 302);
-    } catch (err) {
-      console.error("❌ Steam verification failed:", err);
-      return new Response("Steam verification failed", { status: 500 });
+    if (!body.includes("is_valid:true") || !steamId) {
+      console.error("❌ OpenID validation failed or Steam ID missing.");
+      return new Response("Invalid Steam login", { status: 400 });
     }
+
+    await supabase.from("users").upsert({ steam_id: steamId }, { onConflict: "steam_id" });
+
+    const redirectTo = searchParams.get("redirectTo") ?? "/";
+    const redirectUrl = `${FRONTEND_URL}${redirectTo}?steamId=${steamId}`;
+
+    return Response.redirect(redirectUrl, 302);
   }
 
   return new Response("Not found", { status: 404 });
