@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { DemoModeProvider } from "@/context/DemoModeContext";
 import { FullScreenModeProvider } from "@/context/FullScreenModeContext";
+import SteamRedirect from "./pages/SteamRedirect";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
@@ -69,6 +70,7 @@ const App = () => (
                     <SpendPage />
                   </ProtectedRoute>
                 } />
+                <Route path="/steam-redirect" element={<SteamRedirect />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
