@@ -10,14 +10,27 @@ import SpendingEstimate from "../components/SpendingEstimate";
 import Footer from "../components/Footer";
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import { useAuth } from "@/context/AuthContext";
+import { useSteamSession } from "@/hooks/useSteamSession";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useDemoMode } from "@/context/DemoModeContext";
+import { useEffect, useState } from "react";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const { user, isLoading: authLoading } = useAuth();
+  const { user: steamUser, logout: steamLogout } = useSteamSession();
+  const [isNewSteamUser, setIsNewSteamUser] = useState(false);
+  
+  useEffect(() => {
+    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
+    if (steamUser && justLoggedIn) {
+      setIsNewSteamUser(true);
+      sessionStorage.removeItem("justLoggedIn");
+    }
+  }, [steamUser]);
+  
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
@@ -52,20 +65,47 @@ const Index = () => {
         {/* Hero section - Add header spacing */}
         <section className="w-full navbar-offset pb-8 px-4">
           <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
-              Your PC games are gathering dust.
+           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
+            {steamUser ? `Welcome, ${steamUser.personaName}` : "Your PC games are gathering dust."}
             </h1>
-            <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-              unplayed helps you conquer your massive Steam backlog and actually play the games you own.
-            </p>
-            {!user && (
-              <div className="flex justify-center">
-                <SteamLoginButton centered />
-              </div>
+            {steamUser ? (
+              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+                {isNewSteamUser
+                  ? "🎉 You made it! It'll take a few minutes to import that massive library of yours. Sit back, relax, and let’s take this ride of shame together."
+                  : "Welcome back! Time to face the backlog."}
+              </p>
+            ) : (
+              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+                unplayed helps you conquer your massive Steam backlog and actually play the games you own.
+              </p>
             )}
-          </div>
+            <div className="flex justify-center gap-4">
+              {!steamUser && <SteamLoginButton centered />}
+              {steamUser && (
+                <>
+                  <button
+                    onClick={() => {
+                      fetch("/api/import-library", {
+                        method: "POST",
+                        body: JSON.stringify({ steamId: steamUser.steamId }),
+                        headers: { "Content-Type": "application/json" },
+                      }).then(() => window.location.reload());
+                    }}
+                    className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
+                  >
+                    {isNewSteamUser ? "Import My Steam Library" : "Refresh My Data"}
+                  </button>
+                  <button
+                    onClick={steamLogout}
+                    className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
+                  >
+                    Log Out
+                  </button>
+                </>
+              )}
+            </div>
         </section>
-        
+
         {/* Dashboard section */}
         <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
           <div className="max-w-7xl mx-auto">
