@@ -1,6 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
-import * as steam from "https://deno.land/x/openid_steam@v1.0.3/mod.ts";
+import * as steam from "https://deno.land/x/openid_steam@v1.0.2/mod.ts";
 
 // Required environment variables
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
