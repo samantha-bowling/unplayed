@@ -343,6 +343,10 @@ async function getSteamUserInfo(steamId: string): Promise<any> {
     } as SteamAPIError;
   }
 }
+if (!player || typeof player !== 'object') {
+  console.error("Steam API returned empty or malformed user:", data);
+  throw new Error("Malformed Steam user data");
+}
 
 // Extended function to get more Steam user data including games
 async function getExtendedSteamUserData(steamId: string): Promise<any> {
@@ -513,21 +517,26 @@ async function generateJWT(userId: string, steamId: string, steamUserData: any):
       false,
       ["sign"]
     );
+    if (!steamUserData?.personaname) {
+  console.warn("[Steam Auth] steamUserData is missing personaname:", steamUserData);
+}
 
     const payload = {
       aud: "authenticated",
       sub: userId,
       email: `steam_${steamId}@unplayed.wtf`,
       email_verified: true,
-      app_metadata: { provider: "steam" },
+      app_metadata: {
+        provider: "steam"
+      },
       user_metadata: {
         steam_id: steamId,
-        name: steamUserData?.personaname ?? "unknown",
+        name: steamUserData?.personaname ?? "unknown_user",
         avatar_url: steamUserData?.avatarmedium ?? ""
       },
       role: "authenticated",
       iat: getNumericDate(0),
-      exp: getNumericDate(60 * 60),
+      exp: getNumericDate(60 * 60)
     };
 
     const token = await create(
@@ -740,7 +749,21 @@ async function handleCallback(request: Request) {
         );
       }
 
-      const access_token = await generateJWT(userId, steamId, steamUserData);
+      console.log("[Steam Auth] DEBUG: Preparing to generate JWT with steamUserData:", {
+        steamId,
+        userId,
+        steamUserData,
+        personaname: steamUserData?.personaname,
+        avatar: steamUserData?.avatarmedium
+      });
+      
+      if (!steamUserData || typeof steamUserData !== 'object') {
+        console.error("[Steam Auth] FATAL: steamUserData is invalid or missing", steamUserData);
+        return Response.redirect(
+          generateErrorRedirect(request, 'missing_user_data', 'Steam user data is missing or malformed', { steamId, userId }),
+          302
+        );
+      }
       
       console.log("[Steam Auth] JWT token generated successfully");
       
