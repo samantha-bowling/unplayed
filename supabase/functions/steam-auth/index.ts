@@ -667,7 +667,7 @@ async function handleCallback(request: Request) {
       }
       
       // Verify we have the JWT secret for token generation
-      const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
+      const jwtSecret = Deno.env.get('JWT_SECRET');
       if (!jwtSecret) {
         console.error("[Steam Auth] JWT SECRET IS MISSING FOR TOKEN CREATION");
         return Response.redirect(
@@ -997,7 +997,7 @@ async function handleHealthCheck(req: Request) {
       steam_return_url_set: !!Deno.env.get("STEAM_RETURN_URL"),
       frontend_url_set: !!Deno.env.get("FRONTEND_URL"),
       service_role_key_set: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-      jwt_secret_set: !!Deno.env.get("SUPABASE_JWT_SECRET"),
+      jwt_secret_set: !!Deno.env.get("JWT_SECRET"),
     }
   }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1016,7 +1016,7 @@ async function handleDebug(req: Request) {
   // Check for environment variables
   const serviceRoleKeyPresent = !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const steamApiKeyPresent = !!STEAM_API_KEY;
-  const jwtSecretPresent = !!Deno.env.get('SUPABASE_JWT_SECRET');
+  const jwtSecretPresent = !!Deno.env.get('JWT_SECRET');
   
   // Check for potential configuration issues
   const potentialIssues = [];
@@ -1024,7 +1024,7 @@ async function handleDebug(req: Request) {
     potentialIssues.push("SUPABASE_SERVICE_ROLE_KEY is missing");
   }
   if (!jwtSecretPresent) {
-    potentialIssues.push("SUPABASE_JWT_SECRET is missing");
+    potentialIssues.push("JWT_SECRET is missing");
   }
   if (returnUrl === "https://unplayed.wtf/api/auth/steam/callback" && headers['host']?.includes('localhost')) {
     potentialIssues.push("Using production STEAM_RETURN_URL in development environment");
