@@ -495,90 +495,50 @@ async function createSupabaseUser(steamId: string, steamName: string, steamAvata
   }
 }
 
-// IMPROVED JWT generation function with better error handling
+// IMPROVED JWT generation function with secure key handling
 async function generateJWT(userId: string, steamId: string, steamUserData: any): Promise<string> {
   try {
     console.log(`[Steam Auth] Generating JWT for user ID: ${userId}`);
-    
-    // Directly get the JWT secret (without SUPABASE_ prefix, which is reserved)
+
     const jwtSecret = Deno.env.get('JWT_SECRET');
-    
-    if (!jwtSecret) {
-      console.error("[Steam Auth] JWT SECRET IS MISSING FOR TOKEN CREATION");
-      throw new Error("Missing JWT secret - Edge function not properly configured");
+    if (!jwtSecret || typeof jwtSecret !== 'string' || jwtSecret.trim().length === 0) {
+      throw new Error("JWT secret is missing or invalid");
     }
 
-    // Validate the JWT secret format - should be a non-empty string
-    if (typeof jwtSecret !== 'string' || jwtSecret.trim().length === 0) {
-      console.error("[Steam Auth] JWT secret is invalid (empty or wrong format)");
-      throw new Error("Invalid JWT secret format");
-    }
-    
-    console.log(`[Steam Auth] JWT secret validated (length: ${jwtSecret.length})`);
-    
-    // Create JWT payload exactly matching Supabase's expected format
+    // Create a crypto key using Deno's Web Crypto API
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(jwtSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
     const payload = {
       aud: "authenticated",
       sub: userId,
       email: `steam_${steamId}@unplayed.wtf`,
       email_verified: true,
-      app_metadata: {
-        provider: "steam"
-      },
+      app_metadata: { provider: "steam" },
       user_metadata: {
         steam_id: steamId,
-        name: steamUserData.personaname,
-        avatar_url: steamUserData.avatarmedium
+        name: steamUserData?.personaname ?? "unknown",
+        avatar_url: steamUserData?.avatarmedium ?? ""
       },
       role: "authenticated",
       iat: getNumericDate(0),
-      exp: getNumericDate(60 * 60), // 1 hour expiry
+      exp: getNumericDate(60 * 60),
     };
-    
-    // For debugging: log the payload shape (without sensitive data)
-    console.log("[Steam Auth] JWT payload structure:", 
-      JSON.stringify({
-        ...payload,
-        email: "[REDACTED]",
-      }, null, 2)
+
+    const token = await create(
+      { alg: "HS256", typ: "JWT" },
+      payload,
+      key
     );
-    
-    try {
-      // Create the JWT token using the raw secret string
-      const key = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(jwtSecret),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-      );
-      
-      const token = await create(
-        { alg: "HS256", typ: "JWT" },
-        payload,
-        key
-      );
-      
-      console.log("[Steam Auth] JWT token generated successfully");
-      
-      // Verify the token we just created to ensure it's valid
-      try {
-        const verified = await verify(token, new TextEncoder().encode(jwtSecret));
-        console.log("[Steam Auth] JWT verification successful:", verified ? "Valid" : "Invalid");
-      } catch (verifyErr) {
-        console.error("[Steam Auth] Warning: Generated JWT failed verification:", verifyErr);
-        // Non-fatal - we'll still return the token but log the issue
-      }
-      
-      return token;
-    } catch (jwtError) {
-      console.error("[Steam Auth] Error in create() JWT function:", jwtError);
-      console.error("[Steam Auth] JWT Error details:", JSON.stringify(jwtError, Object.getOwnPropertyNames(jwtError)));
-      throw new Error(`JWT creation failed: ${jwtError.message || "Unknown error in token generation"}`);
-    }
+
+    return token;
   } catch (error) {
-    console.error("[Steam Auth] Fatal error in JWT generation:", error);
-    console.error("[Steam Auth] Error stack:", error.stack);
+    console.error("[Steam Auth] Error creating JWT:", error);
     throw {
       type: 'token_error',
       message: `Failed to generate authentication token: ${error.message}`,
