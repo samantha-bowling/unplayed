@@ -725,6 +725,21 @@ async function handleCallback(request: Request) {
       }
       
       // Generate the JWT token using our improved function
+            console.log("[Steam Auth] About to generate JWT with:", {
+        steamId,
+        userId,
+        steamUserData,
+        personaname: steamUserData?.personaname,
+        avatar_url: steamUserData?.avatarmedium,
+      });
+      if (!steamUserData || typeof steamUserData !== 'object') {
+        console.error("[Steam Auth] Invalid steamUserData detected:", steamUserData);
+        return Response.redirect(
+          generateErrorRedirect(request, 'invalid_user_data', 'Steam user data was not loaded properly'),
+          302
+        );
+      }
+
       const access_token = await generateJWT(userId, steamId, steamUserData);
       
       console.log("[Steam Auth] JWT token generated successfully");
