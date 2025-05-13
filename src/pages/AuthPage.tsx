@@ -94,6 +94,26 @@ const AuthPage = () => {
 
               console.log('Steam ID validation successful');
 
+              console.log("Sending upsert-user payload:", {
+                steamId,
+                personaName,
+                avatar,
+                userId,
+              });
+              
+              const res = await fetch("/functions/v1/upsert-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ steamId, personaName, avatar, userId }),
+              });
+              
+              const result = await res.json();
+              console.log("Upsert-user response:", result);
+              
+              if (!res.ok) {
+                console.error("Upsert-user failed:", res.status, result);
+              }
+
               // ✅ Upsert user into Supabase users table
               const userId = userData.user?.id;
               const personaName = userData.user?.user_metadata?.name || 'Unknown';
