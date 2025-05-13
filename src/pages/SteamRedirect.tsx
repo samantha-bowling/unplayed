@@ -39,14 +39,21 @@ export default function SteamRedirect() {
           if (steamId && personaName && avatar) {
             setUser({ steamId, personaName, avatar });
 
-            await fetch("/api/upsert-user", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ steamId, personaName, avatar }),
-            }).catch(console.error);
+            const session = await supabase.auth.getSession();
+            const userId = session.data.session?.user.id;
+
+            if (!userId) {
+              console.error("Supabase user ID not found. Cannot upsert.");
+            } else {
+              await fetch("/functions/v1/upsert-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ steamId, personaName, avatar, userId }),
+              }).catch(console.error);
+            }
           }
 
-          navigate("/"); // or /home depending on app design
+          navigate("/");
         } else {
           console.error("No session returned from setSession");
           navigate("/auth?error=no_session");
