@@ -57,6 +57,10 @@ const AuthPage = () => {
             access_token: accessToken,
             refresh_token: refreshToken,
           });
+
+          // Save session tokens locally for persistence
+          localStorage.setItem("supabase.access_token", accessToken);
+          localStorage.setItem("supabase.refresh_token", refreshToken);
           
           if (error) {
             console.error('Error setting session:', error);
@@ -119,6 +123,9 @@ const AuthPage = () => {
             cleanUrl.searchParams.delete('auth_success');
             cleanUrl.searchParams.delete('auth_source');
             window.history.replaceState({}, document.title, cleanUrl.toString());
+
+            // Redirect to home after session is established
+            router.push('/');
             
             // Show success animation
             setShowSuccessAnimation(true);
