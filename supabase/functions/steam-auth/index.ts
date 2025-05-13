@@ -53,12 +53,24 @@ serve(async (req) => {
       return new Response("Steam auth failed", { status: 400 });
     }
 
-    // Create or update user in Supabase
+    // Create or update user
     await supabase.from("users").upsert({ steam_id: steamId }, { onConflict: "steam_id" });
-
+    
+    // Generate a Supabase session
+    const { data: session, error: jwtError } = await supabase.auth.admin.createSession({
+      user_id: steamId,
+    });
+    
+    if (jwtError || !session) {
+      console.error("Failed to create Supabase session:", jwtError);
+      return new Response("Session creation failed", { status: 500 });
+    }
+    
+    // Redirect to frontend with session tokens
     const redirectTo = params.get("redirectTo") ?? "/";
-    const redirectUrl = `${FRONTEND_URL}${redirectTo}?steamId=${steamId}`;
+    const redirectUrl = `${FRONTEND_URL}${redirectTo}?access_token=${session.access_token}&refresh_token=${session.refresh_token}&user_id=${steamId}&auth_success=true`;
     return Response.redirect(redirectUrl, 302);
+
   }
 
   return new Response("Not found", { status: 404 });
