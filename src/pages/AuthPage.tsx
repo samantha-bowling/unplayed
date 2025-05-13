@@ -3,6 +3,7 @@ import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
 import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { SteamIcon } from '@/components/icons/SteamIcon';
+import { useSteamSession } from '@/hooks/useSteamSession';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,6 +29,7 @@ const AuthPage = () => {
   const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile, refreshProfile, refreshSession } = useAuth();
   const { hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const { toast } = useToast();
+  const { setUser: setSteamUser } = useSteamSession();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -100,7 +102,16 @@ const AuthPage = () => {
                   description: 'Session mismatch. Please try again.',
                   variant: 'destructive',
                 });
-                
+
+              // Set Steam session context so homepage sees user
+              if (profile?.steam_id && profile?.steam_name && profile?.steam_avatar) {
+                setSteamUser({
+                  steamId: profile.steam_id,
+                  personaName: profile.steam_name,
+                  avatar: profile.steam_avatar,
+                });
+              }
+
                 // Sign out in case of mismatch
                 await supabase.auth.signOut();
                 setSessionEstablished(false);
