@@ -19,7 +19,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Enhanced logic: Always consider auth loading state first
   // This prevents the race condition where demo mode is enabled during auth loading
-  const isDemo = (isLoading ? false : !user) || isDemoExplicit;
+  const isDemo = (!isLoading && !user) || isDemoExplicit;
   
   // Enhanced logging to help debug auth and demo mode state changes
   useEffect(() => {
