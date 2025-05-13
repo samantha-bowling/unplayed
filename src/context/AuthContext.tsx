@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } else {
       setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
-    }, []);
+    } []);
 
   const getLibrary = useCallback(async (profileData: any) => {
     if (!profileData?.steam_id) return;
