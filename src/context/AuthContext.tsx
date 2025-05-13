@@ -181,6 +181,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [refreshProfile]);
 
+  // Debug + Cleanup after redirect
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('🔍 [AuthContext] Session after redirect:', data.session);
+    });
+
+    if (window.location.hash.includes('access_token')) {
+      window.history.replaceState(null, '', window.location.pathname);
+      console.log('🧹 [AuthContext] Cleaned up access_token from URL');
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
