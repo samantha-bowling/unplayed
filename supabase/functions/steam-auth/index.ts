@@ -50,23 +50,31 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const email = `steam_${steamId}@unplayed.wtf`;
 
-    let { data: userRecord, error: getUserError } = await supabase.auth.admin.getUserByEmail(email);
+    let userId: string | undefined;
 
-    if (!userRecord) {
-      const createResponse = await supabase.auth.admin.createUser({
-        email,
-        user_metadata: { steam_id: steamId },
-      });
+    const createResponse = await supabase.auth.admin.createUser({
+      email,
+      user_metadata: { steam_id: steamId },
+    });
 
-      if (createResponse.error || !createResponse.data?.id) {
-        console.error("Failed to create user:", createResponse.error);
+    if (createResponse.error) {
+      if (createResponse.error.message.includes("duplicate key")) {
+        const { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
+        const existingUser = usersList?.users?.find(u => u.email === email);
+        if (!existingUser) {
+          console.error("Could not find existing user after duplicate:", listError);
+          return new Response("User lookup failed", { status: 500 });
+        }
+        userId = existingUser.id;
+      } else {
+        console.error("User creation failed:", createResponse.error);
         return new Response("User creation failed", { status: 500 });
       }
-
-      userRecord = createResponse.data;
+    } else {
+      userId = createResponse.data?.id;
     }
 
-    const sessionResponse = await supabase.auth.admin.createSession({ user_id: userRecord.id });
+    const sessionResponse = await supabase.auth.admin.createSession({ user_id: userId! });
 
     if (sessionResponse.error || !sessionResponse.data?.access_token) {
       console.error("Session creation failed:", sessionResponse.error);
