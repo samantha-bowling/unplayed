@@ -19,7 +19,8 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
 import LoginErrorPage from "./pages/LoginErrorPage";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import WelcomeGate from "@/pages/WelcomeGate";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/welcome" element={<WelcomeGate />} />
                 {/* Protected routes */}
                 <Route path="/library" element={
                   <ProtectedRoute>
