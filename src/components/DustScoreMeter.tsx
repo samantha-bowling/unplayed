@@ -22,18 +22,10 @@ const DustScoreMeter = ({
   score,
   isDemo = false
 }: DustScoreProps) => {
-  const {
-    data
-  } = useDustScoreData();
-  
-  // Use the provided score or fall back to unplayed data
+  const { data } = useDustScoreData();
   const actualScore = score ?? data.dustScore;
   const [animatedScore, setAnimatedScore] = useState(0);
-  
-  const {
-    signInWithSteam,
-    user
-  } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const duration = 2000;
@@ -54,23 +46,21 @@ const DustScoreMeter = ({
     return () => clearInterval(timer);
   }, [actualScore]);
 
-  // Calculate severity level for the score - UPDATED with new tiers
   const getSeverityColor = () => {
     if (actualScore < 200) return 'text-green-400';
     if (actualScore < 500) return 'text-orange-400';
     if (actualScore < 1000) return 'text-amber-600';
     return 'text-unplayed-red';
   };
-  
+
   const getSeverityText = () => {
     if (actualScore < 200) return 'Freshly Polished ✨';
     if (actualScore < 500) return 'Dust Storm Brewing 🌬️';
     if (actualScore < 1000) return 'Duststorm Warning 🌪️';
-    return 'Hoarder\'s Horizon 🤍';
+    return "Hoarder's Horizon 🤍";
   };
 
-  // Show clean score if available and the user is logged in
-  const showCleanScore = (data.cleanScore !== undefined) && user;
+  const showCleanScore = data.cleanScore !== undefined && user;
 
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
@@ -92,28 +82,24 @@ const DustScoreMeter = ({
           </Tooltip>
         </TooltipProvider>
       </div>
-      
+
       <div className="terminal-content flex flex-col items-center">
         <div className="relative w-48 h-48 mb-4">
-          {/* Outer ring */}
           <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
-          
-          {/* Progress ring */}
           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-            <circle 
-              cx="50" 
-              cy="50" 
-              r="45" 
-              fill="none" 
-              stroke={actualScore < 200 ? '#A3F7BF' : actualScore < 500 ? '#FF9F39' : actualScore < 1000 ? '#F6AD55' : '#FF3C38'} 
-              strokeWidth="8" 
-              strokeDasharray={`${Math.min(animatedScore / 1000, 1) * 283} 283`} 
-              className="transition-all duration-300" 
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke={actualScore < 200 ? '#A3F7BF' : actualScore < 500 ? '#FF9F39' : actualScore < 1000 ? '#F6AD55' : '#FF3C38'}
+              strokeWidth="8"
+              strokeDasharray={`${Math.min(animatedScore / 1000, 1) * 283} 283`}
+              className="transition-all duration-300"
             />
           </svg>
-          
-          {/* Center text with tooltip */}
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -130,48 +116,42 @@ const DustScoreMeter = ({
             </Tooltip>
           </TooltipProvider>
         </div>
-        
+
         <div className="text-center mt-2">
           <p className={`${getSeverityColor()} text-xl font-medium`}>{getSeverityText()}</p>
           <p className="text-sm text-gray-400 mt-2">
-            {actualScore < 200 
-              ? "Your library is in good shape! Keep it up." 
-              : actualScore < 500 
-                ? "Some games could use your attention soon." 
-                : actualScore < 1000 
-                  ? "Warning: Your backlog is getting out of control." 
-                  : "Critical: Your library has reached dust apocalypse levels."}
+            {actualScore < 200
+              ? "Your library is in good shape! Keep it up."
+              : actualScore < 500
+              ? "Some games could use your attention soon."
+              : actualScore < 1000
+              ? "Warning: Your backlog is getting out of control."
+              : "Critical: Your library has reached dust apocalypse levels."}
           </p>
         </div>
-        
+
         {showCleanScore && (
           <div className="mt-6 pt-3 border-t border-gray-700 w-full">
-            <CleanScoreMeterSmall 
-              score={data.cleanScore || 0} 
-              tier={data.cleanTier}
-            />
+            <CleanScoreMeterSmall score={data.cleanScore || 0} tier={data.cleanTier} />
           </div>
         )}
-        
+
         {user && !isDemo && (
           <div className="mt-4 pt-2">
-            <Link 
-              to="/dust" 
+            <Link
+              to="/dust"
               className="px-4 py-2 bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint text-sm rounded-md transition-colors"
             >
               View Detailed Report
             </Link>
           </div>
         )}
-        
+
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
           <div className="mt-auto pt-4 text-center flex justify-center">
-            <button 
-              onClick={() => signInWithSteam()} 
-              className="text-sm text-unplayed-mint hover:underline"
-            >
-              Connect to Steam to see your Dust Score
-            </button>
+            <p className="text-sm text-unplayed-mint">
+              You’re in Demo Mode. Sign in to track your Dust Score.
+            </p>
           </div>
         )}
       </div>
