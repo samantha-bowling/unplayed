@@ -6,6 +6,14 @@ serve(async (req) => {
   try {
     const { steamId, personaName, avatar, userId } = await req.json();
 
+    // Debug logging
+    console.log("Function received payload:", {
+      steamId,
+      personaName,
+      avatar,
+      userId,
+    });
+    
     if (!steamId || !personaName || !avatar || !userId) {
       console.error("Missing required fields", { steamId, personaName, avatar, userId });
       return new Response("Missing fields", { status: 400 });
