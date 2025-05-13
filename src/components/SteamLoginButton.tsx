@@ -1,5 +1,4 @@
 
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 
@@ -10,37 +9,41 @@ interface SteamLoginButtonProps {
   centered?: boolean;
 }
 
-const SteamLoginButton = ({ 
-  className = '', 
+const SteamLoginButton = ({
+  className = '',
   redirectPath = '/',
   fullWidth = false,
-  centered = true
+  centered = true,
 }: SteamLoginButtonProps) => {
-  const { signInWithSteam, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const { isLoading } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleSteamLogin = () => {
+    setButtonLoading(true);
     const redirectTo = encodeURIComponent(redirectPath);
     window.location.href = `/api/auth/steam/login?redirectTo=${redirectTo}`;
   };
 
   return (
     <div className={`${centered ? 'mx-auto' : ''} group w-full max-w-xs`}>
-      <button 
+      <button
         onClick={handleSteamLogin}
-        className={`${fullWidth ? 'w-full' : ''} 
-                   ${centered ? 'mx-auto' : ''} 
-                   relative flex items-center justify-center transition-all hover:opacity-90 ${className}
-                   ${buttonLoading || isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-                   group-hover:shadow-lg group-hover:shadow-unplayed-mint/20 transition-all`}
+        className={`
+          ${fullWidth ? 'w-full' : ''}
+          ${centered ? 'mx-auto' : ''}
+          relative flex items-center justify-center transition-all
+          hover:opacity-90
+          ${className}
+          ${buttonLoading || isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+          group-hover:shadow-lg group-hover:shadow-unplayed-mint/20
+        `}
         disabled={buttonLoading || isLoading}
         aria-label="Sign in through Steam"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-unplayed-mint/10 to-unplayed-pink/10 opacity-0 group-hover:opacity-100 rounded transition-opacity"></div>
-        <img 
+        <img
           src="/lovable-uploads/0b70a4e5-f3cb-44e0-bb0b-bf29ee038fa3.png"
-          alt="Sign in through STEAM" 
+          alt="Sign in through STEAM (This site not associated with Valve Corp.)"
           className={`${fullWidth ? 'w-full' : 'w-auto'} h-auto relative z-10`}
         />
       </button>
