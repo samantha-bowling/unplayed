@@ -93,24 +93,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      if (data.session) {
+    if (data.session) {
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+        if (userError || !userData?.user) {
+          console.error('Failed to hydrate user after refreshSession:', userError);
+          setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
+          return;
+        }
+    
         setSession(data.session);
-        setUser(data.session.user);
+        setUser(userData.user);
         setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-        console.log('Session refreshed successfully');
-      } else {
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
+        console.log('User hydrated via getUser()', userData.user);
+      } catch (hydrationError) {
+        console.error('Unexpected error during getUser hydration:', hydrationError);
+        setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
       }
-    } catch (error) {
-      console.error('Unexpected error during session refresh:', error);
-      setLastError({
-        code: 'session_refresh_error',
-        message: String(error) || 'Unexpected error during session refresh',
-        timestamp: Date.now()
-      });
-      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
+    } else {
+      setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
     }
-  }, []);
 
   const getLibrary = useCallback(async (profileData: any) => {
     if (!profileData?.steam_id) return;
