@@ -7,7 +7,8 @@ serve(async (req) => {
     const { steamId, personaName, avatar, userId } = await req.json();
 
     if (!steamId || !personaName || !avatar || !userId) {
-      return new Response("Missing required fields", { status: 400 });
+      console.error("Missing required fields", { steamId, personaName, avatar, userId });
+      return new Response("Missing fields", { status: 400 });
     }
 
     const supabase = createClient(
@@ -15,22 +16,27 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error } = await supabase
-      .from("users")
-      .upsert({
-        id: userId,
-        steam_id: steamId,
-        steam_name: personaName,
-        steam_avatar: avatar,
-        last_sync: new Date().toISOString(),
-      });
+    const { error } = await supabase.from("users").upsert({
+      id: userId,
+      steam_id: steamId,
+      steam_name: personaName,
+      steam_avatar: avatar,
+      last_sync: new Date().toISOString(),
+    });
 
     if (error) {
-      console.error("Upsert error:", error);
-      return new Response("Failed to upsert user", { status: 500 });
+      console.error("Upsert failed with error:", error);
+      return new Response(JSON.stringify({ error }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    return new Response("User upserted", { status: 200 });
+    console.log("User successfully upserted:", userId);
+    return new Response(JSON.stringify({ status: "success", userId }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("Unexpected error in upsert-user:", err);
     return new Response("Server error", { status: 500 });
