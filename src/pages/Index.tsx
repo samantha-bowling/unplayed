@@ -210,6 +210,7 @@ const Index = () => {
         )}
 
         <Footer />
+        <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       </div>
     </FullScreenModeWrapper>
   );
