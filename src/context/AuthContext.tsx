@@ -290,7 +290,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
         return;
       }
+
+      const refreshUserSession = useCallback(async () => {
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            console.error('Failed to refresh session:', sessionError);
+            return;
+          }
       
+          if (sessionData?.session) {
+            setSession(sessionData.session);
+            setUser(sessionData.session.user);
+            setAuthStatus(AuthStatus.AUTHENTICATED);
+            setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
+      
+            await refreshProfile();
+          } else {
+            console.warn('No session found during manual refresh');
+          }
+        } catch (err) {
+          console.error('Unexpected error in refreshUserSession:', err);
+        }
+      }, [refreshProfile]);
+
       console.log("Profile refresh successful");
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
@@ -509,6 +532,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signOut,
       refreshProfile,
       refreshSession,
+      refreshUserSession,
       clearAuthError,
       isLoading,
     }}>
