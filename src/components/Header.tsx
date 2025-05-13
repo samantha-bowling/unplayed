@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -15,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, signOut, isLoading } = useAuth();
+  const { enhancedStatus } = useAuthSessionStatus();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
 
@@ -84,7 +86,7 @@ const Header = () => {
 
         {isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
-        ) : user ? (
+        ) : enhancedStatus === "AUTHENTICATED" ? (
           <div className="flex items-center space-x-4">
             <Avatar className="cursor-pointer border border-unplayed-mint/30">
               {profile?.steam_avatar ? (
