@@ -79,8 +79,8 @@ const LibraryPreview = ({
   games: propGames,
   isLoading = false
 }: LibraryPreviewProps) => {
-  const {
-    signInWithSteam
+  const { 
+    user 
   } = useAuth();
   const {
     data: unplayedData
@@ -339,18 +339,16 @@ const LibraryPreview = ({
           
           {isDemo ? (
             <div className="mt-auto pt-4 text-center flex justify-center">
-              <button 
-                onClick={() => signInWithSteam()} 
-                className="text-sm text-unplayed-mint hover:underline"
-              >
-                Connect to Steam to see your Unplayed Library
-              </button>
+              <p className="text-sm text-unplayed-mint">
+                You’re in Demo Mode. Sign in to track your Unplayed Library.
+              </p>
             </div>
           ) : (
             <button className="btn-secondary mt-4">
               View Full Library
             </button>
           )}
+          
         </div>
       )}
     </div>
