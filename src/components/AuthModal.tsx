@@ -15,7 +15,7 @@ const AuthModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
     }
   };
 
-  const redirectTo = 'https://unplayed.wtf/auth/callback';
+  const redirectTo = window.location.origin;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
