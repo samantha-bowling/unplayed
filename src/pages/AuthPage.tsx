@@ -55,8 +55,8 @@ const AuthPage = () => {
             Connect your account to start managing your backlog.
           </p>
           <div className="flex flex-col gap-4">
-            <Button onClick={() => signInWithProvider('discord', { redirectTo })}>Sign in with Discord</Button>
-            <Button onClick={() => signInWithProvider('twitch', { redirectTo })}>Sign in with Twitch</Button>
+            <Button onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}>Sign in with Discord</Button>
+            <Button onClick={() => signInWithProvider('twitch', { redirectTo: window.location.origin })}>Sign in with Twitch</Button>
             <div className="border-t pt-4">
               <Input
                 type="email"
