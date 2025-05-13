@@ -15,6 +15,8 @@ const AuthModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
     }
   };
 
+  const redirectTo = 'https://unplayed.wtf/auth/callback';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
@@ -26,8 +28,8 @@ const AuthModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
         </DialogHeader>
 
         <div className="flex flex-col gap-3">
-          <Button onClick={() => signInWithProvider('discord')}>Continue with Discord</Button>
-          <Button onClick={() => signInWithProvider('twitch')}>Continue with Twitch</Button>
+          <Button onClick={() => signInWithProvider('discord', { redirectTo })}>Continue with Discord</Button>
+          <Button onClick={() => signInWithProvider('twitch', { redirectTo })}>Continue with Twitch</Button>
 
           {!showEmailInput ? (
             <Button variant="secondary" onClick={() => setShowEmailInput(true)}>Use Email</Button>
