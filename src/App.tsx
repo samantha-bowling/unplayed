@@ -22,6 +22,11 @@ import LoginErrorPage from "./pages/LoginErrorPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import WelcomeGate from "@/pages/WelcomeGate";
 
+if (window.location.hash.includes('access_token')) {
+  window.history.replaceState(null, '', window.location.pathname);
+  console.log('🧹 Cleaned up #access_token from URL (App.tsx)');
+}
+
 const queryClient = new QueryClient();
 
 const App = () => (
