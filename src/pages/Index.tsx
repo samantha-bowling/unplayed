@@ -21,9 +21,8 @@ import SteamLoginButton from "@/components/SteamLoginButton";
 import { Loader2 } from "lucide-react";
 import SteamLoader from "@/components/SteamLoader";
 
-const [authModalOpen, setAuthModalOpen] = useState(false);
-
 const Index = () => {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isNewSteamUser, setIsNewSteamUser] = useState(false);
