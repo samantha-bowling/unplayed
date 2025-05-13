@@ -24,8 +24,15 @@ const SteamLoginButton = ({
     try {
       console.log("[Steam Login Button] Initiating Steam login, redirectPath:", redirectPath);
       setButtonLoading(true);
-      await signInWithSteam(redirectPath);
-      // Note: This code will not execute immediately as the user will be redirected to Steam
+      const res = await fetch(`/api/auth/steam/login?redirectTo=${encodeURIComponent(redirectPath)}`);
+      const { url } = await res.json();
+  
+      if (url) {
+        sessionStorage.setItem("justLoggedIn", "true");
+        window.location.href = url;
+      } else {
+        throw new Error("No login URL returned from server.");
+      }
     } catch (error) {
       console.error('[Steam Login Button] Error during Steam login:', error);
       setButtonLoading(false);
