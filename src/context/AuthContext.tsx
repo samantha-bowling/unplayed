@@ -64,7 +64,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signInWithProvider = async (provider: 'discord' | 'twitch') => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({ provider });
+      const redirectTo = 'https://unplayed.wtf/auth/callback';
+      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
       if (error) throw error;
     } catch (error: any) {
       setLastError({
