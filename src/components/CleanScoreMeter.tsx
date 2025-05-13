@@ -24,16 +24,11 @@ const CleanScoreMeter = ({
   const {
     data
   } = useDustScoreData();
-  
-  // Use the provided score or fall back to data
+
   const actualScore = score ?? data.cleanScore ?? 0;
   const cleanTier = data.cleanTier;
   const [animatedScore, setAnimatedScore] = useState(0);
-  
-  const {
-    signInWithSteam,
-    user
-  } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const duration = 2000;
@@ -54,13 +49,11 @@ const CleanScoreMeter = ({
     return () => clearInterval(timer);
   }, [actualScore]);
 
-  // Calculate tier color and text
   const getTierColor = () => cleanTier?.color || '#22d3ee';
   const getTierName = () => cleanTier?.name || 'Calculating...';
 
-  // Clean streak display
   const cleanStreak = data.cleanStreak || 0;
-  const hasCleanStreak = cleanStreak > 1; // Only show if streak > 1 day
+  const hasCleanStreak = cleanStreak > 1;
 
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
@@ -83,28 +76,24 @@ const CleanScoreMeter = ({
           </Tooltip>
         </TooltipProvider>
       </div>
-      
+
       <div className="terminal-content flex flex-col items-center">
         <div className="relative w-48 h-48 mb-4">
-          {/* Outer ring */}
           <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
-          
-          {/* Progress ring */}
           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-            <circle 
-              cx="50" 
-              cy="50" 
-              r="45" 
-              fill="none" 
-              stroke={getTierColor()} 
-              strokeWidth="8" 
-              strokeDasharray={`${Math.min(animatedScore / 100, 1) * 283} 283`} 
-              className="transition-all duration-300" 
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke={getTierColor()}
+              strokeWidth="8"
+              strokeDasharray={`${Math.min(animatedScore / 100, 1) * 283} 283`}
+              className="transition-all duration-300"
             />
           </svg>
-          
-          {/* Center text with tooltip */}
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -121,7 +110,6 @@ const CleanScoreMeter = ({
             </Tooltip>
           </TooltipProvider>
 
-          {/* Sparkles for high scores (90+) */}
           {actualScore >= 90 && (
             <>
               <div className="absolute top-0 right-4 animate-pulse">✨</div>
@@ -130,47 +118,40 @@ const CleanScoreMeter = ({
             </>
           )}
         </div>
-        
+
         <div className="text-center mt-2">
           <p className="text-xl font-medium" style={{ color: getTierColor() }}>{getTierName()}</p>
-          
           {hasCleanStreak && (
             <div className="flex items-center justify-center gap-1 mt-2 text-amber-300">
               <Medal size={16} className="animate-pulse" />
               <span className="text-sm">Clean Streak: {cleanStreak} days</span>
             </div>
           )}
-          
           <p className="text-sm text-gray-400 mt-2">
-            {actualScore < 25 
-              ? "You're barely playing your games. Time to dust off some titles!" 
-              : actualScore < 50 
-                ? "You're making some progress. Keep up the momentum." 
-                : actualScore < 75 
-                  ? "You're doing well at playing your library. Nice balance!" 
-                  : "Outstanding! You're getting great value from your collection."}
+            {actualScore < 25
+              ? "You're barely playing your games. Time to dust off some titles!"
+              : actualScore < 50
+              ? "You're making some progress. Keep up the momentum."
+              : actualScore < 75
+              ? "You're doing well at playing your library. Nice balance!"
+              : "Outstanding! You're getting great value from your collection."}
           </p>
         </div>
-        
+
         {user && !isDemo && (
           <div className="mt-4 pt-2">
-            <Link 
-              to="/dust" 
+            <Link
+              to="/dust"
               className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-sm rounded-md transition-colors"
             >
               View Detailed Report
             </Link>
           </div>
         )}
-        
+
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
           <div className="mt-auto pt-4 text-center flex justify-center">
-            <button 
-              onClick={() => signInWithSteam()} 
-              className="text-sm text-cyan-400 hover:underline"
-            >
-              Connect to Steam to see your Clean Score
-            </button>
+            <p className="text-sm text-cyan-400">You’re in Demo Mode. Sign in to track your Clean Score.</p>
           </div>
         )}
       </div>
