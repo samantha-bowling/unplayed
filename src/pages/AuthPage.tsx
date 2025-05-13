@@ -24,6 +24,8 @@ const AuthPage = () => {
     setShowSuccessAnimation(true);
   };
 
+  const redirectTo = 'https://unplayed.wtf/auth/callback';
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
       <AnimatePresence>
@@ -53,8 +55,8 @@ const AuthPage = () => {
             Connect your account to start managing your backlog.
           </p>
           <div className="flex flex-col gap-4">
-            <Button onClick={() => signInWithProvider('discord')}>Sign in with Discord</Button>
-            <Button onClick={() => signInWithProvider('twitch')}>Sign in with Twitch</Button>
+            <Button onClick={() => signInWithProvider('discord', { redirectTo })}>Sign in with Discord</Button>
+            <Button onClick={() => signInWithProvider('twitch', { redirectTo })}>Sign in with Twitch</Button>
             <div className="border-t pt-4">
               <Input
                 type="email"
