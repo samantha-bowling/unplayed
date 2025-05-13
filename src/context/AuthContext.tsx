@@ -40,7 +40,7 @@ type AuthContextType = {
   user: User | null;
   profile: any | null;
   lastError: AuthError | null;
-  signInWithProvider: (provider: 'discord' | 'twitch') => Promise<void>;
+  signInWithProvider: (provider: 'discord' | 'twitch', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -61,11 +61,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuthError = useCallback(() => setLastError(null), []);
 
-  const signInWithProvider = async (provider: 'discord' | 'twitch') => {
+  const signInWithProvider = async (
+    provider: 'discord' | 'twitch',
+    options?: { redirectTo?: string }
+  ) => {
     try {
       setIsLoading(true);
-      const redirectTo = 'https://unplayed.wtf/auth/callback';
-      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: options?.redirectTo || window.location.origin,
+        },
+      });
       if (error) throw error;
     } catch (error: any) {
       setLastError({
@@ -118,8 +125,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-
-      // ✅ Mark onboarding complete if steam_id is set and flag is not yet true
       if (data.steam_id && !data.onboarding_complete) {
         const { error: rpcError } = await supabase.rpc('mark_onboarding_complete');
         if (rpcError) {
@@ -164,7 +169,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(session?.user || null);
           await refreshProfile();
         }
-
         if (event === 'SIGNED_OUT') {
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
           setSession(null);
