@@ -17,32 +17,26 @@ const GenreHoarding = ({
   onGenreSelect,
   activeGenre = null
 }: GenreHoardingProps) => {
-  const {
-    signInWithSteam
-  } = useAuth();
+  const { user } = useAuth();
   const {
     data: unplayedData
   } = useUnplayedData();
   const navigate = useNavigate();
 
-  // Use genre data from unplayedData
   const genreData = unplayedData.genres;
 
-  // Find the most hoarded genre
   const mostHoardedGenre = genreData.reduce((prev, current) => prev.value > current.value ? prev : current, {
     name: 'None',
     value: 0,
     color: '#A3F7BF'
   });
-  
-  // Handle genre click
+
   const handleGenreClick = (data: any) => {
     if (onGenreSelect && data && data.name) {
       onGenreSelect(data.name);
     }
   };
-  
-  // Handle navigate to picker with selected genre
+
   const handlePickFromGenre = (genre: string) => {
     navigate('/picker', createPickerNavigation({
       genre,
@@ -50,14 +44,14 @@ const GenreHoarding = ({
       shouldAutoSpin: true
     }));
   };
-  
+
   return (
     <div className={`terminal-container w-full h-full ${isDemo ? 'relative' : ''}`}>
       <h3 className="terminal-header text-2xl mb-2">Your Hoarded Genres</h3>
       <p className="text-sm text-gray-400 mb-6">
         You say you love <span className="text-unplayed-amber">{mostHoardedGenre.name}</span>... the data agrees
       </p>
-      
+
       <div className="terminal-content w-full h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -125,7 +119,7 @@ const GenreHoarding = ({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      
+
       {activeGenre ? (
         <div className="mt-4 text-center p-2 bg-black/30 rounded-lg border border-unplayed-mint/20">
           <div className="flex flex-col sm:flex-row gap-2 items-center justify-center">
@@ -169,12 +163,12 @@ const GenreHoarding = ({
           </div>
         </div>
       )}
-      
+
       {isDemo && !document.cookie.includes("demo_note_dismissed") && (
         <div className="mt-auto pt-4 text-center">
-          <button onClick={() => signInWithSteam()} className="text-sm text-unplayed-mint hover:underline">
-            Connect to Steam to see your Genre breakdown
-          </button>
+          <p className="text-sm text-unplayed-mint">
+            You’re in Demo Mode. Sign in to track your Genre breakdown.
+          </p>
         </div>
       )}
     </div>
