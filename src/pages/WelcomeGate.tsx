@@ -14,12 +14,12 @@ const WelcomeGate = () => {
   } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if library is already ready
+  // ✅ Skip onboarding if it's already complete
   useEffect(() => {
-    if (profile?.steam_id && enhancedStatus === EnhancedAuthStatus.LIBRARY_READY) {
+    if (profile?.onboarding_complete) {
       navigate('/');
     }
-  }, [profile?.steam_id, enhancedStatus, navigate]);
+  }, [profile?.onboarding_complete, navigate]);
 
   if (!user) return null;
 
