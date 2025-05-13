@@ -24,8 +24,6 @@ const AuthPage = () => {
     setShowSuccessAnimation(true);
   };
 
-  const redirectTo = 'https://unplayed.wtf/auth/callback';
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
       <AnimatePresence>
