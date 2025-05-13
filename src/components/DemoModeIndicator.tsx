@@ -26,12 +26,12 @@ export const DemoModeIndicator: React.FC = () => {
         </span>
       </div>
       {!user && (
-        <button
-          onClick={() => signInWithProvider('discord', { redirectTo: 'https://unplayed.wtf/auth/callback' })}
-          className="text-xs bg-unplayed-mint text-black px-2 py-1 rounded hover:bg-unplayed-mint/90 transition-colors"
-        >
-          Sign in to sync
-        </button>
+      <button
+        onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}
+        className="text-xs bg-unplayed-mint text-black px-2 py-1 rounded hover:bg-unplayed-mint/90 transition-colors"
+      >
+        Sign in to sync
+      </button>
       )}
     </motion.div>
   );
