@@ -128,7 +128,7 @@ const AuthPage = () => {
             window.history.replaceState({}, document.title, cleanUrl.toString());
 
             // Redirect to home after session is established
-            router.push('/');
+            navigate('/');
             
             // Show success animation
             setShowSuccessAnimation(true);
