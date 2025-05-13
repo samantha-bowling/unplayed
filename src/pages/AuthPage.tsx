@@ -94,37 +94,34 @@ const AuthPage = () => {
 
               console.log('Steam ID validation successful');
 
-              console.log("Sending upsert-user payload:", {
-                steamId,
-                personaName,
-                avatar,
-                userId,
-              });
-              
-              const res = await fetch("/functions/v1/upsert-user", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ steamId, personaName, avatar, userId }),
-              });
-              
-              const result = await res.json();
-              console.log("Upsert-user response:", result);
-              
-              if (!res.ok) {
-                console.error("Upsert-user failed:", res.status, result);
-              }
+              const session = await supabase.auth.getSession();
+              console.log("Post-auth session:", session);
 
-              // ✅ Upsert user into Supabase users table
-              const userId = userData.user?.id;
+              const userId = session.data.session?.user.id;
               const personaName = userData.user?.user_metadata?.name || 'Unknown';
               const avatar = userData.user?.user_metadata?.avatar_url || '';
 
+              console.log("Upsert check:", { steamId, personaName, avatar, userId });
+
               if (userId && steamId && personaName && avatar) {
-                await fetch("/functions/v1/upsert-user", {
+                console.log("Calling upsert-user with:", { steamId, personaName, avatar, userId });
+
+                const res = await fetch("/functions/v1/upsert-user", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ steamId, personaName, avatar, userId }),
-                }).catch((err) => console.error("Upsert error in AuthPage:", err));
+                });
+
+                const result = await res.json().catch(async () => {
+                  console.warn("Failed to parse JSON response");
+                  return { raw: await res.text() };
+                });
+
+                console.log("Upsert-user response:", result);
+
+                if (!res.ok) {
+                  console.error("Upsert-user failed:", res.status, result);
+                }
               }
             }
 
@@ -151,7 +148,63 @@ const AuthPage = () => {
     establishSession();
   }, [accessToken, refreshToken, sessionEstablished, toast, steamId]);
 
-  // ...rest of component unchanged
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mb-6"
+          >
+            <SteamLoader />
+          </motion.div>
+        )}
+
+        {showSuccessAnimation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mb-6"
+          >
+            <AuthSuccessAnimation />
+          </motion.div>
+        )}
+
+        {hasError && !isLoading && !showSuccessAnimation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mb-6"
+          >
+            <AuthErrorMessage onRetry={retry} isRetrying={isRetrying} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!isLoading && !hasError && !showSuccessAnimation && (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold">Sign in with Steam</h1>
+          <p className="text-muted-foreground text-sm">
+            Unplayed requires Steam authentication to access your personal backlog.
+          </p>
+          <div className="flex flex-col items-center space-y-4">
+            <SteamLoginButton />
+            <SteamPrivacyChecklist />
+            {libraryPrivacyError && <SteamPrivacyError />}
+          </div>
+        </div>
+      )}
+
+      <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />
+      <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />
+
+      <DemoModeFallback />
+    </div>
+  );
 };
 
 export default AuthPage;
