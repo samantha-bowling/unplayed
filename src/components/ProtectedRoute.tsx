@@ -67,8 +67,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
     if (!isAdmin) return <Navigate to="/" replace />;
   }
 
-  // ⛔️ User is authenticated but hasn’t linked Steam
-  if (!profile?.steam_id) {
+  if (!profile?.onboarding_complete) {
     return <Navigate to="/welcome" replace />;
   }
 
