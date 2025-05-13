@@ -25,7 +25,7 @@ const AuthPage = () => {
   const [libraryPrivacyError, setLibraryPrivacyError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [sessionEstablished, setSessionEstablished] = useState(false);
-  const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile, refreshProfile } = useAuth();
+  const { signInWithSteam, authStatus, user, enhancedStatus: contextEnhancedStatus, profile, refreshProfile, refreshUserSession } = useAuth();
   const { hasError, retry, enhancedStatus } = useAuthSessionStatus();
   const { toast } = useToast();
   const location = useLocation();
@@ -110,6 +110,9 @@ const AuthPage = () => {
               
               console.log('Steam ID validation successful');
             }
+
+            // Refresh global context with new session
+            await refreshUserSession();
             
             console.log('Session established successfully:', data.session.user?.id);
             setSessionEstablished(true);
