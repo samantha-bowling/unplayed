@@ -1,4 +1,5 @@
 
+import AuthModal from "@/components/AuthModal";
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -9,6 +10,7 @@ import LibraryPreview from "../components/LibraryPreview";
 import SpendingEstimate from "../components/SpendingEstimate";
 import Footer from "../components/Footer";
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useSteamSession } from "@/hooks/useSteamSession";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
@@ -18,6 +20,8 @@ import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 import { Loader2 } from "lucide-react";
 import SteamLoader from "@/components/SteamLoader";
+
+const [authModalOpen, setAuthModalOpen] = useState(false);
 
 const Index = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -82,7 +86,11 @@ const Index = () => {
               </p>
             )}
             <div className="flex justify-center gap-4">
-              {!steamUser && <SteamLoginButton centered />}
+             {!user && (
+                <Button onClick={() => setAuthModalOpen(true)}>
+                  Sign In / Sign Up
+                </Button>
+              )}
               {steamUser && (
                 <>
                   <button
@@ -135,7 +143,7 @@ const Index = () => {
               <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
                 <h3 className="text-lg font-medium text-unplayed-amber mb-2">🔍 Demo Mode Active</h3>
                 <p className="text-sm text-gray-300 mb-4">
-                  You're viewing example data. Connect your Steam account to see your personal gaming stats.
+                  You're viewing example data. Connect sign in or sign up and link your Steam account to see your personal gaming data.
                 </p>
               </div>
             )}
@@ -187,13 +195,15 @@ const Index = () => {
                 Ready to confront your backlog?
               </h2>
               <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                Connect your Steam account and start using your unplayed games today.
+                Log in to explore your unplayed library and start tracking your Steam games.
               </p>
               <div className="flex justify-center">
-                <SteamLoginButton centered />
+                <Button onClick={() => setAuthModalOpen(true)}>
+                  Sign In / Sign Up
+                </Button>
               </div>
               <p className="text-sm text-gray-500 mt-4 mb-2">
-                We use Steam's Web API. Your account details are safe.
+                You’ll connect your Steam account after login.
               </p>
             </div>
           </section>
