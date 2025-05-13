@@ -1,5 +1,11 @@
 
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from 'react';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,16 +20,9 @@ export enum EnhancedAuthStatus {
   SESSION_LOADING = 'SESSION_LOADING',
   SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
   SESSION_FOUND = 'SESSION_FOUND',
-  TOKEN_REFRESHING = 'TOKEN_REFRESHING',
-  TOKEN_REFRESH_ERROR = 'TOKEN_REFRESH_ERROR',
   PROFILE_LOADING = 'PROFILE_LOADING',
   PROFILE_LOADED = 'PROFILE_LOADED',
   PROFILE_ERROR = 'PROFILE_ERROR',
-  LIBRARY_LOADING = 'LIBRARY_LOADING',
-  LIBRARY_READY = 'LIBRARY_READY',
-  LIBRARY_ERROR = 'LIBRARY_ERROR',
-  LIBRARY_IMPORTING = 'LIBRARY_IMPORTING',
-  LIBRARY_UPDATING = 'LIBRARY_UPDATING',
   AUTH_ERROR = 'AUTH_ERROR',
 }
 
@@ -40,13 +39,11 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   profile: any | null;
-  library: any | null;
   lastError: AuthError | null;
-  signInWithSteam: (redirectTo?: string) => Promise<void>;
+  signInWithProvider: (provider: 'discord' | 'twitch') => Promise<void>;
+  signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-  refreshUserSession: () => Promise<void>;
   clearAuthError: () => void;
   isLoading: boolean;
 };
@@ -54,124 +51,44 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authStatus, setAuthStatus] = useState<AuthStatus>(AuthStatus.LOADING);
-  const [enhancedStatus, setEnhancedStatus] = useState<EnhancedAuthStatus>(EnhancedAuthStatus.SESSION_LOADING);
+  const [authStatus, setAuthStatus] = useState(AuthStatus.LOADING);
+  const [enhancedStatus, setEnhancedStatus] = useState(EnhancedAuthStatus.INITIAL);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
-  const [library, setLibrary] = useState<any | null>(null);
   const [lastError, setLastError] = useState<AuthError | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const clearAuthError = useCallback(() => {
-    setLastError(null);
-  }, []);
+  const clearAuthError = useCallback(() => setLastError(null), []);
 
-  const refreshSession = useCallback(async () => {
+  const signInWithProvider = async (provider: 'discord' | 'twitch') => {
     try {
-      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESHING);
-      const { data, error } = await supabase.auth.refreshSession();
-
-      if (error) {
-        console.error('Session refresh error:', error);
-        setLastError({
-          code: 'token_refresh_failed',
-          message: error.message || 'Failed to refresh authentication tokens',
-          timestamp: Date.now()
-        });
-        setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
-        return;
-      }
-
-      if (data.session) {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !userData?.user) {
-          console.error('Failed to hydrate user after refreshSession:', userError);
-          setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
-          return;
-        }
-
-        setSession(data.session);
-        setUser(userData.user);
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-        console.log('User hydrated via getUser()', userData.user);
-      } else {
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
-      }
-    } catch (error) {
-      console.error('Unexpected error during session refresh:', error);
-      setLastError({
-        code: 'session_refresh_error',
-        message: String(error) || 'Unexpected error during session refresh',
-        timestamp: Date.now()
-      });
-      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
-    }
-  }, []);
-
-  const refreshUserSession = useCallback(async () => {
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error('Failed to refresh session:', sessionError);
-        return;
-      }
-
-      if (sessionData?.session) {
-        setSession(sessionData.session);
-        setUser(sessionData.session.user);
-        setAuthStatus(AuthStatus.AUTHENTICATED);
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-
-        await refreshProfile();
-      } else {
-        console.warn('No session found during manual refresh');
-      }
-    } catch (err) {
-      console.error('Unexpected error in refreshUserSession:', err);
-    }
-  }, []);
-
-  const signInWithSteam = async (redirectTo?: string) => {
-    try {
-      setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
       setIsLoading(true);
-
-      const response = await fetch('/api/auth/steam/login' +
-        (redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''));
-
-      if (!response.ok) {
-        setLastError({
-          code: 'steam_login_failed',
-          message: `Steam login failed (Status: ${response.status})`,
-          timestamp: Date.now()
-        });
-        setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
-        setIsLoading(false);
-        return;
-      }
-
-      const { url } = await response.json();
-      if (!url) {
-        setLastError({
-          code: 'invalid_steam_url',
-          message: 'Login URL missing from Steam auth',
-          timestamp: Date.now()
-        });
-        setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
-        setIsLoading(false);
-        return;
-      }
-
-      window.location.href = url;
-    } catch (error) {
+      const { error } = await supabase.auth.signInWithOAuth({ provider });
+      if (error) throw error;
+    } catch (error: any) {
       setLastError({
-        code: 'steam_sign_in_error',
-        message: String(error),
-        timestamp: Date.now()
+        code: 'oauth_error',
+        message: error.message,
+        timestamp: Date.now(),
       });
-      setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithEmail = async (email: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) throw error;
+    } catch (error: any) {
+      setLastError({
+        code: 'email_login_error',
+        message: error.message,
+        timestamp: Date.now(),
+      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -180,50 +97,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await supabase.auth.signOut();
       setAuthStatus(AuthStatus.UNAUTHENTICATED);
-      setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
       setSession(null);
       setUser(null);
       setProfile(null);
-      setLibrary(null);
-      setIsLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       setLastError({
         code: 'sign_out_failed',
-        message: String(error),
-        timestamp: Date.now()
+        message: error.message,
+        timestamp: Date.now(),
       });
     }
   };
 
   const refreshProfile = useCallback(async () => {
     if (!user) return;
-
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !data) {
-        setLastError({
-          code: error ? 'profile_refresh_failed' : 'profile_not_found',
-          message: error?.message || 'Profile not found',
-          timestamp: Date.now()
-        });
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
-        return;
-      }
-
+      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+      if (error) throw error;
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-    } catch (error) {
+    } catch (error: any) {
       setLastError({
         code: 'profile_refresh_error',
-        message: String(error),
-        timestamp: Date.now()
+        message: error.message,
+        timestamp: Date.now(),
       });
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
     }
@@ -231,21 +129,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const loadSession = async () => {
-      setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
       setIsLoading(true);
-
       const { data, error } = await supabase.auth.getSession();
-
-      if (error || !data?.session) {
+      if (error || !data.session) {
         setAuthStatus(AuthStatus.UNAUTHENTICATED);
         setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
         setIsLoading(false);
         return;
       }
-
       setSession(data.session);
       setUser(data.session.user);
       setAuthStatus(AuthStatus.AUTHENTICATED);
+      setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
+      await refreshProfile();
       setIsLoading(false);
     };
 
@@ -255,57 +151,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (event: AuthChangeEvent, session) => {
         if (['INITIAL_SESSION', 'SIGNED_IN'].includes(event)) {
           setAuthStatus(AuthStatus.AUTHENTICATED);
-          setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
           setSession(session);
           setUser(session?.user || null);
-          setIsLoading(false);
-
-          if (session?.user) await refreshProfile();
+          await refreshProfile();
         }
 
         if (event === 'SIGNED_OUT') {
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
-          setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
           setSession(null);
           setUser(null);
           setProfile(null);
-          setLibrary(null);
-          setIsLoading(false);
-        }
-
-        if (event === 'TOKEN_REFRESHED') {
-          setSession(session);
-          setUser(session?.user || null);
-        }
-
-        if (event === 'USER_UPDATED') {
-          setUser(session?.user || null);
         }
       }
     );
 
-    return () => {
-      subscription?.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [refreshProfile]);
 
   return (
-    <AuthContext.Provider value={{
-      authStatus,
-      enhancedStatus,
-      session,
-      user,
-      profile,
-      library,
-      lastError,
-      signInWithSteam,
-      signOut,
-      refreshProfile,
-      refreshSession,
-      refreshUserSession,
-      clearAuthError,
-      isLoading,
-    }}>
+    <AuthContext.Provider
+      value={{
+        authStatus,
+        enhancedStatus,
+        session,
+        user,
+        profile,
+        lastError,
+        signInWithProvider,
+        signInWithEmail,
+        signOut,
+        refreshProfile,
+        clearAuthError,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -313,8 +192,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
