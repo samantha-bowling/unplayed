@@ -117,6 +117,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+
+      // ✅ Mark onboarding complete if steam_id is set and flag is not yet true
+      if (data.steam_id && !data.onboarding_complete) {
+        const { error: rpcError } = await supabase.rpc('mark_onboarding_complete');
+        if (rpcError) {
+          console.error('Failed to mark onboarding complete:', rpcError);
+        }
+      }
     } catch (error: any) {
       setLastError({
         code: 'profile_refresh_error',
