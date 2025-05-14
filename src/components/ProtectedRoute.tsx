@@ -46,6 +46,18 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
     );
   }
 
+    if (!isLoading && authStatus === AuthStatus.AUTHENTICATED && !user) {
+    console.warn('👤 No user found in context despite being authenticated');
+    return (
+      <div className="flex items-center justify-center min-h-screen text-white">
+        <div>
+          <p>⚠️ No user in AuthContext. You may be stuck in a hydration mismatch.</p>
+          <a href="/auth" className="underline text-unplayed-mint mt-2 block">Return to login</a>
+        </div>
+      </div>
+    );
+  }
+
   if (authStatus === AuthStatus.UNAUTHENTICATED || !user) {
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} state={{ from: location }} replace />;
   }
