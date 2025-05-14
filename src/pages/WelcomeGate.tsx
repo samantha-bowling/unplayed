@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
 import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
-import { callUpsertUser } from '@/utils/callUpsertUser';
+import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 import { toast } from 'sonner';
 
 const WelcomeGate = () => {
