@@ -10,7 +10,6 @@ import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getRedirectUrl, signInWithProvider as baseSignInWithProvider } from '@/utils/auth/signInWithProvider';
-import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 
 export enum AuthStatus {
   LOADING = 'LOADING',
@@ -137,17 +136,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-      let { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
 
-      if (!data || error?.code === 'PGRST116') {
-        console.warn('[refreshProfile] No profile found. Attempting upsert...');
-        await callUpsertUser();
-        const retry = await supabase.from('users').select('*').eq('id', user.id).single();
-        data = retry.data;
-        error = retry.error;
+      if (error || !data) {
+        console.warn('[refreshProfile] No user profile found. Assuming new user.');
+        setProfile(null);
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+        return;
       }
 
-      if (error) throw error;
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
     } catch (error: any) {
