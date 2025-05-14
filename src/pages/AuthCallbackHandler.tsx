@@ -4,20 +4,29 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { toast } from '@/components/ui/use-toast'
+import { callUpsertUser } from '@/utils/auth/callUpsertUser'
 
 export default function AuthCallbackHandler() {
-  const { refreshSession, profile, isLoading } = useAuth()
+  const { refreshSession, refreshProfile, profile, isLoading } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     refreshSession()
-      .then(() => {
+      .then(async () => {
+        if (!profile) {
+          console.warn('[AuthCallbackHandler] No profile found, attempting upsert...')
+          await callUpsertUser()
+          await refreshProfile()
+        }
+
         toast({
           title: 'Welcome back!',
           description: 'You have been successfully logged in.',
         })
 
-        const isNewUser = !profile || !profile.username || !profile.first_login_completed
+        const isNewUser =
+          !profile || !profile.username || !profile.first_login_completed
+
         navigate(isNewUser ? '/welcome' : '/dashboard')
       })
       .catch((err) => {
@@ -30,7 +39,7 @@ export default function AuthCallbackHandler() {
         })
         navigate('/auth')
       })
-  }, [refreshSession, navigate, profile])
+  }, [refreshSession, refreshProfile, navigate, profile])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center">
