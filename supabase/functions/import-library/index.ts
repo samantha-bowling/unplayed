@@ -1,67 +1,77 @@
-
+// supabase/functions/import-library/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY");
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 serve(async (req) => {
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
-  }
-
-  const { steamId } = await req.json();
-
-  if (!steamId) {
-    return new Response("Missing steamId", { status: 400 });
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   try {
-    // Step 1: Fetch owned games
-    const res = await fetch(
-      `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&include_appinfo=true`
-    );
+    const { id, steam_id, games } = await req.json();
 
-    const data = await res.json();
-    const games = data?.response?.games;
-
-    if (!games || games.length === 0) {
-      return new Response("No games found or Steam profile is private", { status: 404 });
+    if (!id || !steam_id || !Array.isArray(games)) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
     }
 
-    // Step 2: Map games to your schema
-    const rows = games.map((game: any) => ({
-      user_id: steamId,
-      game_id: game.appid,
-      playtime_minutes: game.playtime_forever,
-      last_played_date: game.rtime_last_played
-        ? new Date(game.rtime_last_played * 1000).toISOString()
-        : null,
-      acquisition_date: new Date().toISOString(),
-      dust_score: 0,
-      hidden: false,
-      notes: null,
-      updated_at: new Date().toISOString()
-    }));
+    const upserts = games
+      .map((game) => {
+        if (!game.appid || !game.name || typeof game.appid !== "number") {
+          console.warn("Skipping invalid game:", game);
+          return null;
+        }
+        return {
+          user_id: id,
+          steam_id,
+          appid: game.appid,
+          name: game.name,
+          img_icon_url: game.img_icon_url,
+          img_logo_url: game.img_logo_url,
+          playtime_forever: game.playtime_forever,
+          playtime_windows_forever: game.playtime_windows_forever,
+          playtime_mac_forever: game.playtime_mac_forever,
+          playtime_linux_forever: game.playtime_linux_forever,
+          has_community_visible_stats: game.has_community_visible_stats ?? false,
+        };
+      })
+      .filter(Boolean);
 
-    // Step 3: Upsert into user_games
-    const { error } = await supabase
-      .from("user_games")
-      .upsert(rows, { onConflict: ["user_id", "game_id"] });
-
-    if (error) {
-      console.error("Upsert error:", error);
-      return new Response("Database error", { status: 500 });
+    if (upserts.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, warning: "No valid games to import" }),
+        { status: 200 }
+      );
     }
 
-    return new Response(JSON.stringify({ inserted: rows.length }), {
-      headers: { "Content-Type": "application/json" }
+    const { error: insertError } = await supabase.from("game_library").upsert(upserts, {
+      onConflict: "user_id,appid",
+    });
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return new Response(JSON.stringify({ error: insertError.message }), { status: 500 });
+    }
+
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ last_sync: new Date().toISOString() })
+      .eq("id", id);
+
+    if (updateError) {
+      console.error("Last sync update error:", updateError);
+      return new Response(JSON.stringify({ error: updateError.message }), { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ success: true, imported: upserts.length }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Steam fetch error:", err);
-    return new Response("Failed to fetch Steam library", { status: 500 });
+    console.error("Unexpected error:", err);
+    return new Response(JSON.stringify({ error: "Unexpected error" }), { status: 500 });
   }
 });
