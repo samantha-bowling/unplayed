@@ -10,6 +10,7 @@ import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getRedirectUrl, signInWithProvider as baseSignInWithProvider } from '@/utils/auth/signInWithProvider';
+import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 
 export enum AuthStatus {
   LOADING = 'LOADING',
@@ -136,31 +137,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
-      if (!data)
-        console.warn('⚠️ No user row found in Supabase. Inserting new user...');
-      {
-        const { error: insertError } = await supabase.from('users').upsert({
-          id: user.id,
-          email: user.email,
-          display_name: user.user_metadata?.full_name || user.email,
-          onboarding_complete: false,
-        });
-        if (insertError) throw insertError;
-        const { data: newProfile } = await supabase.from('users').select('*').eq('id', user.id).single();
-        setProfile(newProfile);
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-        return;
+      let { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+
+      if (!data || error?.code === 'PGRST116') {
+        console.warn('[refreshProfile] No profile found. Attempting upsert...');
+        await callUpsertUser();
+        const retry = await supabase.from('users').select('*').eq('id', user.id).single();
+        data = retry.data;
+        error = retry.error;
       }
+
       if (error) throw error;
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-      if (data.steam_id && !data.onboarding_complete) {
-        const { error: rpcError } = await supabase.rpc('mark_onboarding_complete');
-        if (rpcError) {
-          console.error('Failed to mark onboarding complete:', rpcError);
-        }
-      }
     } catch (error: any) {
       toast.error(`Failed to load profile: ${error.message}`);
       setLastError({
