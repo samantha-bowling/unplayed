@@ -138,8 +138,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
       const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
 
-      if (error || !data) {
-        console.warn('[refreshProfile] No user profile found. Assuming new user.');
+    if (error || !data) {
+      if (!silent) {
+        console.info('[refreshProfile] No profile found — user likely unlinked.');
+      }
         setProfile(null);
         setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
         return;
