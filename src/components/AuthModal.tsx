@@ -1,50 +1,87 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+// src/components/AuthModal.tsx
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
+import DiscordIcon from './icons/DiscordIcon';
+import TwitchIcon from './icons/TwitchIcon';
 
-const AuthModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
+interface AuthModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const { signInWithProvider, signInWithEmail } = useAuth();
   const [email, setEmail] = useState('');
-  const [showEmailInput, setShowEmailInput] = useState(false);
 
   const handleEmailSubmit = () => {
     if (email) {
       signInWithEmail(email);
+      onOpenChange(false);
     }
   };
 
-  const redirectTo = window.location.origin;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl">Sign In to Unplayed</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold">
+            Sign In to Unplayed
+          </DialogTitle>
           <DialogDescription className="text-center text-muted-foreground">
-            Choose a provider to continue. You’ll link your Steam account after login.
+            Sign in to get started — you'll link your Steam account next.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3">
-          <Button onClick={() => signInWithProvider('discord', { redirectTo })}>Continue with Discord</Button>
-          <Button onClick={() => signInWithProvider('twitch', { redirectTo })}>Continue with Twitch</Button>
+        <div className="flex flex-col gap-4">
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2"
+            onClick={() => {
+              signInWithProvider('discord', { redirectTo: '/' });
+              onOpenChange(false);
+            }}
+          >
+            <DiscordIcon className="w-5 h-5" /> Continue with Discord
+          </Button>
 
-          {!showEmailInput ? (
-            <Button variant="secondary" onClick={() => setShowEmailInput(true)}>Use Email</Button>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="px-3 py-2 rounded-md border border-gray-700 bg-black text-white"
-              />
-              <Button variant="secondary" onClick={handleEmailSubmit}>Send Magic Link</Button>
-            </div>
-          )}
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2"
+            onClick={() => {
+              signInWithProvider('twitch', { redirectTo: '/' });
+              onOpenChange(false);
+            }}
+          >
+            <TwitchIcon className="w-5 h-5" /> Continue with Twitch
+          </Button>
+
+          <div className="relative">
+            <Input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleEmailSubmit();
+              }}
+            />
+            <Button
+              size="sm"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
+              onClick={handleEmailSubmit}
+            >
+              Go
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
