@@ -1,53 +1,33 @@
-// supabase/functions/upsert-user/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+// src/utils/auth/callUpsertUser.ts
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+export type UpsertUserPayload = {
+  id: string;
+  steam_id: string;
+  steam_name: string;
+  steam_avatar?: string;
+  onboarding_complete?: boolean;
+};
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
-  }
-
-  const body = await req.json();
-  const {
-    id,
-    steam_id,
-    steam_name,
-    steam_avatar,
-    onboarding_complete = true,
-    leaderboard_visibility = "default"
-  } = body;
-
-  if (!id || !steam_id || !steam_name) {
-    return new Response(JSON.stringify({ error: "Missing required fields." }), {
-      status: 400,
+export async function callUpsertUser(payload: UpsertUserPayload) {
+  try {
+    const response = await fetch('/api/upsert-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('🔴 Upsert failed:', result.error);
+      throw new Error(result.error || 'Unknown error while upserting user');
+    }
+
+    return result.user;
+  } catch (err: any) {
+    console.error('❌ callUpsertUser error:', err);
+    throw err;
   }
-
-  const { data, error } = await supabase.from("users").upsert(
-    {
-      id,
-      steam_id,
-      steam_name,
-      steam_avatar,
-      onboarding_complete,
-      leaderboard_visibility,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: "id" }
-  );
-
-  if (error) {
-    console.error("❌ Failed to upsert user:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
-  }
-
-  return new Response(JSON.stringify({ user: data[0] }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-});
+}
