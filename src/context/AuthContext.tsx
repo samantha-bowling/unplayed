@@ -44,6 +44,7 @@ type AuthContextType = {
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshSession: () => Promise<void>;
   clearAuthError: () => void;
   isLoading: boolean;
 };
@@ -60,6 +61,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const clearAuthError = useCallback(() => setLastError(null), []);
+
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) throw error;
+      setSession(data.session);
+      setUser(data.session.user);
+      await refreshProfile();
+    } catch (error: any) {
+      console.error('🔁 Failed to refresh session:', error.message);
+    }
+  };
 
   const signInWithProvider = async (
     provider: 'discord' | 'twitch',
@@ -121,15 +134,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
+      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
       if (error && error.code === 'PGRST116') {
-        // Profile not found — create one
         const { error: insertError } = await supabase.from('users').upsert({
           id: user.id,
           email: user.email,
@@ -137,23 +143,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           onboarding_complete: false,
         });
         if (insertError) throw insertError;
-
-        const { data: newProfile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
+        const { data: newProfile } = await supabase.from('users').select('*').eq('id', user.id).single();
         setProfile(newProfile);
         setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
         return;
       }
-
       if (error) throw error;
-
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-
       if (data.steam_id && !data.onboarding_complete) {
         const { error: rpcError } = await supabase.rpc('mark_onboarding_complete');
         if (rpcError) {
@@ -211,14 +208,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [refreshProfile]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      console.log('🔍 [AuthContext] Session after redirect:', data.session);
-    });
+    const cleanup = setTimeout(() => {
+      if (window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, '', window.location.pathname);
+        console.log('🧹 Cleaned up #access_token from URL');
+      }
+    }, 500);
 
-    if (window.location.hash.includes('access_token')) {
-      window.history.replaceState(null, '', window.location.pathname);
-      console.log('🧹 [AuthContext] Cleaned up access_token from URL');
-    }
+    return () => clearTimeout(cleanup);
   }, []);
 
   return (
@@ -234,6 +231,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signInWithEmail,
         signOut,
         refreshProfile,
+        refreshSession,
         clearAuthError,
         isLoading,
       }}
