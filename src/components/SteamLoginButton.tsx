@@ -1,4 +1,4 @@
-
+// src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 
@@ -15,13 +15,14 @@ const SteamLoginButton = ({
   fullWidth = false,
   centered = true,
 }: SteamLoginButtonProps) => {
-  const { isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleSteamLogin = () => {
+    if (!user) return;
     setButtonLoading(true);
-    const redirectTo = encodeURIComponent(redirectPath);
-    window.location.href = `/api/auth/steam/login?redirectTo=${redirectTo}`;
+    const uid = encodeURIComponent(user.id);
+    window.location.href = `/api/auth/steam/login?uid=${uid}`;
   };
 
   return (
@@ -37,13 +38,13 @@ const SteamLoginButton = ({
           ${buttonLoading || isLoading ? 'opacity-50 cursor-not-allowed' : ''}
           group-hover:shadow-lg group-hover:shadow-unplayed-mint/20
         `}
-        disabled={buttonLoading || isLoading}
-        aria-label="Sign in through Steam"
+        disabled={buttonLoading || isLoading || !user}
+        aria-label="Link your Steam account"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-unplayed-mint/10 to-unplayed-pink/10 opacity-0 group-hover:opacity-100 rounded transition-opacity"></div>
         <img
           src="/lovable-uploads/0b70a4e5-f3cb-44e0-bb0b-bf29ee038fa3.png"
-          alt="Sign in through STEAM (This site not associated with Valve Corp.)"
+          alt="Link your Steam account (not affiliated with Valve Corp.)"
           className={`${fullWidth ? 'w-full' : 'w-auto'} h-auto relative z-10`}
         />
       </button>
