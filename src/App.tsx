@@ -16,11 +16,6 @@ import WelcomeGate from "@/pages/WelcomeGate";
 import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-if (window.location.hash.includes("access_token")) {
-  window.history.replaceState(null, "", window.location.pathname);
-  console.log("🧹 Cleaned up #access_token from URL (App.tsx)");
-}
-
 const App = () => (
   <Routes>
     <Route path="/" element={<Index />} />
