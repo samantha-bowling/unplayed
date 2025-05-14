@@ -6,11 +6,27 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
 const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
+const RETURN_URL = `${FRONTEND_URL}/api/auth/steam/callback`;
+const REALM = FRONTEND_URL;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 serve(async (req) => {
   const url = new URL(req.url);
+
+  if (url.pathname === "/api/auth/steam/login") {
+    const uid = url.searchParams.get("uid");
+    const redirectTo = new URL("https://steamcommunity.com/openid/login");
+
+    redirectTo.searchParams.set("openid.ns", "http://specs.openid.net/auth/2.0");
+    redirectTo.searchParams.set("openid.mode", "checkid_setup");
+    redirectTo.searchParams.set("openid.return_to", `${RETURN_URL}?uid=${uid}`);
+    redirectTo.searchParams.set("openid.realm", REALM);
+    redirectTo.searchParams.set("openid.identity", "http://specs.openid.net/auth/2.0/identifier_select");
+    redirectTo.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
+
+    return Response.redirect(redirectTo.toString(), 302);
+  }
 
   if (url.pathname === "/api/auth/steam/callback") {
     try {
@@ -32,7 +48,6 @@ serve(async (req) => {
         return new Response("Supabase user not found", { status: 404 });
       }
 
-      // Validate Steam ID by checking public profile visibility
       const steamApiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`;
       const steamRes = await fetch(steamApiUrl);
       const steamData = await steamRes.json();
