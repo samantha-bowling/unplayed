@@ -47,6 +47,7 @@ type AuthContextType = {
   refreshSession: () => Promise<void>;
   clearAuthError: () => void;
   isLoading: boolean;
+  isAuthReady: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<any | null>(null);
   const [lastError, setLastError] = useState<AuthError | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   const clearAuthError = useCallback(() => setLastError(null), []);
 
@@ -169,26 +171,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const loadSession = async () => {
-      console.log('🔁 [AuthContext] Starting session load...');
+      setIsLoading(true);
       const { data, error } = await supabase.auth.getSession();
-  
       if (error || !data.session) {
-        console.warn('❌ No session found on load');
         setAuthStatus(AuthStatus.UNAUTHENTICATED);
         setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
         setIsLoading(false);
+        setIsAuthReady(true);
         return;
       }
-  
-      console.log('✅ Session found:', data.session);
       setSession(data.session);
       setUser(data.session.user);
       setAuthStatus(AuthStatus.AUTHENTICATED);
       setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
       await refreshProfile();
       setIsLoading(false);
+      setIsAuthReady(true);
     };
-  
+
     loadSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -238,6 +238,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         refreshSession,
         clearAuthError,
         isLoading,
+        isAuthReady,
       }}
     >
       {children}
