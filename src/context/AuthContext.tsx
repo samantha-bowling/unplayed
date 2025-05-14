@@ -169,14 +169,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const loadSession = async () => {
-      setIsLoading(true);
+      console.log('🔁 [AuthContext] Starting session load...');
       const { data, error } = await supabase.auth.getSession();
+  
       if (error || !data.session) {
+        console.warn('❌ No session found on load');
         setAuthStatus(AuthStatus.UNAUTHENTICATED);
         setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
         setIsLoading(false);
         return;
       }
+  
+      console.log('✅ Session found:', data.session);
       setSession(data.session);
       setUser(data.session.user);
       setAuthStatus(AuthStatus.AUTHENTICATED);
@@ -184,7 +188,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await refreshProfile();
       setIsLoading(false);
     };
-
+  
     loadSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
