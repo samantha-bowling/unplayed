@@ -1,90 +1,51 @@
-
+// supabase/functions/steam-auth/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const STEAM_RETURN_URL = Deno.env.get("STEAM_RETURN_URL")!;
-const FRONTEND_URL = Deno.env.get("FRONTEND_URL")!;
+const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 serve(async (req) => {
-  const { pathname, searchParams } = new URL(req.url);
+  const url = new URL(req.url);
 
-  if (pathname.endsWith("/login")) {
-    const redirectTo = searchParams.get("redirectTo") ?? "/";
-    const returnUrl = `${STEAM_RETURN_URL}?redirectTo=${encodeURIComponent(redirectTo)}`;
+  if (url.pathname === "/api/auth/steam/callback") {
+    try {
+      const searchParams = url.searchParams;
+      const steamId = searchParams.get("steamid");
+      const steamNameRaw = searchParams.get("steamname") || "";
+      const steamAvatar = searchParams.get("steamavatar") || "";
+      const supabaseUserId = searchParams.get("uid");
 
-    const steamLogin = new URL("https://steamcommunity.com/openid/login");
-    steamLogin.searchParams.set("openid.ns", "http://specs.openid.net/auth/2.0");
-    steamLogin.searchParams.set("openid.mode", "checkid_setup");
-    steamLogin.searchParams.set("openid.return_to", returnUrl);
-    steamLogin.searchParams.set("openid.realm", FRONTEND_URL);
-    steamLogin.searchParams.set("openid.identity", "http://specs.openid.net/auth/2.0/identifier_select");
-    steamLogin.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
-
-    return Response.redirect(steamLogin.toString(), 302);
-  }
-
-  if (pathname.endsWith("/callback")) {
-    const params = new URL(req.url).searchParams;
-    const body = new URLSearchParams();
-    for (const [key, value] of params.entries()) {
-      body.append(key, value);
-    }
-    body.set("openid.mode", "check_authentication");
-
-    const verify = await fetch("https://steamcommunity.com/openid/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
-
-    const result = await verify.text();
-    const claimedId = params.get("openid.claimed_id");
-    const steamId = claimedId?.split("/").pop();
-
-    if (!result.includes("is_valid:true") || !steamId) {
-      return new Response("Steam OpenID verification failed", { status: 400 });
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const email = `steam_${steamId}@unplayed.wtf`;
-
-    let userId: string | undefined;
-
-    const createResponse = await supabase.auth.admin.createUser({
-      email,
-      user_metadata: { steam_id: steamId },
-    });
-
-    if (createResponse.error) {
-      if (createResponse.error.message.includes("duplicate key")) {
-        const { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
-        const existingUser = usersList?.users?.find(u => u.email === email);
-        if (!existingUser) {
-          console.error("Could not find existing user after duplicate:", listError);
-          return new Response("User lookup failed", { status: 500 });
-        }
-        userId = existingUser.id;
-      } else {
-        console.error("User creation failed:", createResponse.error);
-        return new Response("User creation failed", { status: 500 });
+      if (!steamId || !steamNameRaw || !supabaseUserId) {
+        return new Response("Missing required query params", { status: 400 });
       }
-    } else {
-      userId = createResponse.data?.id;
+
+      // Validate the user exists in Supabase Auth
+      const { data: authUser, error } = await supabase.auth.admin.getUserById(supabaseUserId);
+      if (error || !authUser) {
+        return new Response("Auth user not found", { status: 404 });
+      }
+
+      // Sanitize the Steam display name (remove problematic characters)
+      const steamName = steamNameRaw.replace(/["'<>\\]/g, "").trim();
+
+      // Redirect to /welcome with encoded params
+      const redirectUrl = new URL(FRONTEND_URL + "/welcome");
+      redirectUrl.searchParams.set("steam_id", steamId);
+      redirectUrl.searchParams.set("steam_name", encodeURIComponent(steamName));
+      if (steamAvatar) {
+        redirectUrl.searchParams.set("steam_avatar", encodeURIComponent(steamAvatar));
+      }
+
+      return Response.redirect(redirectUrl.toString(), 302);
+    } catch (e) {
+      console.error("Steam callback error:", e);
+      return new Response("Steam callback processing failed", { status: 500 });
     }
-
-    const sessionResponse = await supabase.auth.admin.createSession({ user_id: userId! });
-
-    if (sessionResponse.error || !sessionResponse.data?.access_token) {
-      console.error("Session creation failed:", sessionResponse.error);
-      return new Response("Supabase sign-in failed", { status: 401 });
-    }
-
-    const redirectTo = params.get("redirectTo") ?? "/";
-    const redirectUrl = `${FRONTEND_URL}${redirectTo}?access_token=${sessionResponse.data.access_token}&refresh_token=${sessionResponse.data.refresh_token}&steam_id=${steamId}&auth_success=true`;
-    return Response.redirect(redirectUrl, 302);
   }
 
-  return new Response("Not found", { status: 404 });
+  return new Response("Not Found", { status: 404 });
 });
