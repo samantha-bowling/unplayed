@@ -17,7 +17,6 @@ export default function AuthCallbackHandler() {
           description: 'You have been successfully logged in.',
         })
 
-        // Check if this is a first-time user with no profile completed
         const isNewUser = !profile || !profile.username || !profile.first_login_completed
         navigate(isNewUser ? '/welcome' : '/dashboard')
       })
@@ -25,7 +24,8 @@ export default function AuthCallbackHandler() {
         console.error('Auth callback failed:', err)
         toast({
           title: 'Login failed',
-          description: 'There was an issue signing you in. Please try again.',
+          description:
+            err?.message || 'There was an issue signing you in. Please try again.',
           variant: 'destructive',
         })
         navigate('/auth')
