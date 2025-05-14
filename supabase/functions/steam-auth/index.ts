@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
+const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -13,32 +14,39 @@ serve(async (req) => {
 
   if (url.pathname === "/api/auth/steam/callback") {
     try {
-      const searchParams = url.searchParams;
-      const steamId = searchParams.get("steamid");
-      const steamNameRaw = searchParams.get("steamname") || "";
-      const steamAvatar = searchParams.get("steamavatar") || "";
-      const supabaseUserId = searchParams.get("uid");
+      const claimedId = url.searchParams.get("openid.claimed_id") || "";
+      const match = claimedId.match(/\/(\d{17,})$/);
+      const steamId = match?.[1];
 
-      if (!steamId || !steamNameRaw || !supabaseUserId) {
-        return new Response("Missing required query params", { status: 400 });
+      if (!steamId) {
+        return new Response("Missing or invalid Steam ID", { status: 400 });
       }
 
-      // Validate the user exists in Supabase Auth
-      const { data: authUser, error } = await supabase.auth.admin.getUserById(supabaseUserId);
+      const uid = url.searchParams.get("uid");
+      if (!uid) {
+        return new Response("Missing Supabase user ID", { status: 400 });
+      }
+
+      const { data: authUser, error } = await supabase.auth.admin.getUserById(uid);
       if (error || !authUser) {
-        return new Response("Auth user not found", { status: 404 });
+        return new Response("Supabase user not found", { status: 404 });
       }
 
-      // Sanitize the Steam display name (remove problematic characters)
-      const steamName = steamNameRaw.replace(/["'<>\\]/g, "").trim();
+      // Validate Steam ID by checking public profile visibility
+      const steamApiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`;
+      const steamRes = await fetch(steamApiUrl);
+      const steamData = await steamRes.json();
+      const player = steamData?.response?.players?.[0];
 
-      // Redirect to /welcome with encoded params
-      const redirectUrl = new URL(FRONTEND_URL + "/welcome");
+      if (!player || player.communityvisibilitystate !== 3) {
+        return new Response("Steam profile not public or not found", { status: 403 });
+      }
+
+      const redirectUrl = new URL(`${FRONTEND_URL}/welcome`);
       redirectUrl.searchParams.set("steam_id", steamId);
-      redirectUrl.searchParams.set("steam_name", encodeURIComponent(steamName));
-      if (steamAvatar) {
-        redirectUrl.searchParams.set("steam_avatar", encodeURIComponent(steamAvatar));
-      }
+      redirectUrl.searchParams.set("steam_name", encodeURIComponent(player.personaname || ""));
+      redirectUrl.searchParams.set("steam_avatar", encodeURIComponent(player.avatarfull || ""));
+      redirectUrl.searchParams.set("uid", uid);
 
       return Response.redirect(redirectUrl.toString(), 302);
     } catch (e) {
