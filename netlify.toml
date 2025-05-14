@@ -1,51 +1,51 @@
+# Ensure API redirects are handled before catch-all rewrites
+[[redirects]]
+from = "/api/auth/steam/*"
+to = "https://supabase.unplayed.wtf/functions/v1/steam-auth/:splat"
+status = 200
+force = true
+headers = { "X-Steam-Auth-Source" = "netlify" }
+
+[[redirects]]
+from = "/api/webhooks/stripe"
+to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/handle-stripe-donation"
+status = 200
+force = true
 
 [build]
-  command = "npm run build"
-  publish = "dist"
-
-[[redirects]]
-  from = "/api/auth/steam/*"
-  to = "https://supabase.unplayed.wtf/functions/v1/steam-auth/:splat"
-  status = 200
-  force = true
-  headers = { "X-Steam-Auth-Source" = "netlify" }
-
-[[redirects]]
-  from = "/api/webhooks/stripe"
-  to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/handle-stripe-donation"
-  status = 200
-  force = true
+command = "npm run build"
+publish = "dist"
 
 # Auth-related routes need to be handled explicitly
 [[redirects]]
-  from = "/auth"
-  to = "/index.html"
-  status = 200
-  force = false
+from = "/auth"
+to = "/index.html"
+status = 200
+force = false
 
 [[redirects]]
-  from = "/login-error"
-  to = "/index.html"
-  status = 200
-  force = false
+from = "/login-error"
+to = "/index.html"
+status = 200
+force = false
 
 # Admin routes
 [[redirects]]
-  from = "/admin/*"
-  to = "/index.html"
-  status = 200
-  force = false
+from = "/admin/*"
+to = "/index.html"
+status = 200
+force = false
 
 # Auth route fallback - handle post-authentication redirects  
 [[redirects]]
-  from = "/auth/*"
-  to = "/index.html"
-  status = 200
-  force = false
+from = "/auth/*"
+to = "/index.html"
+status = 200
+force = false
 
-# Handle all routes by serving the main app
+# Catch-all fallback for all remaining routes
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+from = "/*"
+to = "/index.html"
+status = 200
+force = false
