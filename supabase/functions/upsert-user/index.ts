@@ -1,64 +1,44 @@
 // supabase/functions/upsert-user/index.ts
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-);
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "https://unplayed.wtf",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+serve(async (req) => {
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
-  try {
-    const { user } = await req.json();
+  const body = await req.json();
+  const { id, steam_id, steam_name, steam_avatar, onboarding_complete } = body;
 
-    if (!user || !user.id) {
-      return new Response(JSON.stringify({ error: "Invalid user data" }), {
-        status: 400,
-        headers: {
-          "Access-Control-Allow-Origin": "https://unplayed.wtf",
-        },
-      });
-    }
-
-    const { error } = await supabase
-      .from("users")
-      .upsert({ id: user.id, ...user });
-
-    if (error) {
-      console.error("Upsert error:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: {
-          "Access-Control-Allow-Origin": "https://unplayed.wtf",
-        },
-      });
-    }
-
-    return new Response(JSON.stringify({ message: "User upserted successfully" }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "https://unplayed.wtf",
-      },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Invalid request format" }), {
+  if (!id || !steam_id || !steam_name) {
+    return new Response(JSON.stringify({ error: "Missing required fields." }), {
       status: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "https://unplayed.wtf",
-      },
     });
   }
+
+  const { data, error } = await supabase.from("users").upsert(
+    {
+      id,
+      steam_id,
+      steam_name,
+      steam_avatar,
+      onboarding_complete: onboarding_complete ?? true,
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) {
+    console.error("❌ Failed to upsert user:", error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+
+  return new Response(JSON.stringify({ user: data[0] }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 });
