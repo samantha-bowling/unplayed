@@ -1,26 +1,53 @@
-// src/utils/auth/callUpsertUser.ts
+// supabase/functions/upsert-user/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-export const callUpsertUser = async (user: any) => {
-  try {
-    const response = await fetch('https://supabase.unplayed.wtf/functions/v1/upsert-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ user }),
-    });
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('[callUpsertUser] Upsert failed:', error);
-      throw new Error(error.message || 'Failed to upsert user');
-    }
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const data = await response.json();
-    console.log('[callUpsertUser] Upsert successful:', data);
-    return data;
-  } catch (err: any) {
-    console.error('[callUpsertUser] Unexpected error:', err);
-    throw err;
+serve(async (req) => {
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
-};
+
+  const body = await req.json();
+  const {
+    id,
+    steam_id,
+    steam_name,
+    steam_avatar,
+    onboarding_complete = true,
+    leaderboard_visibility = "default"
+  } = body;
+
+  if (!id || !steam_id || !steam_name) {
+    return new Response(JSON.stringify({ error: "Missing required fields." }), {
+      status: 400,
+    });
+  }
+
+  const { data, error } = await supabase.from("users").upsert(
+    {
+      id,
+      steam_id,
+      steam_name,
+      steam_avatar,
+      onboarding_complete,
+      leaderboard_visibility,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) {
+    console.error("❌ Failed to upsert user:", error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+
+  return new Response(JSON.stringify({ user: data[0] }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+});
