@@ -1,235 +1,135 @@
-
-import React, {
+// src/context/AuthContext.tsx
+import {
   createContext,
-  useState,
-  useEffect,
-  useContext,
   useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
-import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getRedirectUrl, signInWithProvider as baseSignInWithProvider } from '@/utils/auth/signInWithProvider';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Session, User } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 
-export enum AuthStatus {
-  LOADING = 'LOADING',
-  AUTHENTICATED = 'AUTHENTICATED',
-  UNAUTHENTICATED = 'UNAUTHENTICATED',
-}
+const supabase = createClientComponentClient<Database>();
+
+export type Profile = Database['public']['Tables']['users']['Row'];
 
 export enum EnhancedAuthStatus {
-  INITIAL = 'INITIAL',
-  SESSION_LOADING = 'SESSION_LOADING',
-  SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
-  SESSION_FOUND = 'SESSION_FOUND',
-  PROFILE_LOADING = 'PROFILE_LOADING',
-  PROFILE_LOADED = 'PROFILE_LOADED',
-  PROFILE_ERROR = 'PROFILE_ERROR',
-  AUTH_ERROR = 'AUTH_ERROR',
-  LIBRARY_IMPORTING = 'LIBRARY_IMPORTING',
+  UNAUTHENTICATED = 'unauthenticated',
+  LOADING = 'loading',
+  AUTHENTICATED = 'authenticated',
+  LIBRARY_IMPORTING = 'importing',
 }
 
-export type AuthError = {
-  code: string;
-  message: string;
-  timestamp: number;
-  details?: any;
-};
-
-type AuthContextType = {
-  authStatus: AuthStatus;
-  enhancedStatus: EnhancedAuthStatus;
-  session: Session | null;
+interface AuthContextType {
   user: User | null;
-  profile: any | null;
-  lastError: AuthError | null;
-  signInWithProvider: (provider: 'discord' | 'twitch', options?: { redirectTo?: string }) => Promise<void>;
-  signInWithEmail: (email: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-  clearAuthError: () => void;
+  session: Session | null;
+  profile: Profile | null;
+  enhancedStatus: EnhancedAuthStatus;
   isLoading: boolean;
-  isAuthReady: boolean;
-};
+  signInWithProvider: (provider: string, opts?: { redirectTo?: string }) => void;
+  signInWithEmail: (email: string) => void;
+  signOut: () => void;
+  refreshSession: () => Promise<void>;
+  refreshProfile: (silent?: boolean) => Promise<Profile | null>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authStatus, setAuthStatus] = useState(AuthStatus.LOADING);
-  const [enhancedStatus, setEnhancedStatus] = useState(EnhancedAuthStatus.INITIAL);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
-  const [lastError, setLastError] = useState<AuthError | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [enhancedStatus, setEnhancedStatus] = useState<EnhancedAuthStatus>(EnhancedAuthStatus.LOADING);
+  const navigate = useNavigate();
 
-  const clearAuthError = useCallback(() => setLastError(null), []);
+  const refreshSession = useCallback(async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) console.warn('[refreshSession] Failed to get session:', error);
+    setSession(data.session);
+    setUser(data.session?.user ?? null);
+  }, []);
 
-  const refreshSession = async () => {
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) throw error;
-      setSession(data.session);
-      setUser(data.session.user);
-      await refreshProfile();
-    } catch (error: any) {
-      console.error('🔁 Failed to refresh session:', error.message);
-    }
-  };
+  const refreshProfile = useCallback(async (silent = false): Promise<Profile | null> => {
+    if (!user) return null;
 
-  const signInWithProvider = async (
-    provider: 'discord' | 'twitch',
-    options?: { redirectTo?: string }
-  ) => {
-    try {
-      setIsLoading(true);
-      await baseSignInWithProvider(provider, options?.redirectTo);
-    } catch (error: any) {
-      toast.error(`Login with ${provider} failed: ${error.message}`);
-      setLastError({
-        code: 'oauth_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signInWithEmail = async (email: string) => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error(`Magic link login failed: ${error.message}`);
-      setLastError({
-        code: 'email_login_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setAuthStatus(AuthStatus.UNAUTHENTICATED);
-      setSession(null);
-      setUser(null);
-      setProfile(null);
-    } catch (error: any) {
-      toast.error(`Sign out failed: ${error.message}`);
-      setLastError({
-        code: 'sign_out_failed',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-    }
-  };
-
-  const refreshProfile = useCallback(async () => {
-    if (!user) return;
-    try {
-      setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .limit(1)
+      .single();
 
     if (error || !data) {
       if (!silent) {
         console.info('[refreshProfile] No profile found — user likely unlinked.');
       }
-        setProfile(null);
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-        return;
-      }
-
-      setProfile(data);
-      setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-    } catch (error: any) {
-      toast.error(`Failed to load profile: ${error.message}`);
-      setLastError({
-        code: 'profile_refresh_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-      setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+      setProfile(null);
+      return null;
     }
+
+    setProfile(data);
+    return data;
   }, [user]);
 
-  useEffect(() => {
-    const loadSession = async () => {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        setAuthStatus(AuthStatus.UNAUTHENTICATED);
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
-        setIsLoading(false);
-        setIsAuthReady(true);
-        return;
-      }
-      setSession(data.session);
-      setUser(data.session.user);
-      setAuthStatus(AuthStatus.AUTHENTICATED);
-      setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-      await refreshProfile();
-      setIsLoading(false);
-      setIsAuthReady(true);
-    };
+  const signInWithProvider = async (provider: string, opts?: { redirectTo?: string }) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: opts?.redirectTo ?? `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      toast.error('Failed to sign in');
+      console.error('OAuth Sign In Error:', error.message);
+    }
+  };
 
-    loadSession();
+  const signInWithEmail = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      toast.error('Failed to send magic link');
+      console.error('Magic Link Error:', error.message);
+    } else {
+      toast.success('Magic link sent! Check your inbox.');
+    }
+  };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session) => {
-        if (['INITIAL_SESSION', 'SIGNED_IN'].includes(event)) {
-          setAuthStatus(AuthStatus.AUTHENTICATED);
-          setSession(session);
-          setUser(session?.user || null);
-          await refreshProfile();
-        }
-        if (event === 'SIGNED_OUT') {
-          setAuthStatus(AuthStatus.UNAUTHENTICATED);
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [refreshProfile]);
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error('Failed to sign out');
+      console.error('Sign Out Error:', error.message);
+    } else {
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setEnhancedStatus(EnhancedAuthStatus.UNAUTHENTICATED);
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
-    const cleanup = setTimeout(() => {
-      if (window.location.hash.includes('access_token')) {
-        window.history.replaceState(null, '', window.location.pathname);
-        console.log('🧹 Cleaned up #access_token from URL');
-      }
-    }, 500);
+    refreshSession();
+  }, [refreshSession]);
 
-    return () => clearTimeout(cleanup);
-  }, []);
+  const isLoading = enhancedStatus === EnhancedAuthStatus.LOADING;
 
   return (
     <AuthContext.Provider
       value={{
-        authStatus,
-        enhancedStatus,
-        session,
         user,
+        session,
         profile,
-        lastError,
+        enhancedStatus,
+        isLoading,
         signInWithProvider,
         signInWithEmail,
         signOut,
-        refreshProfile,
         refreshSession,
-        clearAuthError,
-        isLoading,
-        isAuthReady,
+        refreshProfile,
       }}
     >
       {children}
@@ -237,8 +137,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };
