@@ -121,10 +121,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Profile not found — create one
+        const { error: insertError } = await supabase.from('users').upsert({
+          id: user.id,
+          email: user.email,
+          display_name: user.user_metadata?.full_name || user.email,
+          onboarding_complete: false,
+        });
+        if (insertError) throw insertError;
+
+        const { data: newProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        setProfile(newProfile);
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+        return;
+      }
+
       if (error) throw error;
+
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+
       if (data.steam_id && !data.onboarding_complete) {
         const { error: rpcError } = await supabase.rpc('mark_onboarding_complete');
         if (rpcError) {
@@ -181,7 +210,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [refreshProfile]);
 
-  // Debug + Cleanup after redirect
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       console.log('🔍 [AuthContext] Session after redirect:', data.session);
