@@ -8,11 +8,14 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 
-const supabase = createClientComponentClient<Database>();
+const supabase = createBrowserClient<Database>(
+  import.meta.env.VITE_SUPABASE_URL!,
+  import.meta.env.VITE_SUPABASE_ANON_KEY!
+);
 
 export type Profile = Database['public']['Tables']['users']['Row'];
 
