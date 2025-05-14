@@ -9,12 +9,26 @@ const supabase = createClient(
 );
 
 serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "https://unplayed.wtf",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  }
+
   try {
     const { user } = await req.json();
 
     if (!user || !user.id) {
       return new Response(JSON.stringify({ error: "Invalid user data" }), {
         status: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "https://unplayed.wtf",
+        },
       });
     }
 
@@ -26,6 +40,9 @@ serve(async (req: Request) => {
       console.error("Upsert error:", error);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "https://unplayed.wtf",
+        },
       });
     }
 
@@ -33,12 +50,15 @@ serve(async (req: Request) => {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": "https://unplayed.wtf",
       },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: "Invalid request format" }), {
       status: 400,
+      headers: {
+        "Access-Control-Allow-Origin": "https://unplayed.wtf",
+      },
     });
   }
 });
