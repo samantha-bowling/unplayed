@@ -1,4 +1,4 @@
-
+// src/pages/AuthCallbackHandler.tsx
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 const AuthCallbackHandler = () => {
   const {
     user,
-    profile,
     refreshSession,
     refreshProfile,
   } = useAuth();
@@ -16,9 +15,9 @@ const AuthCallbackHandler = () => {
   useEffect(() => {
     const processAuth = async () => {
       await refreshSession();
-      await refreshProfile();
+      const updatedProfile = await refreshProfile();
 
-      if (!profile) {
+      if (!updatedProfile) {
         console.info('[AuthCallbackHandler] No user profile found — redirecting to welcome flow.');
         navigate('/welcome');
         return;
@@ -28,7 +27,7 @@ const AuthCallbackHandler = () => {
     };
 
     processAuth();
-  }, [refreshSession, refreshProfile, profile, navigate]);
+  }, [refreshSession, refreshProfile, navigate]);
 
   return null;
 };
