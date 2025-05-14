@@ -30,13 +30,18 @@ export default function AuthCallbackHandler() {
         navigate(isNewUser ? '/welcome' : '/dashboard')
       })
       .catch((err) => {
-        console.error('Auth callback failed:', err)
+        console.error('Auth callback failed:', err);
+        const message =
+          typeof err === 'string'
+            ? err
+            : err?.message || 'There was an issue signing you in. Please try again.'
+
         toast({
           title: 'Login failed',
-          description:
-            err?.message || 'There was an issue signing you in. Please try again.',
+          description: message,
           variant: 'destructive',
         })
+
         navigate('/auth')
       })
   }, [refreshSession, refreshProfile, navigate, profile])
