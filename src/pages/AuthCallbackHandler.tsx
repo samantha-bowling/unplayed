@@ -14,20 +14,27 @@ const AuthCallbackHandler = () => {
 
   useEffect(() => {
     const processAuth = async () => {
-      await refreshSession();
-      const updatedProfile = await refreshProfile();
+      try {
+        await refreshSession();
+        const updatedProfile = await refreshProfile();
 
-      if (!updatedProfile) {
-        console.info('[AuthCallbackHandler] No user profile found — redirecting to welcome flow.');
-        navigate('/welcome');
-        return;
+        if (user && !updatedProfile) {
+          console.info('[AuthCallbackHandler] New user detected — redirecting to /welcome.');
+          navigate('/welcome');
+        } else if (user && updatedProfile) {
+          navigate('/library');
+        } else {
+          console.warn('[AuthCallbackHandler] No authenticated user found — redirecting to /auth.');
+          navigate('/auth');
+        }
+      } catch (err) {
+        console.error('[AuthCallbackHandler] Error during auth processing:', err);
+        navigate('/auth');
       }
-
-      navigate('/library');
     };
 
     processAuth();
-  }, [refreshSession, refreshProfile, navigate]);
+  }, [refreshSession, refreshProfile, navigate, user]);
 
   return null;
 };
