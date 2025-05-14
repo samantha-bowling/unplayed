@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { toast } from '@/components/ui/use-toast'
 
 export default function AuthCallbackHandler() {
-  const { refreshSession, isLoading } = useAuth()
+  const { refreshSession, profile, isLoading } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -16,7 +16,10 @@ export default function AuthCallbackHandler() {
           title: 'Welcome back!',
           description: 'You have been successfully logged in.',
         })
-        navigate('/dashboard')
+
+        // Check if this is a first-time user with no profile completed
+        const isNewUser = !profile || !profile.username || !profile.first_login_completed
+        navigate(isNewUser ? '/welcome' : '/dashboard')
       })
       .catch((err) => {
         console.error('Auth callback failed:', err)
@@ -27,7 +30,7 @@ export default function AuthCallbackHandler() {
         })
         navigate('/auth')
       })
-  }, [refreshSession, navigate])
+  }, [refreshSession, navigate, profile])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center">
