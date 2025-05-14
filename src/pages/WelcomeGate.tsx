@@ -1,24 +1,55 @@
 // src/pages/WelcomeGate.tsx
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
 import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
+import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 
 const WelcomeGate = () => {
   const {
     user,
     profile,
     enhancedStatus,
+    refreshProfile,
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [hasUpserted, setHasUpserted] = useState(false);
 
-  // ✅ Skip onboarding screen if already complete
+  // ✅ Redirect if onboarding already completed
   useEffect(() => {
     if (profile?.onboarding_complete) {
-      navigate('/');
+      navigate('/library');
     }
   }, [profile?.onboarding_complete, navigate]);
+
+  // ✅ Handle redirect back from Steam login with metadata
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const steam_id = params.get('steam_id');
+    const steam_name = params.get('steam_name');
+    const steam_avatar = params.get('steam_avatar');
+    const uid = params.get('uid');
+
+    if (user && steam_id && steam_name && uid && !hasUpserted) {
+      callUpsertUser({
+        id: uid,
+        steam_id,
+        steam_name: decodeURIComponent(steam_name),
+        steam_avatar: steam_avatar ? decodeURIComponent(steam_avatar) : undefined,
+        onboarding_complete: true,
+      })
+        .then(() => {
+          setHasUpserted(true);
+          return refreshProfile();
+        })
+        .then(() => navigate('/library'))
+        .catch((err) => {
+          console.error('Steam onboarding failed:', err);
+        });
+    }
+  }, [user, location.search, hasUpserted, refreshProfile, navigate]);
 
   if (!user) return null;
 
