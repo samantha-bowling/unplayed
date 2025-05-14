@@ -8,6 +8,8 @@ import React, {
 } from 'react';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { getRedirectUrl, signInWithProvider as baseSignInWithProvider } from '@/utils/auth/signInWithProvider';
 
 export enum AuthStatus {
   LOADING = 'LOADING',
@@ -82,14 +84,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: options?.redirectTo || window.location.origin,
-        },
-      });
-      if (error) throw error;
+      await baseSignInWithProvider(provider, options?.redirectTo);
     } catch (error: any) {
+      toast.error(`Login with ${provider} failed: ${error.message}`);
       setLastError({
         code: 'oauth_error',
         message: error.message,
@@ -106,6 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOtp({ email });
       if (error) throw error;
     } catch (error: any) {
+      toast.error(`Magic link login failed: ${error.message}`);
       setLastError({
         code: 'email_login_error',
         message: error.message,
@@ -124,6 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setProfile(null);
     } catch (error: any) {
+      toast.error(`Sign out failed: ${error.message}`);
       setLastError({
         code: 'sign_out_failed',
         message: error.message,
@@ -160,6 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     } catch (error: any) {
+      toast.error(`Failed to load profile: ${error.message}`);
       setLastError({
         code: 'profile_refresh_error',
         message: error.message,
