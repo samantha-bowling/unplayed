@@ -137,7 +137,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
       const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
-      if (error && error.code === 'PGRST116') {
+      if (!data)
+        console.warn('⚠️ No user row found in Supabase. Inserting new user...');
+      {
         const { error: insertError } = await supabase.from('users').upsert({
           id: user.id,
           email: user.email,
