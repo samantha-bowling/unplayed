@@ -1,66 +1,24 @@
-
+// src/pages/WelcomeGate.tsx
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
 import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
-import { callUpsertUser } from '@/utils/auth/callUpsertUser';
-import { toast } from 'sonner';
 
 const WelcomeGate = () => {
   const {
     user,
     profile,
     enhancedStatus,
-    isLoading,
-    refreshProfile,
   } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // ✅ Skip onboarding if it's already complete
+  // ✅ Skip onboarding screen if already complete
   useEffect(() => {
     if (profile?.onboarding_complete) {
       navigate('/');
     }
   }, [profile?.onboarding_complete, navigate]);
-
-  // ✅ Process Steam callback params only once
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const steamId = params.get('steam_id');
-    const steamName = params.get('steam_name');
-    const steamAvatar = params.get('steam_avatar');
-    const uid = params.get('uid');
-
-    const alreadyLinked = profile?.steam_id || profile?.onboarding_complete;
-    const isImporting = enhancedStatus === EnhancedAuthStatus.LIBRARY_IMPORTING;
-
-    if (!user || !steamId || !steamName || alreadyLinked || isImporting) return;
-
-    const handleUpsert = async () => {
-      try {
-        await callUpsertUser({
-          id: user.id,
-          steam_id: steamId,
-          steam_name: decodeURIComponent(steamName),
-          steam_avatar: steamAvatar ? decodeURIComponent(steamAvatar) : undefined,
-          onboarding_complete: true,
-        });
-        await refreshProfile();
-
-        // Clean the URL
-        window.history.replaceState({}, document.title, location.pathname);
-        navigate('/library');
-      } catch (err) {
-        console.error('Steam upsert failed:', err);
-        toast.error('Failed to complete Steam linking. Please try again.');
-        navigate('/auth');
-      }
-    };
-
-    handleUpsert();
-  }, [user, profile, enhancedStatus, location.search, refreshProfile, navigate]);
 
   if (!user) return null;
 
