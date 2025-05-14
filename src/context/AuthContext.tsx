@@ -26,6 +26,7 @@ export enum EnhancedAuthStatus {
   PROFILE_LOADED = 'PROFILE_LOADED',
   PROFILE_ERROR = 'PROFILE_ERROR',
   AUTH_ERROR = 'AUTH_ERROR',
+  LIBRARY_IMPORTING = 'LIBRARY_IMPORTING',
 }
 
 export type AuthError = {
