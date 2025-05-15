@@ -1,4 +1,3 @@
-
 // src/pages/AuthCallbackHandler.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -9,10 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 const AuthCallbackHandler = () => {
   const {
-    user,
     refreshSession,
     refreshProfile,
-    lastError,
   } = useAuth();
 
   const navigate = useNavigate();
@@ -26,47 +23,36 @@ const AuthCallbackHandler = () => {
       try {
         setProcessingStep('checking_hash');
         console.log('[AuthCallback] Starting auth processing...');
-        
-        // Check if we're on an auth hash URL
-        const hasAuthHash = window.location.hash && 
-          (window.location.hash.includes('access_token') || 
+
+        const hasAuthHash = window.location.hash &&
+          (window.location.hash.includes('access_token') ||
            window.location.hash.includes('error'));
-        
+
         if (hasAuthHash) {
           console.log('[AuthCallback] Auth hash detected in URL');
         }
-        
-        // First ensure we have a session regardless of whether user is populated yet
+
         setProcessingStep('refreshing_session');
         const session = await refreshSession();
-        
-        if (!session) { // Fixed: check session object, not truthiness of void
+
+        if (!session) {
           console.warn('[AuthCallback] No session found after refresh');
           const queryParams = new URLSearchParams(window.location.search);
           const errorCode = queryParams.get('error_code');
-          
+
           if (errorCode) {
-            console.error(`[AuthCallback] Error code found in URL: ${errorCode}`);
+            console.error(`[AuthCallback] Error code in URL: ${errorCode}`);
             setProcessingError(`Authentication failed: ${queryParams.get('error_description') || 'Unknown error'}`);
-            // If there's an error code in the URL, redirect to login error page
             navigate(`/login-error?${queryParams.toString()}`);
             return;
           }
-          
-          // No session and no error in URL - try manual session extraction
+
           try {
             setProcessingStep('manual_session_extract');
-            // Use Supabase to explicitly handle the redirect
-            console.log('[AuthCallback] Attempting to extract session from URL...');
-            const { data, error } = await supabase.auth.getSession();
-            
-            if (error) {
-              throw new Error(`Session extraction failed: ${error.message}`);
-            }
-            
-            if (!data.session) {
-              navigate('/auth');
-              return;
+            console.log('[AuthCallback] Attempting manual session extraction...');
+            const { data, error } = await supabase.auth.getSessionFromUrl();
+            if (error || !data.session) {
+              throw new Error(error?.message || 'No session found');
             }
           } catch (err: any) {
             console.error('[AuthCallback] Manual session extraction failed:', err);
@@ -75,13 +61,11 @@ const AuthCallbackHandler = () => {
             return;
           }
         }
-        
-        // Now we have a session, let's get the profile
+
         setProcessingStep('fetching_profile');
-        console.log('[AuthCallback] Successfully got session, fetching profile...');
+        console.log('[AuthCallback] Session confirmed. Fetching profile...');
         const profileData = await refreshProfile();
-        
-        // Determine where to navigate based on onboarding status
+
         if (profileData?.onboarding_complete) {
           console.log('[AuthCallback] Onboarding complete, navigating to library');
           navigate('/library');
@@ -90,7 +74,7 @@ const AuthCallbackHandler = () => {
           navigate('/welcome');
         }
       } catch (err: any) {
-        console.error('[AuthCallbackHandler] Error during auth processing:', err);
+        console.error('[AuthCallbackHandler] Fatal auth error:', err);
         setProcessingError(`Authentication failed: ${err.message}`);
         navigate('/auth');
       } finally {
@@ -98,7 +82,6 @@ const AuthCallbackHandler = () => {
       }
     };
 
-    // Start the auth processing immediately without waiting for user
     processAuth();
   }, [refreshSession, refreshProfile, navigate]);
 
