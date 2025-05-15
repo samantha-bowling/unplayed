@@ -1,5 +1,6 @@
 
-import AuthModal from "@/components/AuthModal";
+import { AuthModal } from '@/components/AuthModal';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
@@ -23,6 +24,7 @@ import SteamLoader from "@/components/SteamLoader";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const isMounted = useIsMounted();
   const { user, isAuthBootComplete } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isNewSteamUser, setIsNewSteamUser] = useState(false);
@@ -206,7 +208,9 @@ const Index = () => {
         )}
 
         <Footer />
-        <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+        {isMounted && (
+          <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+        )}
       </div>
     </FullScreenModeWrapper>
   );
