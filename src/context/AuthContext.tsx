@@ -1,4 +1,4 @@
-
+// src/context/AuthContext.tsx
 import React, {
   createContext,
   useState,
@@ -51,6 +51,7 @@ type AuthContextType = {
   clearAuthError: () => void;
   isLoading: boolean;
   isAuthReady: boolean;
+  isAuthBootComplete: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [lastError, setLastError] = useState<AuthError | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthBootComplete, setIsAuthBootComplete] = useState(false);
 
   const clearAuthError = useCallback(() => setLastError(null), []);
 
@@ -138,10 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
       const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
 
-    if (error || !data) {
-      if (!silent) {
-        console.info('[refreshProfile] No profile found — user likely unlinked.');
-      }
+      if (error || !data) {
         setProfile(null);
         setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
         return;
@@ -169,8 +168,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
         setIsLoading(false);
         setIsAuthReady(true);
+        setIsAuthBootComplete(true);
         return;
       }
+
       setSession(data.session);
       setUser(data.session.user);
       setAuthStatus(AuthStatus.AUTHENTICATED);
@@ -178,6 +179,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await refreshProfile();
       setIsLoading(false);
       setIsAuthReady(true);
+      setIsAuthBootComplete(true);
     };
 
     loadSession();
@@ -230,6 +232,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         clearAuthError,
         isLoading,
         isAuthReady,
+        isAuthBootComplete,
       }}
     >
       {children}
