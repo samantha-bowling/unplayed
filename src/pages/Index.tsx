@@ -1,5 +1,5 @@
 
-import { AuthModal } from '@/components/AuthModal';
+import AuthModal from '@/components/AuthModal';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import Header from "../components/Header";
 import DustScoreMeter from "../components/DustScoreMeter";
