@@ -1,4 +1,3 @@
-
 // src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
@@ -8,7 +7,7 @@ interface SteamLoginButtonProps {
   redirectPath?: string;
   fullWidth?: boolean;
   centered?: boolean;
-  disabled?: boolean; // Add disabled prop
+  disabled?: boolean;
 }
 
 const SteamLoginButton = ({
@@ -16,7 +15,7 @@ const SteamLoginButton = ({
   redirectPath = '/',
   fullWidth = false,
   centered = true,
-  disabled = false, // Default value
+  disabled = false,
 }: SteamLoginButtonProps) => {
   const { user, isLoading } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
@@ -25,7 +24,9 @@ const SteamLoginButton = ({
     if (!user) return;
     setButtonLoading(true);
     const uid = encodeURIComponent(user.id);
-    window.location.href = `/api/auth/steam/login?uid=${uid}`;
+    const redirectTo = `${window.location.origin}${redirectPath}`;
+    const steamRedirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
+    window.location.href = steamRedirectUrl;
   };
 
   return (
