@@ -17,7 +17,8 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
+      detectSessionInUrl: true, // This is critical for OAuth callbacks
+      debug: process.env.NODE_ENV === 'development', // Enable debug in development
     }
   }
 );

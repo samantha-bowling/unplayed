@@ -1,3 +1,4 @@
+
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -27,6 +28,8 @@ export enum EnhancedAuthStatus {
   PROFILE_ERROR = 'PROFILE_ERROR',
   AUTH_ERROR = 'AUTH_ERROR',
   LIBRARY_IMPORTING = 'LIBRARY_IMPORTING',
+  TOKEN_REFRESH_ERROR = 'TOKEN_REFRESH_ERROR',
+  LIBRARY_ERROR = 'LIBRARY_ERROR',
 }
 
 export type AuthError = {
@@ -46,7 +49,7 @@ type AuthContextType = {
   signInWithProvider: (provider: 'discord' | 'twitch', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<any>; // Return the profile for better chaining
   refreshSession: () => Promise<void>;
   clearAuthError: () => void;
   isLoading: boolean;
@@ -71,13 +74,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshSession = async () => {
     try {
+      console.log('🔄 Refreshing session...');
       const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) throw error;
+      if (error) {
+        console.error('🔄 Failed to refresh session:', error.message);
+        setLastError({
+          code: 'session_refresh_error',
+          message: error.message,
+          timestamp: Date.now(),
+        });
+        throw error;
+      }
+      
+      if (!data.session) {
+        console.warn('🔄 No session found during refresh');
+        return;
+      }
+      
+      console.log('🔄 Session refreshed successfully');
       setSession(data.session);
       setUser(data.session.user);
-      await refreshProfile();
+      return data.session;
     } catch (error: any) {
-      console.error('🔁 Failed to refresh session:', error.message);
+      console.error('🔄 Failed to refresh session:', error.message);
+      setLastError({
+        code: 'session_refresh_error',
+        message: error.message,
+        timestamp: Date.now(),
+      });
     }
   };
 
@@ -135,63 +159,117 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const refreshProfile = useCallback(async () => {
-    if (!user) return;
+    if (!user) return null;
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
       const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
 
-      if (error || !data) {
+      if (error) {
+        console.error('Failed to load profile:', error.message);
         setProfile(null);
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
-        return;
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+        return null;
       }
 
       setProfile(data);
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADED);
+      return data;
     } catch (error: any) {
-      toast.error(`Failed to load profile: ${error.message}`);
+      console.error('Failed to load profile:', error.message);
       setLastError({
         code: 'profile_refresh_error',
         message: error.message,
         timestamp: Date.now(),
       });
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+      return null;
     }
   }, [user]);
 
   useEffect(() => {
     const loadSession = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session) {
-        setAuthStatus(AuthStatus.UNAUTHENTICATED);
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
+      console.log('👋 Auth boot: Starting session load...');
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('👋 Auth boot: Error loading session:', error.message);
+          setLastError({
+            code: 'session_load_error',
+            message: error.message,
+            timestamp: Date.now(),
+          });
+          setAuthStatus(AuthStatus.UNAUTHENTICATED);
+          setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
+          setIsLoading(false);
+          setIsAuthReady(true);
+          setIsAuthBootComplete(true);
+          return;
+        }
+
+        if (!data.session) {
+          console.log('👋 Auth boot: No session found');
+          setAuthStatus(AuthStatus.UNAUTHENTICATED);
+          setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
+          setIsLoading(false);
+          setIsAuthReady(true);
+          setIsAuthBootComplete(true);
+          return;
+        }
+
+        console.log('👋 Auth boot: Session found');
+        setSession(data.session);
+        setUser(data.session.user);
+        setAuthStatus(AuthStatus.AUTHENTICATED);
+        setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
+        
+        try {
+          await refreshProfile();
+        } catch (profileError) {
+          console.error('👋 Auth boot: Error loading profile:', profileError);
+        }
+        
         setIsLoading(false);
         setIsAuthReady(true);
         setIsAuthBootComplete(true);
-        return;
+      } catch (error: any) {
+        console.error('👋 Auth boot: Critical error:', error.message);
+        setLastError({
+          code: 'auth_boot_error',
+          message: error.message,
+          timestamp: Date.now(),
+        });
+        setAuthStatus(AuthStatus.UNAUTHENTICATED);
+        setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
+        setIsLoading(false);
+        setIsAuthReady(true);
+        setIsAuthBootComplete(true);
       }
-
-      setSession(data.session);
-      setUser(data.session.user);
-      setAuthStatus(AuthStatus.AUTHENTICATED);
-      setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-      await refreshProfile();
-      setIsLoading(false);
-      setIsAuthReady(true);
-      setIsAuthBootComplete(true);
     };
 
     loadSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session) => {
+        console.log('🔑 Auth state change:', event, session ? 'session exists' : 'no session');
+        
         if (['INITIAL_SESSION', 'SIGNED_IN'].includes(event)) {
           setAuthStatus(AuthStatus.AUTHENTICATED);
           setSession(session);
           setUser(session?.user || null);
-          await refreshProfile();
+          
+          // Don't call refreshProfile directly in the callback - could cause deadlocks
+          // Use setTimeout to defer execution to the next event loop tick
+          if (session?.user) {
+            setTimeout(() => {
+              refreshProfile().catch(err => {
+                console.error('Error refreshing profile after auth state change:', err);
+              });
+            }, 0);
+          }
         }
+        
         if (event === 'SIGNED_OUT') {
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
           setSession(null);
@@ -204,16 +282,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [refreshProfile]);
 
-  useEffect(() => {
-    const cleanup = setTimeout(() => {
-      if (window.location.hash.includes('access_token')) {
-        window.history.replaceState(null, '', window.location.pathname);
-        console.log('🧹 Cleaned up #access_token from URL');
-      }
-    }, 500);
-
-    return () => clearTimeout(cleanup);
-  }, []);
+  // Remove token cleanup function entirely - let Supabase handle this
+  // The premature cleanup was causing issues with token processing
 
   return (
     <AuthContext.Provider

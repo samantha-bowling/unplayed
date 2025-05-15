@@ -319,6 +319,7 @@ export type Database = {
           id: string
           last_sync: string | null
           leaderboard_visibility: string
+          onboarding_complete: boolean | null
           steam_avatar: string | null
           steam_id: string
           steam_name: string
@@ -329,6 +330,7 @@ export type Database = {
           id: string
           last_sync?: string | null
           leaderboard_visibility?: string
+          onboarding_complete?: boolean | null
           steam_avatar?: string | null
           steam_id: string
           steam_name: string
@@ -339,6 +341,7 @@ export type Database = {
           id?: string
           last_sync?: string | null
           leaderboard_visibility?: string
+          onboarding_complete?: boolean | null
           steam_avatar?: string | null
           steam_id?: string
           steam_name?: string
@@ -358,6 +361,10 @@ export type Database = {
           playtime_minutes: number
         }
         Returns: number
+      }
+      mark_onboarding_complete: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_leaderboard_clean_rankings: {
         Args: { snapshot_timestamp: string }
