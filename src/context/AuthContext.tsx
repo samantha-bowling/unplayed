@@ -52,8 +52,8 @@ type AuthContextType = {
   signInWithProvider: (provider: 'discord' | 'twitch', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<any>; // Return the profile for better chaining
-  refreshSession: () => Promise<Session | null>; // Update return type to match implementation
+  refreshProfile: () => Promise<any>;
+  refreshSession: () => Promise<Session | null>;
   clearAuthError: () => void;
   isLoading: boolean;
   isAuthReady: boolean;
@@ -88,12 +88,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
         throw error;
       }
-      
       if (!data.session) {
         console.warn('🔄 No session found during refresh');
         return null;
       }
-      
       console.log('🔄 Session refreshed successfully');
       setSession(data.session);
       setUser(data.session.user);
@@ -166,7 +164,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return null;
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
       if (error) {
         console.error('Failed to load profile:', error.message);
@@ -227,13 +229,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(data.session.user);
         setAuthStatus(AuthStatus.AUTHENTICATED);
         setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-        
+
         try {
           await refreshProfile();
         } catch (profileError) {
           console.error('👋 Auth boot: Error loading profile:', profileError);
         }
-        
+
         setIsLoading(false);
         setIsAuthReady(true);
         setIsAuthBootComplete(true);
@@ -257,14 +259,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session) => {
         console.log('🔑 Auth state change:', event, session ? 'session exists' : 'no session');
-        
-        if (['INITIAL_SESSION', 'SIGNED_IN'].includes(event)) {
+
+        if (["INITIAL_SESSION", "SIGNED_IN"].includes(event)) {
           setAuthStatus(AuthStatus.AUTHENTICATED);
           setSession(session);
           setUser(session?.user || null);
-          
-          // Don't call refreshProfile directly in the callback - could cause deadlocks
-          // Use setTimeout to defer execution to the next event loop tick
+
           if (session?.user) {
             setTimeout(() => {
               refreshProfile().catch(err => {
@@ -273,7 +273,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }, 0);
           }
         }
-        
+
         if (event === 'SIGNED_OUT') {
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
           setSession(null);
@@ -285,9 +285,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, [refreshProfile]);
-
-  // Remove token cleanup function entirely - let Supabase handle this
-  // The premature cleanup was causing issues with token processing
 
   return (
     <AuthContext.Provider
