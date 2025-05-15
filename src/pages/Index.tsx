@@ -23,7 +23,7 @@ import SteamLoader from "@/components/SteamLoader";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isAuthBootComplete } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isNewSteamUser, setIsNewSteamUser] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -40,13 +40,10 @@ const Index = () => {
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
 
-  if (authLoading) {
+  if (!isAuthBootComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-unplayed-mint mx-auto mb-4" />
-          <p className="text-lg text-unplayed-mint">Loading your profile...</p>
-        </div>
+        <SteamLoader message="Loading your profile..." size="md" variant="ghost" />
       </div>
     );
   }
