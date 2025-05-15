@@ -6,6 +6,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
 const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
+
 const RETURN_URL = `${FRONTEND_URL}/api/auth/steam/callback`;
 const REALM = FRONTEND_URL;
 
@@ -13,8 +14,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 serve(async (req) => {
   const url = new URL(req.url);
+  const path = url.pathname;
 
-  if (url.pathname === "/api/auth/steam/login") {
+  // Handle login route
+  if (path.endsWith("/steam-auth/login")) {
     const uid = url.searchParams.get("uid");
     const redirectTo = new URL("https://steamcommunity.com/openid/login");
 
@@ -28,7 +31,8 @@ serve(async (req) => {
     return Response.redirect(redirectTo.toString(), 302);
   }
 
-  if (url.pathname === "/api/auth/steam/callback") {
+  // Handle OpenID callback from Steam
+  if (path.endsWith("/steam-auth/callback")) {
     try {
       const claimedId = url.searchParams.get("openid.claimed_id") || "";
       const match = claimedId.match(/\/(\d{17,})$/);
