@@ -1,31 +1,29 @@
 
+import { supabase } from '@/integrations/supabase/client';
 
-// src/utils/auth/signInWithProvider.ts
+export const signInWithProvider = async (
+  provider: 'discord' | 'twitch' | 'steam',
+  redirectTo?: string
+): Promise<void> => {
+  if (provider === 'email') {
+    throw new Error('Email login should use signInWithEmail instead.');
+  }
 
-import { supabase } from '@/integrations/supabase/client'
+  if (provider === 'steam') {
+    // Custom redirect for Steam handled via Edge Function
+    const steamUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?redirectTo=${encodeURIComponent(redirectTo || `${window.location.origin}/auth/callback`)}`;
+    window.location.href = steamUrl;
+    return;
+  }
 
-// Define supported providers
-export type AuthProvider = 'discord' | 'twitch';
-
-export function getRedirectUrl(customRedirectTo?: string): string {
-  // Get the base URL (either the current origin or a specified URL)
-  const baseUrl = customRedirectTo || window.location.origin;
-  return `${baseUrl}/auth/callback`;
-}
-
-export async function signInWithProvider(provider: AuthProvider, redirectTo?: string) {
-  // More type-safe check compared to string equality with 'email'
-  // (email is not in the AuthProvider type, so this comparison would never match)
-  
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: getRedirectUrl(redirectTo),
+      redirectTo: redirectTo || `${window.location.origin}/auth/callback`,
     },
   });
 
   if (error) {
-    console.error(`[signInWithProvider] OAuth error with ${provider}:`, error);
     throw error;
   }
-}
+};
