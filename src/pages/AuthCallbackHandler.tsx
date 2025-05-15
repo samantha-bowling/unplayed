@@ -23,13 +23,15 @@ const AuthCallbackHandler = () => {
         const updatedProfile = await refreshProfile();
 
         if (user && !updatedProfile) {
-          console.info('[AuthCallbackHandler] New user detected — redirecting to /welcome.');
-          navigate('/welcome');
-        } else if (user && updatedProfile) {
+          // Avoid calling refreshProfile again before upsert happens
+          console.info('[AuthCallbackHandler] New user — skipping profile fetch loop and redirecting to welcome.');
+          return navigate('/welcome');
+        }
+
+        if (updatedProfile?.onboarding_complete) {
           navigate('/library');
         } else {
-          console.warn('[AuthCallbackHandler] No authenticated user found — redirecting to /auth.');
-          navigate('/auth');
+          navigate('/welcome');
         }
       } catch (err) {
         console.error('[AuthCallbackHandler] Error during auth processing:', err);
