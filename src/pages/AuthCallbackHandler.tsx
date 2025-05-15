@@ -13,6 +13,8 @@ const AuthCallbackHandler = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!user) return; // Wait until user is available
+
     const processAuth = async () => {
       try {
         await refreshSession();
@@ -36,7 +38,11 @@ const AuthCallbackHandler = () => {
     processAuth();
   }, [refreshSession, refreshProfile, navigate, user]);
 
-  return null;
+  return (
+    <div className="flex items-center justify-center h-screen text-muted-foreground">
+      Processing login...
+    </div>
+  );
 };
 
 export default AuthCallbackHandler;
