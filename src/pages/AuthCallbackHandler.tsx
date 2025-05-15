@@ -1,7 +1,8 @@
 // src/pages/AuthCallbackHandler.tsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import SteamLoader from '@/components/SteamLoader';
 
 const AuthCallbackHandler = () => {
   const {
@@ -11,6 +12,7 @@ const AuthCallbackHandler = () => {
   } = useAuth();
 
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return; // Wait until user is available
@@ -32,6 +34,8 @@ const AuthCallbackHandler = () => {
       } catch (err) {
         console.error('[AuthCallbackHandler] Error during auth processing:', err);
         navigate('/auth');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -39,8 +43,8 @@ const AuthCallbackHandler = () => {
   }, [refreshSession, refreshProfile, navigate, user]);
 
   return (
-    <div className="flex items-center justify-center h-screen text-muted-foreground">
-      Processing login...
+    <div className="flex items-center justify-center h-screen">
+      <SteamLoader message="Validating your session..." size="md" variant="secondary" />
     </div>
   );
 };
