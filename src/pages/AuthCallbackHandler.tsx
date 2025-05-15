@@ -38,9 +38,9 @@ const AuthCallbackHandler = () => {
         
         // First ensure we have a session regardless of whether user is populated yet
         setProcessingStep('refreshing_session');
-        const sessionResult = await refreshSession();
+        const session = await refreshSession();
         
-        if (!sessionResult) {
+        if (!session) { // Fixed: check session object, not truthiness of void
           console.warn('[AuthCallback] No session found after refresh');
           const queryParams = new URLSearchParams(window.location.search);
           const errorCode = queryParams.get('error_code');

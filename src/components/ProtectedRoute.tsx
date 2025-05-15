@@ -3,7 +3,12 @@ import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
-export default function ProtectedRoute({ children }: { children: ReactNode }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  requiredRole?: string; // Add support for requiredRole prop
+}
+
+export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const {
     authStatus,
     isLoading,
@@ -33,6 +38,11 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
   if (!user) {
     console.warn('👤 No user in context');
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+
+  if (requiredRole && profile?.role !== requiredRole) {
+    console.warn(`🔒 User doesn't have required role: ${requiredRole}`);
+    return <Navigate to="/" replace />;
   }
 
   if (!profile?.onboarding_complete) {

@@ -2,16 +2,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { EnhancedAuthStatus, AuthError } from '@/context/AuthContext';
-import { AlertCircle, ShieldAlert, ServerOff, RefreshCw, Unlink, Wifi, Globe } from 'lucide-react';
+import { AlertCircle, ShieldAlert, ServerOff, RefreshCw, Unlink, Wifi, Globe, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AuthErrorMessageProps {
   errorType: EnhancedAuthStatus;
   error: AuthError | null;
   onRetry: () => void;
+  isRetrying?: boolean; // Add isRetrying prop
 }
 
-export const AuthErrorMessage = ({ errorType, error, onRetry }: AuthErrorMessageProps) => {
+export const AuthErrorMessage = ({ errorType, error, onRetry, isRetrying = false }: AuthErrorMessageProps) => {
   // Map error types to friendly messages and icons
   const getErrorContent = () => {
     switch (errorType) {
@@ -133,9 +134,14 @@ export const AuthErrorMessage = ({ errorType, error, onRetry }: AuthErrorMessage
               onClick={onRetry}
               variant="outline"
               className="flex items-center space-x-1 text-xs bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint border-unplayed-mint/20"
+              disabled={isRetrying}
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              <span>Try Again</span>
+              {isRetrying ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3 mr-1" />
+              )}
+              <span>{isRetrying ? 'Retrying...' : 'Try Again'}</span>
             </Button>
           </div>
         </div>

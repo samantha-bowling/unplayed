@@ -1,7 +1,9 @@
 
+// src/pages/AuthPage.tsx
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
@@ -17,6 +19,7 @@ const AuthPage = () => {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const { signInWithProvider, signInWithEmail, isLoading, lastError, clearAuthError } = useAuth();
 
   const navigate = useNavigate();
@@ -26,6 +29,15 @@ const AuthPage = () => {
     clearAuthError();
     await signInWithEmail(email);
     setShowSuccessAnimation(true);
+  };
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    clearAuthError();
+    // Simulate retry delay
+    setTimeout(() => {
+      setIsRetrying(false);
+    }, 1500);
   };
 
   useEffect(() => {
@@ -54,7 +66,12 @@ const AuthPage = () => {
 
         {lastError && !isLoading && !showSuccessAnimation && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6">
-            <AuthErrorMessage error={lastError} onRetry={clearAuthError} isRetrying={false} />
+            <AuthErrorMessage 
+              errorType={EnhancedAuthStatus.AUTH_ERROR} 
+              error={lastError} 
+              onRetry={handleRetry}
+              isRetrying={isRetrying} 
+            />
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,3 +1,4 @@
+
 // src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
@@ -7,6 +8,7 @@ interface SteamLoginButtonProps {
   redirectPath?: string;
   fullWidth?: boolean;
   centered?: boolean;
+  disabled?: boolean; // Add disabled prop
 }
 
 const SteamLoginButton = ({
@@ -14,6 +16,7 @@ const SteamLoginButton = ({
   redirectPath = '/',
   fullWidth = false,
   centered = true,
+  disabled = false, // Default value
 }: SteamLoginButtonProps) => {
   const { user, isLoading } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
@@ -35,10 +38,10 @@ const SteamLoginButton = ({
           relative flex items-center justify-center transition-all
           hover:opacity-90
           ${className}
-          ${buttonLoading || isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+          ${(buttonLoading || isLoading || disabled) ? 'opacity-50 cursor-not-allowed' : ''}
           group-hover:shadow-lg group-hover:shadow-unplayed-mint/20
         `}
-        disabled={buttonLoading || isLoading || !user}
+        disabled={buttonLoading || isLoading || !user || disabled}
         aria-label="Link your Steam account"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-unplayed-mint/10 to-unplayed-pink/10 opacity-0 group-hover:opacity-100 rounded transition-opacity"></div>

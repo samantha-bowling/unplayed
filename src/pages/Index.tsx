@@ -1,4 +1,6 @@
 
+// src/pages/Index.tsx
+
 import AuthModal from '@/components/AuthModal';
 import { useIsMounted } from '@/hooks/useIsMounted';
 import Header from "../components/Header";
@@ -45,7 +47,7 @@ const Index = () => {
   if (!isAuthBootComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <SteamLoader message="Loading your profile..." size="md" variant="ghost" />
+        <SteamLoader message="Loading your profile..." size="md" variant="secondary" />
       </div>
     );
   }

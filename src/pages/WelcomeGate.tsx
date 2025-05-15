@@ -1,3 +1,4 @@
+
 // src/pages/WelcomeGate.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -79,7 +80,7 @@ const WelcomeGate = () => {
         <div className="space-y-4">
           <h1 className="text-3xl font-bold">Building Your Backlog...</h1>
           <p className="text-muted-foreground text-sm">
-            We’re importing your Steam library. Hang tight.
+            We're importing your Steam library. Hang tight.
           </p>
           <SteamLoader message="Importing your games from Steam..." size="md" variant="primary" />
         </div>
@@ -97,7 +98,7 @@ const WelcomeGate = () => {
                 Go to <a href="https://steamcommunity.com/my/edit/settings" className="underline">Steam Profile Privacy Settings</a>
               </li>
               <li>Set <strong>Game details</strong> to <code>Public</code></li>
-              <li>Uncheck <em>“Always keep my total playtime private”</em></li>
+              <li>Uncheck <em>"Always keep my total playtime private"</em></li>
               <li>Save settings and return here to continue</li>
             </ul>
           </div>
@@ -108,7 +109,7 @@ const WelcomeGate = () => {
               checked={acknowledgedPrivacy}
               onChange={(e) => setAcknowledgedPrivacy(e.target.checked)}
             />
-            I’ve updated my Steam privacy settings
+            I've updated my Steam privacy settings
           </label>
 
           <SteamLoginButton fullWidth disabled={!acknowledgedPrivacy} />

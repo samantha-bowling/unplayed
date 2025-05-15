@@ -1,3 +1,4 @@
+
 // src/App.tsx
 import { Routes, Route } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -24,7 +25,7 @@ const App = () => {
   if (!isAuthBootComplete) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <SteamLoader message="Waking up your profile..." size="md" variant="ghost" />
+        <SteamLoader message="Waking up your profile..." size="md" variant="secondary" />
       </div>
     );
   }

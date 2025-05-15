@@ -1,4 +1,3 @@
-
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -10,7 +9,7 @@ import React, {
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getRedirectUrl, signInWithProvider as baseSignInWithProvider } from '@/utils/auth/signInWithProvider';
+import { signInWithProvider as baseSignInWithProvider } from '@/utils/auth/signInWithProvider';
 
 export enum AuthStatus {
   LOADING = 'LOADING',
@@ -30,6 +29,10 @@ export enum EnhancedAuthStatus {
   LIBRARY_IMPORTING = 'LIBRARY_IMPORTING',
   TOKEN_REFRESH_ERROR = 'TOKEN_REFRESH_ERROR',
   LIBRARY_ERROR = 'LIBRARY_ERROR',
+  LIBRARY_READY = 'LIBRARY_READY',
+  LIBRARY_UPDATING = 'LIBRARY_UPDATING',
+  LIBRARY_LOADING = 'LIBRARY_LOADING',
+  TOKEN_REFRESHING = 'TOKEN_REFRESHING',
 }
 
 export type AuthError = {
@@ -50,7 +53,7 @@ type AuthContextType = {
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<any>; // Return the profile for better chaining
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<Session | null>; // Update return type to match implementation
   clearAuthError: () => void;
   isLoading: boolean;
   isAuthReady: boolean;
@@ -72,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuthError = useCallback(() => setLastError(null), []);
 
-  const refreshSession = async () => {
+  const refreshSession = async (): Promise<Session | null> => {
     try {
       console.log('🔄 Refreshing session...');
       const { data, error } = await supabase.auth.getSession();
@@ -88,7 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (!data.session) {
         console.warn('🔄 No session found during refresh');
-        return;
+        return null;
       }
       
       console.log('🔄 Session refreshed successfully');
@@ -102,6 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         message: error.message,
         timestamp: Date.now(),
       });
+      return null;
     }
   };
 

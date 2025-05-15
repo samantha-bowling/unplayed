@@ -1,3 +1,4 @@
+
 import { EnhancedAuthStatus } from '@/context/AuthContext';
 
 type AuthEventType = 
@@ -47,12 +48,16 @@ export const getStatusDescription = (status: EnhancedAuthStatus): string => {
       return 'Error loading profile';
     case EnhancedAuthStatus.TOKEN_REFRESH_ERROR:
       return 'Session expired';
+    case EnhancedAuthStatus.TOKEN_REFRESHING:
+      return 'Refreshing session...';
     case EnhancedAuthStatus.AUTH_ERROR:
       return 'Authentication error';
     case EnhancedAuthStatus.LIBRARY_IMPORTING:
       return 'Importing your game library...';
     case EnhancedAuthStatus.LIBRARY_UPDATING:
       return 'Updating your game library...';
+    case EnhancedAuthStatus.LIBRARY_LOADING:
+      return 'Loading your game library...';
     case EnhancedAuthStatus.LIBRARY_READY:
       return 'Your game library is ready';
     default:
