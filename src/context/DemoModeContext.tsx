@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
+import { isAuthInProgress } from '@/utils/auth-session-flags';
 
 interface DemoModeContextType {
   isDemo: boolean;
@@ -17,37 +18,42 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { user, isLoading } = useAuth();
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   const [stableIsDemoState, setStableIsDemoState] = useState(false);
+  const [demoStateChangeTimer, setDemoStateChangeTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   
-  // Check if auth is in progress to prevent flickering
-  const isAuthInProgress = () => {
-    return sessionStorage.getItem('authInProgress') === 'true' || 
-           sessionStorage.getItem('authStarted') === 'true';
-  };
-  
-  // Enhanced logic: Always consider auth loading state and in-progress states first
-  // This prevents the race condition where demo mode is enabled during auth loading
+  // Enhanced logic with debounce to prevent state thrashing during auth transitions
   useEffect(() => {
-    // Don't change demo state during auth transitions
+    // Always prevent demo mode changes during active authentication
     if (isAuthInProgress()) {
-      console.log('Auth in progress, not changing demo state');
+      console.log('Auth in progress, stabilizing demo state');
       return;
     }
     
-    // Determine the stable demo state with debounce
-    const newDemoState = (!isLoading && !user) || isDemoExplicit;
+    // Determine the target demo state with clear rules
+    const targetDemoState = (!isLoading && !user) || isDemoExplicit;
     
-    // Only update if the state actually changed
-    if (newDemoState !== stableIsDemoState) {
-      console.log(`Setting stable demo state: ${newDemoState}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
+    // Only update if the state actually needs to change - prevents cycles
+    if (targetDemoState !== stableIsDemoState) {
+      console.log(`Scheduling demo state update (${stableIsDemoState} → ${targetDemoState})`);
+      console.log(`Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
       
-      // Use a slight delay to prevent rapid flickering
+      // Cancel any existing timer to prevent race conditions
+      if (demoStateChangeTimer) {
+        clearTimeout(demoStateChangeTimer);
+      }
+      
+      // Use a longer delay for more stability during transitions
       const timer = setTimeout(() => {
-        setStableIsDemoState(newDemoState);
-      }, 100);
+        console.log(`Setting stable demo state: ${targetDemoState}`);
+        setStableIsDemoState(targetDemoState);
+      }, 300);
       
-      return () => clearTimeout(timer);
+      setDemoStateChangeTimer(timer);
+      
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
     }
-  }, [isLoading, user, isDemoExplicit, stableIsDemoState]);
+  }, [isLoading, user, isDemoExplicit, stableIsDemoState, demoStateChangeTimer]);
   
   // Enhanced logging to help debug auth and demo mode state changes
   useEffect(() => {

@@ -2,6 +2,7 @@
 // src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
+import { setSessionFlag } from '@/utils/auth-session-flags';
 
 interface SteamLoginButtonProps {
   className?: string;
@@ -30,13 +31,21 @@ const SteamLoginButton = ({
 
   const handleSteamLogin = () => {
     if (!user) return;
+    
     setButtonLoading(true);
-    // Set a flag to indicate we're starting a Steam auth
-    sessionStorage.setItem('steamAuthStarted', 'true');
+    
+    // Set flags to indicate we're starting a Steam auth
+    // These help prevent demo mode flickering and other race conditions
+    setSessionFlag('STEAM_AUTH_STARTED');
+    setSessionFlag('AUTH_IN_PROGRESS');
     
     const uid = encodeURIComponent(user.id);
     const redirectTo = `${window.location.origin}${redirectPath}`;
     const steamRedirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
+    
+    console.log('[Steam Auth] Starting Steam authentication');
+    console.log('[Steam Auth] Redirect URL:', redirectTo);
+    
     window.location.href = steamRedirectUrl;
   };
 
