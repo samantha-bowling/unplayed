@@ -1,3 +1,4 @@
+
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -62,9 +63,16 @@ type AuthContextType = {
   isAuthBootComplete: boolean;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with a default value that's obviously not valid
+// but allows for safer component tree structures
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Log when the context is created - helpful for debugging
+console.log('AuthContext created');
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  console.log('AuthProvider mounting'); // Debug log for component lifecycle
+  
   const [authStatus, setAuthStatus] = useState(AuthStatus.LOADING);
   const [enhancedStatus, setEnhancedStatus] = useState(EnhancedAuthStatus.INITIAL);
   const [session, setSession] = useState<Session | null>(null);
@@ -240,6 +248,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Setup auth state change listener and initial session check
   useEffect(() => {
+    console.log('AuthProvider initializing - setting up auth listeners');
+
     const loadSession = async () => {
       setIsLoading(true);
       setEnhancedStatus(EnhancedAuthStatus.SESSION_LOADING);
@@ -395,6 +405,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  
+  // Add detailed information to the error to help debugging
+  if (!context) {
+    console.error('[Auth] useAuth() called outside of AuthProvider context. Check component hierarchy.');
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
   return context;
 };

@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { setSessionFlag } from '@/utils/auth-session-flags';
+import { setSessionFlag, setTimedSessionFlag } from '@/utils/auth-session-flags';
 
 export const signInWithProvider = async (
   provider: 'discord' | 'twitch',
@@ -10,10 +10,10 @@ export const signInWithProvider = async (
   console.log(`[Auth] Signing in with ${provider}, redirect: ${redirectTo || 'default'}`);
   
   try {
-    // Set flags that we're starting an auth flow
+    // Set flags that we're starting an auth flow with automatic expiration as a safety mechanism
     // This helps prevent demo mode flickering and other race conditions
-    setSessionFlag('AUTH_STARTED');
-    setSessionFlag('AUTH_IN_PROGRESS');
+    setTimedSessionFlag('AUTH_STARTED', 'true', 5 * 60 * 1000); // 5 minutes max
+    setTimedSessionFlag('AUTH_IN_PROGRESS', 'true', 5 * 60 * 1000); // 5 minutes max
 
     // Make sure we have a valid redirect URL
     const normalizedRedirectTo = redirectTo || `${window.location.origin}/auth/callback`;

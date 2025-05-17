@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import { AuthContext } from './AuthContext';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 import { isAuthInProgress } from '@/utils/auth-session-flags';
 
@@ -15,13 +15,24 @@ interface DemoModeContextType {
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
 
 export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  // Create state first, before attempting to access AuthContext
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   const [stableIsDemoState, setStableIsDemoState] = useState(false);
   const [demoStateChangeTimer, setDemoStateChangeTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   
-  // Enhanced logic with debounce to prevent state thrashing during auth transitions
+  // Safely access AuthContext - might be null initially if order is wrong
+  const authContext = useContext(AuthContext);
+  
+  // Use effects to react to auth changes only when context is available
   useEffect(() => {
+    // Skip this effect if auth context isn't available yet
+    if (!authContext) {
+      console.log('Auth context not available yet, demo mode remains unchanged');
+      return;
+    }
+    
+    const { user, isLoading } = authContext;
+    
     // Always prevent demo mode changes during active authentication
     if (isAuthInProgress()) {
       console.log('Auth in progress, stabilizing demo state');
@@ -53,12 +64,18 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (timer) clearTimeout(timer);
       };
     }
-  }, [isLoading, user, isDemoExplicit, stableIsDemoState, demoStateChangeTimer]);
+  }, [authContext, isDemoExplicit, stableIsDemoState, demoStateChangeTimer]);
   
   // Enhanced logging to help debug auth and demo mode state changes
   useEffect(() => {
+    if (!authContext) {
+      console.log('Demo mode: provider mounted, waiting for auth context');
+      return;
+    }
+    
+    const { isLoading, user } = authContext;
     console.log(`Demo mode: ${stableIsDemoState ? 'enabled' : 'disabled'}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}, Auth in progress: ${isAuthInProgress()}`);
-  }, [stableIsDemoState, isLoading, user, isDemoExplicit]);
+  }, [stableIsDemoState, authContext, isDemoExplicit]);
   
   const enableDemo = () => {
     console.log('Demo mode explicitly enabled');

@@ -1,3 +1,4 @@
+
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -19,15 +20,15 @@ createRoot(document.getElementById("root")!).render(
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SteamSessionProvider>
-          <AuthProvider>
+        <AuthProvider> {/* AuthProvider now wraps SteamSessionProvider to ensure context is available */}
+          <SteamSessionProvider>
             <DemoModeProvider>
               <FullScreenModeProvider>
                 <App />
               </FullScreenModeProvider>
             </DemoModeProvider>
-          </AuthProvider>
-        </SteamSessionProvider>
+          </SteamSessionProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
