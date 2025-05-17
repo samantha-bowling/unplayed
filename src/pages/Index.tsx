@@ -1,3 +1,4 @@
+
 // src/pages/Index.tsx
 
 import AuthModal from '@/components/AuthModal';
@@ -11,6 +12,7 @@ import RandomPicker from "../components/RandomPicker";
 import LibraryPreview from "../components/LibraryPreview";
 import SpendingEstimate from "../components/SpendingEstimate";
 import Footer from "../components/Footer";
+import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -22,8 +24,8 @@ import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 import SteamLoader from "@/components/SteamLoader";
 import { useNavigate } from "react-router-dom";
+import SteamPrivacyChecklist from '@/components/SteamPrivacyChecklist';
 import { 
-  hasSessionFlag, 
   removeSessionFlag,
   getAuthFlowStatus
 } from '@/utils/auth-session-flags';
@@ -35,7 +37,7 @@ const Index = () => {
   const { user, isAuthBootComplete, profile, refreshProfile } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isImporting, setIsImporting] = useState(false);
-  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
 
   // Debug logging for auth state
   useEffect(() => {
@@ -43,55 +45,38 @@ const Index = () => {
       authBootComplete: isAuthBootComplete,
       userId: user?.id,
       profileComplete: profile?.onboarding_complete,
-      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
       authFlowStatus: getAuthFlowStatus(),
       steamUser: steamUser?.steamId,
-      isCheckingOnboarding
+      isCheckingProfile,
+      hasSteamId: profile?.steam_id ? true : false
     });
-  }, [isAuthBootComplete, user?.id, profile?.onboarding_complete, steamUser?.steamId, isCheckingOnboarding]);
+  }, [isAuthBootComplete, user?.id, profile, steamUser?.steamId, isCheckingProfile]);
 
-  // Check if we need to complete onboarding
+  // Check profile when auth is ready
   useEffect(() => {
-    // Only run this check when authentication is fully ready
-    if (!isAuthBootComplete || isCheckingOnboarding) return;
+    if (!isAuthBootComplete || !user || isCheckingProfile) return;
     
-    // If we have a user but profile isn't complete, check onboarding
-    const needsCheck = 
-      user && (
-        (profile && profile.onboarding_complete === false) || 
-        !profile || 
-        hasSessionFlag('JUST_LOGGED_IN')
-      );
+    setIsCheckingProfile(true);
     
-    if (needsCheck) {
-      console.log('[Index] User detected that may need onboarding');
-      setIsCheckingOnboarding(true);
-      
-      // Refresh profile to make sure we have latest data
-      refreshProfile().then(profileData => {
-        if (!profileData || profileData.onboarding_complete === false) {
-          console.log('[Index] User needs onboarding, redirecting to welcome');
-          navigate('/welcome');
-        } else {
-          console.log('[Index] User has completed onboarding');
-          // Since we verified onboarding is complete, clear the just logged in flag
-          removeSessionFlag('JUST_LOGGED_IN');
-        }
-        
-        setIsCheckingOnboarding(false);
-      }).catch(err => {
-        console.error('[Index] Error checking profile:', err);
-        setIsCheckingOnboarding(false);
+    refreshProfile()
+      .then(() => {
+        // Clean up session flags
+        removeSessionFlag('JUST_LOGGED_IN');
+      })
+      .catch(err => {
+        console.error('[Index] Error refreshing profile:', err);
+      })
+      .finally(() => {
+        setIsCheckingProfile(false);
       });
-    }
-  }, [user, profile, isAuthBootComplete, navigate, refreshProfile, isCheckingOnboarding]);
+  }, [isAuthBootComplete, user, refreshProfile, isCheckingProfile]);
 
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
 
   // Show loader while checking auth status
-  if (!isAuthBootComplete || isCheckingOnboarding) {
+  if (!isAuthBootComplete || (user && isCheckingProfile)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <SteamLoader message="Loading your profile..." size="md" variant="secondary" />
@@ -111,88 +96,115 @@ const Index = () => {
     );
   }
 
+  // Define hero section content based on authentication state
+  const renderHeroSection = () => {
+    if (!user) {
+      // Not authenticated user - show standard intro and sign in button
+      return (
+        <>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
+            Your PC games are gathering dust.
+          </h1>
+          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+            unplayed helps you conquer your massive Steam backlog and actually play the games you own.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button onClick={() => setAuthModalOpen(true)}>
+              Sign In / Sign Up
+            </Button>
+          </div>
+        </>
+      );
+    } else if (user && !profile?.steam_id) {
+      // Authenticated but no Steam account linked
+      return (
+        <>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
+            Link your Steam account
+          </h1>
+          <p className="text-xl text-gray-300 mb-4 max-w-3xl mx-auto">
+            Connect your Steam account to see your personal backlog statistics.
+          </p>
+          <div className="flex flex-col items-center gap-6 max-w-xl mx-auto">
+            <SteamPrivacyChecklist />
+            <SteamLoginButton fullWidth centered />
+          </div>
+        </>
+      );
+    } else if (steamUser) {
+      // Fully authenticated with Steam
+      return (
+        <>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
+            Welcome, {steamUser.personaName}
+          </h1>
+          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+            Time to face your backlog.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => {
+                setIsImporting(true);
+              
+                fetch("https://gwmygthanyycveyqqspr.functions.supabase.co/import-library", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ steamId: steamUser.steamId }),
+                })
+                  .then(() => window.location.reload())
+                  .catch((err) => {
+                    console.error("Import failed", err);
+                    setIsImporting(false);
+                  });
+              }}
+              className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
+            >
+              Refresh My Data
+            </button>
+            
+            {isImporting && (
+              <div className="mt-6">
+                <SteamLoader message="Importing your Steam shame..." size="md" variant="secondary" />
+              </div>
+            )}
+
+            {lastRefreshed && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Last updated: {lastRefreshed.toLocaleString()}
+              </p>
+            )}
+            <button
+              onClick={steamLogout}
+              className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
+            >
+              Log Out
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <FullScreenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
 
+        {/* Demo Mode Indicator */}
+        <DemoModeIndicator />
+
         {/* Hero */}
         <section className="w-full navbar-offset pb-8 px-4">
           <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
-              {steamUser ? `Welcome, ${steamUser.personaName}` : "Your PC games are gathering dust."}
-            </h1>
-            {steamUser ? (
-              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                Welcome back! Time to face the backlog.
-              </p>
-            ) : (
-              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                unplayed helps you conquer your massive Steam backlog and actually play the games you own.
-              </p>
-            )}
-            <div className="flex justify-center gap-4">
-             {!user && (
-                <Button onClick={() => setAuthModalOpen(true)}>
-                  Sign In / Sign Up
-                </Button>
-              )}
-              {steamUser && (
-                <>
-                  <button
-                    onClick={() => {
-                      setIsImporting(true);
-                    
-                      fetch("https://gwmygthanyycveyqqspr.functions.supabase.co/import-library", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ steamId: steamUser.steamId }),
-                      })
-                        .then(() => window.location.reload())
-                        .catch((err) => {
-                          console.error("Import failed", err);
-                          setIsImporting(false);
-                        });
-                    }}
-                    className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
-                  >
-                    Refresh My Data
-                  </button>
-                  
-                  {isImporting && (
-                    <div className="mt-6">
-                      <SteamLoader message="Importing your Steam shame..." size="md" variant="secondary" />
-                    </div>
-                  )}
-
-                  {lastRefreshed && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Last updated: {lastRefreshed.toLocaleString()}
-                    </p>
-                  )}
-                  <button
-                    onClick={steamLogout}
-                    className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
-                  >
-                    Log Out
-                  </button>
-                </>
-              )}
-            </div>
+            {renderHeroSection()}
           </div>
         </section>
 
         {/* Dashboard */}
         <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
           <div className="max-w-7xl mx-auto">
-            {isDemo && (
-              <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
-                <h3 className="text-lg font-medium text-unplayed-amber mb-2">🔍 Demo Mode Active</h3>
-                <p className="text-sm text-gray-300 mb-4">
-                  You're viewing example data. Sign in or sign up and link your Steam account to see your personal gaming data.
-                </p>
-              </div>
-            )}
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-mint">Dashboard</span>
               <span className="text-white">.exe</span>
