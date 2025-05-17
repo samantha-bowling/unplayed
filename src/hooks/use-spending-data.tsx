@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -39,8 +39,6 @@ export interface SpendingData {
   priceDistribution: PriceRange[];
   currency: string;
   refreshedAt: string | null;
-  isLoading: boolean;
-  error: Error | null;
 }
 
 /**
@@ -53,55 +51,23 @@ export const useSpendingData = () => {
   const { toast } = useToast();
   const [refreshInProgress, setRefreshInProgress] = useState<boolean>(false);
   
-  // In demo mode, return demo data immediately
-  if (isDemo) {
-    // We can now safely use gamesList since we've normalized the data in useUnplayedData
-    const topSpendingGames = unplayedData?.gamesList
-      ? unplayedData.gamesList
-          .filter(game => game.playtimeMinutes === 0)
-          .map(game => ({
-            id: game.id,
-            title: game.title,
-            price: game.price || 0,
-            originalPrice: null,
-            discount: null,
-            imageUrl: game.imageUrl,
-            currency: 'USD'
-          }))
-          .sort((a, b) => b.price - a.price)
-      : [];
+  // Extract game IDs from unplayed data for querying - we need this regardless of demo mode
+  const gameIds = useMemo(() => {
+    if (isUnplayedLoading || !unplayedData?.gamesList) return [];
     
-    return {
-      data: {
-        totalSpent: demoData.totalSpent,
-        totalSaved: null,
-        topSpendingGames,
-        priceDistribution: [],
-        currency: 'USD',
-        refreshedAt: new Date().toISOString(),
-      },
-      isLoading: false,
-      error: null,
-      refreshPrices: () => Promise.resolve(),
-      isRefreshing: false,
-    };
-  }
+    return unplayedData.gamesList
+      .filter(game => game.playtimeMinutes === 0)
+      .map(game => game.id);
+  }, [unplayedData?.gamesList, isUnplayedLoading]);
   
-  // Extract game IDs from unplayed data for querying
-  const gameIds = !isUnplayedLoading && unplayedData?.gamesList
-    ? unplayedData.gamesList
-        .filter(game => game.playtimeMinutes === 0)
-        .map(game => game.id)
-    : [];
-    
-  // Query game price data from our new table
+  // Query game price data from our database - only if not in demo mode
   const {
     data: gamePrices,
     isLoading: isGamePricesLoading,
     error: gamePricesError,
     refetch: refetchGamePrices,
   } = useQuery({
-    queryKey: ['gamePrices', gameIds],
+    queryKey: ['gamePrices', gameIds, isDemo],
     queryFn: async () => {
       if (!user || gameIds.length === 0) return [];
       
@@ -118,7 +84,35 @@ export const useSpendingData = () => {
   });
   
   // Calculate spending data based on prices
-  const calculateSpendingData = (): SpendingData => {
+  const spendingData = useMemo(() => {
+    // If in demo mode, return demo data with proper structure
+    if (isDemo) {
+      const topSpendingGames = unplayedData?.gamesList
+        ? unplayedData.gamesList
+            .filter(game => game.playtimeMinutes === 0)
+            .map(game => ({
+              id: game.id,
+              title: game.title,
+              price: game.price || 0,
+              originalPrice: null,
+              discount: null,
+              imageUrl: game.imageUrl,
+              currency: 'USD'
+            }))
+            .sort((a, b) => b.price - a.price)
+        : [];
+      
+      return {
+        totalSpent: demoData.totalSpent,
+        totalSaved: null,
+        topSpendingGames,
+        priceDistribution: [],
+        currency: 'USD',
+        refreshedAt: new Date().toISOString(),
+      };
+    }
+    
+    // For real data, calculate from game prices
     if (!unplayedData?.gamesList || !gamePrices) {
       return {
         totalSpent: 0,
@@ -127,8 +121,6 @@ export const useSpendingData = () => {
         priceDistribution: [],
         currency: 'USD',
         refreshedAt: null,
-        isLoading: isGamePricesLoading || isUnplayedLoading,
-        error: gamePricesError as Error || null,
       };
     }
     
@@ -230,12 +222,10 @@ export const useSpendingData = () => {
       priceDistribution,
       currency,
       refreshedAt: latestRefresh ? latestRefresh.toISOString() : null,
-      isLoading: false,
-      error: null,
     };
-  };
+  }, [isDemo, demoData, unplayedData?.gamesList, gamePrices]);
   
-  // Refresh price data by calling our edge function
+  // Refresh price data by calling our edge function - only for authenticated users
   const refreshPrices = async () => {
     if (!user || isDemo || gameIds.length === 0) return;
     
@@ -291,9 +281,7 @@ export const useSpendingData = () => {
     }
   };
   
-  // Build the return object with computed spending data
-  const spendingData = calculateSpendingData();
-  
+  // Return a stable structure for all cases
   return {
     data: spendingData,
     isLoading: isGamePricesLoading || isUnplayedLoading,

@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { AuthContext } from './AuthContext';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 
@@ -16,49 +15,46 @@ const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined
 export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Create state for explicit demo mode toggle (used for testing)
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
   
   // Safely access AuthContext
   const authContext = useContext(AuthContext);
   
-  // Track hydration state to prevent flickering
-  useEffect(() => {
-    if (!authContext) return;
-    
-    const { isAuthReady, isLoading } = authContext;
-    
-    // Only mark as hydrated when auth is ready and not loading
-    if (isAuthReady && !isLoading) {
-      console.log('[DemoMode] Auth context hydrated');
-      setIsHydrated(true);
-    }
-  }, [authContext]);
-  
-  // Compute if we should show demo mode
+  // Compute if we should show demo mode - only compute this once auth is ready
   // Simple rule: Demo mode is active if user is not authenticated OR explicitly enabled
-  const isDemo = Boolean(
-    (isHydrated && authContext && !authContext.user) || isDemoExplicit
-  );
+  const isDemo = useMemo(() => {
+    // If AuthContext isn't available or not ready yet, default to demo mode
+    if (!authContext || !authContext.isAuthReady) return true;
+    
+    // If explicitly in demo mode, use that
+    if (isDemoExplicit) return true;
+    
+    // Otherwise, demo mode if no authenticated user
+    return !authContext.user;
+  }, [authContext, isDemoExplicit]);
   
+  // Debug logging
   useEffect(() => {
-    if (authContext && isHydrated) {
+    if (authContext && authContext.isAuthReady) {
       console.log(`[DemoMode] Demo state: ${isDemo ? 'enabled' : 'disabled'}, Auth ready: ${authContext.isAuthReady}, Auth loading: ${authContext.isLoading}, User: ${authContext.user ? authContext.user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
     }
-  }, [isDemo, authContext, isDemoExplicit, isHydrated]);
+  }, [isDemo, authContext, isDemoExplicit]);
   
   const enableDemo = () => {
     console.log('[DemoMode] Demo mode explicitly enabled');
     setIsDemoExplicit(true);
   };
   
+  // Create a stable context value object
+  const contextValue = useMemo(() => ({
+    isDemo,
+    isDemoExplicit, 
+    setIsDemoExplicit,
+    demoData: DEMO_DATA,
+    enableDemo
+  }), [isDemo, isDemoExplicit]);
+  
   return (
-    <DemoModeContext.Provider value={{ 
-      isDemo,
-      isDemoExplicit, 
-      setIsDemoExplicit,
-      demoData: DEMO_DATA,
-      enableDemo
-    }}>
+    <DemoModeContext.Provider value={contextValue}>
       {children}
     </DemoModeContext.Provider>
   );
