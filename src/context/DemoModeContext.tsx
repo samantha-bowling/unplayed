@@ -8,6 +8,7 @@ interface DemoModeContextType {
   setIsDemoExplicit: (value: boolean) => void;
   demoData: DemoDataType;
   enableDemo: () => void;
+  disableDemo: () => void; // New function to explicitly disable demo mode
 }
 
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
@@ -22,15 +23,15 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Compute if we should show demo mode - only compute this once auth is ready
   // Simple rule: Demo mode is active if user is not authenticated OR explicitly enabled
   const isDemo = useMemo(() => {
-    // If AuthContext isn't available or not ready yet, default to demo mode
-    if (!authContext || !authContext.isAuthReady) return true;
-    
     // If explicitly in demo mode, use that
     if (isDemoExplicit) return true;
     
+    // If AuthContext isn't available or not ready yet, default to demo mode
+    if (!authContext || !authContext.isAuthReady) return true;
+    
     // Otherwise, demo mode if no authenticated user
     return !authContext.user;
-  }, [authContext, isDemoExplicit]);
+  }, [authContext?.user, authContext?.isAuthReady, isDemoExplicit]);
   
   // Debug logging
   useEffect(() => {
@@ -39,9 +40,22 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [isDemo, authContext, isDemoExplicit]);
   
+  // When user logs in, disable explicit demo mode
+  useEffect(() => {
+    if (authContext?.user && isDemoExplicit) {
+      console.log('[DemoMode] User authenticated, disabling explicit demo mode');
+      setIsDemoExplicit(false);
+    }
+  }, [authContext?.user, isDemoExplicit]);
+  
   const enableDemo = () => {
     console.log('[DemoMode] Demo mode explicitly enabled');
     setIsDemoExplicit(true);
+  };
+  
+  const disableDemo = () => {
+    console.log('[DemoMode] Demo mode explicitly disabled');
+    setIsDemoExplicit(false);
   };
   
   // Create a stable context value object
@@ -50,7 +64,8 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isDemoExplicit, 
     setIsDemoExplicit,
     demoData: DEMO_DATA,
-    enableDemo
+    enableDemo,
+    disableDemo
   }), [isDemo, isDemoExplicit]);
   
   return (

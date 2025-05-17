@@ -29,7 +29,7 @@ createRoot(document.getElementById("root")!).render(
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <DemoModeProvider> {/* Move DemoModeProvider directly under AuthProvider */}
+          <DemoModeProvider>
             <SteamSessionProvider>
               <FullScreenModeProvider>
                 <App />

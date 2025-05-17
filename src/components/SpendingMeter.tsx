@@ -34,37 +34,53 @@ const SpendingMeter = ({
     // Set up mounted ref for cleanup
     isMountedRef.current = true;
     
+    // Cancel any in-flight animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    
+    // Reset animation state when amount changes
+    setAnimatedAmount(0);
+    startTimeRef.current = null;
+    
     // Don't start animation if we're still loading
     if (isLoading) return;
     
-    const duration = 2000; // Animation duration in ms
-    
-    const animate = (timestamp: number) => {
+    // Use a small delay to ensure we're not animating during the render cycle
+    const timeoutId = setTimeout(() => {
       if (!isMountedRef.current) return;
       
-      if (startTimeRef.current === null) {
-        startTimeRef.current = timestamp;
-      }
+      const duration = 2000; // Animation duration in ms
       
-      const elapsed = timestamp - startTimeRef.current;
-      const progress = Math.min(elapsed / duration, 1);
+      const animate = (timestamp: number) => {
+        if (!isMountedRef.current) return;
+        
+        if (startTimeRef.current === null) {
+          startTimeRef.current = timestamp;
+        }
+        
+        const elapsed = timestamp - startTimeRef.current;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Calculate the current value based on progress
+        const currentValue = progress * amount;
+        setAnimatedAmount(currentValue);
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+          animationRef.current = requestAnimationFrame(animate);
+        }
+      };
       
-      // Calculate the current value based on progress
-      const currentValue = progress * amount;
-      setAnimatedAmount(currentValue);
-      
-      // Continue animation if not complete
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
+      // Start the animation using requestAnimationFrame for smoother performance
+      animationRef.current = requestAnimationFrame(animate);
+    }, 50);
     
-    // Start the animation using requestAnimationFrame for smoother performance
-    animationRef.current = requestAnimationFrame(animate);
-    
-    // Clean up animation on unmount
+    // Clean up animation on unmount or data change
     return () => {
       isMountedRef.current = false;
+      clearTimeout(timeoutId);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }

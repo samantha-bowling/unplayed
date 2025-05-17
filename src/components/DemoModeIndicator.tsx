@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 
 export const DemoModeIndicator: React.FC = () => {
-  const { isDemo, demoData, isDemoExplicit } = useDemoMode();
+  const { isDemo, demoData, isDemoExplicit, disableDemo } = useDemoMode();
   const { user, isAuthReady, signInWithProvider } = useAuth();
 
   // Only show when in demo mode and auth is ready
@@ -34,9 +34,12 @@ export const DemoModeIndicator: React.FC = () => {
           Sign in to sync
         </button>
       ) : isDemoExplicit && (
-        <span className="text-xs text-unplayed-amber">
-          Using demo mode while logged in
-        </span>
+        <button
+          onClick={disableDemo}
+          className="text-xs bg-unplayed-mint text-black px-2 py-1 rounded hover:bg-unplayed-mint/90 transition-colors"
+        >
+          View my data
+        </button>
       )}
     </motion.div>
   );

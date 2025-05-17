@@ -19,7 +19,7 @@ const SpendingEstimate = ({
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading, refreshPrices, isRefreshing } = useSpendingData();
   const { isDemo } = useDemoMode();
-  const { user } = useAuth();
+  const { user, isAuthReady } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
   // Use amount from props if provided, otherwise use spending data
@@ -33,11 +33,14 @@ const SpendingEstimate = ({
     }
   };
 
+  // Only show refresh when authenticated and not in demo mode
+  const showRefresh = !isDemo && user && isAuthReady;
+
   return (
     <div className="terminal-container equal-height-container">
       <div className="flex items-center justify-between mb-4">
         <h3 className="terminal-header text-2xl">Spending Estimate</h3>
-        {!isDemo && user && (
+        {showRefresh && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
