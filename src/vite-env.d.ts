@@ -5,7 +5,7 @@
 import { AppAuthState } from './context/auth/types';
 
 // Add debug interface to Window object with proper typing
-interface Window {
+declare interface Window {
   __UNPLAYED_DEBUG__?: {
     authUser?: string | null;
     appAuthState?: AppAuthState; // Now uses proper typed enum instead of string

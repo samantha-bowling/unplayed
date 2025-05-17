@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { AuthContext, AppAuthState } from './AuthContext';
+import { useAuth } from './auth/hook';
+import { AppAuthState } from './auth/types';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 
 interface DemoModeContextType {
@@ -19,7 +20,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   
   // Safely access AuthContext
-  const authContext = useContext(AuthContext);
+  const authContext = useContext(useAuth());
   
   // Compute if we should show demo mode based on the new AppAuthState and authIsStable
   // This provides more stable transitions between states

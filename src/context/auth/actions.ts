@@ -8,9 +8,9 @@ import { removeSessionFlag, setSessionFlag } from '@/utils/auth-session-flags';
 // Sign in with provider (Discord, Twitch)
 export async function signInWithProvider(
   provider: 'discord' | 'twitch',
-  options?: { redirectTo?: string },
   setIsLoading: (loading: boolean) => void,
-  setLastError: (error: any) => void
+  setLastError: (error: any) => void,
+  options?: { redirectTo?: string }
 ): Promise<void> {
   try {
     setIsLoading(true);

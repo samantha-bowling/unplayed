@@ -4,3 +4,4 @@
 // It's kept for backward compatibility with the rest of the app
 
 export * from './auth';
+export { AuthContext } from './auth/provider';

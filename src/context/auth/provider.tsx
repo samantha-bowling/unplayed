@@ -1,4 +1,3 @@
-
 // src/context/auth/provider.tsx
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
@@ -86,7 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     provider: 'discord' | 'twitch',
     options?: { redirectTo?: string }
   ) => {
-    return signInWithProvider(provider, options, setIsLoading, setLastError);
+    return signInWithProvider(provider, setIsLoading, setLastError, options);
   }, []);
 
   // Wrap the signInWithEmail action with component state
@@ -138,7 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setAppAuthState('PROFILE_LOADING');
           handleRefreshProfile().finally(() => {
             // Will re-evaluate state based on profile result
-            if (appAuthState === 'PROFILE_LOADING') {
+            if (isProfileLoadingState(appAuthState)) {
               setAppAuthState('AUTHENTICATED');
             }
           });
