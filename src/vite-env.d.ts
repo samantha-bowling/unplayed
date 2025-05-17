@@ -5,16 +5,21 @@
 import { AppAuthState } from './context/auth/types';
 
 // Add debug interface to Window object with proper typing
-declare interface Window {
-  __UNPLAYED_DEBUG__?: {
-    authUser?: string | null;
-    appAuthState?: AppAuthState; // Now uses proper typed enum instead of string
-    profileId?: string | null;
-    isProfileComplete?: boolean;
-    isSteamLinked?: boolean;
-    profileRefreshAttempts?: number;
-    authIsStable?: boolean;
-    isAuthReady?: boolean;
-    isAuthBootComplete?: boolean;
-  };
+declare global {
+  interface Window {
+    __UNPLAYED_DEBUG__?: {
+      authUser?: string | null;
+      appAuthState?: AppAuthState; // Now uses proper typed enum instead of string
+      profileId?: string | null;
+      isProfileComplete?: boolean;
+      isSteamLinked?: boolean;
+      profileRefreshAttempts?: number;
+      authIsStable?: boolean;
+      isAuthReady?: boolean;
+      isAuthBootComplete?: boolean;
+    };
+  }
 }
+
+// This empty export makes this file a module
+export {};

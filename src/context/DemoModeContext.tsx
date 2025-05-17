@@ -19,8 +19,8 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Create state for explicit demo mode toggle (used for testing)
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   
-  // Safely access AuthContext
-  const authContext = useContext(useAuth());
+  // Safely access AuthContext using the hook directly
+  const authContext = useAuth();
   
   // Compute if we should show demo mode based on the new AppAuthState and authIsStable
   // This provides more stable transitions between states
