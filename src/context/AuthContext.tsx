@@ -335,7 +335,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // User authenticated but no profile yet
       if (user && !profile) {
-        if (appAuthState !== 'AUTHENTICATED') {
+        if (appAuthState !== 'AUTHENTICATED' && appAuthState !== 'PROFILE_LOADING') {
           console.log('[AuthContext] Transitioning to AUTHENTICATED state (no profile)');
           setAppAuthState('AUTHENTICATED');
           
