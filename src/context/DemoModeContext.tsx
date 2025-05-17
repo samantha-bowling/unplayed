@@ -1,7 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { useAuth } from './auth/hook';
-import { AppAuthState } from './auth/types';
+import { AuthContext } from './AuthContext';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 
 interface DemoModeContextType {
@@ -10,7 +8,7 @@ interface DemoModeContextType {
   setIsDemoExplicit: (value: boolean) => void;
   demoData: DemoDataType;
   enableDemo: () => void;
-  disableDemo: () => void;
+  disableDemo: () => void; // New function to explicitly disable demo mode
 }
 
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
@@ -19,11 +17,11 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Create state for explicit demo mode toggle (used for testing)
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   
-  // Safely access AuthContext using the hook directly
-  const authContext = useAuth();
+  // Safely access AuthContext
+  const authContext = useContext(AuthContext);
   
-  // Compute if we should show demo mode based on the new AppAuthState and authIsStable
-  // This provides more stable transitions between states
+  // Compute if we should show demo mode - only compute this once auth is ready
+  // Simple rule: Demo mode is active if user is not authenticated OR explicitly enabled
   const isDemo = useMemo(() => {
     // If explicitly in demo mode, use that
     if (isDemoExplicit) return true;
@@ -31,30 +29,24 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // If AuthContext isn't available or not ready yet, default to demo mode
     if (!authContext || !authContext.isAuthReady) return true;
     
-    // Use the improved authIsStable flag and appAuthState
-    if (authContext.authIsStable) {
-      // If we have a full authenticated user with completed profile, disable demo mode
-      if (authContext.appAuthState === 'READY') return false;
-    }
-    
-    // In all other states, show demo mode
-    return true;
-  }, [authContext?.appAuthState, authContext?.authIsStable, authContext?.isAuthReady, isDemoExplicit]);
+    // Otherwise, demo mode if no authenticated user
+    return !authContext.user;
+  }, [authContext?.user, authContext?.isAuthReady, isDemoExplicit]);
   
   // Debug logging
   useEffect(() => {
     if (authContext && authContext.isAuthReady) {
-      console.log(`[DemoMode] Demo state: ${isDemo ? 'enabled' : 'disabled'}, Auth ready: ${authContext.isAuthReady}, Auth state: ${authContext.appAuthState}, User: ${authContext.user ? authContext.user.id : 'none'}, Steam linked: ${authContext.isSteamLinked}, Explicit demo: ${isDemoExplicit}, Auth stable: ${authContext.authIsStable || false}`);
+      console.log(`[DemoMode] Demo state: ${isDemo ? 'enabled' : 'disabled'}, Auth ready: ${authContext.isAuthReady}, Auth loading: ${authContext.isLoading}, User: ${authContext.user ? authContext.user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
     }
   }, [isDemo, authContext, isDemoExplicit]);
   
-  // When user completes onboarding, disable explicit demo mode
+  // When user logs in, disable explicit demo mode
   useEffect(() => {
-    if (authContext?.appAuthState === 'READY' && isDemoExplicit) {
-      console.log('[DemoMode] User fully authenticated, disabling explicit demo mode');
+    if (authContext?.user && isDemoExplicit) {
+      console.log('[DemoMode] User authenticated, disabling explicit demo mode');
       setIsDemoExplicit(false);
     }
-  }, [authContext?.appAuthState, isDemoExplicit]);
+  }, [authContext?.user, isDemoExplicit]);
   
   const enableDemo = () => {
     console.log('[DemoMode] Demo mode explicitly enabled');

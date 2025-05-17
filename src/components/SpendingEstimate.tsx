@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import useSpendingData from '@/hooks/use-spending-data';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -19,35 +19,8 @@ const SpendingEstimate = ({
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading, refreshPrices, isRefreshing } = useSpendingData();
   const { isDemo } = useDemoMode();
-  const { user, isAuthReady, appAuthState, authIsStable } = useAuth();
+  const { user, isAuthReady } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
-  const [isComponentStable, setIsComponentStable] = useState(false);
-  const initialRenderRef = useRef(true);
-  
-  // Monitor for stable auth state before allowing interactions
-  useEffect(() => {
-    // Reset visibility on app auth state changes that affect component stability
-    // This prevents animation errors and UI flicker
-    if (!isAuthReady || !authIsStable) {
-      // Don't alter visibility on first render
-      if (!initialRenderRef.current) {
-        setIsVisible(false);
-        setIsComponentStable(false);
-      }
-      return;
-    }
-    
-    // Mark initial render complete
-    initialRenderRef.current = false;
-    
-    // Add a small delay to ensure contexts are stable
-    // This prevents immediate rendering until auth and data are ready
-    const timer = setTimeout(() => {
-      setIsComponentStable(true);
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [isAuthReady, authIsStable, appAuthState]);
   
   // Use amount from props if provided, otherwise use spending data
   const spendingAmount = amount !== undefined 
@@ -61,9 +34,7 @@ const SpendingEstimate = ({
   };
 
   // Only show refresh when authenticated and not in demo mode
-  const showRefresh = !isDemo && user && isAuthReady && appAuthState === 'READY';
-
-  const isComponentLoading = isLoading || !isComponentStable;
+  const showRefresh = !isDemo && user && isAuthReady;
 
   return (
     <div className="terminal-container equal-height-container">
@@ -78,7 +49,7 @@ const SpendingEstimate = ({
                   size="sm" 
                   className="h-7 w-7 p-0" 
                   onClick={handleRefresh}
-                  disabled={isRefreshing || isComponentLoading}
+                  disabled={isRefreshing}
                 >
                   <RefreshCcw 
                     size={16} 
@@ -99,7 +70,7 @@ const SpendingEstimate = ({
           <SpendingMeter
             amount={spendingAmount}
             currency={spendingData?.currency || 'USD'}
-            isLoading={isComponentLoading}
+            isLoading={isLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
             totalSaved={spendingData?.totalSaved}
@@ -115,9 +86,9 @@ const SpendingEstimate = ({
             <button 
               onClick={() => setIsVisible(true)}
               className="btn-primary"
-              disabled={isComponentLoading}
+              disabled={isLoading}
             >
-              {isComponentLoading ? 'Loading...' : 'Show Me The Damage'}
+              {isLoading ? 'Loading...' : 'Show Me The Damage'}
             </button>
           </div>
         )}
