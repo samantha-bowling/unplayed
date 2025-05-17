@@ -2,7 +2,7 @@
 // src/pages/WelcomeGate.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
@@ -10,16 +10,14 @@ import { toast } from 'sonner';
 import { 
   hasSessionFlag, 
   removeSessionFlag, 
-  isRecentFirstLogin, 
-  markOnboardingStarted,
-  setAuthFlowStatus 
+  setAuthFlowStatus,
+  markOnboardingStarted
 } from '@/utils/auth-session-flags';
 
 const WelcomeGate = () => {
   const {
     user,
     profile,
-    enhancedStatus,
     refreshProfile,
     isLoading: authLoading,
     isAuthReady
@@ -32,13 +30,11 @@ const WelcomeGate = () => {
   const [acknowledgedPrivacy, setAcknowledgedPrivacy] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isFirstCheck, setIsFirstCheck] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Debug logging
   useEffect(() => {
     console.log('[WelcomeGate] Status:', { 
-      enhancedStatus, 
       hasUpserted, 
       isUpsertInProgress,
       profileData: profile,
@@ -46,13 +42,10 @@ const WelcomeGate = () => {
       retryCount,
       isAuthReady,
       authLoading,
-      isFirstCheck,
       loadingProfile,
-      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
-      isRecentFirstLogin: isRecentFirstLogin()
+      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN')
     });
   }, [
-    enhancedStatus, 
     hasUpserted, 
     isUpsertInProgress, 
     profile, 
@@ -60,7 +53,6 @@ const WelcomeGate = () => {
     retryCount, 
     isAuthReady,
     authLoading,
-    isFirstCheck,
     loadingProfile
   ]);
 
@@ -71,44 +63,43 @@ const WelcomeGate = () => {
       return;
     }
     
-    if (isFirstCheck) {
-      setIsFirstCheck(false);
-      
-      // If we don't have a user at all, redirect to auth
-      if (!user) {
-        console.log('[WelcomeGate] No user found, redirecting to auth');
-        navigate('/auth');
-        return;
-      }
-      
-      // If we have a user but no profile yet, we should do an initial profile check
-      if (user && !profile && !loadingProfile) {
-        console.log('[WelcomeGate] User found but no profile, checking...');
-        setLoadingProfile(true);
-        
-        refreshProfile()
-          .then(refreshedProfile => {
-            console.log('[WelcomeGate] Initial profile check result:', refreshedProfile);
-            
-            // If the user has a complete profile, redirect to library
-            if (refreshedProfile?.onboarding_complete) {
-              console.log('[WelcomeGate] Profile complete, redirecting to library');
-              navigate('/library');
-            }
-          })
-          .catch(err => {
-            console.error('[WelcomeGate] Error checking initial profile:', err);
-          })
-          .finally(() => {
-            setLoadingProfile(false);
-          });
-      }
-      
-      // Mark that onboarding has started
-      markOnboardingStarted();
-      setAuthFlowStatus('onboarding_needed');
+    // If we don't have a user at all, redirect to auth
+    if (!user) {
+      console.log('[WelcomeGate] No user found, redirecting to auth');
+      navigate('/auth');
+      return;
     }
-  }, [isAuthReady, authLoading, user, profile, isFirstCheck, navigate, refreshProfile]);
+    
+    // If we have a user but no profile yet, we should do an initial profile check
+    if (user && !profile && !loadingProfile) {
+      console.log('[WelcomeGate] User found but no profile, checking...');
+      setLoadingProfile(true);
+      
+      refreshProfile()
+        .then(refreshedProfile => {
+          console.log('[WelcomeGate] Initial profile check result:', refreshedProfile);
+          
+          // If the user has a complete profile, redirect to library
+          if (refreshedProfile?.onboarding_complete) {
+            console.log('[WelcomeGate] Profile complete, redirecting to library');
+            // Clear the just logged in flag since onboarding is complete
+            removeSessionFlag('JUST_LOGGED_IN');
+            setAuthFlowStatus('ready');
+            navigate('/library');
+          }
+        })
+        .catch(err => {
+          console.error('[WelcomeGate] Error checking initial profile:', err);
+        })
+        .finally(() => {
+          setLoadingProfile(false);
+        });
+    }
+    
+    // Mark that onboarding has started
+    markOnboardingStarted();
+    setAuthFlowStatus('onboarding_needed');
+  }, [isAuthReady, authLoading, user, profile, navigate, refreshProfile, loadingProfile]);
 
   // Redirect if onboarding already complete
   useEffect(() => {
@@ -123,7 +114,7 @@ const WelcomeGate = () => {
     }
   }, [profile?.onboarding_complete, navigate]);
 
-  // Polling logic to ensure profile is ready before continuing
+  // Handle Steam parameters
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const steam_id = params.get('steam_id');
@@ -137,6 +128,7 @@ const WelcomeGate = () => {
       window.history.replaceState({ path: newUrl }, '', newUrl);
     }
 
+    // Wait for profile to be available after upsert
     const waitForProfile = async (id: string, maxRetries = 5, delayMs = 1000) => {
       for (let i = 0; i < maxRetries; i++) {
         console.log(`[WelcomeGate] Polling for profile (attempt ${i + 1}/${maxRetries})`);
@@ -199,7 +191,7 @@ const WelcomeGate = () => {
           setIsUpsertInProgress(false);
         });
     }
-  }, [user, location.search, hasUpserted, isUpsertInProgress, refreshProfile, navigate, setRetryCount]);
+  }, [user, location.search, hasUpserted, isUpsertInProgress, refreshProfile, navigate]);
 
   // Don't render anything until we're sure auth is ready
   if (!isAuthReady || authLoading) {
@@ -222,29 +214,24 @@ const WelcomeGate = () => {
   }
 
   const needsSteam = !profile?.steam_id;
-  const isImporting = enhancedStatus === EnhancedAuthStatus.LIBRARY_IMPORTING;
-  const isLoading = isUpsertInProgress || isImporting || loadingProfile;
+  const isLoading = isUpsertInProgress || loadingProfile;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center space-y-8">
       {isLoading ? (
         <div className="space-y-4">
           <h1 className="text-3xl font-bold">
-            {isImporting ? 'Building Your Backlog...' : 'Linking Your Steam Account...'}
+            {isUpsertInProgress ? 'Linking Your Steam Account...' : 'Checking Your Profile...'}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {isImporting 
-              ? "We're importing your Steam library. Hang tight." 
-              : loadingProfile
-                ? "We're checking your profile. This should only take a moment."
-                : "We're linking your Steam account. This should only take a moment."}
+            {isUpsertInProgress 
+              ? "We're linking your Steam account. This should only take a moment."
+              : "We're checking your profile. This should only take a moment."}
           </p>
           <SteamLoader 
-            message={isImporting 
-              ? "Importing your games from Steam..." 
-              : loadingProfile
-                ? "Checking your profile..."
-                : "Linking your Steam account..."} 
+            message={isUpsertInProgress 
+              ? "Linking your Steam account..." 
+              : "Checking your profile..."} 
             size="md" 
             variant="primary" 
           />

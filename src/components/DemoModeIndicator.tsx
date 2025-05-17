@@ -5,10 +5,11 @@ import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 
 export const DemoModeIndicator: React.FC = () => {
-  const { isDemo, demoData } = useDemoMode();
-  const { user, signInWithProvider } = useAuth();
+  const { isDemo, demoData, isDemoExplicit } = useDemoMode();
+  const { user, isAuthReady, signInWithProvider } = useAuth();
 
-  if (!isDemo) return null;
+  // Only show when in demo mode and auth is ready
+  if (!isDemo || !isAuthReady) return null;
 
   return (
     <motion.div
@@ -22,16 +23,20 @@ export const DemoModeIndicator: React.FC = () => {
         <span className="text-sm">
           {!user
             ? `Example Data (${demoData.unplayedGames} unplayed games) – Sign in to see your real stats`
-            : 'Preview Mode'}
+            : 'Preview Mode - You are viewing example data'}
         </span>
       </div>
-      {!user && (
-      <button
-        onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}
-        className="text-xs bg-unplayed-mint text-black px-2 py-1 rounded hover:bg-unplayed-mint/90 transition-colors"
-      >
-        Sign in to sync
-      </button>
+      {!user ? (
+        <button
+          onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}
+          className="text-xs bg-unplayed-mint text-black px-2 py-1 rounded hover:bg-unplayed-mint/90 transition-colors"
+        >
+          Sign in to sync
+        </button>
+      ) : isDemoExplicit && (
+        <span className="text-xs text-unplayed-amber">
+          Using demo mode while logged in
+        </span>
       )}
     </motion.div>
   );

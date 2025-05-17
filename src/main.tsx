@@ -28,14 +28,14 @@ createRoot(document.getElementById("root")!).render(
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider> {/* AuthProvider wraps everything to ensure context is available */}
-          <SteamSessionProvider>
-            <DemoModeProvider>
+        <AuthProvider>
+          <DemoModeProvider> {/* Move DemoModeProvider directly under AuthProvider */}
+            <SteamSessionProvider>
               <FullScreenModeProvider>
                 <App />
               </FullScreenModeProvider>
-            </DemoModeProvider>
-          </SteamSessionProvider>
+            </SteamSessionProvider>
+          </DemoModeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

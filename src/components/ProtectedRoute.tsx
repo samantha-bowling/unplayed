@@ -4,10 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
 import { 
-  isAuthInProgress, 
-  hasSessionFlag, 
-  isFromAuthCallback, 
-  isRecentFirstLogin,
+  hasSessionFlag,
   getAuthFlowStatus,
   setAuthFlowStatus
 } from '@/utils/auth-session-flags';
@@ -19,7 +16,6 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const {
-    authStatus,
     isLoading,
     user,
     profile,
@@ -32,7 +28,6 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [lastProfileCheckTime, setLastProfileCheckTime] = useState(0);
 
   // Debug logging
   useEffect(() => {
@@ -46,8 +41,6 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
       profileId: profile?.id,
       retryCount,
       justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
-      isFromCallback: isFromAuthCallback(),
-      recentFirstLogin: isRecentFirstLogin(),
       authFlowStatus: getAuthFlowStatus(),
       path: location.pathname
     });
@@ -59,18 +52,15 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   // Force check onboarding status when route is accessed
   useEffect(() => {
     // Only run this check when auth is ready and we have a user but haven't checked yet
-    // or if the auth flow is in progress and we haven't checked recently
-    const now = Date.now();
     const shouldCheckProfile = 
       user && 
       isAuthReady && 
       !isCheckingProfile && 
-      (!hasCheckedOnboarding || (now - lastProfileCheckTime > 3000 && isFromAuthCallback()));
+      !hasCheckedOnboarding;
     
     if (shouldCheckProfile) {
       setIsCheckingProfile(true);
       console.log('[ProtectedRoute] Checking profile for user', user.id);
-      setLastProfileCheckTime(now);
       
       refreshProfile()
         .then(profileData => {
@@ -110,12 +100,10 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
           }
         })
         .finally(() => {
-          if (retryCount >= 2 || !isAuthInProgress()) {
-            setIsCheckingProfile(false);
-          }
+          setIsCheckingProfile(false);
         });
     }
-  }, [user, isAuthReady, refreshProfile, isCheckingProfile, hasCheckedOnboarding, retryCount, lastProfileCheckTime]);
+  }, [user, isAuthReady, refreshProfile, isCheckingProfile, hasCheckedOnboarding, retryCount]);
   
   // Show loading if we're checking auth or profile
   if (!isAuthReady || isLoading || isCheckingProfile) {

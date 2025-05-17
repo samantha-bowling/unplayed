@@ -37,6 +37,18 @@ export const setSessionFlag = (flag: keyof typeof SESSION_FLAGS, value: string =
   try {
     sessionStorage.setItem(SESSION_FLAGS[flag], value);
     console.log(`Session flag set: ${flag} = ${value}`);
+    
+    // Auto-expire flags after a safety period (except for stable flags)
+    const nonExpiringFlags = ['AUTH_FLOW_STATUS', 'FIRST_LOGIN_TIMESTAMP'];
+    if (!nonExpiringFlags.includes(flag)) {
+      setTimeout(() => {
+        // Only clear if it's still set with the same value
+        if (getSessionFlag(flag) === value) {
+          console.log(`Auto-clearing timed-out session flag: ${flag}`);
+          removeSessionFlag(flag);
+        }
+      }, 5 * 60 * 1000); // 5 minutes max lifetime for flags
+    }
   } catch (error) {
     console.error(`Failed to set session flag ${flag}:`, error);
   }

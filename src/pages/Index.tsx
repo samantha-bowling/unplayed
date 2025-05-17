@@ -1,4 +1,3 @@
-
 // src/pages/Index.tsx
 
 import AuthModal from '@/components/AuthModal';
@@ -18,15 +17,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useSteamSession } from "@/hooks/useSteamSession";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useDemoMode } from "@/context/DemoModeContext";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 import SteamLoader from "@/components/SteamLoader";
 import { useNavigate } from "react-router-dom";
 import { 
   hasSessionFlag, 
-  removeSessionFlag, 
-  isRecentFirstLogin,
+  removeSessionFlag,
   getAuthFlowStatus
 } from '@/utils/auth-session-flags';
 
@@ -36,7 +34,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthBootComplete, profile, refreshProfile } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
-  const [isNewSteamUser, setIsNewSteamUser] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
 
@@ -47,7 +44,6 @@ const Index = () => {
       userId: user?.id,
       profileComplete: profile?.onboarding_complete,
       justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
-      recentLogin: isRecentFirstLogin(),
       authFlowStatus: getAuthFlowStatus(),
       steamUser: steamUser?.steamId,
       isCheckingOnboarding
@@ -59,11 +55,7 @@ const Index = () => {
     // Only run this check when authentication is fully ready
     if (!isAuthBootComplete || isCheckingOnboarding) return;
     
-    // If we have a user and either:
-    // 1. Profile with onboarding_complete = false
-    // 2. No profile at all
-    // 3. Just logged in flag is set
-    // ... then we need to check onboarding status
+    // If we have a user but profile isn't complete, check onboarding
     const needsCheck = 
       user && (
         (profile && profile.onboarding_complete === false) || 
@@ -94,15 +86,6 @@ const Index = () => {
     }
   }, [user, profile, isAuthBootComplete, navigate, refreshProfile, isCheckingOnboarding]);
 
-  // Handle new Steam user detection
-  useEffect(() => {
-    const justLoggedIn = hasSessionFlag('JUST_LOGGED_IN');
-    if (steamUser && justLoggedIn) {
-      setIsNewSteamUser(true);
-      // Don't remove justLoggedIn here - let the Welcome page handle it
-    }
-  }, [steamUser]);
-
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
@@ -116,6 +99,7 @@ const Index = () => {
     );
   }
 
+  // Handle fullscreen mode
   if (isFullScreenMode && focusedComponent) {
     return (
       <FullScreenModeWrapper>
@@ -140,9 +124,7 @@ const Index = () => {
             </h1>
             {steamUser ? (
               <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                {isNewSteamUser
-                  ? "🎉 You made it! It'll take a few minutes to import that massive library of yours. Sit back, relax, and let's take this ride of shame together."
-                  : "Welcome back! Time to face the backlog."}
+                Welcome back! Time to face the backlog.
               </p>
             ) : (
               <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
@@ -174,7 +156,7 @@ const Index = () => {
                     }}
                     className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
                   >
-                    {isNewSteamUser ? "Import My Steam Library" : "Refresh My Data"}
+                    Refresh My Data
                   </button>
                   
                   {isImporting && (
@@ -207,7 +189,7 @@ const Index = () => {
               <div className="mb-6 glass-panel p-4 border-unplayed-amber/30 border rounded-lg">
                 <h3 className="text-lg font-medium text-unplayed-amber mb-2">🔍 Demo Mode Active</h3>
                 <p className="text-sm text-gray-300 mb-4">
-                  You're viewing example data. Connect sign in or sign up and link your Steam account to see your personal gaming data.
+                  You're viewing example data. Sign in or sign up and link your Steam account to see your personal gaming data.
                 </p>
               </div>
             )}

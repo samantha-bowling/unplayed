@@ -1,9 +1,7 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
-import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
+import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -15,11 +13,29 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, signOut, isLoading, isAuthReady } = useAuth();
   const navigate = useNavigate();
-  const { enhancedStatus } = useAuthSessionStatus();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
+  
+  // Add a stable render state to prevent flickering during auth transitions
+  const [stableRenderState, setStableRenderState] = useState({
+    isAuthenticated: false,
+    isLoading: true,
+    hasProfile: false,
+  });
+
+  // Update stable render state when auth state changes
+  useEffect(() => {
+    // Only update when auth is ready to avoid flickering
+    if (isAuthReady) {
+      setStableRenderState({
+        isAuthenticated: !!user,
+        isLoading,
+        hasProfile: !!profile,
+      });
+    }
+  }, [user, profile, isLoading, isAuthReady]);
 
   // Check if user has admin role - only using app_metadata since profile.roles doesn't exist
   const isAdmin = user?.app_metadata?.roles?.includes('admin');
@@ -44,7 +60,7 @@ const Header = () => {
 
       <div className="hidden md:flex items-center space-x-6">
         <NavLink href="/" label="Dashboard" />
-        {user && (
+        {stableRenderState.isAuthenticated && (
           <>
             <NavLink href="/library" label="Library" />
             <NavLink href="/picker" label="Random Picker" />
@@ -85,12 +101,12 @@ const Header = () => {
 
         <FullScreenModeToggle />
 
-        {isLoading ? (
+        {stableRenderState.isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
-        ) : enhancedStatus === EnhancedAuthStatus.PROFILE_LOADED || enhancedStatus === EnhancedAuthStatus.SESSION_FOUND ? (
+        ) : stableRenderState.isAuthenticated ? (
           <div className="flex items-center space-x-4">
             <Avatar className="cursor-pointer border border-unplayed-mint/30">
-              {profile?.steam_avatar ? (
+              {stableRenderState.hasProfile && profile?.steam_avatar ? (
                 <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
               ) : (
                 <AvatarFallback className="bg-gray-800 text-unplayed-mint">
