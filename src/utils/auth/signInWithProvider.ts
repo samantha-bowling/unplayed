@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { setSessionFlag } from '@/utils/auth-session-flags';
 
 export const signInWithProvider = async (
-  provider: 'discord' | 'twitch' | 'steam',
+  provider: 'discord' | 'twitch',
   redirectTo?: string
 ): Promise<void> => {
   console.log(`[Auth] Signing in with ${provider}, redirect: ${redirectTo || 'default'}`);
@@ -19,17 +19,6 @@ export const signInWithProvider = async (
     const normalizedRedirectTo = redirectTo || `${window.location.origin}/auth/callback`;
     console.log(`[Auth] Using redirect URL: ${normalizedRedirectTo}`);
     
-    if (provider === 'steam') {
-      // Custom redirect for Steam handled via Edge Function
-      // Mark that this is a Steam login to help with returning users flow
-      setSessionFlag('STEAM_AUTH_ATTEMPTED');
-      
-      const steamUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?redirectTo=${encodeURIComponent(normalizedRedirectTo)}`;
-      console.log(`[Auth] Redirecting to Steam auth: ${steamUrl}`);
-      window.location.href = steamUrl;
-      return;
-    }
-
     console.log(`[Auth] Using Supabase OAuth for ${provider}`);
     const { error, data } = await supabase.auth.signInWithOAuth({
       provider,

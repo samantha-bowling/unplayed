@@ -1,4 +1,3 @@
-
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -52,7 +51,7 @@ type AuthContextType = {
   user: User | null;
   profile: any | null;
   lastError: AuthError | null;
-  signInWithProvider: (provider: 'discord' | 'twitch' | 'steam', options?: { redirectTo?: string }) => Promise<void>;
+  signInWithProvider: (provider: 'discord' | 'twitch', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<any>;
@@ -120,7 +119,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signInWithProvider = useCallback(async (
-    provider: 'discord' | 'twitch' | 'steam',
+    provider: 'discord' | 'twitch',
     options?: { redirectTo?: string }
   ) => {
     try {

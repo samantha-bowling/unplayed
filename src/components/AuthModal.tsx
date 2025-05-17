@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 
 const AuthModal = ({
@@ -39,7 +40,7 @@ const AuthModal = ({
         <DialogHeader>
           <DialogTitle className="text-center text-xl">Sign In to Unplayed</DialogTitle>
           <DialogDescription className="text-center text-muted-foreground">
-            Choose a provider to continue. You’ll link your Steam account after login.
+            Choose a provider to continue. You'll link your Steam account after login.
           </DialogDescription>
         </DialogHeader>
 
@@ -53,7 +54,7 @@ const AuthModal = ({
             </Button>
           ) : (
             <div className="flex flex-col gap-2">
-              <input
+              <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -65,6 +66,10 @@ const AuthModal = ({
               </Button>
             </div>
           )}
+          
+          <p className="text-xs text-gray-400 mt-2">
+            After signing in, you'll be able to link your Steam account to access your game library.
+          </p>
         </div>
       </DialogContent>
     </Dialog>

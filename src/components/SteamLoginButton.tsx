@@ -13,6 +13,10 @@ interface SteamLoginButtonProps {
   showInHeader?: boolean;
 }
 
+/**
+ * Button component for linking a Steam account to an already authenticated user.
+ * This is NOT for authentication - users must be logged in via Email, Discord, or Twitch first.
+ */
 const SteamLoginButton = ({
   className = '',
   redirectPath = '/',
@@ -29,12 +33,15 @@ const SteamLoginButton = ({
   const { user, isLoading } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
 
-  const handleSteamLogin = () => {
-    if (!user) return;
+  const handleSteamLink = () => {
+    if (!user) {
+      console.error('[Steam Auth] Cannot link Steam account: User not authenticated');
+      return;
+    }
     
     setButtonLoading(true);
     
-    // Set flags to indicate we're starting a Steam auth
+    // Set flags to indicate we're starting a Steam account linking flow
     // These help prevent demo mode flickering and other race conditions
     setSessionFlag('STEAM_AUTH_STARTED');
     setSessionFlag('AUTH_IN_PROGRESS');
@@ -43,7 +50,7 @@ const SteamLoginButton = ({
     const redirectTo = `${window.location.origin}${redirectPath}`;
     const steamRedirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
     
-    console.log('[Steam Auth] Starting Steam authentication');
+    console.log('[Steam Auth] Starting Steam account linking');
     console.log('[Steam Auth] Redirect URL:', redirectTo);
     
     window.location.href = steamRedirectUrl;
@@ -52,7 +59,7 @@ const SteamLoginButton = ({
   return (
     <div className={`${centered ? 'mx-auto' : ''} group w-full max-w-xs`}>
       <button
-        onClick={handleSteamLogin}
+        onClick={handleSteamLink}
         className={`
           ${fullWidth ? 'w-full' : ''}
           ${centered ? 'mx-auto' : ''}

@@ -13,6 +13,7 @@ import AuthErrorMessage from '@/components/AuthErrorMessage';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 import DemoModeFallback from '@/components/DemoModeFallback';
+import { SteamIcon } from '@/components/icons/SteamIcon';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -82,19 +83,62 @@ const AuthPage = () => {
           <p className="text-muted-foreground text-sm">
             Connect your account to start managing your backlog.
           </p>
+          
           <div className="flex flex-col gap-4">
-            <Button onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}>Sign in with Discord</Button>
-            <Button onClick={() => signInWithProvider('twitch', { redirectTo: window.location.origin })}>Sign in with Twitch</Button>
-            <div className="border-t pt-4">
+            <Button onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}>
+              Sign in with Discord
+            </Button>
+            <Button onClick={() => signInWithProvider('twitch', { redirectTo: window.location.origin })}>
+              Sign in with Twitch
+            </Button>
+            
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-700"></span>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-black px-2 text-gray-400">OR</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
               <Input
                 type="email"
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-gray-900"
               />
-              <Button className="mt-2" onClick={handleEmailLogin} disabled={!email}>
+              <Button 
+                className="w-full" 
+                onClick={handleEmailLogin} 
+                disabled={!email}
+                variant="secondary"
+              >
                 Send Magic Link
               </Button>
+            </div>
+            
+            <div className="mt-8 text-xs text-gray-500 space-y-1">
+              <p>
+                After signing in, you'll be able to link your Steam account.
+              </p>
+              <p>
+                By signing in you agree to our{" "}
+                <button 
+                  className="text-unplayed-mint hover:underline" 
+                  onClick={() => setTermsOfServiceOpen(true)}
+                >
+                  Terms of Service
+                </button>{" "}
+                and{" "}
+                <button 
+                  className="text-unplayed-mint hover:underline"
+                  onClick={() => setPrivacyPolicyOpen(true)}
+                >
+                  Privacy Policy
+                </button>
+              </p>
             </div>
           </div>
         </div>
