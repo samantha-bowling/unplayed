@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -86,7 +87,7 @@ const Header = () => {
 
         {isLoading ? (
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
-        ) : enhancedStatus === "AUTHENTICATED" ? (
+        ) : enhancedStatus === EnhancedAuthStatus.PROFILE_LOADED || enhancedStatus === EnhancedAuthStatus.SESSION_FOUND ? (
           <div className="flex items-center space-x-4">
             <Avatar className="cursor-pointer border border-unplayed-mint/30">
               {profile?.steam_avatar ? (

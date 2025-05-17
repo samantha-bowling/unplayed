@@ -1,3 +1,4 @@
+
 # Ensure API redirects are handled before catch-all rewrites
 [[redirects]]
 from = "/api/auth/steam/*"
@@ -5,6 +6,12 @@ to = "https://supabase.unplayed.wtf/functions/v1/steam-auth/:splat"
 status = 200
 force = true
 headers = { "X-Steam-Auth-Source" = "netlify" }
+
+[[redirects]]
+from = "/api/upsert-user"
+to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/upsert-user"
+status = 200
+force = true
 
 [[redirects]]
 from = "/api/webhooks/stripe"

@@ -6,6 +6,7 @@ import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
 import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
+import { toast } from 'sonner';
 
 const WelcomeGate = () => {
   const {
@@ -18,11 +19,27 @@ const WelcomeGate = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [hasUpserted, setHasUpserted] = useState(false);
+  const [isUpsertInProgress, setIsUpsertInProgress] = useState(false);
   const [acknowledgedPrivacy, setAcknowledgedPrivacy] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[WelcomeGate] Status:', { 
+      enhancedStatus, 
+      hasUpserted, 
+      isUpsertInProgress,
+      profileData: profile,
+      userId: user?.id,
+      retryCount
+    });
+  }, [enhancedStatus, hasUpserted, isUpsertInProgress, profile, user?.id, retryCount]);
 
   // Redirect if onboarding already complete
   useEffect(() => {
     if (profile?.onboarding_complete) {
+      console.log('[WelcomeGate] Onboarding already complete, redirecting to library');
       navigate('/library');
     }
   }, [profile?.onboarding_complete, navigate]);
@@ -35,16 +52,38 @@ const WelcomeGate = () => {
     const steam_avatar = params.get('steam_avatar');
     const uid = params.get('uid');
 
-    const waitForProfile = async (id: string, maxRetries = 5, delayMs = 500) => {
+    // Clear parameters from URL to prevent repeated processing
+    if (steam_id && steam_name && uid && window.history.replaceState) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+    }
+
+    const waitForProfile = async (id: string, maxRetries = 5, delayMs = 1000) => {
       for (let i = 0; i < maxRetries; i++) {
-        const refreshed = await refreshProfile();
-        if (refreshed && refreshed.id === id) return true;
+        console.log(`[WelcomeGate] Polling for profile (attempt ${i + 1}/${maxRetries})`);
+        try {
+          const refreshed = await refreshProfile();
+          if (refreshed && refreshed.id === id) {
+            console.log('[WelcomeGate] Profile found on attempt', i + 1);
+            return true;
+          }
+        } catch (err) {
+          console.error('[WelcomeGate] Error refreshing profile:', err);
+        }
+        
+        setRetryCount(prev => prev + 1);
         await new Promise((r) => setTimeout(r, delayMs));
       }
+      console.warn('[WelcomeGate] Max retries reached, profile not found');
       return false;
     };
 
-    if (user && steam_id && steam_name && uid && !hasUpserted) {
+    if (user && steam_id && steam_name && uid && !hasUpserted && !isUpsertInProgress) {
+      setIsUpsertInProgress(true);
+      setError(null);
+      
+      console.log('[WelcomeGate] Starting upsert process', { steam_id, steam_name, uid });
+      
       callUpsertUser({
         id: uid,
         steam_id,
@@ -53,36 +92,56 @@ const WelcomeGate = () => {
         onboarding_complete: true,
       })
         .then(() => {
+          console.log('[WelcomeGate] Upsert successful, waiting for profile');
           setHasUpserted(true);
           return waitForProfile(uid);
         })
         .then((success) => {
           if (success) {
+            console.log('[WelcomeGate] Profile confirmed, redirecting to library');
+            toast.success('Steam account linked successfully!');
             navigate('/library');
           } else {
-            console.warn('User profile not available after upsert.');
+            setError('Unable to confirm profile after upsert. Please try again.');
+            toast.error('Unable to confirm your profile. Please try again.');
           }
         })
         .catch((err) => {
-          console.error('Steam onboarding failed:', err);
+          console.error('[WelcomeGate] Steam onboarding failed:', err);
+          setError(`Failed to link Steam: ${err.message}`);
+          toast.error(`Failed to link Steam: ${err.message}`);
+        })
+        .finally(() => {
+          setIsUpsertInProgress(false);
         });
     }
-  }, [user, location.search, hasUpserted, refreshProfile, navigate]);
+  }, [user, location.search, hasUpserted, isUpsertInProgress, refreshProfile, navigate, setRetryCount]);
 
   if (!user) return null;
 
   const needsSteam = !profile?.steam_id;
   const isImporting = enhancedStatus === EnhancedAuthStatus.LIBRARY_IMPORTING;
+  const isLoading = isUpsertInProgress || isImporting;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center space-y-8">
-      {isImporting ? (
+      {isLoading ? (
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold">Building Your Backlog...</h1>
+          <h1 className="text-3xl font-bold">
+            {isImporting ? 'Building Your Backlog...' : 'Linking Your Steam Account...'}
+          </h1>
           <p className="text-muted-foreground text-sm">
-            We're importing your Steam library. Hang tight.
+            {isImporting 
+              ? "We're importing your Steam library. Hang tight." 
+              : "We're linking your Steam account. This should only take a moment."}
           </p>
-          <SteamLoader message="Importing your games from Steam..." size="md" variant="primary" />
+          <SteamLoader 
+            message={isImporting 
+              ? "Importing your games from Steam..." 
+              : "Linking your Steam account..."} 
+            size="md" 
+            variant="primary" 
+          />
         </div>
       ) : needsSteam ? (
         <div className="w-full max-w-md space-y-6">
@@ -111,6 +170,19 @@ const WelcomeGate = () => {
             />
             I've updated my Steam privacy settings
           </label>
+
+          {error && (
+            <div className="bg-red-900/50 border border-red-500 p-4 rounded text-left">
+              <p className="font-semibold text-red-400">Error linking Steam account:</p>
+              <p className="text-white/80 text-sm">{error}</p>
+              <button 
+                onClick={() => setError(null)}
+                className="text-sm text-red-400 hover:text-red-300 mt-2 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           <SteamLoginButton fullWidth disabled={!acknowledgedPrivacy} />
         </div>

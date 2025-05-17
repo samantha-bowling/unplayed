@@ -1,3 +1,4 @@
+
 // src/pages/AuthCallbackHandler.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -5,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import SteamLoader from '@/components/SteamLoader';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const AuthCallbackHandler = () => {
   const {
@@ -17,15 +19,43 @@ const AuthCallbackHandler = () => {
   const [loading, setLoading] = useState(true);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState<string>('initializing');
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [retryAttempts, setRetryAttempts] = useState(0);
 
   useEffect(() => {
+    // Debug logging
+    console.log('[AuthCallback] Current state:', {
+      processingStep,
+      loading,
+      error: processingError,
+      sessionChecked,
+      retryAttempts,
+      url: window.location.href
+    });
+  }, [processingStep, loading, processingError, sessionChecked, retryAttempts]);
+
+  useEffect(() => {
+    const MAX_RETRIES = 3;
+    
     const processAuth = async () => {
       try {
         setProcessingStep('checking_hash');
         console.log('[AuthCallback] Starting auth processing...');
+        
+        // Check for obvious error parameters in URL
+        const queryParams = new URLSearchParams(window.location.search);
+        const errorCode = queryParams.get('error_code');
+        
+        if (errorCode) {
+          console.error(`[AuthCallback] Error code in URL: ${errorCode}`);
+          const errorDesc = queryParams.get('error_description') || 'Unknown error';
+          setProcessingError(`Authentication failed: ${errorDesc}`);
+          navigate(`/login-error?${queryParams.toString()}`);
+          return;
+        }
 
-        const hasAuthHash = window.location.hash &&
-          (window.location.hash.includes('access_token') ||
+        const hasAuthHash = window.location.hash && 
+          (window.location.hash.includes('access_token') || 
            window.location.hash.includes('error'));
 
         if (hasAuthHash) {
@@ -33,33 +63,47 @@ const AuthCallbackHandler = () => {
         }
 
         setProcessingStep('refreshing_session');
+        console.log('[AuthCallback] Refreshing session...');
         const session = await refreshSession();
+        setSessionChecked(true);
 
-        if (!session) {
-          console.warn('[AuthCallback] No session found after refresh');
-          const queryParams = new URLSearchParams(window.location.search);
-          const errorCode = queryParams.get('error_code');
-
-          if (errorCode) {
-            console.error(`[AuthCallback] Error code in URL: ${errorCode}`);
-            setProcessingError(`Authentication failed: ${queryParams.get('error_description') || 'Unknown error'}`);
-            navigate(`/login-error?${queryParams.toString()}`);
-            return;
-          }
-
-          try {
-            setProcessingStep('manual_session_extract');
-            console.log('[AuthCallback] Attempting manual session extraction...');
-            const { data, error } = await supabase.auth.getSessionFromUrl();
-            if (error || !data.session) {
-              throw new Error(error?.message || 'No session found');
+        if (!session && retryAttempts < MAX_RETRIES) {
+          console.warn(`[AuthCallback] No session found after refresh. Retry attempt ${retryAttempts + 1}`);
+          
+          // Only try manual extraction on the first attempt
+          if (retryAttempts === 0) {
+            try {
+              setProcessingStep('manual_session_extract');
+              console.log('[AuthCallback] Attempting manual session extraction...');
+              
+              const { data, error } = await supabase.auth.getSessionFromUrl();
+              
+              if (error || !data.session) {
+                throw new Error(error?.message || 'No session found');
+              }
+              
+              console.log('[AuthCallback] Manual session extraction succeeded');
+              // Wait briefly for session to be available
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+            } catch (err: any) {
+              console.error('[AuthCallback] Manual session extraction failed:', err);
+              setRetryAttempts(prev => prev + 1);
+              return; // Exit this attempt, useEffect will try again
             }
-          } catch (err: any) {
-            console.error('[AuthCallback] Manual session extraction failed:', err);
-            setProcessingError(`Failed to process authentication: ${err.message}`);
-            navigate('/auth');
-            return;
+          } else {
+            // Just wait a moment before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setRetryAttempts(prev => prev + 1);
+            return; // Exit this attempt, useEffect will try again
           }
+        }
+        
+        if (!session && retryAttempts >= MAX_RETRIES) {
+          console.error('[AuthCallback] Max retries reached. Unable to obtain session.');
+          setProcessingError('Unable to complete authentication after several attempts');
+          navigate('/auth');
+          return;
         }
 
         setProcessingStep('fetching_profile');
@@ -68,6 +112,7 @@ const AuthCallbackHandler = () => {
 
         if (profileData?.onboarding_complete) {
           console.log('[AuthCallback] Onboarding complete, navigating to library');
+          toast.success('Welcome back!');
           navigate('/library');
         } else {
           console.log('[AuthCallback] Onboarding incomplete, navigating to welcome');
@@ -83,7 +128,7 @@ const AuthCallbackHandler = () => {
     };
 
     processAuth();
-  }, [refreshSession, refreshProfile, navigate]);
+  }, [refreshSession, refreshProfile, navigate, retryAttempts]);
 
   if (processingError) {
     return (
@@ -113,6 +158,9 @@ const AuthCallbackHandler = () => {
           click here
         </button>
       </p>
+      <div className="text-xs text-gray-500 mt-2">
+        Attempt: {retryAttempts + 1}
+      </div>
     </div>
   );
 };
