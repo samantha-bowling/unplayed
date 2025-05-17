@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { Menu } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Menu, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, AuthStatus, EnhancedAuthStatus } from '@/context/AuthContext';
 import { useAuthSessionStatus } from '@/hooks/use-auth-session-status';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -9,7 +9,6 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import SteamLoginButton from './SteamLoginButton';
 import DiscordIcon from './icons/DiscordIcon';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -17,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, signOut, isLoading } = useAuth();
+  const navigate = useNavigate();
   const { enhancedStatus } = useAuthSessionStatus();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
@@ -116,7 +116,15 @@ const Header = () => {
             </button>
           </div>
         ) : (
-          <SteamLoginButton />
+          // Show login button instead of Steam login
+          <Button 
+            onClick={() => navigate('/auth')}
+            variant="outline"
+            className="flex items-center gap-2 bg-black/50 border-gray-700 hover:bg-black/70"
+          >
+            <LogIn size={16} />
+            <span>Sign In</span>
+          </Button>
         )}
       </div>
 
@@ -196,7 +204,14 @@ const Header = () => {
                 </button>
               </div>
             ) : (
-              <SteamLoginButton fullWidth />
+              // Show login button in mobile menu instead of Steam login
+              <Button 
+                onClick={() => navigate('/auth')}
+                className="w-full"
+              >
+                <LogIn size={16} className="mr-2" />
+                Sign In
+              </Button>
             )}
           </div>
         </div>

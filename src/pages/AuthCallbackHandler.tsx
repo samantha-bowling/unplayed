@@ -76,7 +76,8 @@ const AuthCallbackHandler = () => {
               setProcessingStep('manual_session_extract');
               console.log('[AuthCallback] Attempting manual session extraction...');
               
-              const { data, error } = await supabase.auth.getSessionFromUrl();
+              // Fixed: Using the correct Supabase method
+              const { data, error } = await supabase.auth.getSession();
               
               if (error || !data.session) {
                 throw new Error(error?.message || 'No session found');

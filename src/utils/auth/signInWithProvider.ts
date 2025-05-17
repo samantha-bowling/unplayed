@@ -9,9 +9,8 @@ export const signInWithProvider = async (
   console.log(`[Auth] Signing in with ${provider}, redirect: ${redirectTo || 'default'}`);
   
   try {
-    if (provider === 'email') {
-      throw new Error('Email login should use signInWithEmail instead.');
-    }
+    // Fixed: Removed incorrect provider type comparison
+    // The provider should only be discord, twitch or steam based on the type
 
     // Make sure we have a valid redirect URL
     const normalizedRedirectTo = redirectTo || `${window.location.origin}/auth/callback`;

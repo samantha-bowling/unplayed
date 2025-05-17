@@ -1,3 +1,4 @@
+
 // src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
@@ -8,6 +9,7 @@ interface SteamLoginButtonProps {
   fullWidth?: boolean;
   centered?: boolean;
   disabled?: boolean;
+  showInHeader?: boolean;
 }
 
 const SteamLoginButton = ({
@@ -16,7 +18,13 @@ const SteamLoginButton = ({
   fullWidth = false,
   centered = true,
   disabled = false,
+  showInHeader = false, // New prop to control visibility in header
 }: SteamLoginButtonProps) => {
+  // If this is being rendered in the header and we don't want to show it there, return null
+  if (showInHeader === false) {
+    return null;
+  }
+
   const { user, isLoading } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
 
