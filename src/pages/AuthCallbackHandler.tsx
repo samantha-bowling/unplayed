@@ -1,3 +1,4 @@
+
 // src/pages/AuthCallbackHandler.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -18,6 +19,8 @@ const AuthCallbackHandler = () => {
   const {
     refreshSession,
     refreshProfile,
+    appAuthState,
+    authIsStable
   } = useAuth();
 
   const navigate = useNavigate();
@@ -36,9 +39,49 @@ const AuthCallbackHandler = () => {
       error: processingError,
       sessionChecked,
       retryAttempts,
+      appAuthState,
+      authIsStable,
       url: window.location.href
     });
-  }, [processingStep, loading, processingError, sessionChecked, retryAttempts]);
+  }, [processingStep, loading, processingError, sessionChecked, retryAttempts, appAuthState, authIsStable]);
+
+  // Handle automatic navigation when auth state becomes stable
+  useEffect(() => {
+    if (!authIsStable) return;
+    
+    console.log('[AuthCallback] Auth state is now stable:', appAuthState);
+    
+    // Only navigate when we're sure the auth state is stable
+    switch (appAuthState) {
+      case 'READY':
+        console.log('[AuthCallback] User fully authenticated, redirecting to library');
+        toast.success('Welcome back!');
+        setLoading(false);
+        navigate('/library');
+        break;
+        
+      case 'ONBOARDING':
+      case 'ONBOARDING_STEAM_LINK':
+        console.log('[AuthCallback] User needs onboarding, redirecting to welcome');
+        setLoading(false);
+        navigate('/welcome');
+        break;
+        
+      case 'ANONYMOUS':
+        console.log('[AuthCallback] No user found after auth attempt, redirecting to auth');
+        setProcessingError('Authentication failed. Please try again.');
+        setLoading(false);
+        navigate('/auth');
+        break;
+        
+      case 'ERROR':
+        console.log('[AuthCallback] Auth error occurred, redirecting to auth');
+        setProcessingError('An error occurred during authentication. Please try again.');
+        setLoading(false);
+        navigate('/auth');
+        break;
+    }
+  }, [appAuthState, authIsStable, navigate]);
 
   useEffect(() => {
     // Set flags to indicate we're in the middle of an auth flow
@@ -134,6 +177,7 @@ const AuthCallbackHandler = () => {
           console.error('[AuthCallback] Unable to obtain session after multiple attempts');
           setProcessingError('Unable to complete authentication. Please try signing in again.');
           setSessionFlag('AUTH_IN_PROGRESS', 'false');
+          setLoading(false);
           navigate('/auth');
           return;
         }
@@ -164,33 +208,28 @@ const AuthCallbackHandler = () => {
         
         console.log('[AuthCallback] Profile data:', profileData);
         
-        // Keep auth in progress flag for other components,
-        // but update flow status to indicate where we are
-        
+        // Mark auth flow status but don't navigate - let the auth state machine handle it
         if (!profileData) {
           console.log('[AuthCallback] No profile found, needs onboarding');
           setAuthFlowStatus('onboarding_needed');
           // Make sure we maintain the just logged in flag
           setSessionFlag('JUST_LOGGED_IN', 'true');
-          navigate('/welcome');
         } else if (profileData.onboarding_complete !== true) {
           console.log('[AuthCallback] Profile found but onboarding not complete');
           setAuthFlowStatus('onboarding_needed');
-          navigate('/welcome');
         } else {
-          console.log('[AuthCallback] Onboarding complete, navigating to library');
+          console.log('[AuthCallback] Onboarding complete');
           setAuthFlowStatus('ready');
-          // User is fully authenticated and onboarded
-          toast.success('Welcome back!');
-          navigate('/library');
         }
+        
+        // Auth state machine in AuthContext will handle navigation
+        // once the app auth state stabilizes
       } catch (err: any) {
         console.error('[AuthCallbackHandler] Fatal auth error:', err);
         setProcessingError(`Authentication failed: ${err.message}`);
         clearAuthSessionFlags();
-        navigate('/auth');
-      } finally {
         setLoading(false);
+        navigate('/auth');
       }
     };
 
@@ -205,7 +244,7 @@ const AuthCallbackHandler = () => {
 
   if (processingError) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <AuthErrorHandler 
           errorMessage={processingError} 
           errorCode="auth_callback_failed"
@@ -216,7 +255,7 @@ const AuthCallbackHandler = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <SteamLoader 
         message={`Processing authentication... (${processingStep})`} 
         size="md" 

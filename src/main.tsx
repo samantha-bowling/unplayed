@@ -11,6 +11,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
+import AuthHydrationGate from '@/components/AuthHydrationGate';
 
 // Create a client with stale time to prevent too many re-fetches
 const queryClient = new QueryClient({
@@ -28,14 +29,19 @@ createRoot(document.getElementById("root")!).render(
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Auth provider is the most critical and should be at the root */}
         <AuthProvider>
-          {/* Move SteamSessionProvider outside DemoModeProvider to ensure proper dependency order */}
+          {/* SteamSession provider comes next as it can be accessed by Demo mode */}
           <SteamSessionProvider>
-            {/* DemoModeProvider inside SteamSessionProvider so it can access both auth and steam contexts */}
+            {/* Demo mode needs access to both auth and steam contexts */}
             <DemoModeProvider>
-              <FullScreenModeProvider>
-                <App />
-              </FullScreenModeProvider>
+              {/* Auth hydration gate prevents rendering until auth state is stable */}
+              <AuthHydrationGate>
+                {/* Full screen mode is UI only and can be inside the gate */}
+                <FullScreenModeProvider>
+                  <App />
+                </FullScreenModeProvider>
+              </AuthHydrationGate>
             </DemoModeProvider>
           </SteamSessionProvider>
         </AuthProvider>

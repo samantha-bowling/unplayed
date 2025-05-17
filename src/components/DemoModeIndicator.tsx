@@ -6,10 +6,10 @@ import { motion } from 'framer-motion';
 
 export const DemoModeIndicator: React.FC = () => {
   const { isDemo, demoData, isDemoExplicit, disableDemo } = useDemoMode();
-  const { user, isAuthReady, signInWithProvider, appAuthState } = useAuth();
+  const { user, isAuthReady, signInWithProvider, appAuthState, authIsStable } = useAuth();
 
-  // Only show when in demo mode and auth is ready
-  if (!isDemo || !isAuthReady) return null;
+  // Only show when in demo mode, auth is ready and auth state is stable
+  if (!isDemo || !isAuthReady || !authIsStable) return null;
 
   return (
     <motion.div

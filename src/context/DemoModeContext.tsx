@@ -21,7 +21,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Safely access AuthContext
   const authContext = useContext(AuthContext);
   
-  // Compute if we should show demo mode based on the new AppAuthState
+  // Compute if we should show demo mode based on the new AppAuthState and authIsStable
   // This provides more stable transitions between states
   const isDemo = useMemo(() => {
     // If explicitly in demo mode, use that
@@ -30,23 +30,26 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // If AuthContext isn't available or not ready yet, default to demo mode
     if (!authContext || !authContext.isAuthReady) return true;
     
-    // If we have a full authenticated user with completed profile, disable demo mode
-    if (authContext.appAuthState === AppAuthState.READY) return false;
+    // Use the improved authIsStable flag and appAuthState
+    if (authContext.authIsStable) {
+      // If we have a full authenticated user with completed profile, disable demo mode
+      if (authContext.appAuthState === 'READY') return false;
+    }
     
-    // In all other states (ANONYMOUS, AUTHENTICATED, ONBOARDING), show demo mode
+    // In all other states, show demo mode
     return true;
-  }, [authContext?.appAuthState, authContext?.isAuthReady, isDemoExplicit]);
+  }, [authContext?.appAuthState, authContext?.authIsStable, authContext?.isAuthReady, isDemoExplicit]);
   
   // Debug logging
   useEffect(() => {
     if (authContext && authContext.isAuthReady) {
-      console.log(`[DemoMode] Demo state: ${isDemo ? 'enabled' : 'disabled'}, Auth ready: ${authContext.isAuthReady}, Auth state: ${authContext.appAuthState}, User: ${authContext.user ? authContext.user.id : 'none'}, Steam linked: ${authContext.isSteamLinked}, Explicit demo: ${isDemoExplicit}`);
+      console.log(`[DemoMode] Demo state: ${isDemo ? 'enabled' : 'disabled'}, Auth ready: ${authContext.isAuthReady}, Auth state: ${authContext.appAuthState}, User: ${authContext.user ? authContext.user.id : 'none'}, Steam linked: ${authContext.isSteamLinked}, Explicit demo: ${isDemoExplicit}, Auth stable: ${authContext.authIsStable || false}`);
     }
   }, [isDemo, authContext, isDemoExplicit]);
   
-  // When user completes onboarding (has profile + steam), disable explicit demo mode
+  // When user completes onboarding, disable explicit demo mode
   useEffect(() => {
-    if (authContext?.appAuthState === AppAuthState.READY && isDemoExplicit) {
+    if (authContext?.appAuthState === 'READY' && isDemoExplicit) {
       console.log('[DemoMode] User fully authenticated, disabling explicit demo mode');
       setIsDemoExplicit(false);
     }

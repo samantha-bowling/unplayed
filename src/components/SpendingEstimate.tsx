@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSpendingData from '@/hooks/use-spending-data';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -7,7 +7,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
-import { AppAuthState } from '@/context/AuthContext';
 
 interface SpendingEstimateProps {
   amount?: number;
@@ -20,26 +19,35 @@ const SpendingEstimate = ({
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading, refreshPrices, isRefreshing } = useSpendingData();
   const { isDemo } = useDemoMode();
-  const { user, isAuthReady, appAuthState } = useAuth();
+  const { user, isAuthReady, appAuthState, authIsStable } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
-  const [isStable, setIsStable] = useState(false);
+  const [isComponentStable, setIsComponentStable] = useState(false);
+  const initialRenderRef = useRef(true);
   
   // Monitor for stable auth state before allowing interactions
   useEffect(() => {
-    if (!isAuthReady) return;
+    // Reset visibility on app auth state changes that affect component stability
+    // This prevents animation errors and UI flicker
+    if (!isAuthReady || !authIsStable) {
+      // Don't alter visibility on first render
+      if (!initialRenderRef.current) {
+        setIsVisible(false);
+        setIsComponentStable(false);
+      }
+      return;
+    }
+    
+    // Mark initial render complete
+    initialRenderRef.current = false;
     
     // Add a small delay to ensure contexts are stable
+    // This prevents immediate rendering until auth and data are ready
     const timer = setTimeout(() => {
-      setIsStable(true);
+      setIsComponentStable(true);
     }, 300);
     
     return () => clearTimeout(timer);
-  }, [isAuthReady, appAuthState]);
-  
-  // Reset visibility when auth state changes significantly
-  useEffect(() => {
-    setIsVisible(false);
-  }, [appAuthState]);
+  }, [isAuthReady, authIsStable, appAuthState]);
   
   // Use amount from props if provided, otherwise use spending data
   const spendingAmount = amount !== undefined 
@@ -53,9 +61,9 @@ const SpendingEstimate = ({
   };
 
   // Only show refresh when authenticated and not in demo mode
-  const showRefresh = !isDemo && user && isAuthReady && appAuthState === AppAuthState.READY;
+  const showRefresh = !isDemo && user && isAuthReady && appAuthState === 'READY';
 
-  const isComponentLoading = isLoading || !isStable;
+  const isComponentLoading = isLoading || !isComponentStable;
 
   return (
     <div className="terminal-container equal-height-container">

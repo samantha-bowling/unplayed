@@ -30,21 +30,48 @@ const SpendingMeter = ({
   const startTimeRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
   const [animationReady, setAnimationReady] = useState(false);
+  const [hasEverBeenStable, setHasEverBeenStable] = useState(false);
+
+  // Clean up animation on unmount
+  useEffect(() => {
+    return () => {
+      // Cancel any in-flight animation
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Delay animation start to ensure stable rendering
   useEffect(() => {
+    // Set this first to track if we've ever hit a stable state
+    if (!isLoading && !hasEverBeenStable) {
+      setHasEverBeenStable(true);
+    }
+    
+    // Only start animation if we've previously hit a stable state
+    if (!hasEverBeenStable) return;
+    
     const timer = setTimeout(() => {
-      if (isMountedRef.current) {
+      if (isMountedRef.current && !isLoading) {
         setAnimationReady(true);
       }
-    }, 200);
+    }, 300);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoading, hasEverBeenStable]);
 
   useEffect(() => {
-    // Set up mounted ref for cleanup
-    isMountedRef.current = true;
+    // Don't start animation if we're still loading or animation isn't ready
+    if (isLoading || !animationReady) {
+      return;
+    }
+    
+    // Reset animation state when amount changes
+    setAnimatedAmount(0);
+    startTimeRef.current = null;
     
     // Cancel any in-flight animation
     if (animationRef.current) {
@@ -52,49 +79,36 @@ const SpendingMeter = ({
       animationRef.current = null;
     }
     
-    // Reset animation state when amount changes
-    setAnimatedAmount(0);
-    startTimeRef.current = null;
-    
-    // Don't start animation if we're still loading or animation isn't ready
-    if (isLoading || !animationReady) return;
-    
-    // Use a small delay to ensure we're not animating during the render cycle
-    const timeoutId = setTimeout(() => {
+    const duration = 2000; // Animation duration in ms
+      
+    const animate = (timestamp: number) => {
       if (!isMountedRef.current) return;
       
-      const duration = 2000; // Animation duration in ms
+      if (startTimeRef.current === null) {
+        startTimeRef.current = timestamp;
+      }
       
-      const animate = (timestamp: number) => {
-        if (!isMountedRef.current) return;
-        
-        if (startTimeRef.current === null) {
-          startTimeRef.current = timestamp;
-        }
-        
-        const elapsed = timestamp - startTimeRef.current;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Calculate the current value based on progress
-        const currentValue = progress * amount;
-        setAnimatedAmount(currentValue);
-        
-        // Continue animation if not complete
-        if (progress < 1) {
-          animationRef.current = requestAnimationFrame(animate);
-        }
-      };
+      const elapsed = timestamp - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
       
-      // Start the animation using requestAnimationFrame for smoother performance
-      animationRef.current = requestAnimationFrame(animate);
-    }, 50);
+      // Calculate the current value based on progress
+      const currentValue = progress * amount;
+      setAnimatedAmount(currentValue);
+      
+      // Continue animation if not complete
+      if (progress < 1 && isMountedRef.current) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
     
-    // Clean up animation on unmount or data change
+    // Start the animation using requestAnimationFrame for smoother performance
+    animationRef.current = requestAnimationFrame(animate);
+    
+    // Return cleanup function
     return () => {
-      isMountedRef.current = false;
-      clearTimeout(timeoutId);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
     };
   }, [amount, isLoading, animationReady]);
