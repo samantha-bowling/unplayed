@@ -1,11 +1,12 @@
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import SteamLoader from './SteamLoader';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: string; // Add support for requiredRole prop
+  requiredRole?: string;
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -15,22 +16,40 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     user,
     profile,
     isAuthReady,
+    refreshProfile
   } = useAuth();
-
+  
   const location = useLocation();
+  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
+  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
 
-  if (!isAuthReady) {
+  // Force check onboarding status when route is accessed
+  useEffect(() => {
+    if (user && isAuthReady && !isCheckingProfile && !hasCheckedOnboarding) {
+      setIsCheckingProfile(true);
+      
+      refreshProfile()
+        .then(profileData => {
+          setIsOnboardingComplete(profileData?.onboarding_complete === true);
+          setHasCheckedOnboarding(true);
+        })
+        .catch(err => {
+          console.error('Error checking profile for protected route:', err);
+          setIsOnboardingComplete(false);
+          setHasCheckedOnboarding(true);
+        })
+        .finally(() => {
+          setIsCheckingProfile(false);
+        });
+    }
+  }, [user, isAuthReady, refreshProfile, isCheckingProfile, hasCheckedOnboarding]);
+  
+  // Show loading if we're checking auth or profile
+  if (!isAuthReady || isLoading || isCheckingProfile) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-white">
-        <p>🔄 Waiting for auth to hydrate...</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-white">
-        <p>⏳ Loading session...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <SteamLoader message="Verifying access..." size="md" variant="secondary" />
       </div>
     );
   }
@@ -45,7 +64,9 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to="/" replace />;
   }
 
-  if (!profile?.onboarding_complete) {
+  // Check if onboarding is complete after explicit check
+  if (hasCheckedOnboarding && !isOnboardingComplete) {
+    console.log('🔄 Redirecting to welcome page for onboarding');
     return <Navigate to="/welcome" replace />;
   }
 

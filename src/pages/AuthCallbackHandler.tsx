@@ -1,4 +1,3 @@
-
 // src/pages/AuthCallbackHandler.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -35,7 +34,14 @@ const AuthCallbackHandler = () => {
   }, [processingStep, loading, processingError, sessionChecked, retryAttempts]);
 
   useEffect(() => {
+    // Set a flag to indicate we're in the middle of an auth flow
+    // This helps prevent flickering in other components
+    sessionStorage.setItem('authInProgress', 'true');
+    // Mark this as a fresh login to help with onboarding flow
+    sessionStorage.setItem('justLoggedIn', 'true');
+    
     const MAX_RETRIES = 3;
+    const RETRY_DELAY = 800; // ms
     
     const processAuth = async () => {
       try {
@@ -50,6 +56,8 @@ const AuthCallbackHandler = () => {
           console.error(`[AuthCallback] Error code in URL: ${errorCode}`);
           const errorDesc = queryParams.get('error_description') || 'Unknown error';
           setProcessingError(`Authentication failed: ${errorDesc}`);
+          // Remove the auth in progress flag
+          sessionStorage.removeItem('authInProgress');
           navigate(`/login-error?${queryParams.toString()}`);
           return;
         }
@@ -64,64 +72,83 @@ const AuthCallbackHandler = () => {
 
         setProcessingStep('refreshing_session');
         console.log('[AuthCallback] Refreshing session...');
-        const session = await refreshSession();
-        setSessionChecked(true);
-
-        if (!session && retryAttempts < MAX_RETRIES) {
-          console.warn(`[AuthCallback] No session found after refresh. Retry attempt ${retryAttempts + 1}`);
-          
-          // Only try manual extraction on the first attempt
-          if (retryAttempts === 0) {
-            try {
-              setProcessingStep('manual_session_extract');
-              console.log('[AuthCallback] Attempting manual session extraction...');
-              
-              // Fixed: Using the correct Supabase method
-              const { data, error } = await supabase.auth.getSession();
-              
-              if (error || !data.session) {
-                throw new Error(error?.message || 'No session found');
-              }
-              
-              console.log('[AuthCallback] Manual session extraction succeeded');
-              // Wait briefly for session to be available
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-            } catch (err: any) {
-              console.error('[AuthCallback] Manual session extraction failed:', err);
-              setRetryAttempts(prev => prev + 1);
-              return; // Exit this attempt, useEffect will try again
+        
+        // First attempt with exponential backoff
+        let session = null;
+        let attemptCount = 0;
+        
+        while (!session && attemptCount < MAX_RETRIES) {
+          try {
+            if (attemptCount > 0) {
+              console.log(`[AuthCallback] Retry attempt ${attemptCount + 1}/${MAX_RETRIES}`);
+              // Wait longer between each retry attempt
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, attemptCount)));
             }
-          } else {
-            // Just wait a moment before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setRetryAttempts(prev => prev + 1);
-            return; // Exit this attempt, useEffect will try again
+            
+            session = await refreshSession();
+            attemptCount++;
+            
+            if (!session) {
+              console.log(`[AuthCallback] No session found yet, will try manual extraction`);
+              
+              try {
+                setProcessingStep('manual_session_extract');
+                console.log('[AuthCallback] Attempting manual session extraction...');
+                
+                // Try to manually extract the session
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error || !data.session) {
+                  console.error('[AuthCallback] Manual extraction failed:', error || 'No session data');
+                } else {
+                  console.log('[AuthCallback] Manual session extraction succeeded');
+                  session = data.session;
+                  
+                  // Wait briefly for session to be fully available
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
+              } catch (err) {
+                console.error('[AuthCallback] Manual extraction error:', err);
+              }
+            }
+          } catch (err) {
+            console.error(`[AuthCallback] Session refresh error on attempt ${attemptCount + 1}:`, err);
           }
         }
         
-        if (!session && retryAttempts >= MAX_RETRIES) {
-          console.error('[AuthCallback] Max retries reached. Unable to obtain session.');
-          setProcessingError('Unable to complete authentication after several attempts');
+        setSessionChecked(true);
+
+        if (!session) {
+          console.error('[AuthCallback] Unable to obtain session after multiple attempts');
+          setProcessingError('Unable to complete authentication. Please try signing in again.');
+          sessionStorage.removeItem('authInProgress');
           navigate('/auth');
           return;
         }
 
         setProcessingStep('fetching_profile');
         console.log('[AuthCallback] Session confirmed. Fetching profile...');
+        
         const profileData = await refreshProfile();
-
-        if (profileData?.onboarding_complete) {
+        console.log('[AuthCallback] Profile data:', profileData);
+        
+        // Remove auth in progress flag
+        sessionStorage.removeItem('authInProgress');
+        
+        if (profileData?.onboarding_complete === true) {
           console.log('[AuthCallback] Onboarding complete, navigating to library');
           toast.success('Welcome back!');
           navigate('/library');
         } else {
           console.log('[AuthCallback] Onboarding incomplete, navigating to welcome');
+          // Explicitly mark that we're coming from auth flow to the welcome page
+          sessionStorage.setItem('fromAuthCallback', 'true');
           navigate('/welcome');
         }
       } catch (err: any) {
         console.error('[AuthCallbackHandler] Fatal auth error:', err);
         setProcessingError(`Authentication failed: ${err.message}`);
+        sessionStorage.removeItem('authInProgress');
         navigate('/auth');
       } finally {
         setLoading(false);
@@ -129,7 +156,13 @@ const AuthCallbackHandler = () => {
     };
 
     processAuth();
-  }, [refreshSession, refreshProfile, navigate, retryAttempts]);
+    
+    // Cleanup function to ensure we don't leave flags set if component unmounts
+    return () => {
+      // Only clear the 'authInProgress' flag - keep 'justLoggedIn' for the Welcome page
+      sessionStorage.removeItem('authInProgress');
+    };
+  }, [refreshSession, refreshProfile, navigate]);
 
   if (processingError) {
     return (

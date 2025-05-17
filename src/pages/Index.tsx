@@ -1,4 +1,3 @@
-
 // src/pages/Index.tsx
 
 import AuthModal from '@/components/AuthModal';
@@ -23,20 +22,47 @@ import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
 import { Loader2 } from "lucide-react";
 import SteamLoader from "@/components/SteamLoader";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const isMounted = useIsMounted();
-  const { user, isAuthBootComplete } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthBootComplete, profile, refreshProfile } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isNewSteamUser, setIsNewSteamUser] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  // Check if we need to complete onboarding
+  useEffect(() => {
+    // Only run this check when authentication is fully ready
+    if (!isAuthBootComplete) return;
+    
+    // Check if the user has a profile but hasn't completed onboarding
+    if (user && profile && profile.onboarding_complete === false) {
+      console.log('User detected with incomplete onboarding, redirecting to welcome');
+      navigate('/welcome');
+    }
+    
+    // Check for just logged in or auth flow flags
+    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
+    if (user && justLoggedIn) {
+      console.log('New login detected, checking onboarding status');
+      // Refresh profile to make sure we have latest data
+      refreshProfile().then(profileData => {
+        if (profileData?.onboarding_complete === false) {
+          console.log('Redirecting newly logged in user to welcome gate');
+          navigate('/welcome');
+        }
+      });
+    }
+  }, [user, profile, isAuthBootComplete, navigate, refreshProfile]);
 
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
     if (steamUser && justLoggedIn) {
       setIsNewSteamUser(true);
-      sessionStorage.removeItem("justLoggedIn");
+      // Don't remove justLoggedIn here - let the Welcome page handle it
     }
   }, [steamUser]);
 
@@ -77,7 +103,7 @@ const Index = () => {
             {steamUser ? (
               <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
                 {isNewSteamUser
-                  ? "🎉 You made it! It'll take a few minutes to import that massive library of yours. Sit back, relax, and let’s take this ride of shame together."
+                  ? "🎉 You made it! It'll take a few minutes to import that massive library of yours. Sit back, relax, and let's take this ride of shame together."
                   : "Welcome back! Time to face the backlog."}
               </p>
             ) : (
@@ -203,7 +229,7 @@ const Index = () => {
                 </Button>
               </div>
               <p className="text-sm text-gray-500 mt-4 mb-2">
-                You’ll connect your Steam account after login.
+                You'll connect your Steam account after login.
               </p>
             </div>
           </section>

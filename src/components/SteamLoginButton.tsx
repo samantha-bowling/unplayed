@@ -18,7 +18,7 @@ const SteamLoginButton = ({
   fullWidth = false,
   centered = true,
   disabled = false,
-  showInHeader = false, // New prop to control visibility in header
+  showInHeader = true, // Default to true to maintain backward compatibility
 }: SteamLoginButtonProps) => {
   // If this is being rendered in the header and we don't want to show it there, return null
   if (showInHeader === false) {
@@ -31,6 +31,9 @@ const SteamLoginButton = ({
   const handleSteamLogin = () => {
     if (!user) return;
     setButtonLoading(true);
+    // Set a flag to indicate we're starting a Steam auth
+    sessionStorage.setItem('steamAuthStarted', 'true');
+    
     const uid = encodeURIComponent(user.id);
     const redirectTo = `${window.location.origin}${redirectPath}`;
     const steamRedirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;

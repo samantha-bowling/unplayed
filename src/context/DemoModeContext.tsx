@@ -16,15 +16,43 @@ const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined
 export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
+  const [stableIsDemoState, setStableIsDemoState] = useState(false);
   
-  // Enhanced logic: Always consider auth loading state first
+  // Check if auth is in progress to prevent flickering
+  const isAuthInProgress = () => {
+    return sessionStorage.getItem('authInProgress') === 'true' || 
+           sessionStorage.getItem('authStarted') === 'true';
+  };
+  
+  // Enhanced logic: Always consider auth loading state and in-progress states first
   // This prevents the race condition where demo mode is enabled during auth loading
-  const isDemo = (!isLoading && !user) || isDemoExplicit;
+  useEffect(() => {
+    // Don't change demo state during auth transitions
+    if (isAuthInProgress()) {
+      console.log('Auth in progress, not changing demo state');
+      return;
+    }
+    
+    // Determine the stable demo state with debounce
+    const newDemoState = (!isLoading && !user) || isDemoExplicit;
+    
+    // Only update if the state actually changed
+    if (newDemoState !== stableIsDemoState) {
+      console.log(`Setting stable demo state: ${newDemoState}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
+      
+      // Use a slight delay to prevent rapid flickering
+      const timer = setTimeout(() => {
+        setStableIsDemoState(newDemoState);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, user, isDemoExplicit, stableIsDemoState]);
   
   // Enhanced logging to help debug auth and demo mode state changes
   useEffect(() => {
-    console.log(`Demo mode: ${isDemo ? 'enabled' : 'disabled'}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
-  }, [isDemo, isLoading, user, isDemoExplicit]);
+    console.log(`Demo mode: ${stableIsDemoState ? 'enabled' : 'disabled'}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}, Auth in progress: ${isAuthInProgress()}`);
+  }, [stableIsDemoState, isLoading, user, isDemoExplicit]);
   
   const enableDemo = () => {
     console.log('Demo mode explicitly enabled');
@@ -33,7 +61,7 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   return (
     <DemoModeContext.Provider value={{ 
-      isDemo, 
+      isDemo: stableIsDemoState,
       isDemoExplicit, 
       setIsDemoExplicit,
       demoData: DEMO_DATA,

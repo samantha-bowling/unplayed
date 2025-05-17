@@ -12,6 +12,10 @@ export const signInWithProvider = async (
     // Fixed: Removed incorrect provider type comparison
     // The provider should only be discord, twitch or steam based on the type
 
+    // Set a flag that we're starting an auth flow
+    // This helps prevent demo mode flickering
+    sessionStorage.setItem('authStarted', 'true');
+
     // Make sure we have a valid redirect URL
     const normalizedRedirectTo = redirectTo || `${window.location.origin}/auth/callback`;
     console.log(`[Auth] Using redirect URL: ${normalizedRedirectTo}`);
@@ -38,6 +42,8 @@ export const signInWithProvider = async (
 
     if (error) {
       console.error(`[Auth] ${provider} sign in error:`, error);
+      // Clear auth flags on error
+      sessionStorage.removeItem('authStarted');
       throw error;
     }
 
@@ -46,6 +52,8 @@ export const signInWithProvider = async (
   } catch (error: any) {
     console.error(`[Auth] Sign in with ${provider} failed:`, error);
     toast.error(`Login with ${provider} failed: ${error.message}`);
+    // Clear auth flags on error
+    sessionStorage.removeItem('authStarted');
     throw error;
   }
 };

@@ -23,18 +23,37 @@ force = true
 command = "npm run build"
 publish = "dist"
 
-# Auth-related routes need to be handled explicitly
+# Custom cache control for auth-related routes
+[[headers]]
+  for = "/auth/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Pragma = "no-cache"
+
+# Auth-related routes need explicit handling to prevent race conditions
+[[redirects]]
+from = "/auth/callback"
+to = "/index.html"
+status = 200
+force = true
+
+[[redirects]]
+from = "/welcome"
+to = "/index.html"
+status = 200
+force = true
+
 [[redirects]]
 from = "/auth"
 to = "/index.html"
 status = 200
-force = false
+force = true
 
 [[redirects]]
 from = "/login-error"
 to = "/index.html"
 status = 200
-force = false
+force = true
 
 # Admin routes
 [[redirects]]
@@ -48,7 +67,7 @@ force = false
 from = "/auth/*"
 to = "/index.html"
 status = 200
-force = false
+force = true
 
 # Catch-all fallback for all remaining routes
 [[redirects]]
@@ -56,3 +75,4 @@ from = "/*"
 to = "/index.html"
 status = 200
 force = false
+
