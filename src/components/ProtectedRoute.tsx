@@ -1,13 +1,8 @@
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, AppAuthState } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
-import { 
-  hasSessionFlag,
-  getAuthFlowStatus,
-  setAuthFlowStatus
-} from '@/utils/auth-session-flags';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -20,97 +15,31 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     user,
     profile,
     isAuthReady,
-    refreshProfile
+    appAuthState,
+    isSteamLinked
   } = useAuth();
   
   const location = useLocation();
-  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
-  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
-  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   // Debug logging
   useEffect(() => {
     console.log('[ProtectedRoute] State:', {
       authReady: isAuthReady,
       loading: isLoading,
-      checkingProfile: isCheckingProfile,
-      hasCheckedOnboarding,
-      isOnboardingComplete,
       userId: user?.id,
       profileId: profile?.id,
-      retryCount,
-      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
-      authFlowStatus: getAuthFlowStatus(),
+      appAuthState,
+      isSteamLinked,
       path: location.pathname
     });
-  }, [
-    isAuthReady, isLoading, isCheckingProfile, hasCheckedOnboarding, 
-    isOnboardingComplete, user?.id, profile?.id, retryCount, location.pathname
-  ]);
+  }, [isAuthReady, isLoading, user?.id, profile?.id, appAuthState, isSteamLinked, location.pathname]);
 
-  // Force check onboarding status when route is accessed
-  useEffect(() => {
-    // Only run this check when auth is ready and we have a user but haven't checked yet
-    const shouldCheckProfile = 
-      user && 
-      isAuthReady && 
-      !isCheckingProfile && 
-      !hasCheckedOnboarding;
-    
-    if (shouldCheckProfile) {
-      setIsCheckingProfile(true);
-      console.log('[ProtectedRoute] Checking profile for user', user.id);
-      
-      refreshProfile()
-        .then(profileData => {
-          console.log('[ProtectedRoute] Profile check result:', profileData);
-          
-          // Explicit cast to boolean to avoid null/undefined confusion
-          const onboardingComplete = profileData?.onboarding_complete === true;
-          setIsOnboardingComplete(onboardingComplete);
-          
-          // If onboarding is complete, update flow status
-          if (onboardingComplete) {
-            setAuthFlowStatus('ready');
-          } else if (profileData) {
-            // We have a profile but onboarding not complete
-            setAuthFlowStatus('onboarding_needed');
-          } else {
-            // No profile at all
-            setAuthFlowStatus('logged_in_waiting_profile');
-          }
-          
-          setHasCheckedOnboarding(true);
-        })
-        .catch(err => {
-          console.error('[ProtectedRoute] Error checking profile:', err);
-          
-          // If we have few retry attempts, try again after a short delay
-          if (retryCount < 2) {
-            setTimeout(() => {
-              setRetryCount(prev => prev + 1);
-              setIsCheckingProfile(false); // Allow another attempt
-            }, 1000);
-          } else {
-            // After retries, assume onboarding needed
-            setIsOnboardingComplete(false);
-            setHasCheckedOnboarding(true);
-            setAuthFlowStatus('onboarding_needed');
-          }
-        })
-        .finally(() => {
-          setIsCheckingProfile(false);
-        });
-    }
-  }, [user, isAuthReady, refreshProfile, isCheckingProfile, hasCheckedOnboarding, retryCount]);
-  
   // Show loading if we're checking auth or profile
-  if (!isAuthReady || isLoading || isCheckingProfile) {
+  if (!isAuthReady || isLoading || appAuthState === AppAuthState.AUTHENTICATED) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <SteamLoader 
-          message={isCheckingProfile ? "Verifying profile..." : "Verifying access..."} 
+          message={appAuthState === AppAuthState.AUTHENTICATED ? "Verifying profile..." : "Verifying access..."} 
           size="md" 
           variant="secondary" 
         />
@@ -118,8 +47,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     );
   }
 
-  // If no user, redirect to auth
-  if (!user) {
+  // If no user or anonymous state, redirect to auth
+  if (!user || appAuthState === AppAuthState.ANONYMOUS) {
     console.warn('[ProtectedRoute] No user in context, redirecting to auth');
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
@@ -130,10 +59,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to="/" replace />;
   }
 
-  // Check if onboarding is needed - this happens for cases:
-  // 1. When profile exists but onboarding_complete=false
-  // 2. When profile doesn't exist at all (null profile)
-  if (hasCheckedOnboarding && !isOnboardingComplete) {
+  // Check if onboarding is needed
+  if (appAuthState === AppAuthState.ONBOARDING) {
     console.log('[ProtectedRoute] Redirecting to welcome page for onboarding');
     return <Navigate to="/welcome" replace />;
   }

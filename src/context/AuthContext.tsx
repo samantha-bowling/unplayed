@@ -38,6 +38,14 @@ export enum EnhancedAuthStatus {
   TOKEN_REFRESHING = 'TOKEN_REFRESHING',
 }
 
+// New enum for more explicit app auth state
+export enum AppAuthState {
+  ANONYMOUS = 'ANONYMOUS',       // No user authenticated
+  AUTHENTICATED = 'AUTHENTICATED', // User authenticated but profile not loaded
+  ONBOARDING = 'ONBOARDING',     // User authenticated, profile exists but not complete
+  READY = 'READY',              // User fully authenticated with complete profile
+}
+
 export type AuthError = {
   code: string;
   message: string;
@@ -48,6 +56,7 @@ export type AuthError = {
 type AuthContextType = {
   authStatus: AuthStatus;
   enhancedStatus: EnhancedAuthStatus;
+  appAuthState: AppAuthState;    // New explicit app state
   session: Session | null;
   user: User | null;
   profile: any | null;
@@ -61,6 +70,8 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthReady: boolean;
   isAuthBootComplete: boolean;
+  isSteamLinked: boolean;        // New property
+  isProfileComplete: boolean;    // New property
 };
 
 // Create the context with a default value that's obviously not valid
@@ -75,6 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const [authStatus, setAuthStatus] = useState(AuthStatus.LOADING);
   const [enhancedStatus, setEnhancedStatus] = useState(EnhancedAuthStatus.INITIAL);
+  const [appAuthState, setAppAuthState] = useState<AppAuthState>(AppAuthState.ANONYMOUS);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
@@ -83,6 +95,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isAuthBootComplete, setIsAuthBootComplete] = useState(false);
   const [profileRefreshAttempts, setProfileRefreshAttempts] = useState(0);
+  
+  // Derived state properties
+  const isSteamLinked = useMemo(() => 
+    Boolean(profile?.steam_id), 
+    [profile?.steam_id]
+  );
+  
+  const isProfileComplete = useMemo(() => 
+    Boolean(profile?.onboarding_complete), 
+    [profile?.onboarding_complete]
+  );
+
+  // Update the appAuthState based on user and profile status
+  useEffect(() => {
+    if (!isAuthReady) return;
+    
+    if (!user) {
+      setAppAuthState(AppAuthState.ANONYMOUS);
+      return;
+    }
+    
+    if (user && !profile) {
+      setAppAuthState(AppAuthState.AUTHENTICATED);
+      return;
+    }
+    
+    if (user && profile && !profile.onboarding_complete) {
+      setAppAuthState(AppAuthState.ONBOARDING);
+      return;
+    }
+    
+    if (user && profile?.onboarding_complete) {
+      setAppAuthState(AppAuthState.READY);
+      return;
+    }
+  }, [user, profile, isAuthReady]);
 
   const clearAuthError = useCallback(() => setLastError(null), []);
 
@@ -175,7 +223,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setUser(null);
       setProfile(null);
+      setAppAuthState(AppAuthState.ANONYMOUS);
       removeSessionFlag('JUST_LOGGED_IN');
+      removeSessionFlag('AUTH_IN_PROGRESS');
+      removeSessionFlag('AUTH_STARTED');
       
       toast.info('You have been signed out');
     } catch (error: any) {
@@ -188,8 +239,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // Enhanced refreshProfile with retry limits
   const refreshProfile = useCallback(async () => {
     if (!user) return null;
+    
+    // Limit the number of refresh attempts to avoid infinite loops
+    const MAX_REFRESH_ATTEMPTS = 5;
+    if (profileRefreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+      console.warn(`[Auth] Max profile refresh attempts (${MAX_REFRESH_ATTEMPTS}) reached for user ${user.id}`);
+      setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+      return null;
+    }
     
     try {
       setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
@@ -219,6 +279,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Set flag that we have a just logged in user with a profile
       if (data && getSessionFlag('JUST_LOGGED_IN')) {
         console.log('Setting just logged in with profile flag');
+      }
+      
+      // Reset refresh attempts counter on success
+      if (data) {
+        setProfileRefreshAttempts(0);
       }
       
       return data;
@@ -265,6 +330,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             timestamp: Date.now(),
           });
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
+          setAppAuthState(AppAuthState.ANONYMOUS);
           setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
           setIsLoading(false);
           setIsAuthReady(true);
@@ -275,6 +341,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!data.session) {
           console.log('👋 Auth boot: No session found');
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
+          setAppAuthState(AppAuthState.ANONYMOUS);
           setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
           setIsLoading(false);
           setIsAuthReady(true);
@@ -286,6 +353,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(data.session);
         setUser(data.session.user);
         setAuthStatus(AuthStatus.AUTHENTICATED);
+        setAppAuthState(AppAuthState.AUTHENTICATED);  // Initial state, will be updated when profile is loaded
         setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
 
         // Load profile in a non-blocking way
@@ -309,6 +377,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           timestamp: Date.now(),
         });
         setAuthStatus(AuthStatus.UNAUTHENTICATED);
+        setAppAuthState(AppAuthState.ANONYMOUS);
         setEnhancedStatus(EnhancedAuthStatus.AUTH_ERROR);
         setIsLoading(false);
         setIsAuthReady(true);
@@ -323,6 +392,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (["INITIAL_SESSION", "SIGNED_IN"].includes(event)) {
           setAuthStatus(AuthStatus.AUTHENTICATED);
+          setAppAuthState(AppAuthState.AUTHENTICATED);  // Initial state, will be updated when profile is loaded
           setSession(session);
           setUser(session?.user || null);
 
@@ -343,6 +413,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (event === 'SIGNED_OUT') {
           setAuthStatus(AuthStatus.UNAUTHENTICATED);
+          setAppAuthState(AppAuthState.ANONYMOUS);
           setSession(null);
           setUser(null);
           setProfile(null);
@@ -365,6 +436,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const contextValue = useMemo(() => ({
     authStatus,
     enhancedStatus,
+    appAuthState,
     session,
     user,
     profile,
@@ -378,9 +450,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isLoading,
     isAuthReady,
     isAuthBootComplete,
+    isSteamLinked,
+    isProfileComplete,
   }), [
     authStatus,
     enhancedStatus,
+    appAuthState,
     session,
     user,
     profile,
@@ -394,6 +469,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isLoading,
     isAuthReady,
     isAuthBootComplete,
+    isSteamLinked,
+    isProfileComplete,
   ]);
 
   return (

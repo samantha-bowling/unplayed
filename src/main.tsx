@@ -29,13 +29,15 @@ createRoot(document.getElementById("root")!).render(
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <DemoModeProvider>
-            <SteamSessionProvider>
+          {/* Move SteamSessionProvider outside DemoModeProvider to ensure proper dependency order */}
+          <SteamSessionProvider>
+            {/* DemoModeProvider inside SteamSessionProvider so it can access both auth and steam contexts */}
+            <DemoModeProvider>
               <FullScreenModeProvider>
                 <App />
               </FullScreenModeProvider>
-            </SteamSessionProvider>
-          </DemoModeProvider>
+            </DemoModeProvider>
+          </SteamSessionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

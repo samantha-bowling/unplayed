@@ -29,6 +29,18 @@ const SpendingMeter = ({
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const [animationReady, setAnimationReady] = useState(false);
+
+  // Delay animation start to ensure stable rendering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isMountedRef.current) {
+        setAnimationReady(true);
+      }
+    }, 200);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // Set up mounted ref for cleanup
@@ -44,8 +56,8 @@ const SpendingMeter = ({
     setAnimatedAmount(0);
     startTimeRef.current = null;
     
-    // Don't start animation if we're still loading
-    if (isLoading) return;
+    // Don't start animation if we're still loading or animation isn't ready
+    if (isLoading || !animationReady) return;
     
     // Use a small delay to ensure we're not animating during the render cycle
     const timeoutId = setTimeout(() => {
@@ -85,7 +97,7 @@ const SpendingMeter = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [amount, isLoading]);
+  }, [amount, isLoading, animationReady]);
 
   return (
     <div className="animate-fade-in flex flex-col h-full">
@@ -102,7 +114,7 @@ const SpendingMeter = ({
           Spent on unplayed games
         </p>
 
-        {totalSaved && totalSaved > 0 && (
+        {!isLoading && totalSaved && totalSaved > 0 && (
           <p className="text-unplayed-mint text-sm">
             You saved <CurrencyAmount amount={totalSaved} /> from sales!
           </p>
@@ -120,6 +132,7 @@ const SpendingMeter = ({
         <button 
           onClick={onHideClick}
           className="mt-6 btn-secondary"
+          disabled={isLoading}
         >
           Hide Financial Damage
         </button>

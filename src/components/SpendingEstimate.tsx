@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSpendingData from '@/hooks/use-spending-data';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
+import { AppAuthState } from '@/context/AuthContext';
 
 interface SpendingEstimateProps {
   amount?: number;
@@ -19,8 +20,26 @@ const SpendingEstimate = ({
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading, refreshPrices, isRefreshing } = useSpendingData();
   const { isDemo } = useDemoMode();
-  const { user, isAuthReady } = useAuth();
+  const { user, isAuthReady, appAuthState } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
+  const [isStable, setIsStable] = useState(false);
+  
+  // Monitor for stable auth state before allowing interactions
+  useEffect(() => {
+    if (!isAuthReady) return;
+    
+    // Add a small delay to ensure contexts are stable
+    const timer = setTimeout(() => {
+      setIsStable(true);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [isAuthReady, appAuthState]);
+  
+  // Reset visibility when auth state changes significantly
+  useEffect(() => {
+    setIsVisible(false);
+  }, [appAuthState]);
   
   // Use amount from props if provided, otherwise use spending data
   const spendingAmount = amount !== undefined 
@@ -34,7 +53,9 @@ const SpendingEstimate = ({
   };
 
   // Only show refresh when authenticated and not in demo mode
-  const showRefresh = !isDemo && user && isAuthReady;
+  const showRefresh = !isDemo && user && isAuthReady && appAuthState === AppAuthState.READY;
+
+  const isComponentLoading = isLoading || !isStable;
 
   return (
     <div className="terminal-container equal-height-container">
@@ -49,7 +70,7 @@ const SpendingEstimate = ({
                   size="sm" 
                   className="h-7 w-7 p-0" 
                   onClick={handleRefresh}
-                  disabled={isRefreshing}
+                  disabled={isRefreshing || isComponentLoading}
                 >
                   <RefreshCcw 
                     size={16} 
@@ -70,7 +91,7 @@ const SpendingEstimate = ({
           <SpendingMeter
             amount={spendingAmount}
             currency={spendingData?.currency || 'USD'}
-            isLoading={isLoading}
+            isLoading={isComponentLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
             totalSaved={spendingData?.totalSaved}
@@ -86,9 +107,9 @@ const SpendingEstimate = ({
             <button 
               onClick={() => setIsVisible(true)}
               className="btn-primary"
-              disabled={isLoading}
+              disabled={isComponentLoading}
             >
-              {isLoading ? 'Loading...' : 'Show Me The Damage'}
+              {isComponentLoading ? 'Loading...' : 'Show Me The Damage'}
             </button>
           </div>
         )}

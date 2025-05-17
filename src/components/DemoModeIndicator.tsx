@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 
 export const DemoModeIndicator: React.FC = () => {
   const { isDemo, demoData, isDemoExplicit, disableDemo } = useDemoMode();
-  const { user, isAuthReady, signInWithProvider } = useAuth();
+  const { user, isAuthReady, signInWithProvider, appAuthState } = useAuth();
 
   // Only show when in demo mode and auth is ready
   if (!isDemo || !isAuthReady) return null;
@@ -23,7 +23,7 @@ export const DemoModeIndicator: React.FC = () => {
         <span className="text-sm">
           {!user
             ? `Example Data (${demoData.unplayedGames} unplayed games) – Sign in to see your real stats`
-            : 'Preview Mode - You are viewing example data'}
+            : 'Preview Mode - You are viewing example data until onboarding is complete'}
         </span>
       </div>
       {!user ? (
