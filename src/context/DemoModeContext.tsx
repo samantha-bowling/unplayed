@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
-import { isAuthInProgress } from '@/utils/auth-session-flags';
+import { isAuthInProgress, getAuthFlowStatus } from '@/utils/auth-session-flags';
 
 interface DemoModeContextType {
   isDemo: boolean;
@@ -19,15 +19,37 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
   const [stableIsDemoState, setStableIsDemoState] = useState(false);
   const [demoStateChangeTimer, setDemoStateChangeTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // Safely access AuthContext - might be null initially if order is wrong
   const authContext = useContext(AuthContext);
   
-  // Use effects to react to auth changes only when context is available
+  // Track hydration state to prevent flickering
   useEffect(() => {
-    // Skip this effect if auth context isn't available yet
-    if (!authContext) {
-      console.log('Auth context not available yet, demo mode remains unchanged');
+    if (!authContext) return;
+    
+    const { isAuthReady, user, isLoading } = authContext;
+    
+    // Only mark as hydrated when auth is ready and not loading
+    if (isAuthReady && !isLoading) {
+      console.log('[DemoMode] Auth context hydrated');
+      
+      // Small delay to ensure stability
+      setTimeout(() => {
+        setIsHydrated(true);
+      }, 100);
+    }
+  }, [authContext]);
+  
+  // Use effects to react to auth changes only when context is available and hydrated
+  useEffect(() => {
+    // Skip this effect if auth context isn't available yet or not hydrated
+    if (!authContext || !isHydrated) {
+      if (!authContext) {
+        console.log('[DemoMode] Auth context not available yet, demo mode remains unchanged');
+      } else if (!isHydrated) {
+        console.log('[DemoMode] Auth not fully hydrated yet, waiting');
+      }
       return;
     }
     
@@ -35,7 +57,14 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // Always prevent demo mode changes during active authentication
     if (isAuthInProgress()) {
-      console.log('Auth in progress, stabilizing demo state');
+      console.log('[DemoMode] Auth in progress, stabilizing demo state');
+      return;
+    }
+    
+    // Get the current auth flow status
+    const authFlowStatus = getAuthFlowStatus();
+    if (authFlowStatus !== 'ready' && authFlowStatus !== 'initializing') {
+      console.log(`[DemoMode] Auth flow in status ${authFlowStatus}, stabilizing demo state`);
       return;
     }
     
@@ -44,8 +73,8 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // Only update if the state actually needs to change - prevents cycles
     if (targetDemoState !== stableIsDemoState) {
-      console.log(`Scheduling demo state update (${stableIsDemoState} → ${targetDemoState})`);
-      console.log(`Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
+      console.log(`[DemoMode] Scheduling demo state update (${stableIsDemoState} → ${targetDemoState})`);
+      console.log(`[DemoMode] Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}`);
       
       // Cancel any existing timer to prevent race conditions
       if (demoStateChangeTimer) {
@@ -54,9 +83,9 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Use a longer delay for more stability during transitions
       const timer = setTimeout(() => {
-        console.log(`Setting stable demo state: ${targetDemoState}`);
+        console.log(`[DemoMode] Setting stable demo state: ${targetDemoState}`);
         setStableIsDemoState(targetDemoState);
-      }, 300);
+      }, 500);
       
       setDemoStateChangeTimer(timer);
       
@@ -64,21 +93,21 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (timer) clearTimeout(timer);
       };
     }
-  }, [authContext, isDemoExplicit, stableIsDemoState, demoStateChangeTimer]);
+  }, [authContext, isDemoExplicit, stableIsDemoState, demoStateChangeTimer, isHydrated]);
   
   // Enhanced logging to help debug auth and demo mode state changes
   useEffect(() => {
     if (!authContext) {
-      console.log('Demo mode: provider mounted, waiting for auth context');
+      console.log('[DemoMode] Provider mounted, waiting for auth context');
       return;
     }
     
-    const { isLoading, user } = authContext;
-    console.log(`Demo mode: ${stableIsDemoState ? 'enabled' : 'disabled'}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}, Auth in progress: ${isAuthInProgress()}`);
-  }, [stableIsDemoState, authContext, isDemoExplicit]);
+    const { isLoading, user, isAuthReady } = authContext;
+    console.log(`[DemoMode] Demo state: ${stableIsDemoState ? 'enabled' : 'disabled'}, Auth ready: ${isAuthReady}, Auth loading: ${isLoading}, User: ${user ? user.id : 'none'}, Explicit demo: ${isDemoExplicit}, Auth in progress: ${isAuthInProgress()}, Is hydrated: ${isHydrated}`);
+  }, [stableIsDemoState, authContext, isDemoExplicit, isHydrated]);
   
   const enableDemo = () => {
-    console.log('Demo mode explicitly enabled');
+    console.log('[DemoMode] Demo mode explicitly enabled');
     setIsDemoExplicit(true);
   };
   

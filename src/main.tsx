@@ -12,7 +12,15 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
-const queryClient = new QueryClient();
+// Create a client with stale time to prevent too many re-fetches
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
@@ -20,7 +28,7 @@ createRoot(document.getElementById("root")!).render(
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider> {/* AuthProvider now wraps SteamSessionProvider to ensure context is available */}
+        <AuthProvider> {/* AuthProvider wraps everything to ensure context is available */}
           <SteamSessionProvider>
             <DemoModeProvider>
               <FullScreenModeProvider>

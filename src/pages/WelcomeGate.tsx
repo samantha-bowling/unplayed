@@ -7,6 +7,13 @@ import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 import { toast } from 'sonner';
+import { 
+  hasSessionFlag, 
+  removeSessionFlag, 
+  isRecentFirstLogin, 
+  markOnboardingStarted,
+  setAuthFlowStatus 
+} from '@/utils/auth-session-flags';
 
 const WelcomeGate = () => {
   const {
@@ -14,6 +21,8 @@ const WelcomeGate = () => {
     profile,
     enhancedStatus,
     refreshProfile,
+    isLoading: authLoading,
+    isAuthReady
   } = useAuth();
 
   const navigate = useNavigate();
@@ -23,6 +32,8 @@ const WelcomeGate = () => {
   const [acknowledgedPrivacy, setAcknowledgedPrivacy] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isFirstCheck, setIsFirstCheck] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -32,14 +43,82 @@ const WelcomeGate = () => {
       isUpsertInProgress,
       profileData: profile,
       userId: user?.id,
-      retryCount
+      retryCount,
+      isAuthReady,
+      authLoading,
+      isFirstCheck,
+      loadingProfile,
+      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
+      isRecentFirstLogin: isRecentFirstLogin()
     });
-  }, [enhancedStatus, hasUpserted, isUpsertInProgress, profile, user?.id, retryCount]);
+  }, [
+    enhancedStatus, 
+    hasUpserted, 
+    isUpsertInProgress, 
+    profile, 
+    user?.id, 
+    retryCount, 
+    isAuthReady,
+    authLoading,
+    isFirstCheck,
+    loadingProfile
+  ]);
+
+  // Block navigation until auth is ready
+  useEffect(() => {
+    if (!isAuthReady || authLoading) {
+      console.log('[WelcomeGate] Auth not ready yet, waiting...');
+      return;
+    }
+    
+    if (isFirstCheck) {
+      setIsFirstCheck(false);
+      
+      // If we don't have a user at all, redirect to auth
+      if (!user) {
+        console.log('[WelcomeGate] No user found, redirecting to auth');
+        navigate('/auth');
+        return;
+      }
+      
+      // If we have a user but no profile yet, we should do an initial profile check
+      if (user && !profile && !loadingProfile) {
+        console.log('[WelcomeGate] User found but no profile, checking...');
+        setLoadingProfile(true);
+        
+        refreshProfile()
+          .then(refreshedProfile => {
+            console.log('[WelcomeGate] Initial profile check result:', refreshedProfile);
+            
+            // If the user has a complete profile, redirect to library
+            if (refreshedProfile?.onboarding_complete) {
+              console.log('[WelcomeGate] Profile complete, redirecting to library');
+              navigate('/library');
+            }
+          })
+          .catch(err => {
+            console.error('[WelcomeGate] Error checking initial profile:', err);
+          })
+          .finally(() => {
+            setLoadingProfile(false);
+          });
+      }
+      
+      // Mark that onboarding has started
+      markOnboardingStarted();
+      setAuthFlowStatus('onboarding_needed');
+    }
+  }, [isAuthReady, authLoading, user, profile, isFirstCheck, navigate, refreshProfile]);
 
   // Redirect if onboarding already complete
   useEffect(() => {
     if (profile?.onboarding_complete) {
       console.log('[WelcomeGate] Onboarding already complete, redirecting to library');
+      
+      // Clear the just logged in flag since onboarding is complete
+      removeSessionFlag('JUST_LOGGED_IN');
+      setAuthFlowStatus('ready');
+      
       navigate('/library');
     }
   }, [profile?.onboarding_complete, navigate]);
@@ -99,6 +178,11 @@ const WelcomeGate = () => {
         .then((success) => {
           if (success) {
             console.log('[WelcomeGate] Profile confirmed, redirecting to library');
+            
+            // Clear the just logged in flag since onboarding is complete
+            removeSessionFlag('JUST_LOGGED_IN');
+            setAuthFlowStatus('ready');
+            
             toast.success('Steam account linked successfully!');
             navigate('/library');
           } else {
@@ -117,11 +201,29 @@ const WelcomeGate = () => {
     }
   }, [user, location.search, hasUpserted, isUpsertInProgress, refreshProfile, navigate, setRetryCount]);
 
-  if (!user) return null;
+  // Don't render anything until we're sure auth is ready
+  if (!isAuthReady || authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <SteamLoader 
+          message="Preparing onboarding..." 
+          size="md" 
+          variant="primary" 
+        />
+      </div>
+    );
+  }
+
+  // Redirect if no user
+  if (!user) {
+    console.log('[WelcomeGate] No user in render phase, redirecting to auth');
+    navigate('/auth');
+    return null;
+  }
 
   const needsSteam = !profile?.steam_id;
   const isImporting = enhancedStatus === EnhancedAuthStatus.LIBRARY_IMPORTING;
-  const isLoading = isUpsertInProgress || isImporting;
+  const isLoading = isUpsertInProgress || isImporting || loadingProfile;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center space-y-8">
@@ -133,12 +235,16 @@ const WelcomeGate = () => {
           <p className="text-muted-foreground text-sm">
             {isImporting 
               ? "We're importing your Steam library. Hang tight." 
-              : "We're linking your Steam account. This should only take a moment."}
+              : loadingProfile
+                ? "We're checking your profile. This should only take a moment."
+                : "We're linking your Steam account. This should only take a moment."}
           </p>
           <SteamLoader 
             message={isImporting 
               ? "Importing your games from Steam..." 
-              : "Linking your Steam account..."} 
+              : loadingProfile
+                ? "Checking your profile..."
+                : "Linking your Steam account..."} 
             size="md" 
             variant="primary" 
           />

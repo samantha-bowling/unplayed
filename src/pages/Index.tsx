@@ -1,3 +1,4 @@
+
 // src/pages/Index.tsx
 
 import AuthModal from '@/components/AuthModal';
@@ -20,9 +21,14 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useEffect, useState } from "react";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import SteamLoginButton from "@/components/SteamLoginButton";
-import { Loader2 } from "lucide-react";
 import SteamLoader from "@/components/SteamLoader";
 import { useNavigate } from "react-router-dom";
+import { 
+  hasSessionFlag, 
+  removeSessionFlag, 
+  isRecentFirstLogin,
+  getAuthFlowStatus
+} from '@/utils/auth-session-flags';
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -32,34 +38,65 @@ const Index = () => {
   const { user: steamUser, logout: steamLogout } = useSteamSession();
   const [isNewSteamUser, setIsNewSteamUser] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
+
+  // Debug logging for auth state
+  useEffect(() => {
+    console.log('[Index] Auth state:', {
+      authBootComplete: isAuthBootComplete,
+      userId: user?.id,
+      profileComplete: profile?.onboarding_complete,
+      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
+      recentLogin: isRecentFirstLogin(),
+      authFlowStatus: getAuthFlowStatus(),
+      steamUser: steamUser?.steamId,
+      isCheckingOnboarding
+    });
+  }, [isAuthBootComplete, user?.id, profile?.onboarding_complete, steamUser?.steamId, isCheckingOnboarding]);
 
   // Check if we need to complete onboarding
   useEffect(() => {
     // Only run this check when authentication is fully ready
-    if (!isAuthBootComplete) return;
+    if (!isAuthBootComplete || isCheckingOnboarding) return;
     
-    // Check if the user has a profile but hasn't completed onboarding
-    if (user && profile && profile.onboarding_complete === false) {
-      console.log('User detected with incomplete onboarding, redirecting to welcome');
-      navigate('/welcome');
-    }
+    // If we have a user and either:
+    // 1. Profile with onboarding_complete = false
+    // 2. No profile at all
+    // 3. Just logged in flag is set
+    // ... then we need to check onboarding status
+    const needsCheck = 
+      user && (
+        (profile && profile.onboarding_complete === false) || 
+        !profile || 
+        hasSessionFlag('JUST_LOGGED_IN')
+      );
     
-    // Check for just logged in or auth flow flags
-    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
-    if (user && justLoggedIn) {
-      console.log('New login detected, checking onboarding status');
+    if (needsCheck) {
+      console.log('[Index] User detected that may need onboarding');
+      setIsCheckingOnboarding(true);
+      
       // Refresh profile to make sure we have latest data
       refreshProfile().then(profileData => {
-        if (profileData?.onboarding_complete === false) {
-          console.log('Redirecting newly logged in user to welcome gate');
+        if (!profileData || profileData.onboarding_complete === false) {
+          console.log('[Index] User needs onboarding, redirecting to welcome');
           navigate('/welcome');
+        } else {
+          console.log('[Index] User has completed onboarding');
+          // Since we verified onboarding is complete, clear the just logged in flag
+          removeSessionFlag('JUST_LOGGED_IN');
         }
+        
+        setIsCheckingOnboarding(false);
+      }).catch(err => {
+        console.error('[Index] Error checking profile:', err);
+        setIsCheckingOnboarding(false);
       });
     }
-  }, [user, profile, isAuthBootComplete, navigate, refreshProfile]);
+  }, [user, profile, isAuthBootComplete, navigate, refreshProfile, isCheckingOnboarding]);
 
+  // Handle new Steam user detection
   useEffect(() => {
-    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
+    const justLoggedIn = hasSessionFlag('JUST_LOGGED_IN');
     if (steamUser && justLoggedIn) {
       setIsNewSteamUser(true);
       // Don't remove justLoggedIn here - let the Welcome page handle it
@@ -70,7 +107,8 @@ const Index = () => {
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
 
-  if (!isAuthBootComplete) {
+  // Show loader while checking auth status
+  if (!isAuthBootComplete || isCheckingOnboarding) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <SteamLoader message="Loading your profile..." size="md" variant="secondary" />

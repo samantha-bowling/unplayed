@@ -3,7 +3,14 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
-import { isAuthInProgress } from '@/utils/auth-session-flags';
+import { 
+  isAuthInProgress, 
+  hasSessionFlag, 
+  isFromAuthCallback, 
+  isRecentFirstLogin,
+  getAuthFlowStatus,
+  setAuthFlowStatus
+} from '@/utils/auth-session-flags';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -25,18 +32,65 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [lastProfileCheckTime, setLastProfileCheckTime] = useState(0);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[ProtectedRoute] State:', {
+      authReady: isAuthReady,
+      loading: isLoading,
+      checkingProfile: isCheckingProfile,
+      hasCheckedOnboarding,
+      isOnboardingComplete,
+      userId: user?.id,
+      profileId: profile?.id,
+      retryCount,
+      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
+      isFromCallback: isFromAuthCallback(),
+      recentFirstLogin: isRecentFirstLogin(),
+      authFlowStatus: getAuthFlowStatus(),
+      path: location.pathname
+    });
+  }, [
+    isAuthReady, isLoading, isCheckingProfile, hasCheckedOnboarding, 
+    isOnboardingComplete, user?.id, profile?.id, retryCount, location.pathname
+  ]);
 
   // Force check onboarding status when route is accessed
   useEffect(() => {
     // Only run this check when auth is ready and we have a user but haven't checked yet
-    if (user && isAuthReady && !isCheckingProfile && !hasCheckedOnboarding && !isAuthInProgress()) {
+    // or if the auth flow is in progress and we haven't checked recently
+    const now = Date.now();
+    const shouldCheckProfile = 
+      user && 
+      isAuthReady && 
+      !isCheckingProfile && 
+      (!hasCheckedOnboarding || (now - lastProfileCheckTime > 3000 && isFromAuthCallback()));
+    
+    if (shouldCheckProfile) {
       setIsCheckingProfile(true);
       console.log('[ProtectedRoute] Checking profile for user', user.id);
+      setLastProfileCheckTime(now);
       
       refreshProfile()
         .then(profileData => {
           console.log('[ProtectedRoute] Profile check result:', profileData);
-          setIsOnboardingComplete(profileData?.onboarding_complete === true);
+          
+          // Explicit cast to boolean to avoid null/undefined confusion
+          const onboardingComplete = profileData?.onboarding_complete === true;
+          setIsOnboardingComplete(onboardingComplete);
+          
+          // If onboarding is complete, update flow status
+          if (onboardingComplete) {
+            setAuthFlowStatus('ready');
+          } else if (profileData) {
+            // We have a profile but onboarding not complete
+            setAuthFlowStatus('onboarding_needed');
+          } else {
+            // No profile at all
+            setAuthFlowStatus('logged_in_waiting_profile');
+          }
+          
           setHasCheckedOnboarding(true);
         })
         .catch(err => {
@@ -49,17 +103,19 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
               setIsCheckingProfile(false); // Allow another attempt
             }, 1000);
           } else {
+            // After retries, assume onboarding needed
             setIsOnboardingComplete(false);
             setHasCheckedOnboarding(true);
+            setAuthFlowStatus('onboarding_needed');
           }
         })
         .finally(() => {
-          if (retryCount >= 2) {
+          if (retryCount >= 2 || !isAuthInProgress()) {
             setIsCheckingProfile(false);
           }
         });
     }
-  }, [user, isAuthReady, refreshProfile, isCheckingProfile, hasCheckedOnboarding, retryCount]);
+  }, [user, isAuthReady, refreshProfile, isCheckingProfile, hasCheckedOnboarding, retryCount, lastProfileCheckTime]);
   
   // Show loading if we're checking auth or profile
   if (!isAuthReady || isLoading || isCheckingProfile) {
@@ -76,19 +132,21 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   // If no user, redirect to auth
   if (!user) {
-    console.warn('👤 No user in context, redirecting to auth');
+    console.warn('[ProtectedRoute] No user in context, redirecting to auth');
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Check for required role
   if (requiredRole && profile?.role !== requiredRole) {
-    console.warn(`🔒 User doesn't have required role: ${requiredRole}`);
+    console.warn(`[ProtectedRoute] User doesn't have required role: ${requiredRole}`);
     return <Navigate to="/" replace />;
   }
 
-  // Check if onboarding is complete after explicit check
+  // Check if onboarding is needed - this happens for cases:
+  // 1. When profile exists but onboarding_complete=false
+  // 2. When profile doesn't exist at all (null profile)
   if (hasCheckedOnboarding && !isOnboardingComplete) {
-    console.log('🔄 Redirecting to welcome page for onboarding');
+    console.log('[ProtectedRoute] Redirecting to welcome page for onboarding');
     return <Navigate to="/welcome" replace />;
   }
 

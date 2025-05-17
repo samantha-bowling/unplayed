@@ -12,6 +12,9 @@ export const SESSION_FLAGS = {
   STEAM_AUTH_STARTED: 'steamAuthStarted',
   STEAM_AUTH_ATTEMPTED: 'steamAuthAttempted',
   FROM_AUTH_CALLBACK: 'fromAuthCallback',
+  AUTH_FLOW_STATUS: 'authFlowStatus',
+  ONBOARDING_STARTED: 'onboardingStarted',
+  FIRST_LOGIN_TIMESTAMP: 'firstLoginTimestamp',
 };
 
 // Safely check if sessionStorage is available
@@ -106,3 +109,53 @@ export const setTimedSessionFlag = (
   }, expirationMs);
 };
 
+// Track the auth flow status
+export type AuthFlowStatus = 'initializing' | 'logged_in_waiting_profile' | 'onboarding_needed' | 'ready';
+
+// Set the current auth flow status
+export const setAuthFlowStatus = (status: AuthFlowStatus): void => {
+  setSessionFlag('AUTH_FLOW_STATUS', status);
+};
+
+// Get the current auth flow status
+export const getAuthFlowStatus = (): AuthFlowStatus => {
+  const status = getSessionFlag('AUTH_FLOW_STATUS');
+  return (status as AuthFlowStatus) || 'initializing';
+};
+
+// Mark first login with timestamp
+export const markFirstLogin = (): void => {
+  if (!hasSessionFlag('FIRST_LOGIN_TIMESTAMP')) {
+    setSessionFlag('FIRST_LOGIN_TIMESTAMP', Date.now().toString());
+    setSessionFlag('JUST_LOGGED_IN', 'true');
+  }
+};
+
+// Check if this is a first login within a timeframe (default 5 minutes)
+export const isRecentFirstLogin = (maxAgeMs: number = 5 * 60 * 1000): boolean => {
+  const timestamp = getSessionFlag('FIRST_LOGIN_TIMESTAMP');
+  if (!timestamp) return false;
+  
+  const loginTime = parseInt(timestamp, 10);
+  return !isNaN(loginTime) && (Date.now() - loginTime) < maxAgeMs;
+};
+
+// Mark that onboarding has started
+export const markOnboardingStarted = (): void => {
+  setSessionFlag('ONBOARDING_STARTED', 'true');
+};
+
+// Check if onboarding has been started
+export const hasOnboardingStarted = (): boolean => {
+  return hasSessionFlag('ONBOARDING_STARTED');
+};
+
+// Mark that we're coming from auth callback
+export const markFromAuthCallback = (): void => {
+  setTimedSessionFlag('FROM_AUTH_CALLBACK', 'true', 2 * 60 * 1000); // 2 minutes
+};
+
+// Check if we're coming from auth callback
+export const isFromAuthCallback = (): boolean => {
+  return hasSessionFlag('FROM_AUTH_CALLBACK');
+};
