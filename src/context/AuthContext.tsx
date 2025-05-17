@@ -125,6 +125,185 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     [appAuthState]
   );
 
+  const clearAuthError = useCallback(() => setLastError(null), []);
+
+  const refreshSession = useCallback(async (): Promise<Session | null> => {
+    try {
+      console.log('🔄 Refreshing session...');
+      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESHING);
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('🔄 Failed to refresh session:', error.message);
+        setLastError({
+          code: 'session_refresh_error',
+          message: error.message,
+          timestamp: Date.now(),
+        });
+        setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
+        throw error;
+      }
+      
+      if (!data.session) {
+        console.warn('🔄 No session found during refresh');
+        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
+        return null;
+      }
+      
+      console.log('🔄 Session refreshed successfully');
+      setSession(data.session);
+      setUser(data.session.user);
+      setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
+      return data.session;
+    } catch (error: any) {
+      console.error('🔄 Failed to refresh session:', error.message);
+      setLastError({
+        code: 'session_refresh_error',
+        message: error.message,
+        timestamp: Date.now(),
+      });
+      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
+      return null;
+    }
+  }, []);
+
+  // Enhanced refreshProfile with retry limits and exponential backoff
+  const refreshProfile = useCallback(async () => {
+    if (!user) return null;
+    
+    try {
+      setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
+      
+      // Track retry attempts globally
+      if (profileRefreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+        console.warn(`[Auth] Max profile refresh attempts (${MAX_REFRESH_ATTEMPTS}) reached for user ${user.id}`);
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+        setAppAuthState('ERROR');
+        setLastError({
+          code: 'profile_refresh_max_retries',
+          message: `Maximum profile refresh attempts reached (${MAX_REFRESH_ATTEMPTS})`,
+          timestamp: Date.now(),
+        });
+        return null;
+      }
+      
+      setProfileRefreshAttempts(prev => prev + 1);
+      
+      console.log(`Refreshing profile for user ${user.id} (attempt ${profileRefreshAttempts + 1})`);
+      
+      // Calculate backoff delay based on attempt number (exponential backoff)
+      const backoffDelay = Math.min(100 * Math.pow(2, profileRefreshAttempts), 3000);
+      if (profileRefreshAttempts > 0) {
+        console.log(`[Auth] Using backoff delay of ${backoffDelay}ms for profile refresh`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      }
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to load profile:', error.message);
+        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+        return null;
+      }
+
+      console.log('Profile refreshed successfully:', data ? 'found' : 'not found');
+      
+      // Store the result - might be null if user doesn't exist in users table yet
+      setProfile(data);
+      setEnhancedStatus(data ? EnhancedAuthStatus.PROFILE_LOADED : EnhancedAuthStatus.PROFILE_ERROR);
+      
+      // Set flag that we have a just logged in user with a profile
+      if (data && getSessionFlag('JUST_LOGGED_IN')) {
+        console.log('Setting just logged in with profile flag');
+      }
+      
+      // Reset refresh attempts counter on success
+      if (data) {
+        setProfileRefreshAttempts(0);
+      }
+      
+      return data;
+    } catch (error: any) {
+      console.error('Failed to load profile:', error.message);
+      setLastError({
+        code: 'profile_refresh_error',
+        message: error.message,
+        timestamp: Date.now(),
+      });
+      setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
+      return null;
+    }
+  }, [user, profileRefreshAttempts]);
+
+  const signInWithProvider = useCallback(async (
+    provider: 'discord' | 'twitch',
+    options?: { redirectTo?: string }
+  ) => {
+    try {
+      setIsLoading(true);
+      await baseSignInWithProvider(provider, options?.redirectTo);
+    } catch (error: any) {
+      toast.error(`Login with ${provider} failed: ${error.message}`);
+      setLastError({
+        code: 'oauth_error',
+        message: error.message,
+        timestamp: Date.now(),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string) => {
+    try {
+      setIsLoading(true);
+      setSessionFlag('AUTH_STARTED');
+      
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      
+      if (error) throw error;
+      
+      toast.success('Check your email for a magic link!');
+    } catch (error: any) {
+      toast.error(`Magic link login failed: ${error.message}`);
+      setLastError({
+        code: 'email_login_error',
+        message: error.message,
+        timestamp: Date.now(),
+      });
+      removeSessionFlag('AUTH_STARTED');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+      setAuthStatus(AuthStatus.UNAUTHENTICATED);
+      setAppAuthState('ANONYMOUS');
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      removeSessionFlag('JUST_LOGGED_IN');
+      removeSessionFlag('AUTH_IN_PROGRESS');
+      removeSessionFlag('AUTH_STARTED');
+      
+      toast.info('You have been signed out');
+    } catch (error: any) {
+      toast.error(`Sign out failed: ${error.message}`);
+      setLastError({
+        code: 'sign_out_failed',
+        message: error.message,
+        timestamp: Date.now(),
+      });
+    }
+  }, []);
+
   // Centralized Auth State Machine - This is a key improvement
   // All state transitions are now in one place for clarity and debugging
   useEffect(() => {
@@ -212,7 +391,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Export state to window object in dev mode
   useEffect(() => {
     if (isDevMode) {
-      // @ts-ignore - Adding debug object to window
+      // Adding debug object to window
       window.__UNPLAYED_DEBUG__ = {
         authUser: user?.id,
         appAuthState,
@@ -239,185 +418,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isAuthReady, 
     isAuthBootComplete
   ]);
-
-  const clearAuthError = useCallback(() => setLastError(null), []);
-
-  const refreshSession = useCallback(async (): Promise<Session | null> => {
-    try {
-      console.log('🔄 Refreshing session...');
-      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESHING);
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('🔄 Failed to refresh session:', error.message);
-        setLastError({
-          code: 'session_refresh_error',
-          message: error.message,
-          timestamp: Date.now(),
-        });
-        setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
-        throw error;
-      }
-      
-      if (!data.session) {
-        console.warn('🔄 No session found during refresh');
-        setEnhancedStatus(EnhancedAuthStatus.SESSION_NOT_FOUND);
-        return null;
-      }
-      
-      console.log('🔄 Session refreshed successfully');
-      setSession(data.session);
-      setUser(data.session.user);
-      setEnhancedStatus(EnhancedAuthStatus.SESSION_FOUND);
-      return data.session;
-    } catch (error: any) {
-      console.error('🔄 Failed to refresh session:', error.message);
-      setLastError({
-        code: 'session_refresh_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-      setEnhancedStatus(EnhancedAuthStatus.TOKEN_REFRESH_ERROR);
-      return null;
-    }
-  }, []);
-
-  const signInWithProvider = useCallback(async (
-    provider: 'discord' | 'twitch',
-    options?: { redirectTo?: string }
-  ) => {
-    try {
-      setIsLoading(true);
-      await baseSignInWithProvider(provider, options?.redirectTo);
-    } catch (error: any) {
-      toast.error(`Login with ${provider} failed: ${error.message}`);
-      setLastError({
-        code: 'oauth_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const signInWithEmail = useCallback(async (email: string) => {
-    try {
-      setIsLoading(true);
-      setSessionFlag('AUTH_STARTED');
-      
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      
-      if (error) throw error;
-      
-      toast.success('Check your email for a magic link!');
-    } catch (error: any) {
-      toast.error(`Magic link login failed: ${error.message}`);
-      setLastError({
-        code: 'email_login_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-      removeSessionFlag('AUTH_STARTED');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const signOut = useCallback(async () => {
-    try {
-      await supabase.auth.signOut();
-      setAuthStatus(AuthStatus.UNAUTHENTICATED);
-      setAppAuthState('ANONYMOUS');
-      setSession(null);
-      setUser(null);
-      setProfile(null);
-      removeSessionFlag('JUST_LOGGED_IN');
-      removeSessionFlag('AUTH_IN_PROGRESS');
-      removeSessionFlag('AUTH_STARTED');
-      
-      toast.info('You have been signed out');
-    } catch (error: any) {
-      toast.error(`Sign out failed: ${error.message}`);
-      setLastError({
-        code: 'sign_out_failed',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-    }
-  }, []);
-
-  // Enhanced refreshProfile with retry limits and exponential backoff
-  const refreshProfile = useCallback(async () => {
-    if (!user) return null;
-    
-    try {
-      setEnhancedStatus(EnhancedAuthStatus.PROFILE_LOADING);
-      
-      // Track retry attempts globally
-      if (profileRefreshAttempts >= MAX_REFRESH_ATTEMPTS) {
-        console.warn(`[Auth] Max profile refresh attempts (${MAX_REFRESH_ATTEMPTS}) reached for user ${user.id}`);
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
-        setAppAuthState('ERROR');
-        setLastError({
-          code: 'profile_refresh_max_retries',
-          message: `Maximum profile refresh attempts reached (${MAX_REFRESH_ATTEMPTS})`,
-          timestamp: Date.now(),
-        });
-        return null;
-      }
-      
-      setProfileRefreshAttempts(prev => prev + 1);
-      
-      console.log(`Refreshing profile for user ${user.id} (attempt ${profileRefreshAttempts + 1})`);
-      
-      // Calculate backoff delay based on attempt number (exponential backoff)
-      const backoffDelay = Math.min(100 * Math.pow(2, profileRefreshAttempts), 3000);
-      if (profileRefreshAttempts > 0) {
-        console.log(`[Auth] Using backoff delay of ${backoffDelay}ms for profile refresh`);
-        await new Promise(resolve => setTimeout(resolve, backoffDelay));
-      }
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Failed to load profile:', error.message);
-        setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
-        return null;
-      }
-
-      console.log('Profile refreshed successfully:', data ? 'found' : 'not found');
-      
-      // Store the result - might be null if user doesn't exist in users table yet
-      setProfile(data);
-      setEnhancedStatus(data ? EnhancedAuthStatus.PROFILE_LOADED : EnhancedAuthStatus.PROFILE_ERROR);
-      
-      // Set flag that we have a just logged in user with a profile
-      if (data && getSessionFlag('JUST_LOGGED_IN')) {
-        console.log('Setting just logged in with profile flag');
-      }
-      
-      // Reset refresh attempts counter on success
-      if (data) {
-        setProfileRefreshAttempts(0);
-      }
-      
-      return data;
-    } catch (error: any) {
-      console.error('Failed to load profile:', error.message);
-      setLastError({
-        code: 'profile_refresh_error',
-        message: error.message,
-        timestamp: Date.now(),
-      });
-      setEnhancedStatus(EnhancedAuthStatus.PROFILE_ERROR);
-      return null;
-    }
-  }, [user, profileRefreshAttempts]);
 
   // Clear the just logged in flag when component unmounts
   useEffect(() => {
