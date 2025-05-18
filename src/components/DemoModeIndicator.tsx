@@ -23,20 +23,14 @@ export const DemoModeIndicator: React.FC = () => {
       transition={{ delay: 0.2 }}
     >
       {!user ? (
-        // For non-authenticated users, show demo mode indicator
-        <div className="bg-unplayed-amber/20 border border-unplayed-amber/30 rounded-md p-3 flex items-center justify-between">
+        // For non-authenticated users, show simplified demo mode indicator
+        <div className="bg-unplayed-amber/20 border border-unplayed-amber/30 rounded-md p-3 flex items-center">
           <div className="flex items-center">
             <span className="text-unplayed-amber mr-2">📊</span>
             <span className="text-sm">
-              Example Data ({demoData.unplayedGames} unplayed games) – Sign in to see your real stats
+              Example Data - Sign in or sign up to see your real stats
             </span>
           </div>
-          <button
-            onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}
-            className="text-xs bg-unplayed-mint text-black px-2 py-1 rounded hover:bg-unplayed-mint/90 transition-colors"
-          >
-            Sign in to sync
-          </button>
         </div>
       ) : (
         // For authenticated users, handle differently based on explicit demo mode
