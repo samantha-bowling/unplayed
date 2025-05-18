@@ -71,8 +71,11 @@ const WelcomeGate = () => {
       console.log('[WelcomeGate] User found but no profile, checking...');
       setLoadingProfile(true);
       
-      refreshProfile()
-        .then(refreshedProfile => {
+      // Implement exponential backoff for profile refresh
+      const checkProfile = async (attempt = 0, maxAttempts = 3) => {
+        try {
+          console.log(`[WelcomeGate] Checking profile, attempt ${attempt + 1}/${maxAttempts + 1}`);
+          const refreshedProfile = await refreshProfile();
           console.log('[WelcomeGate] Initial profile check result:', refreshedProfile);
           
           // If the user has a complete profile, redirect to library
@@ -83,13 +86,38 @@ const WelcomeGate = () => {
             AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
             navigate('/library');
           }
-        })
-        .catch(err => {
+          
+          return refreshedProfile;
+        } catch (err) {
           console.error('[WelcomeGate] Error checking initial profile:', err);
-        })
-        .finally(() => {
-          setLoadingProfile(false);
-        });
+          
+          // If we still have attempts left, retry with exponential backoff
+          if (attempt < maxAttempts) {
+            const baseDelay = 1000; // 1 second base
+            const jitter = Math.random() * 500;
+            const delay = baseDelay * Math.pow(1.5, attempt) + jitter;
+            
+            console.log(`[WelcomeGate] Retrying after ${delay.toFixed(0)}ms (attempt ${attempt + 1}/${maxAttempts})`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
+            setRetryCount(prev => prev + 1);
+            return checkProfile(attempt + 1, maxAttempts);
+          }
+          
+          // If we've exhausted all attempts, just continue with onboarding flow
+          console.warn('[WelcomeGate] Max retries reached, continuing with onboarding flow');
+          return null;
+        }
+        finally {
+          if (attempt >= maxAttempts) {
+            setLoadingProfile(false);
+          }
+        }
+      };
+      
+      checkProfile().finally(() => {
+        setLoadingProfile(false);
+      });
     }
     
     // Mark that onboarding has started
@@ -139,7 +167,14 @@ const WelcomeGate = () => {
         }
         
         setRetryCount(prev => prev + 1);
-        await new Promise((r) => setTimeout(r, delayMs));
+        
+        // Implement exponential backoff
+        const exponentialDelay = delayMs * Math.pow(1.5, i);
+        const jitter = Math.random() * 300;
+        const delay = exponentialDelay + jitter;
+        
+        console.log(`[WelcomeGate] Retrying after ${delay.toFixed(0)}ms`);
+        await new Promise((r) => setTimeout(r, delay));
       }
       console.warn('[WelcomeGate] Max retries reached, profile not found');
       return false;
@@ -176,9 +211,27 @@ const WelcomeGate = () => {
             toast.success('Steam account linked successfully!');
             navigate('/library');
           } else {
-            setError('Unable to confirm profile after upsert. Please try again.');
-            AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
-            toast.error('Unable to confirm your profile. Please try again.');
+            // Even if profile confirmation fails, try to continue anyway
+            // This is recovery logic to avoid users getting stuck
+            console.warn('[WelcomeGate] Unable to confirm profile, attempting recovery...');
+            
+            // Try one more manual refresh
+            refreshProfile().then(recoveredProfile => {
+              if (recoveredProfile) {
+                console.log('[WelcomeGate] Recovery successful, profile found');
+                toast.success('Steam account linked successfully!');
+                AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
+                navigate('/library');
+              } else {
+                setError('Unable to confirm profile after upsert. Please try again.');
+                AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
+                toast.error('Unable to confirm your profile. Please try again.');
+              }
+            }).catch(() => {
+              setError('Unable to confirm profile after upsert. Please try again.');
+              AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
+              toast.error('Unable to confirm your profile. Please try again.');
+            });
           }
         })
         .catch((err) => {

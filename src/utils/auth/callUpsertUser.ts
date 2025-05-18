@@ -1,3 +1,4 @@
+
 // src/utils/auth/callUpsertUser.ts
 
 export type UpsertUserPayload = {
@@ -10,7 +11,8 @@ export type UpsertUserPayload = {
 
 export async function callUpsertUser(payload: UpsertUserPayload) {
   try {
-    const response = await fetch('/api/upsert-user', {
+    // Fix: Use the correct API endpoint path that matches the deployed Edge Function
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upsert-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
