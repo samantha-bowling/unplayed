@@ -24,7 +24,7 @@ export const DemoModeIndicator: React.FC = () => {
     >
       {!user ? (
         // For non-authenticated users, show simplified demo mode indicator
-        <div className="bg-unplayed-amber/20 border border-unplayed-amber/30 rounded-md p-3 flex items-center">
+        <div className="bg-unplayed-amber/20 border border-unplayed-amber/30 rounded-md p-3 flex justify-center">
           <div className="flex items-center">
             <span className="text-unplayed-amber mr-2">📊</span>
             <span className="text-sm">
