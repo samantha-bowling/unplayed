@@ -1,4 +1,3 @@
-
 // src/pages/Index.tsx
 
 import AuthModal from '@/components/AuthModal';
@@ -108,10 +107,14 @@ const Index = () => {
           <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
             unplayed helps you conquer your massive Steam backlog and actually play the games you own.
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 mb-4">
             <Button onClick={() => setAuthModalOpen(true)}>
               Sign In / Sign Up
             </Button>
+          </div>
+          {/* DemoModeIndicator now appears here for non-authenticated users */}
+          <div className="max-w-3xl mx-auto">
+            <DemoModeIndicator />
           </div>
         </>
       );
@@ -191,9 +194,6 @@ const Index = () => {
     <FullScreenModeWrapper>
       <div className="min-h-screen flex flex-col">
         <Header />
-
-        {/* Demo Mode Indicator */}
-        <DemoModeIndicator />
 
         {/* Hero */}
         <section className="w-full navbar-offset pb-8 px-4">

@@ -5,13 +5,15 @@ import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import SteamPrivacyChecklist from './SteamPrivacyChecklist';
 import SteamLoginButton from './SteamLoginButton';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 
 export const DemoModeIndicator: React.FC = () => {
   const { isDemo, demoData, isDemoExplicit, disableDemo } = useDemoMode();
   const { user, isAuthReady, signInWithProvider } = useAuth();
+  const { isFullScreenMode } = useFullScreenMode();
 
-  // Only show when in demo mode and auth is ready
-  if (!isDemo || !isAuthReady) return null;
+  // Don't show in full screen mode or when not in demo mode or auth is not ready
+  if (isFullScreenMode || !isDemo || !isAuthReady) return null;
 
   return (
     <motion.div
