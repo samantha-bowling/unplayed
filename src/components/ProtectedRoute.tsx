@@ -3,11 +3,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
-import { 
-  hasSessionFlag,
-  getAuthFlowStatus,
-  setAuthFlowStatus
-} from '@/utils/auth-session-flags';
+import AuthSessionManager, { AuthFlowState } from '@/utils/auth/AuthSessionManager';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -40,8 +36,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
       userId: user?.id,
       profileId: profile?.id,
       retryCount,
-      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN'),
-      authFlowStatus: getAuthFlowStatus(),
+      justLoggedIn: AuthSessionManager.hasAuthFlag('JUST_LOGGED_IN'),
+      authFlowState: AuthSessionManager.getAuthFlowState(),
       path: location.pathname
     });
   }, [
@@ -72,13 +68,13 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
           
           // If onboarding is complete, update flow status
           if (onboardingComplete) {
-            setAuthFlowStatus('ready');
+            AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
           } else if (profileData) {
             // We have a profile but onboarding not complete
-            setAuthFlowStatus('onboarding_needed');
+            AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
           } else {
             // No profile at all
-            setAuthFlowStatus('logged_in_waiting_profile');
+            AuthSessionManager.setAuthFlowState(AuthFlowState.PROFILE_LOADING);
           }
           
           setHasCheckedOnboarding(true);
@@ -96,7 +92,7 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
             // After retries, assume onboarding needed
             setIsOnboardingComplete(false);
             setHasCheckedOnboarding(true);
-            setAuthFlowStatus('onboarding_needed');
+            AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
           }
         })
         .finally(() => {

@@ -7,12 +7,7 @@ import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 import { toast } from 'sonner';
-import { 
-  hasSessionFlag, 
-  removeSessionFlag, 
-  setAuthFlowStatus,
-  markOnboardingStarted
-} from '@/utils/auth-session-flags';
+import AuthSessionManager, { AuthFlowState } from '@/utils/auth/AuthSessionManager';
 
 const WelcomeGate = () => {
   const {
@@ -43,7 +38,8 @@ const WelcomeGate = () => {
       isAuthReady,
       authLoading,
       loadingProfile,
-      justLoggedIn: hasSessionFlag('JUST_LOGGED_IN')
+      justLoggedIn: AuthSessionManager.hasAuthFlag('JUST_LOGGED_IN'),
+      authFlowState: AuthSessionManager.getAuthFlowState()
     });
   }, [
     hasUpserted, 
@@ -83,8 +79,8 @@ const WelcomeGate = () => {
           if (refreshedProfile?.onboarding_complete) {
             console.log('[WelcomeGate] Profile complete, redirecting to library');
             // Clear the just logged in flag since onboarding is complete
-            removeSessionFlag('JUST_LOGGED_IN');
-            setAuthFlowStatus('ready');
+            AuthSessionManager.clearJustLoggedIn();
+            AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
             navigate('/library');
           }
         })
@@ -97,8 +93,8 @@ const WelcomeGate = () => {
     }
     
     // Mark that onboarding has started
-    markOnboardingStarted();
-    setAuthFlowStatus('onboarding_needed');
+    AuthSessionManager.markOnboardingStarted();
+    AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
   }, [isAuthReady, authLoading, user, profile, navigate, refreshProfile, loadingProfile]);
 
   // Redirect if onboarding already complete
@@ -107,8 +103,8 @@ const WelcomeGate = () => {
       console.log('[WelcomeGate] Onboarding already complete, redirecting to library');
       
       // Clear the just logged in flag since onboarding is complete
-      removeSessionFlag('JUST_LOGGED_IN');
-      setAuthFlowStatus('ready');
+      AuthSessionManager.clearJustLoggedIn();
+      AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
       
       navigate('/library');
     }
@@ -154,6 +150,7 @@ const WelcomeGate = () => {
       setError(null);
       
       console.log('[WelcomeGate] Starting upsert process', { steam_id, steam_name, uid });
+      AuthSessionManager.setAuthFlowState(AuthFlowState.STEAM_LINKING_STARTED);
       
       callUpsertUser({
         id: uid,
@@ -165,6 +162,7 @@ const WelcomeGate = () => {
         .then(() => {
           console.log('[WelcomeGate] Upsert successful, waiting for profile');
           setHasUpserted(true);
+          AuthSessionManager.setAuthFlowState(AuthFlowState.STEAM_LINKED);
           return waitForProfile(uid);
         })
         .then((success) => {
@@ -172,19 +170,21 @@ const WelcomeGate = () => {
             console.log('[WelcomeGate] Profile confirmed, redirecting to library');
             
             // Clear the just logged in flag since onboarding is complete
-            removeSessionFlag('JUST_LOGGED_IN');
-            setAuthFlowStatus('ready');
+            AuthSessionManager.clearJustLoggedIn();
+            AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
             
             toast.success('Steam account linked successfully!');
             navigate('/library');
           } else {
             setError('Unable to confirm profile after upsert. Please try again.');
+            AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
             toast.error('Unable to confirm your profile. Please try again.');
           }
         })
         .catch((err) => {
           console.error('[WelcomeGate] Steam onboarding failed:', err);
           setError(`Failed to link Steam: ${err.message}`);
+          AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
           toast.error(`Failed to link Steam: ${err.message}`);
         })
         .finally(() => {

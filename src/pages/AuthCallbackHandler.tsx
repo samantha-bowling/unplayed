@@ -6,13 +6,7 @@ import SteamLoader from '@/components/SteamLoader';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  setSessionFlag, 
-  markFirstLogin, 
-  markFromAuthCallback,
-  setAuthFlowStatus,
-  clearAuthSessionFlags
-} from '@/utils/auth-session-flags';
+import AuthSessionManager, { AuthFlowState } from '@/utils/auth/AuthSessionManager';
 
 const AuthCallbackHandler = () => {
   const {
@@ -36,20 +30,24 @@ const AuthCallbackHandler = () => {
       error: processingError,
       sessionChecked,
       retryAttempts,
-      url: window.location.href
+      url: window.location.href,
+      authFlowState: AuthSessionManager.getAuthFlowState()
     });
   }, [processingStep, loading, processingError, sessionChecked, retryAttempts]);
 
   useEffect(() => {
+    // Set auth flow state to indicate we're in the callback phase
+    AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_CALLBACK);
+    
     // Set flags to indicate we're in the middle of an auth flow
     // These help prevent flickering in other components
-    setSessionFlag('AUTH_IN_PROGRESS', 'true');
+    AuthSessionManager.setAuthFlag('AUTH_IN_PROGRESS', 'true');
     
     // Mark this as a fresh login to help with onboarding flow
-    markFirstLogin();
+    AuthSessionManager.markJustLoggedIn();
     
     // Mark that we're coming from auth callback - helps navigation decisions
-    markFromAuthCallback();
+    AuthSessionManager.markFromAuthCallback();
     
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 800; // ms
@@ -58,7 +56,6 @@ const AuthCallbackHandler = () => {
       try {
         setProcessingStep('checking_hash');
         console.log('[AuthCallback] Starting auth processing...');
-        setAuthFlowStatus('initializing');
         
         // Check for obvious error parameters in URL
         const queryParams = new URLSearchParams(window.location.search);
@@ -68,8 +65,10 @@ const AuthCallbackHandler = () => {
           console.error(`[AuthCallback] Error code in URL: ${errorCode}`);
           const errorDesc = queryParams.get('error_description') || 'Unknown error';
           setProcessingError(`Authentication failed: ${errorDesc}`);
+          // Update auth flow state to error
+          AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
           // Remove the auth in progress flag
-          setSessionFlag('AUTH_IN_PROGRESS', 'false');
+          AuthSessionManager.removeAuthFlag('AUTH_IN_PROGRESS');
           navigate(`/login-error?${queryParams.toString()}`);
           return;
         }
@@ -133,14 +132,18 @@ const AuthCallbackHandler = () => {
         if (!session) {
           console.error('[AuthCallback] Unable to obtain session after multiple attempts');
           setProcessingError('Unable to complete authentication. Please try signing in again.');
-          setSessionFlag('AUTH_IN_PROGRESS', 'false');
+          // Update auth flow state to error
+          AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
+          // Clear auth flags on error
+          AuthSessionManager.removeAuthFlag('AUTH_IN_PROGRESS');
           navigate('/auth');
           return;
         }
 
         setProcessingStep('fetching_profile');
         console.log('[AuthCallback] Session confirmed. Fetching profile...');
-        setAuthFlowStatus('logged_in_waiting_profile');
+        AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_SUCCESS);
+        AuthSessionManager.setAuthFlowState(AuthFlowState.PROFILE_LOADING);
         
         // Try to get the profile with retries
         let profileData = null;
@@ -163,23 +166,19 @@ const AuthCallbackHandler = () => {
         }
         
         console.log('[AuthCallback] Profile data:', profileData);
-        
-        // Keep auth in progress flag for other components,
-        // but update flow status to indicate where we are
+        AuthSessionManager.setAuthFlowState(AuthFlowState.PROFILE_LOADED);
         
         if (!profileData) {
           console.log('[AuthCallback] No profile found, needs onboarding');
-          setAuthFlowStatus('onboarding_needed');
-          // Make sure we maintain the just logged in flag
-          setSessionFlag('JUST_LOGGED_IN', 'true');
+          AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
           navigate('/welcome');
         } else if (profileData.onboarding_complete !== true) {
           console.log('[AuthCallback] Profile found but onboarding not complete');
-          setAuthFlowStatus('onboarding_needed');
+          AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
           navigate('/welcome');
         } else {
           console.log('[AuthCallback] Onboarding complete, navigating to library');
-          setAuthFlowStatus('ready');
+          AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_READY);
           // User is fully authenticated and onboarded
           toast.success('Welcome back!');
           navigate('/library');
@@ -187,7 +186,8 @@ const AuthCallbackHandler = () => {
       } catch (err: any) {
         console.error('[AuthCallbackHandler] Fatal auth error:', err);
         setProcessingError(`Authentication failed: ${err.message}`);
-        clearAuthSessionFlags();
+        AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
+        AuthSessionManager.clearAllAuthFlags();
         navigate('/auth');
       } finally {
         setLoading(false);
@@ -199,7 +199,7 @@ const AuthCallbackHandler = () => {
     // Cleanup function to ensure we don't leave flags set if component unmounts
     return () => {
       // Only clear the 'authInProgress' flag - keep 'justLoggedIn' for the Welcome page
-      setSessionFlag('AUTH_IN_PROGRESS', 'false');
+      AuthSessionManager.removeAuthFlag('AUTH_IN_PROGRESS');
     };
   }, [refreshSession, refreshProfile, navigate]);
 

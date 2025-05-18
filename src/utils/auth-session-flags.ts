@@ -1,10 +1,173 @@
 
 /**
- * Utility functions for managing auth session flags
- * These flags help track auth state across page loads and navigation
+ * DEPRECATED: This file is being replaced by AuthSessionManager.
+ * 
+ * Please use the AuthSessionManager utilities instead, which provide a
+ * more robust state machine implementation for auth flows.
+ * 
+ * import AuthSessionManager from '@/utils/auth/AuthSessionManager';
  */
 
-// Constants for sessionStorage keys
+import AuthSessionManager from './auth/AuthSessionManager';
+
+// Re-export types needed for compatibility
+export type AuthFlowStatus = 'initializing' | 'logged_in_waiting_profile' | 'onboarding_needed' | 'ready';
+
+/**
+ * @deprecated Use AuthSessionManager.setAuthFlag instead
+ */
+export const setSessionFlag = (flag: any, value: string = 'true'): void => {
+  console.warn('[DEPRECATED] Using legacy setSessionFlag - please migrate to AuthSessionManager.setAuthFlag');
+  AuthSessionManager.setAuthFlag(flag, value);
+};
+
+/**
+ * @deprecated Use AuthSessionManager.getAuthFlag instead
+ */
+export const getSessionFlag = (flag: any): string | null => {
+  console.warn('[DEPRECATED] Using legacy getSessionFlag - please migrate to AuthSessionManager.getAuthFlag');
+  return AuthSessionManager.getAuthFlag(flag);
+};
+
+/**
+ * @deprecated Use AuthSessionManager.removeAuthFlag instead
+ */
+export const removeSessionFlag = (flag: any): void => {
+  console.warn('[DEPRECATED] Using legacy removeSessionFlag - please migrate to AuthSessionManager.removeAuthFlag');
+  AuthSessionManager.removeAuthFlag(flag);
+};
+
+/**
+ * @deprecated Use AuthSessionManager.hasAuthFlag instead
+ */
+export const hasSessionFlag = (flag: any): boolean => {
+  console.warn('[DEPRECATED] Using legacy hasSessionFlag - please migrate to AuthSessionManager.hasAuthFlag');
+  return AuthSessionManager.hasAuthFlag(flag);
+};
+
+/**
+ * @deprecated Use AuthSessionManager.clearAllAuthFlags instead
+ */
+export const clearAuthSessionFlags = (): void => {
+  console.warn('[DEPRECATED] Using legacy clearAuthSessionFlags - please migrate to AuthSessionManager.clearAllAuthFlags');
+  AuthSessionManager.clearAllAuthFlags();
+};
+
+/**
+ * @deprecated Use AuthSessionManager.isAuthInProgress instead
+ */
+export const isAuthInProgress = (): boolean => {
+  console.warn('[DEPRECATED] Using legacy isAuthInProgress - please migrate to AuthSessionManager.isAuthInProgress');
+  return AuthSessionManager.isAuthInProgress();
+};
+
+/**
+ * @deprecated Use AuthSessionManager.setAuthFlag with timeout parameter instead
+ */
+export const setTimedSessionFlag = (
+  flag: any, 
+  value: string = 'true',
+  expirationMs: number = 60000 // Default to 1 minute
+): void => {
+  console.warn('[DEPRECATED] Using legacy setTimedSessionFlag - please migrate to AuthSessionManager.setAuthFlag with timeout');
+  AuthSessionManager.setAuthFlag(flag, value, expirationMs);
+};
+
+/**
+ * @deprecated Use AuthSessionManager.setAuthFlowState with appropriate enum value instead
+ */
+export const setAuthFlowStatus = (status: AuthFlowStatus): void => {
+  console.warn('[DEPRECATED] Using legacy setAuthFlowStatus - please migrate to AuthSessionManager.setAuthFlowState');
+  switch(status) {
+    case 'initializing':
+      AuthSessionManager.setAuthFlowState(AuthSessionManager.AuthFlowState.INITIAL);
+      break;
+    case 'logged_in_waiting_profile':
+      AuthSessionManager.setAuthFlowState(AuthSessionManager.AuthFlowState.PROFILE_LOADING);
+      break;
+    case 'onboarding_needed':
+      AuthSessionManager.setAuthFlowState(AuthSessionManager.AuthFlowState.ONBOARDING_NEEDED);
+      break;
+    case 'ready':
+      AuthSessionManager.setAuthFlowState(AuthSessionManager.AuthFlowState.AUTH_READY);
+      break;
+  }
+};
+
+/**
+ * @deprecated Use AuthSessionManager.getAuthFlowState and map as needed
+ */
+export const getAuthFlowStatus = (): AuthFlowStatus => {
+  console.warn('[DEPRECATED] Using legacy getAuthFlowStatus - please migrate to AuthSessionManager.getAuthFlowState');
+  const state = AuthSessionManager.getAuthFlowState();
+  
+  switch(state) {
+    case AuthSessionManager.AuthFlowState.INITIAL:
+      return 'initializing';
+    case AuthSessionManager.AuthFlowState.PROFILE_LOADING:
+      return 'logged_in_waiting_profile';
+    case AuthSessionManager.AuthFlowState.ONBOARDING_NEEDED:
+      return 'onboarding_needed';
+    case AuthSessionManager.AuthFlowState.AUTH_READY:
+      return 'ready';
+    default:
+      return 'initializing';
+  }
+};
+
+/**
+ * @deprecated Use AuthSessionManager.markJustLoggedIn instead
+ */
+export const markFirstLogin = (): void => {
+  console.warn('[DEPRECATED] Using legacy markFirstLogin - please migrate to AuthSessionManager.markJustLoggedIn');
+  AuthSessionManager.markJustLoggedIn();
+};
+
+/**
+ * @deprecated Use custom logic with AuthSessionManager.getAuthFlag instead
+ */
+export const isRecentFirstLogin = (maxAgeMs: number = 5 * 60 * 1000): boolean => {
+  console.warn('[DEPRECATED] Using legacy isRecentFirstLogin - please implement with AuthSessionManager.getAuthFlag');
+  const timestamp = AuthSessionManager.getAuthFlag('FIRST_LOGIN_TIMESTAMP');
+  if (!timestamp) return false;
+  
+  const loginTime = parseInt(timestamp, 10);
+  return !isNaN(loginTime) && (Date.now() - loginTime) < maxAgeMs;
+};
+
+/**
+ * @deprecated Use AuthSessionManager.markOnboardingStarted instead
+ */
+export const markOnboardingStarted = (): void => {
+  console.warn('[DEPRECATED] Using legacy markOnboardingStarted - please migrate to AuthSessionManager.markOnboardingStarted');
+  AuthSessionManager.markOnboardingStarted();
+};
+
+/**
+ * @deprecated Use AuthSessionManager.hasOnboardingStarted instead
+ */
+export const hasOnboardingStarted = (): boolean => {
+  console.warn('[DEPRECATED] Using legacy hasOnboardingStarted - please migrate to AuthSessionManager.hasOnboardingStarted');
+  return AuthSessionManager.hasOnboardingStarted();
+};
+
+/**
+ * @deprecated Use AuthSessionManager.markFromAuthCallback instead
+ */
+export const markFromAuthCallback = (): void => {
+  console.warn('[DEPRECATED] Using legacy markFromAuthCallback - please migrate to AuthSessionManager.markFromAuthCallback');
+  AuthSessionManager.markFromAuthCallback();
+};
+
+/**
+ * @deprecated Use AuthSessionManager.isFromAuthCallback instead
+ */
+export const isFromAuthCallback = (): boolean => {
+  console.warn('[DEPRECATED] Using legacy isFromAuthCallback - please migrate to AuthSessionManager.isFromAuthCallback');
+  return AuthSessionManager.isFromAuthCallback();
+};
+
+// Export SESSION_FLAGS for compatibility
 export const SESSION_FLAGS = {
   AUTH_IN_PROGRESS: 'authInProgress',
   AUTH_STARTED: 'authStarted',
@@ -15,159 +178,4 @@ export const SESSION_FLAGS = {
   AUTH_FLOW_STATUS: 'authFlowStatus',
   ONBOARDING_STARTED: 'onboardingStarted',
   FIRST_LOGIN_TIMESTAMP: 'firstLoginTimestamp',
-};
-
-// Safely check if sessionStorage is available
-const isSessionStorageAvailable = () => {
-  try {
-    const testKey = '__test__';
-    sessionStorage.setItem(testKey, testKey);
-    sessionStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    console.warn('SessionStorage is not available:', e);
-    return false;
-  }
-};
-
-// Set a flag in sessionStorage
-export const setSessionFlag = (flag: keyof typeof SESSION_FLAGS, value: string = 'true'): void => {
-  if (!isSessionStorageAvailable()) return;
-  
-  try {
-    sessionStorage.setItem(SESSION_FLAGS[flag], value);
-    console.log(`Session flag set: ${flag} = ${value}`);
-    
-    // Auto-expire flags after a safety period (except for stable flags)
-    const nonExpiringFlags = ['AUTH_FLOW_STATUS', 'FIRST_LOGIN_TIMESTAMP'];
-    if (!nonExpiringFlags.includes(flag)) {
-      setTimeout(() => {
-        // Only clear if it's still set with the same value
-        if (getSessionFlag(flag) === value) {
-          console.log(`Auto-clearing timed-out session flag: ${flag}`);
-          removeSessionFlag(flag);
-        }
-      }, 5 * 60 * 1000); // 5 minutes max lifetime for flags
-    }
-  } catch (error) {
-    console.error(`Failed to set session flag ${flag}:`, error);
-  }
-};
-
-// Get a flag from sessionStorage
-export const getSessionFlag = (flag: keyof typeof SESSION_FLAGS): string | null => {
-  if (!isSessionStorageAvailable()) return null;
-  
-  try {
-    return sessionStorage.getItem(SESSION_FLAGS[flag]);
-  } catch (error) {
-    console.error(`Failed to get session flag ${flag}:`, error);
-    return null;
-  }
-};
-
-// Remove a flag from sessionStorage
-export const removeSessionFlag = (flag: keyof typeof SESSION_FLAGS): void => {
-  if (!isSessionStorageAvailable()) return;
-  
-  try {
-    sessionStorage.removeItem(SESSION_FLAGS[flag]);
-    console.log(`Session flag removed: ${flag}`);
-  } catch (error) {
-    console.error(`Failed to remove session flag ${flag}:`, error);
-  }
-};
-
-// Check if a flag exists in sessionStorage
-export const hasSessionFlag = (flag: keyof typeof SESSION_FLAGS): boolean => {
-  return getSessionFlag(flag) === 'true';
-};
-
-// Clear all auth-related flags
-export const clearAuthSessionFlags = (): void => {
-  if (!isSessionStorageAvailable()) return;
-  
-  Object.keys(SESSION_FLAGS).forEach((key) => {
-    try {
-      sessionStorage.removeItem(SESSION_FLAGS[key as keyof typeof SESSION_FLAGS]);
-    } catch (error) {
-      console.error(`Failed to clear session flag ${key}:`, error);
-    }
-  });
-  
-  console.log('All auth session flags cleared');
-};
-
-// Check if any auth flow is in progress
-export const isAuthInProgress = (): boolean => {
-  if (!isSessionStorageAvailable()) return false;
-  return hasSessionFlag('AUTH_IN_PROGRESS') || hasSessionFlag('AUTH_STARTED');
-};
-
-// Set a flag with auto-expiration (safety mechanism)
-export const setTimedSessionFlag = (
-  flag: keyof typeof SESSION_FLAGS, 
-  value: string = 'true',
-  expirationMs: number = 60000 // Default to 1 minute
-): void => {
-  setSessionFlag(flag, value);
-  
-  // Auto-clear the flag after the expiration time
-  setTimeout(() => {
-    if (hasSessionFlag(flag)) {
-      console.log(`Auto-removing expired session flag: ${flag}`);
-      removeSessionFlag(flag);
-    }
-  }, expirationMs);
-};
-
-// Track the auth flow status
-export type AuthFlowStatus = 'initializing' | 'logged_in_waiting_profile' | 'onboarding_needed' | 'ready';
-
-// Set the current auth flow status
-export const setAuthFlowStatus = (status: AuthFlowStatus): void => {
-  setSessionFlag('AUTH_FLOW_STATUS', status);
-};
-
-// Get the current auth flow status
-export const getAuthFlowStatus = (): AuthFlowStatus => {
-  const status = getSessionFlag('AUTH_FLOW_STATUS');
-  return (status as AuthFlowStatus) || 'initializing';
-};
-
-// Mark first login with timestamp
-export const markFirstLogin = (): void => {
-  if (!hasSessionFlag('FIRST_LOGIN_TIMESTAMP')) {
-    setSessionFlag('FIRST_LOGIN_TIMESTAMP', Date.now().toString());
-    setSessionFlag('JUST_LOGGED_IN', 'true');
-  }
-};
-
-// Check if this is a first login within a timeframe (default 5 minutes)
-export const isRecentFirstLogin = (maxAgeMs: number = 5 * 60 * 1000): boolean => {
-  const timestamp = getSessionFlag('FIRST_LOGIN_TIMESTAMP');
-  if (!timestamp) return false;
-  
-  const loginTime = parseInt(timestamp, 10);
-  return !isNaN(loginTime) && (Date.now() - loginTime) < maxAgeMs;
-};
-
-// Mark that onboarding has started
-export const markOnboardingStarted = (): void => {
-  setSessionFlag('ONBOARDING_STARTED', 'true');
-};
-
-// Check if onboarding has been started
-export const hasOnboardingStarted = (): boolean => {
-  return hasSessionFlag('ONBOARDING_STARTED');
-};
-
-// Mark that we're coming from auth callback
-export const markFromAuthCallback = (): void => {
-  setTimedSessionFlag('FROM_AUTH_CALLBACK', 'true', 2 * 60 * 1000); // 2 minutes
-};
-
-// Check if we're coming from auth callback
-export const isFromAuthCallback = (): boolean => {
-  return hasSessionFlag('FROM_AUTH_CALLBACK');
 };
