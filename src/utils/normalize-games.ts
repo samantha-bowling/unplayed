@@ -15,13 +15,14 @@ export const buildGamesList = (data: any[]): GameListItem[] => {
   }
   
   return data.map(item => ({
-    id: item.game_id || item.id,
-    name: item.games?.name || item.name || 'Unknown Game',
+    id: item.game_id || item.id || item.appid,
+    title: item.games?.name || item.name || 'Unknown Game', // Map name to title as required by GameListItem
     imageUrl: item.games?.image_url || item.games?.header_image || item.img_icon_url || '',
     playtimeMinutes: item.playtime_minutes || item.playtime_forever || 0,
-    lastPlayed: item.last_played_date || null,
+    releaseDate: item.games?.release_date || null,
+    price: item.games?.price_cents ? item.games.price_cents / 100 : undefined,
     genres: item.games?.genres || [],
-    hidden: item.hidden || false
+    categories: item.games?.categories || []
   }));
 };
 
@@ -58,12 +59,12 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
   const gamesList = Array.isArray(games) 
     ? games.map(game => ({
         id: game.appid || game.id,
-        name: game.name,
+        title: game.name, // Map name to title to match GameListItem interface
         imageUrl: game.img_icon_url || '',
         playtimeMinutes: game.playtime_forever || 0,
-        lastPlayed: null,
+        releaseDate: null,
         genres: [],
-        hidden: false
+        categories: []
       }))
     : games.gamesList || buildGamesList(games.library || []);
   
