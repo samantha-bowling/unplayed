@@ -29,7 +29,7 @@ type AuthContextType = {
   user: User | null;
   profile: any | null;
   error: AuthError | null;
-  signInWithProvider: (provider: 'discord' | 'twitch', options?: { redirectTo?: string }) => Promise<void>;
+  signInWithProvider: (provider: 'discord' | 'twitch' | 'steam', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<any>;
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearError = useCallback(() => setError(null), []);
 
-  // Simplify profile refresh - explicit user action
+  // Profile refresh function
   const refreshProfile = useCallback(async () => {
     if (!user) return null;
     
@@ -86,13 +86,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user]);
 
+  // Sign in with provider (Discord, Twitch, Steam)
   const signInWithProvider = useCallback(async (
-    provider: 'discord' | 'twitch',
+    provider: 'discord' | 'twitch' | 'steam',
     options?: { redirectTo?: string }
   ) => {
     try {
       setIsLoading(true);
       clearError();
+      setStatus(AuthStatus.LOADING);
       
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider,
@@ -109,15 +111,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         code: 'oauth_error',
         message: err.message,
       });
+      setStatus(AuthStatus.UNAUTHENTICATED);
     } finally {
       setIsLoading(false);
     }
   }, [clearError]);
 
+  // Sign in with email (magic link)
   const signInWithEmail = useCallback(async (email: string) => {
     try {
       setIsLoading(true);
       clearError();
+      setStatus(AuthStatus.LOADING);
       
       const { error: err } = await supabase.auth.signInWithOtp({ email });
       
@@ -130,13 +135,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         code: 'email_login_error',
         message: err.message,
       });
+      setStatus(AuthStatus.UNAUTHENTICATED);
     } finally {
       setIsLoading(false);
     }
   }, [clearError]);
 
+  // Sign out
   const signOut = useCallback(async () => {
     try {
+      setIsLoading(true);
       await supabase.auth.signOut();
       setStatus(AuthStatus.UNAUTHENTICATED);
       setSession(null);
@@ -150,10 +158,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         code: 'sign_out_error',
         message: err.message,
       });
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Setup auth state change listener and initial session check
+  // Authentication state management
   useEffect(() => {
     // Set up the auth state change listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

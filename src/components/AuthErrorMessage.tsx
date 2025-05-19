@@ -1,13 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AuthError } from '@/context/AuthContext';
-import { EnhancedAuthStatus } from '@/utils/auth-compatibility';
+import { AuthError, AuthStatus } from '@/context/AuthContext';
 import { AlertCircle, ShieldAlert, ServerOff, RefreshCw, Unlink, Wifi, Globe, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AuthErrorMessageProps {
-  errorType: EnhancedAuthStatus;
+  errorType: string;
   error: AuthError | null;
   onRetry: () => void;
   isRetrying?: boolean;
@@ -17,7 +16,7 @@ export const AuthErrorMessage = ({ errorType, error, onRetry, isRetrying = false
   // Map error types to friendly messages and icons
   const getErrorContent = () => {
     switch (errorType) {
-      case EnhancedAuthStatus.PROFILE_ERROR:
+      case 'PROFILE_ERROR':
         return {
           icon: <ServerOff className="h-5 w-5 text-unplayed-red" />,
           title: "Profile Data Unavailable",
@@ -28,7 +27,7 @@ export const AuthErrorMessage = ({ errorType, error, onRetry, isRetrying = false
             "Try again in a few moments"
           ]
         };
-      case EnhancedAuthStatus.TOKEN_REFRESH_ERROR:
+      case 'TOKEN_REFRESH_ERROR':
         return {
           icon: <ShieldAlert className="h-5 w-5 text-unplayed-amber" />,
           title: "Session Expired",
@@ -38,7 +37,7 @@ export const AuthErrorMessage = ({ errorType, error, onRetry, isRetrying = false
             "This happens automatically after some time for security"
           ]
         };
-      case EnhancedAuthStatus.AUTH_ERROR:
+      case 'AUTH_ERROR':
         // Enhanced error matching for Steam auth errors
         if (error?.code === 'invalid_response' || error?.code === 'verification_failed') {
           return {
@@ -74,7 +73,7 @@ export const AuthErrorMessage = ({ errorType, error, onRetry, isRetrying = false
             ]
           };
         }
-      case EnhancedAuthStatus.LIBRARY_ERROR:
+      case 'LIBRARY_ERROR':
         return {
           icon: <Wifi className="h-5 w-5 text-unplayed-amber" />,
           title: "Library Access Error",
