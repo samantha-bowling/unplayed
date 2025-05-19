@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,13 +5,13 @@ import { useToast } from '@/hooks/use-toast';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, AuthStatus } from '@/context/AuthContext';
 
 const LoginErrorPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { authStatus } = useAuth();
+  const { status } = useAuth();
   const [countdown, setCountdown] = useState(10);
 
   // Get error details from URL

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import useSpendingData from '@/hooks/use-spending-data';
 import { RefreshCcw } from 'lucide-react';
@@ -19,7 +18,7 @@ const SpendingEstimate = ({
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading, refreshPrices, isRefreshing } = useSpendingData();
   const { isDemo } = useDemoMode();
-  const { user, isAuthReady } = useAuth();
+  const { status, isLoading } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
   // Use amount from props if provided, otherwise use spending data
@@ -34,7 +33,7 @@ const SpendingEstimate = ({
   };
 
   // Only show refresh when authenticated and not in demo mode
-  const showRefresh = !isDemo && user && isAuthReady;
+  const showRefresh = !isDemo && status !== 'LOADING';
 
   return (
     <div className="terminal-container equal-height-container">

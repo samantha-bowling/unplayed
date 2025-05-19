@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, profile, signOut, isLoading, isAuthReady } = useAuth();
+  const { user, profile, signOut, isLoading, status } = useAuth();
   const navigate = useNavigate();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
@@ -27,15 +27,12 @@ const Header = () => {
 
   // Update stable render state when auth state changes
   useEffect(() => {
-    // Only update when auth is ready to avoid flickering
-    if (isAuthReady) {
-      setStableRenderState({
-        isAuthenticated: !!user,
-        isLoading,
-        hasProfile: !!profile,
-      });
-    }
-  }, [user, profile, isLoading, isAuthReady]);
+    setStableRenderState({
+      isAuthenticated: !!user,
+      isLoading,
+      hasProfile: !!profile,
+    });
+  }, [user, profile, isLoading]);
 
   // Check if user has admin role - only using app_metadata since profile.roles doesn't exist
   const isAdmin = user?.app_metadata?.roles?.includes('admin');

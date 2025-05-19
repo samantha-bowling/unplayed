@@ -1,82 +1,80 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+// src/context/DemoModeContext.tsx
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 
-interface DemoModeContextType {
+type DemoModeContextType = {
   isDemo: boolean;
   isDemoExplicit: boolean;
-  setIsDemoExplicit: (value: boolean) => void;
-  demoData: DemoDataType;
+  demoData: any;
   enableDemo: () => void;
-  disableDemo: () => void; // New function to explicitly disable demo mode
-}
+  disableDemo: () => void;
+  setIsDemoExplicit: (isDemoExplicit: boolean) => void;
+};
 
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
 
-export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Create state for explicit demo mode toggle (used for testing)
+const initialDemoData = {
+  unplayedGames: 420,
+  dustScore: 69,
+  totalSpent: 1337,
+  genreHoarding: [
+    { genre: 'RPG', count: 69 },
+    { genre: 'Action', count: 42 },
+    { genre: 'Adventure', count: 21 },
+  ],
+  shelfLife: [
+    { year: 2018, count: 12 },
+    { year: 2019, count: 24 },
+    { year: 2020, count: 36 },
+  ],
+  libraryPreview: [
+    { name: 'Game 1', img: 'https://via.placeholder.com/50' },
+    { name: 'Game 2', img: 'https://via.placeholder.com/50' },
+    { name: 'Game 3', img: 'https://via.placeholder.com/50' },
+  ],
+};
+
+export const DemoModeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isDemo, setIsDemo] = useState(false);
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
-  
-  // Get auth context
-  const { user, isAuthReady, profile } = useAuth();
-  
-  // Compute if we should show demo mode - only compute this once auth is ready
-  // Show demo mode if:
-  // 1. User explicitly enabled demo mode, OR
-  // 2. No authenticated user, OR
-  // 3. User is authenticated but has no Steam account linked
-  const isDemo = useMemo(() => {
-    // If explicitly in demo mode, use that
-    if (isDemoExplicit) return true;
-    
-    // If auth context isn't available or not ready yet, default to demo mode
-    if (!isAuthReady) return true;
-    
-    // If no user, show demo mode
-    if (!user) return true;
-    
-    // If user has no Steam account linked, show demo mode
-    if (user && profile && !profile.steam_id) return true;
-    
-    // Otherwise, don't show demo mode
-    return false;
-  }, [user, isAuthReady, isDemoExplicit, profile]);
-  
-  // Debug logging
-  useEffect(() => {
-    if (isAuthReady) {
-      console.log(`[DemoMode] Status: ${isDemo ? 'enabled' : 'disabled'}, Auth ready: ${isAuthReady}, User: ${user ? user.id : 'none'}, Steam linked: ${profile?.steam_id ? 'yes' : 'no'}, Explicit demo: ${isDemoExplicit}`);
-    }
-  }, [isDemo, isAuthReady, user, profile, isDemoExplicit]);
-  
-  // When user logs in and has Steam linked, disable explicit demo mode
-  useEffect(() => {
-    if (user && profile?.steam_id && isDemoExplicit) {
-      console.log('[DemoMode] User authenticated with Steam linked, disabling explicit demo mode');
-      setIsDemoExplicit(false);
-    }
-  }, [user, profile?.steam_id, isDemoExplicit]);
-  
-  const enableDemo = () => {
-    console.log('[DemoMode] Demo mode explicitly enabled');
+  const [demoData, setDemoData] = useState(initialDemoData);
+  const { status, isLoading } = useAuth();
+
+  const enableDemo = useCallback(() => {
+    setIsDemo(true);
     setIsDemoExplicit(true);
-  };
-  
-  const disableDemo = () => {
-    console.log('[DemoMode] Demo mode explicitly disabled');
+  }, []);
+
+  const disableDemo = useCallback(() => {
+    setIsDemo(false);
     setIsDemoExplicit(false);
-  };
-  
-  // Create a stable context value object
-  const contextValue = useMemo(() => ({
+  }, []);
+
+  useEffect(() => {
+    // Enable demo mode by default if not authenticated
+    if (status === 'UNAUTHENTICATED') {
+      setIsDemo(true);
+      setIsDemoExplicit(false);
+    } else {
+      setIsDemo(isDemoExplicit);
+    }
+  }, [status, isDemoExplicit]);
+
+  const contextValue: DemoModeContextType = {
     isDemo,
-    isDemoExplicit, 
-    setIsDemoExplicit,
-    demoData: DEMO_DATA,
+    isDemoExplicit,
+    demoData,
     enableDemo,
-    disableDemo
-  }), [isDemo, isDemoExplicit]);
-  
+    disableDemo,
+    setIsDemoExplicit,
+  };
+
   return (
     <DemoModeContext.Provider value={contextValue}>
       {children}
@@ -86,8 +84,8 @@ export const DemoModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const useDemoMode = () => {
   const context = useContext(DemoModeContext);
-  if (context === undefined) {
-    throw new Error("useDemoMode must be used within a DemoModeProvider");
+  if (!context) {
+    throw new Error('useDemoMode must be used within a DemoModeProvider');
   }
   return context;
 };

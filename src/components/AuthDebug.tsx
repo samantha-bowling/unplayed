@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { AuthStatus, EnhancedAuthStatus, useAuth } from '@/context/AuthContext';
+import { AuthStatus, AuthError, useAuth } from '@/context/AuthContext';
+import { EnhancedAuthStatus, mapToEnhancedStatus } from '@/utils/auth-compatibility';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,13 +13,16 @@ import { useToast } from '@/hooks/use-toast';
  * This component provides diagnostics and debugging tools for Steam authentication
  */
 const AuthDebug = () => {
-  const { session, user, authStatus, enhancedStatus, lastError, refreshProfile } = useAuth();
+  const { session, user, status, error, refreshProfile } = useAuth();
   const [debugResults, setDebugResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sessionAge, setSessionAge] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Map to enhanced status for backward compatibility
+  const enhancedStatus = mapToEnhancedStatus(status, !!user?.user_metadata?.profile, !!error);
   
   // Calculate session age
   useEffect(() => {
@@ -185,13 +188,13 @@ const AuthDebug = () => {
                 <div className="flex gap-4 mb-2">
                   <span className="text-gray-400">Status:</span>
                   <span className={
-                    authStatus === AuthStatus.AUTHENTICATED 
+                    status === AuthStatus.AUTHENTICATED 
                       ? 'text-green-500' 
-                      : authStatus === AuthStatus.LOADING 
+                      : status === AuthStatus.LOADING 
                         ? 'text-blue-500'
                         : 'text-yellow-500'
                   }>
-                    {authStatus}
+                    {status}
                   </span>
                 </div>
                 <div className="flex gap-4 mb-2">
@@ -210,7 +213,7 @@ const AuthDebug = () => {
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">Auth Status Details:</p>
                     <pre className="bg-gray-900 p-3 rounded text-xs overflow-auto max-h-80">
-                      {formatJSON({ authStatus, enhancedStatus })}
+                      {formatJSON({ status, enhancedStatus })}
                     </pre>
                   </div>
                 )}
@@ -324,23 +327,23 @@ const AuthDebug = () => {
                 <h3 className="text-lg font-medium mb-1 text-white">Last Error</h3>
                 <div className="flex gap-4">
                   <span className="text-gray-400">Error:</span>
-                  <span className={lastError ? 'text-red-500' : 'text-green-500'}>
-                    {lastError ? lastError.code : 'None'}
+                  <span className={error ? 'text-red-500' : 'text-green-500'}>
+                    {error ? error.code : 'None'}
                   </span>
                 </div>
                 
-                {lastError && (
+                {error && (
                   <div className="mt-2 bg-red-900/20 border border-red-800/50 rounded px-3 py-2 flex items-start">
                     <AlertCircle className="text-red-400 h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
-                    <p className="text-sm text-red-200">{lastError.message}</p>
+                    <p className="text-sm text-red-200">{error.message}</p>
                   </div>
                 )}
                 
-                {expandedSection === 'error-data' && lastError && (
+                {expandedSection === 'error-data' && error && (
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">Error Details:</p>
                     <pre className="bg-gray-900 p-3 rounded text-xs overflow-auto max-h-80">
-                      {formatJSON(lastError)}
+                      {formatJSON(error)}
                     </pre>
                   </div>
                 )}

@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { EnhancedAuthStatus, AuthError } from '@/context/AuthContext';
+import { AuthError } from '@/context/AuthContext';
+import { EnhancedAuthStatus } from '@/utils/auth-compatibility';
 import { AlertCircle, ShieldAlert, ServerOff, RefreshCw, Unlink, Wifi, Globe, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -9,7 +10,7 @@ interface AuthErrorMessageProps {
   errorType: EnhancedAuthStatus;
   error: AuthError | null;
   onRetry: () => void;
-  isRetrying?: boolean; // Add isRetrying prop
+  isRetrying?: boolean;
 }
 
 export const AuthErrorMessage = ({ errorType, error, onRetry, isRetrying = false }: AuthErrorMessageProps) => {

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth, EnhancedAuthStatus, AuthError } from '@/context/AuthContext';
+import { useAuth, AuthStatus, AuthError } from '@/context/AuthContext';
+import { EnhancedAuthStatus, mapToEnhancedStatus } from '@/utils/auth-compatibility';
 
 export interface AuthSessionState {
   isInitializing: boolean;
@@ -14,7 +15,7 @@ export interface AuthSessionState {
 }
 
 export function useAuthSessionStatus() {
-  const { enhancedStatus, lastError, refreshProfile, refreshSession, clearAuthError } = useAuth();
+  const { status, error, refreshProfile, isLoading } = useAuth();
   const [retryCount, setRetryCount] = useState(0);
   const [sessionState, setSessionState] = useState<AuthSessionState>({
     isInitializing: true,
@@ -27,32 +28,22 @@ export function useAuthSessionStatus() {
     retryCount: 0,
   });
 
-  // Update session state based on enhanced status
+  // For backward compatibility
+  const enhancedStatus = mapToEnhancedStatus(status, sessionState.isProfileLoaded, !!error);
+  
+  // Update session state based on status
   useEffect(() => {
     setSessionState(prevState => ({
       ...prevState,
-      isInitializing: enhancedStatus === EnhancedAuthStatus.INITIAL,
-      isLoading: [
-        EnhancedAuthStatus.INITIAL,
-        EnhancedAuthStatus.SESSION_LOADING,
-        EnhancedAuthStatus.PROFILE_LOADING
-      ].includes(enhancedStatus),
-      isAuthenticating: enhancedStatus === EnhancedAuthStatus.SESSION_LOADING,
-      isAuthenticated: [
-        EnhancedAuthStatus.SESSION_FOUND,
-        EnhancedAuthStatus.PROFILE_LOADING,
-        EnhancedAuthStatus.PROFILE_LOADED,
-        EnhancedAuthStatus.PROFILE_ERROR
-      ].includes(enhancedStatus),
-      isProfileLoaded: enhancedStatus === EnhancedAuthStatus.PROFILE_LOADED,
-      hasError: [
-        EnhancedAuthStatus.AUTH_ERROR,
-        EnhancedAuthStatus.TOKEN_REFRESH_ERROR,
-        EnhancedAuthStatus.PROFILE_ERROR
-      ].includes(enhancedStatus),
-      error: lastError,
+      isInitializing: status === AuthStatus.LOADING,
+      isLoading: status === AuthStatus.LOADING || isLoading,
+      isAuthenticating: status === AuthStatus.LOADING,
+      isAuthenticated: status === AuthStatus.AUTHENTICATED,
+      isProfileLoaded: status === AuthStatus.AUTHENTICATED && !isLoading,
+      hasError: !!error,
+      error,
     }));
-  }, [enhancedStatus, lastError]);
+  }, [status, error, isLoading]);
 
   // Update retry count
   useEffect(() => {
@@ -68,18 +59,10 @@ export function useAuthSessionStatus() {
     setRetryCount(count => count + 1);
     
     // Clear previous errors
-    clearAuthError();
+    // We can't clear error from the previous context, but we'll overwrite with success if retry works
     
-    if (enhancedStatus === EnhancedAuthStatus.PROFILE_ERROR) {
-      // If profile error, attempt to refresh profile
-      await refreshProfile();
-    } else if (enhancedStatus === EnhancedAuthStatus.TOKEN_REFRESH_ERROR) {
-      // For token refresh errors, attempt to refresh the session
-      await refreshSession();
-    } else if (enhancedStatus === EnhancedAuthStatus.AUTH_ERROR) {
-      // For general auth errors, we might need to redirect to login
-      // This will be implemented in a separate component
-    }
+    // Try to refresh profile
+    await refreshProfile();
   };
 
   return {

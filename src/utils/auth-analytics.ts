@@ -1,5 +1,4 @@
-
-import { EnhancedAuthStatus } from '@/context/AuthContext';
+import { EnhancedAuthStatus } from '@/utils/auth-compatibility';
 
 type AuthEventType = 
   | 'auth_success' 

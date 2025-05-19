@@ -1,8 +1,7 @@
-
 // src/pages/WelcomeGate.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, AuthStatus } from '@/context/AuthContext';
 import SteamLoginButton from '@/components/SteamLoginButton';
 import SteamLoader from '@/components/SteamLoader';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
@@ -14,8 +13,8 @@ const WelcomeGate = () => {
     user,
     profile,
     refreshProfile,
-    isLoading: authLoading,
-    isAuthReady
+    isLoading,
+    status
   } = useAuth();
 
   const navigate = useNavigate();
@@ -35,8 +34,8 @@ const WelcomeGate = () => {
       profileData: profile,
       userId: user?.id,
       retryCount,
-      isAuthReady,
-      authLoading,
+      status,
+      isLoading,
       loadingProfile,
       justLoggedIn: AuthSessionManager.hasAuthFlag('JUST_LOGGED_IN'),
       authFlowState: AuthSessionManager.getAuthFlowState()
@@ -47,14 +46,14 @@ const WelcomeGate = () => {
     profile, 
     user?.id, 
     retryCount, 
-    isAuthReady,
-    authLoading,
+    status,
+    isLoading,
     loadingProfile
   ]);
 
   // Block navigation until auth is ready
   useEffect(() => {
-    if (!isAuthReady || authLoading) {
+    if (!isLoading && status !== 'LOADING') {
       console.log('[WelcomeGate] Auth not ready yet, waiting...');
       return;
     }
@@ -123,7 +122,7 @@ const WelcomeGate = () => {
     // Mark that onboarding has started
     AuthSessionManager.markOnboardingStarted();
     AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
-  }, [isAuthReady, authLoading, user, profile, navigate, refreshProfile, loadingProfile]);
+  }, [isLoading, status, user, profile, navigate, refreshProfile, loadingProfile]);
 
   // Redirect if onboarding already complete
   useEffect(() => {
@@ -247,7 +246,7 @@ const WelcomeGate = () => {
   }, [user, location.search, hasUpserted, isUpsertInProgress, refreshProfile, navigate]);
 
   // Don't render anything until we're sure auth is ready
-  if (!isAuthReady || authLoading) {
+  if (!isLoading && status !== 'LOADING') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <SteamLoader 

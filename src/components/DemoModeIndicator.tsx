@@ -9,11 +9,11 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 
 export const DemoModeIndicator: React.FC = () => {
   const { isDemo, demoData, isDemoExplicit, disableDemo } = useDemoMode();
-  const { user, isAuthReady, signInWithProvider } = useAuth();
+  const { user, status, isLoading } = useAuth();
   const { isFullScreenMode } = useFullScreenMode();
 
-  // Don't show in full screen mode or when not in demo mode or auth is not ready
-  if (isFullScreenMode || !isDemo || !isAuthReady) return null;
+  // Don't show in full screen mode or when not in demo mode or auth is loading
+  if (isFullScreenMode || !isDemo || isLoading) return null;
 
   return (
     <motion.div
