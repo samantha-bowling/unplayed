@@ -1,3 +1,4 @@
+
 // src/pages/WelcomeGate.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -13,7 +14,7 @@ const WelcomeGate = () => {
     user,
     profile,
     refreshProfile,
-    isLoading,
+    isLoading: authLoading,
     status
   } = useAuth();
 
@@ -35,7 +36,7 @@ const WelcomeGate = () => {
       userId: user?.id,
       retryCount,
       status,
-      isLoading,
+      authLoading,
       loadingProfile,
       justLoggedIn: AuthSessionManager.hasAuthFlag('JUST_LOGGED_IN'),
       authFlowState: AuthSessionManager.getAuthFlowState()
@@ -47,13 +48,13 @@ const WelcomeGate = () => {
     user?.id, 
     retryCount, 
     status,
-    isLoading,
+    authLoading,
     loadingProfile
   ]);
 
   // Block navigation until auth is ready
   useEffect(() => {
-    if (!isLoading && status !== 'LOADING') {
+    if (!authLoading && status !== 'LOADING') {
       console.log('[WelcomeGate] Auth not ready yet, waiting...');
       return;
     }
@@ -122,7 +123,7 @@ const WelcomeGate = () => {
     // Mark that onboarding has started
     AuthSessionManager.markOnboardingStarted();
     AuthSessionManager.setAuthFlowState(AuthFlowState.ONBOARDING_NEEDED);
-  }, [isLoading, status, user, profile, navigate, refreshProfile, loadingProfile]);
+  }, [authLoading, status, user, profile, navigate, refreshProfile, loadingProfile]);
 
   // Redirect if onboarding already complete
   useEffect(() => {
@@ -246,7 +247,7 @@ const WelcomeGate = () => {
   }, [user, location.search, hasUpserted, isUpsertInProgress, refreshProfile, navigate]);
 
   // Don't render anything until we're sure auth is ready
-  if (!isLoading && status !== 'LOADING') {
+  if (!authLoading && status !== 'LOADING') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <SteamLoader 

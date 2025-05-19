@@ -9,14 +9,18 @@ export enum EnhancedAuthStatus {
   INITIAL = 'INITIAL',
   SESSION_LOADING = 'SESSION_LOADING',
   SESSION_FOUND = 'SESSION_FOUND',
+  SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
   PROFILE_LOADING = 'PROFILE_LOADING',
   PROFILE_LOADED = 'PROFILE_LOADED',
   PROFILE_ERROR = 'PROFILE_ERROR',
   LIBRARY_LOADING = 'LIBRARY_LOADING',
   LIBRARY_READY = 'LIBRARY_READY',
   LIBRARY_ERROR = 'LIBRARY_ERROR',
+  LIBRARY_IMPORTING = 'LIBRARY_IMPORTING',
+  LIBRARY_UPDATING = 'LIBRARY_UPDATING',
   AUTH_ERROR = 'AUTH_ERROR',
-  TOKEN_REFRESH_ERROR = 'TOKEN_REFRESH_ERROR'
+  TOKEN_REFRESH_ERROR = 'TOKEN_REFRESH_ERROR',
+  TOKEN_REFRESHING = 'TOKEN_REFRESHING'
 }
 
 // Map the simplified AuthStatus to legacy EnhancedAuthStatus
@@ -26,7 +30,7 @@ export const mapToEnhancedStatus = (status: AuthStatus, hasProfile: boolean, has
   }
   
   if (status === AuthStatus.UNAUTHENTICATED) {
-    return EnhancedAuthStatus.INITIAL;
+    return EnhancedAuthStatus.SESSION_NOT_FOUND;
   }
   
   if (status === AuthStatus.AUTHENTICATED) {

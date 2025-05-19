@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import useSpendingData from '@/hooks/use-spending-data';
 import { RefreshCcw } from 'lucide-react';
@@ -16,9 +17,9 @@ const SpendingEstimate = ({
   amount, 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading, refreshPrices, isRefreshing } = useSpendingData();
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useSpendingData();
   const { isDemo } = useDemoMode();
-  const { status, isLoading } = useAuth();
+  const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
   // Use amount from props if provided, otherwise use spending data
@@ -69,7 +70,7 @@ const SpendingEstimate = ({
           <SpendingMeter
             amount={spendingAmount}
             currency={spendingData?.currency || 'USD'}
-            isLoading={isLoading}
+            isLoading={dataLoading || authLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
             totalSaved={spendingData?.totalSaved}
@@ -85,9 +86,9 @@ const SpendingEstimate = ({
             <button 
               onClick={() => setIsVisible(true)}
               className="btn-primary"
-              disabled={isLoading}
+              disabled={dataLoading || authLoading}
             >
-              {isLoading ? 'Loading...' : 'Show Me The Damage'}
+              {dataLoading || authLoading ? 'Loading...' : 'Show Me The Damage'}
             </button>
           </div>
         )}
