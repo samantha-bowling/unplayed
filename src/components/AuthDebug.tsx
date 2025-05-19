@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthStatus, AuthError, useAuth } from '@/context/AuthContext';
-import { EnhancedAuthStatus, mapToEnhancedStatus } from '@/utils/auth-compatibility';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,9 +20,6 @@ const AuthDebug = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [sessionAge, setSessionAge] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  // Map to enhanced status for backward compatibility
-  const enhancedStatus = mapToEnhancedStatus(status, !!user?.user_metadata?.profile, !!error);
   
   // Calculate session age
   useEffect(() => {
@@ -144,6 +141,20 @@ const AuthDebug = () => {
     }
   };
   
+  // Get a readable status description
+  const getStatusDescription = (status: AuthStatus) => {
+    switch (status) {
+      case AuthStatus.LOADING:
+        return 'Loading authentication state';
+      case AuthStatus.AUTHENTICATED:
+        return 'User is authenticated';
+      case AuthStatus.UNAUTHENTICATED:
+        return 'User is not authenticated';
+      default:
+        return 'Unknown status';
+    }
+  };
+  
   return (
     <div className="container mx-auto py-6">
       <Card className="terminal-container">
@@ -198,22 +209,17 @@ const AuthDebug = () => {
                   </span>
                 </div>
                 <div className="flex gap-4 mb-2">
-                  <span className="text-gray-400">Enhanced:</span>
-                  <span className={
-                    enhancedStatus.includes('ERROR') 
-                      ? 'text-red-500' 
-                      : enhancedStatus === EnhancedAuthStatus.LIBRARY_READY
-                        ? 'text-green-500'
-                        : 'text-blue-500'
-                  }>
-                    {enhancedStatus}
+                  <span className="text-gray-400">Description:</span>
+                  <span className="text-gray-300">
+                    {getStatusDescription(status)}
                   </span>
                 </div>
+                
                 {expandedSection === 'auth-status' && (
                   <div className="mt-2 pt-2 border-t border-gray-700">
                     <p className="text-sm text-gray-400 mb-2">Auth Status Details:</p>
                     <pre className="bg-gray-900 p-3 rounded text-xs overflow-auto max-h-80">
-                      {formatJSON({ status, enhancedStatus })}
+                      {formatJSON({ status, description: getStatusDescription(status) })}
                     </pre>
                   </div>
                 )}

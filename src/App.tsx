@@ -1,7 +1,7 @@
 
 // src/App.tsx
 import { Routes, Route } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthStatus } from "@/context/AuthContext";
 import SteamLoader from "@/components/SteamLoader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -19,9 +19,9 @@ import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const App = () => {
-  const { isLoading } = useAuth();
+  const { isLoading, status } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || status === AuthStatus.LOADING) {
     return (
       <div className="flex items-center justify-center h-screen">
         <SteamLoader message="Loading application..." size="md" variant="secondary" />
