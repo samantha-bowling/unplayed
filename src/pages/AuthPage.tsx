@@ -1,15 +1,13 @@
 
 // src/pages/AuthPage.tsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth, EnhancedAuthStatus } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
-import AuthErrorMessage from '@/components/AuthErrorMessage';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 import DemoModeFallback from '@/components/DemoModeFallback';
@@ -20,35 +18,25 @@ const AuthPage = () => {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const { signInWithProvider, signInWithEmail, isLoading, lastError, clearAuthError } = useAuth();
+  const { signInWithProvider, signInWithEmail, isLoading, error, status, user, clearError } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleEmailLogin = async () => {
-    clearAuthError();
+    clearError();
     await signInWithEmail(email);
     setShowSuccessAnimation(true);
   };
 
-  const handleRetry = () => {
-    setIsRetrying(true);
-    clearAuthError();
-    // Simulate retry delay
-    setTimeout(() => {
-      setIsRetrying(false);
-    }, 1500);
-  };
-
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const redirectTo = params.get('redirectTo');
-
-    if (!isLoading && !lastError && showSuccessAnimation === false && redirectTo) {
+    // If user is already authenticated, redirect them
+    if (user) {
+      const params = new URLSearchParams(location.search);
+      const redirectTo = params.get('redirectTo') || '/';
       navigate(redirectTo, { replace: true });
     }
-  }, [isLoading, lastError, showSuccessAnimation, location, navigate]);
+  }, [user, navigate, location.search]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
@@ -65,19 +53,23 @@ const AuthPage = () => {
           </motion.div>
         )}
 
-        {lastError && !isLoading && !showSuccessAnimation && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6">
-            <AuthErrorMessage 
-              errorType={EnhancedAuthStatus.AUTH_ERROR} 
-              error={lastError} 
-              onRetry={handleRetry}
-              isRetrying={isRetrying} 
-            />
+        {error && !isLoading && !showSuccessAnimation && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6 max-w-md">
+            <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
+              <h3 className="text-red-400 font-bold">Authentication Error</h3>
+              <p className="text-white/90">{error.message}</p>
+              <button 
+                onClick={clearError}
+                className="text-xs mt-2 text-red-400 hover:text-red-300 underline"
+              >
+                Dismiss
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {!isLoading && !lastError && !showSuccessAnimation && (
+      {!isLoading && !error && !showSuccessAnimation && (
         <div className="space-y-6 w-full max-w-sm">
           <h1 className="text-3xl font-bold">Sign in to Unplayed</h1>
           <p className="text-muted-foreground text-sm">
@@ -85,10 +77,10 @@ const AuthPage = () => {
           </p>
           
           <div className="flex flex-col gap-4">
-            <Button onClick={() => signInWithProvider('discord', { redirectTo: window.location.origin })}>
+            <Button onClick={() => signInWithProvider('discord', { redirectTo: `${window.location.origin}/auth/callback` })}>
               Sign in with Discord
             </Button>
-            <Button onClick={() => signInWithProvider('twitch', { redirectTo: window.location.origin })}>
+            <Button onClick={() => signInWithProvider('twitch', { redirectTo: `${window.location.origin}/auth/callback` })}>
               Sign in with Twitch
             </Button>
             

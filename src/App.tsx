@@ -15,17 +15,16 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
 import LoginErrorPage from "./pages/LoginErrorPage";
-import WelcomeGate from "@/pages/WelcomeGate";
 import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const App = () => {
-  const { isAuthBootComplete } = useAuth();
+  const { isLoading } = useAuth();
 
-  if (!isAuthBootComplete) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <SteamLoader message="Waking up your profile..." size="md" variant="secondary" />
+        <SteamLoader message="Loading application..." size="md" variant="secondary" />
       </div>
     );
   }
@@ -54,7 +53,6 @@ const App = () => {
         }
       />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
-      <Route path="/welcome" element={<WelcomeGate />} />
       <Route
         path="/library"
         element={

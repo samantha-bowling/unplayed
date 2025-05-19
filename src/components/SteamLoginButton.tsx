@@ -2,7 +2,6 @@
 // src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
-import AuthSessionManager from '@/utils/auth/AuthSessionManager';
 
 interface SteamLoginButtonProps {
   className?: string;
@@ -23,14 +22,14 @@ const SteamLoginButton = ({
   fullWidth = false,
   centered = true,
   disabled = false,
-  showInHeader = true, // Default to true to maintain backward compatibility
+  showInHeader = true,
 }: SteamLoginButtonProps) => {
   // If this is being rendered in the header and we don't want to show it there, return null
   if (showInHeader === false) {
     return null;
   }
 
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleSteamLink = () => {
@@ -40,11 +39,6 @@ const SteamLoginButton = ({
     }
     
     setButtonLoading(true);
-    
-    // Set flags to indicate we're starting a Steam account linking flow
-    // These help prevent demo mode flickering and other race conditions
-    AuthSessionManager.setAuthFlag('STEAM_AUTH_STARTED', 'true');
-    AuthSessionManager.setAuthFlag('AUTH_IN_PROGRESS', 'true');
     
     const uid = encodeURIComponent(user.id);
     const redirectTo = `${window.location.origin}${redirectPath}`;
@@ -66,10 +60,10 @@ const SteamLoginButton = ({
           relative flex items-center justify-center transition-all
           hover:opacity-90
           ${className}
-          ${(buttonLoading || isLoading || disabled) ? 'opacity-50 cursor-not-allowed' : ''}
+          ${(buttonLoading || disabled) ? 'opacity-50 cursor-not-allowed' : ''}
           group-hover:shadow-lg group-hover:shadow-unplayed-mint/20
         `}
-        disabled={buttonLoading || isLoading || !user || disabled}
+        disabled={buttonLoading || !user || disabled}
         aria-label="Link your Steam account"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-unplayed-mint/10 to-unplayed-pink/10 opacity-0 group-hover:opacity-100 rounded transition-opacity"></div>

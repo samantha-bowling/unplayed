@@ -1,8 +1,15 @@
-// src/pages/Index.tsx
 
-import AuthModal from '@/components/AuthModal';
-import { useIsMounted } from '@/hooks/useIsMounted';
+// src/pages/Index.tsx
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { useSteamSession } from "@/hooks/useSteamSession";
+import { useDemoMode } from "@/context/DemoModeContext";
+import { useFullScreenMode } from "@/context/FullScreenModeContext";
+import { useIsMounted } from "@/hooks/useIsMounted";
+
 import Header from "../components/Header";
+import AuthModal from '@/components/AuthModal';
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
 import GenreHoarding from "../components/GenreHoarding";
@@ -13,69 +20,25 @@ import SpendingEstimate from "../components/SpendingEstimate";
 import Footer from "../components/Footer";
 import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import { useSteamSession } from "@/hooks/useSteamSession";
-import { useFullScreenMode } from "@/context/FullScreenModeContext";
-import { useDemoMode } from "@/context/DemoModeContext";
-import { useState, useEffect } from "react";
-import useUnplayedData from "@/hooks/use-unplayed-data";
-import SteamLoginButton from "@/components/SteamLoginButton";
 import SteamLoader from "@/components/SteamLoader";
-import { useNavigate } from "react-router-dom";
-import SteamPrivacyChecklist from '@/components/SteamPrivacyChecklist';
-import { 
-  removeSessionFlag,
-  getAuthFlowStatus
-} from '@/utils/auth-session-flags';
+import { Button } from "@/components/ui/button";
+import useUnplayedData from "@/hooks/use-unplayed-data";
+import LinkSteamAccount from "@/components/LinkSteamAccount";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  
   const isMounted = useIsMounted();
   const navigate = useNavigate();
-  const { user, isAuthBootComplete, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, isLoading: authLoading, status } = useAuth();
   const { user: steamUser, logout: steamLogout } = useSteamSession();
-  const [isImporting, setIsImporting] = useState(false);
-  const [isCheckingProfile, setIsCheckingProfile] = useState(false);
-
-  // Debug logging for auth state
-  useEffect(() => {
-    console.log('[Index] Auth state:', {
-      authBootComplete: isAuthBootComplete,
-      userId: user?.id,
-      profileComplete: profile?.onboarding_complete,
-      authFlowStatus: getAuthFlowStatus(),
-      steamUser: steamUser?.steamId,
-      isCheckingProfile,
-      hasSteamId: profile?.steam_id ? true : false
-    });
-  }, [isAuthBootComplete, user?.id, profile, steamUser?.steamId, isCheckingProfile]);
-
-  // Check profile when auth is ready
-  useEffect(() => {
-    if (!isAuthBootComplete || !user || isCheckingProfile) return;
-    
-    setIsCheckingProfile(true);
-    
-    refreshProfile()
-      .then(() => {
-        // Clean up session flags
-        removeSessionFlag('JUST_LOGGED_IN');
-      })
-      .catch(err => {
-        console.error('[Index] Error refreshing profile:', err);
-      })
-      .finally(() => {
-        setIsCheckingProfile(false);
-      });
-  }, [isAuthBootComplete, user, refreshProfile, isCheckingProfile]);
-
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
 
-  // Show loader while checking auth status
-  if (!isAuthBootComplete || (user && isCheckingProfile)) {
+  // Main loading state when checking auth
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <SteamLoader message="Loading your profile..." size="md" variant="secondary" />
@@ -112,7 +75,6 @@ const Index = () => {
               Sign In / Sign Up
             </Button>
           </div>
-          {/* DemoModeIndicator now appears here for non-authenticated users */}
           <div className="max-w-3xl mx-auto">
             <DemoModeIndicator />
           </div>
@@ -121,25 +83,14 @@ const Index = () => {
     } else if (user && !profile?.steam_id) {
       // Authenticated but no Steam account linked
       return (
-        <>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
-            Link your Steam account
-          </h1>
-          <p className="text-xl text-gray-300 mb-4 max-w-3xl mx-auto">
-            Connect your Steam account to see your personal backlog statistics.
-          </p>
-          <div className="flex flex-col items-center gap-6 max-w-xl mx-auto">
-            <SteamPrivacyChecklist />
-            <SteamLoginButton fullWidth centered />
-          </div>
-        </>
+        <LinkSteamAccount />
       );
-    } else if (steamUser) {
+    } else if (profile?.steam_id) {
       // Fully authenticated with Steam
       return (
         <>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
-            Welcome, {steamUser.personaName}
+            Welcome, {profile.steam_name}
           </h1>
           <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
             Time to face your backlog.
@@ -152,7 +103,7 @@ const Index = () => {
                 fetch("https://gwmygthanyycveyqqspr.functions.supabase.co/import-library", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ steamId: steamUser.steamId }),
+                  body: JSON.stringify({ steamId: profile.steam_id }),
                 })
                   .then(() => window.location.reload())
                   .catch((err) => {
@@ -161,16 +112,11 @@ const Index = () => {
                   });
               }}
               className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
+              disabled={isImporting}
             >
-              Refresh My Data
+              {isImporting ? "Importing..." : "Refresh My Data"}
             </button>
             
-            {isImporting && (
-              <div className="mt-6">
-                <SteamLoader message="Importing your Steam shame..." size="md" variant="secondary" />
-              </div>
-            )}
-
             {lastRefreshed && (
               <p className="text-sm text-muted-foreground mt-2">
                 Last updated: {lastRefreshed.toLocaleString()}
@@ -183,6 +129,12 @@ const Index = () => {
               Log Out
             </button>
           </div>
+          
+          {isImporting && (
+            <div className="mt-6">
+              <SteamLoader message="Importing your Steam shame..." size="md" variant="secondary" />
+            </div>
+          )}
         </>
       );
     }
