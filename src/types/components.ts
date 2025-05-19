@@ -1,2 +1,3 @@
-// Import EnhancedAuthStatus from our compatibility layer
-import { EnhancedAuthStatus } from '@/utils/auth-compatibility';
+
+// No longer need to import the removed EnhancedAuthStatus
+// This file can be empty or we can add other component types here as needed

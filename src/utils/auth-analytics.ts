@@ -1,4 +1,5 @@
-import { EnhancedAuthStatus } from '@/utils/auth-compatibility';
+
+import { AuthStatus } from '@/context/AuthContext';
 
 type AuthEventType = 
   | 'auth_success' 
@@ -28,48 +29,26 @@ export const trackAuthEvent = (
   // E.g., PostHog, mixpanel, or custom backend
 };
 
-// Map enhanced status to user-friendly descriptions
-export const getStatusDescription = (status: EnhancedAuthStatus): string => {
+// Map auth status to user-friendly descriptions
+export const getStatusDescription = (status: AuthStatus): string => {
   switch (status) {
-    case EnhancedAuthStatus.INITIAL:
-      return 'Initializing authentication...';
-    case EnhancedAuthStatus.SESSION_LOADING:
+    case AuthStatus.LOADING:
       return 'Loading your session...';
-    case EnhancedAuthStatus.SESSION_FOUND:
-      return 'Session found';
-    case EnhancedAuthStatus.SESSION_NOT_FOUND:
+    case AuthStatus.AUTHENTICATED:
+      return 'Authenticated';
+    case AuthStatus.UNAUTHENTICATED:
       return 'Not signed in';
-    case EnhancedAuthStatus.PROFILE_LOADING:
-      return 'Loading your profile...';
-    case EnhancedAuthStatus.PROFILE_LOADED:
-      return 'Profile loaded';
-    case EnhancedAuthStatus.PROFILE_ERROR:
-      return 'Error loading profile';
-    case EnhancedAuthStatus.TOKEN_REFRESH_ERROR:
-      return 'Session expired';
-    case EnhancedAuthStatus.TOKEN_REFRESHING:
-      return 'Refreshing session...';
-    case EnhancedAuthStatus.AUTH_ERROR:
-      return 'Authentication error';
-    case EnhancedAuthStatus.LIBRARY_IMPORTING:
-      return 'Importing your game library...';
-    case EnhancedAuthStatus.LIBRARY_UPDATING:
-      return 'Updating your game library...';
-    case EnhancedAuthStatus.LIBRARY_LOADING:
-      return 'Loading your game library...';
-    case EnhancedAuthStatus.LIBRARY_READY:
-      return 'Your game library is ready';
     default:
       return 'Unknown status';
   }
 };
 
 // Utility to check if a session error is recoverable
-export const isRecoverableAuthError = (status: EnhancedAuthStatus): boolean => {
+export const isRecoverableAuthError = (errorType: string): boolean => {
   return [
-    EnhancedAuthStatus.PROFILE_ERROR,
-    EnhancedAuthStatus.TOKEN_REFRESH_ERROR
-  ].includes(status);
+    'PROFILE_ERROR',
+    'TOKEN_REFRESH_ERROR'
+  ].includes(errorType);
 };
 
 // Extended debug log that also tracks events
@@ -136,8 +115,6 @@ export const getUserFriendlyErrorMessage = (errorCode: string): string => {
       return 'Authentication verification failed with Steam. Please try again.';
     case 'signup_failed':
       return 'There was a problem creating your account. Please try again.';
-    case 'missing_steam_id':
-      return 'Could not connect to your Steam ID. Please try again.';
     default:
       return 'An error occurred during authentication. Please try again.';
   }
@@ -148,7 +125,7 @@ interface WindowWithGtag extends Window {
   gtag?: (...args: any[]) => void;
 }
 
-export const trackAuthStatusChange = (newStatus: EnhancedAuthStatus, userId?: string | null) => {
+export const trackAuthStatusChange = (newStatus: AuthStatus, userId?: string | null) => {
   // Check if gtag exists in the window object
   const windowWithGtag = window as WindowWithGtag;
   if (!windowWithGtag.gtag) return;
@@ -160,50 +137,14 @@ export const trackAuthStatusChange = (newStatus: EnhancedAuthStatus, userId?: st
   };
 
   switch (newStatus) {
-    case EnhancedAuthStatus.INITIAL:
-      eventName = 'auth_status_initial';
-      break;
-    case EnhancedAuthStatus.SESSION_LOADING:
+    case AuthStatus.LOADING:
       eventName = 'auth_session_loading';
       break;
-    case EnhancedAuthStatus.SESSION_NOT_FOUND:
+    case AuthStatus.UNAUTHENTICATED:
       eventName = 'auth_session_not_found';
       break;
-    case EnhancedAuthStatus.SESSION_FOUND:
+    case AuthStatus.AUTHENTICATED:
       eventName = 'auth_session_found';
-      break;
-    case EnhancedAuthStatus.PROFILE_LOADING:
-      eventName = 'auth_profile_loading';
-      break;
-    case EnhancedAuthStatus.PROFILE_LOADED:
-      eventName = 'auth_profile_loaded';
-      break;
-    case EnhancedAuthStatus.PROFILE_ERROR:
-      eventName = 'auth_profile_error';
-      break;
-    case EnhancedAuthStatus.AUTH_ERROR:
-      eventName = 'auth_error';
-      break;
-    case EnhancedAuthStatus.LIBRARY_LOADING:
-      eventName = 'auth_library_loading';
-      break;
-    case EnhancedAuthStatus.LIBRARY_READY:
-      eventName = 'auth_library_ready';
-      break;
-    case EnhancedAuthStatus.LIBRARY_ERROR:
-      eventName = 'auth_library_error';
-      break;
-    case EnhancedAuthStatus.LIBRARY_IMPORTING:
-      eventName = 'auth_library_importing';
-      break;
-    case EnhancedAuthStatus.LIBRARY_UPDATING:
-      eventName = 'auth_library_updating';
-      break;
-    case EnhancedAuthStatus.TOKEN_REFRESHING:
-      eventName = 'auth_token_refreshing';
-      break;
-    case EnhancedAuthStatus.TOKEN_REFRESH_ERROR:
-      eventName = 'auth_token_refresh_error';
       break;
     default:
       eventName = 'auth_status_unknown';

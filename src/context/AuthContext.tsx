@@ -7,7 +7,7 @@ import React, {
   useContext,
   useCallback,
 } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,7 +29,7 @@ type AuthContextType = {
   user: User | null;
   profile: any | null;
   error: AuthError | null;
-  signInWithProvider: (provider: 'discord' | 'twitch' | 'steam', options?: { redirectTo?: string }) => Promise<void>;
+  signInWithProvider: (provider: Provider | 'steam', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<any>;
@@ -88,13 +88,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Sign in with provider (Discord, Twitch, Steam)
   const signInWithProvider = useCallback(async (
-    provider: 'discord' | 'twitch' | 'steam',
+    provider: Provider | 'steam',
     options?: { redirectTo?: string }
   ) => {
     try {
       setIsLoading(true);
       clearError();
       setStatus(AuthStatus.LOADING);
+      
+      if (provider === 'steam') {
+        // Handle Steam auth separately since it's not directly supported by Supabase auth
+        const uid = user?.id;
+        if (!uid) {
+          throw new Error('You must be logged in to link a Steam account');
+        }
+        
+        const redirectTo = options?.redirectTo || `${window.location.origin}/auth/callback`;
+        const steamAuthUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
+        
+        window.location.href = steamAuthUrl;
+        return;
+      }
       
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider,
@@ -115,7 +129,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [clearError]);
+  }, [clearError, user?.id]);
 
   // Sign in with email (magic link)
   const signInWithEmail = useCallback(async (email: string) => {
