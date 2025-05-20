@@ -46,7 +46,8 @@ const AuthCallbackHandler = () => {
             localStorage.setItem("personaName", decodeURIComponent(steam_name));
             if (steam_avatar) localStorage.setItem("avatar", decodeURIComponent(steam_avatar));
             
-            await refreshProfile();
+            // Use forceRefresh=true to ensure we get updated profile data
+            await refreshProfile(true);
             toast.success('Steam account linked successfully!');
             
             // Navigate to library after successful Steam linking
@@ -81,7 +82,8 @@ const AuthCallbackHandler = () => {
           // Mark successful login
           AuthStorage.markJustLoggedIn();
           
-          const profile = await refreshProfile();
+          // Force a profile refresh to get the latest data
+          const profile = await refreshProfile(true);
           
           if (profile?.steam_id) {
             // User has Steam linked, go to their library

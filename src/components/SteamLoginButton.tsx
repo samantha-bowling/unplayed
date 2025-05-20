@@ -29,7 +29,7 @@ const SteamLoginButton = ({
     return null;
   }
 
-  const { user } = useAuth();
+  const { user, signInWithProvider } = useAuth();
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleSteamLink = () => {
@@ -40,14 +40,11 @@ const SteamLoginButton = ({
     
     setButtonLoading(true);
     
-    const uid = encodeURIComponent(user.id);
-    const redirectTo = `${window.location.origin}/auth/callback`;
-    const steamRedirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
-    
-    console.log('[Steam Auth] Starting Steam account linking');
-    console.log('[Steam Auth] Redirect URL:', redirectTo);
-    
-    window.location.href = steamRedirectUrl;
+    // Use the centralized signInWithProvider method with steam provider
+    signInWithProvider('steam', { redirectTo: `${window.location.origin}/auth/callback` })
+      .catch(() => {
+        setButtonLoading(false);
+      });
   };
 
   return (

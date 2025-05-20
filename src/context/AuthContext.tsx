@@ -1,3 +1,4 @@
+
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -39,7 +40,7 @@ type AuthContextType = {
   signInWithProvider: (provider: Provider | 'steam', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<any>;
+  refreshProfile: (forceRefresh?: boolean) => Promise<any>;
   clearError: () => void;
   isLoading: boolean;
   // Steam session properties merged in
@@ -74,13 +75,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Profile refresh function with debouncing
-  const refreshProfile = useCallback(async () => {
+  // Profile refresh function with enhanced forceRefresh parameter
+  const refreshProfile = useCallback(async (forceRefresh = false) => {
     if (!user) return null;
     
-    // Implement simple debouncing to prevent excessive refreshes
+    // If forceRefresh is true, bypass the cooldown check
     const now = Date.now();
-    if (now - lastProfileRefresh < PROFILE_REFRESH_COOLDOWN) {
+    if (!forceRefresh && now - lastProfileRefresh < PROFILE_REFRESH_COOLDOWN) {
       console.log('[Auth] Profile refresh skipped (cooldown active)');
       return profile; // Return existing profile during cooldown
     }
@@ -88,6 +89,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       lastProfileRefresh = now;
+      
+      console.log(`[Auth] Refreshing profile for user ${user.id}, force=${forceRefresh}`);
       
       const { data, error: err } = await supabase
         .from('users')
@@ -119,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user, profile]);
 
-  // Sign in with provider (Discord, Twitch, Steam)
+  // Consolidated signInWithProvider function that includes the logic from src/utils/auth/signInWithProvider.ts
   const signInWithProvider = useCallback(async (
     provider: Provider | 'steam',
     options?: { redirectTo?: string }
@@ -128,6 +131,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       clearError();
       setStatus(AuthStatus.LOADING);
+      
+      // Update auth state
+      AuthStorage.setAuthState(AuthState.LOADING);
+      
+      // Set safety flag with expiration
+      AuthStorage.setAuthFlag('AUTH_IN_PROGRESS', 'true', 5 * 60 * 1000); // 5 minutes max
       
       if (provider === 'steam') {
         // Handle Steam auth - redirect directly to auth/callback
@@ -139,19 +148,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const redirectTo = options?.redirectTo || `${window.location.origin}/auth/callback`;
         const steamAuthUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
         
+        console.log(`[Auth] Initiating Steam linking for user ${uid}`);
         window.location.href = steamAuthUrl;
         return;
       }
       
-      const { error: err } = await supabase.auth.signInWithOAuth({
+      // For non-Steam providers, use Supabase OAuth
+      const normalizedRedirectTo = options?.redirectTo || `${window.location.origin}/auth/callback`;
+      console.log(`[Auth] Using redirect URL for ${provider}: ${normalizedRedirectTo}`);
+      
+      const { error: err, data } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: options?.redirectTo || `${window.location.origin}/auth/callback`,
+          redirectTo: normalizedRedirectTo,
           scopes: provider === 'discord' ? 'identify email' : undefined,
         }
       });
       
-      if (err) throw err;
+      if (err) {
+        console.error(`[Auth] ${provider} sign in error:`, err);
+        // Update auth state
+        AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
+        // Clear auth flags
+        AuthStorage.removeAuthFlag('AUTH_IN_PROGRESS');
+        throw err;
+      }
+      
+      console.log(`[Auth] ${provider} sign in initiated`, data);
+      
     } catch (err: any) {
       toast.error(`Login with ${provider} failed: ${err.message}`);
       setError({
@@ -161,6 +185,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setStatus(AuthStatus.UNAUTHENTICATED);
       // Update auth state in storage
       AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
+      // Clear auth flags
+      AuthStorage.removeAuthFlag('AUTH_IN_PROGRESS');
     } finally {
       setIsLoading(false);
     }
@@ -172,6 +198,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       clearError();
       setStatus(AuthStatus.LOADING);
+      
+      // Update auth state
+      AuthStorage.setAuthState(AuthState.LOADING);
       
       const { error: err } = await supabase.auth.signInWithOtp({ email });
       
@@ -238,6 +267,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(currentSession.user);
           // Update auth state in storage
           AuthStorage.setAuthState(AuthState.AUTHENTICATED);
+          
+          // If we just signed in, refresh the profile
+          if (event === 'SIGNED_IN') {
+            // Use setTimeout to avoid potential deadlock with Supabase
+            setTimeout(() => {
+              refreshProfile(true);
+            }, 0);
+          }
         } else {
           setStatus(AuthStatus.UNAUTHENTICATED);
           setSession(null);

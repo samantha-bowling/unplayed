@@ -2,14 +2,21 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AuthStorage, AuthState } from '../auth-service';
+import { useAuth } from '@/context/AuthContext';
 
+// This file is now a lightweight wrapper around AuthContext's signInWithProvider
+// for backward compatibility
 export const signInWithProvider = async (
   provider: 'discord' | 'twitch',
   redirectTo?: string
 ): Promise<void> => {
-  console.log(`[Auth] Signing in with ${provider}, redirect: ${redirectTo || 'default'}`);
-  
   try {
+    // Due to React hooks only being usable in components,
+    // we will continue to have a lightweight implementation here
+    // that uses the same logic as AuthContext but doesn't use the hook
+    
+    console.log(`[Auth] Signing in with ${provider}, redirect: ${redirectTo || 'default'}`);
+    
     // Update auth state
     AuthStorage.setAuthState(AuthState.LOADING);
     
