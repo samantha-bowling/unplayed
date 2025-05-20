@@ -1,3 +1,4 @@
+
 // src/context/DemoModeContext.tsx
 import React, {
   createContext,
@@ -7,11 +8,12 @@ import React, {
   useCallback,
 } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { DEMO_DATA, DemoDataType } from '@/lib/demo-data';
 
 type DemoModeContextType = {
   isDemo: boolean;
   isDemoExplicit: boolean;
-  demoData: any;
+  demoData: DemoDataType;
   enableDemo: () => void;
   disableDemo: () => void;
   setIsDemoExplicit: (isDemoExplicit: boolean) => void;
@@ -19,31 +21,10 @@ type DemoModeContextType = {
 
 const DemoModeContext = createContext<DemoModeContextType | undefined>(undefined);
 
-const initialDemoData = {
-  unplayedGames: 420,
-  dustScore: 69,
-  totalSpent: 1337,
-  genreHoarding: [
-    { genre: 'RPG', count: 69 },
-    { genre: 'Action', count: 42 },
-    { genre: 'Adventure', count: 21 },
-  ],
-  shelfLife: [
-    { year: 2018, count: 12 },
-    { year: 2019, count: 24 },
-    { year: 2020, count: 36 },
-  ],
-  libraryPreview: [
-    { name: 'Game 1', img: 'https://via.placeholder.com/50' },
-    { name: 'Game 2', img: 'https://via.placeholder.com/50' },
-    { name: 'Game 3', img: 'https://via.placeholder.com/50' },
-  ],
-};
-
 export const DemoModeProvider = ({ children }: { children: React.ReactNode }) => {
   const [isDemo, setIsDemo] = useState(false);
   const [isDemoExplicit, setIsDemoExplicit] = useState(false);
-  const [demoData, setDemoData] = useState(initialDemoData);
+  const [demoData, setDemoData] = useState(DEMO_DATA);
   const { status, isLoading } = useAuth();
 
   const enableDemo = useCallback(() => {
