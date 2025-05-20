@@ -21,6 +21,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 const App = () => {
   const { isLoading, status } = useAuth();
 
+  // Show loading state only when auth is initializing
   if (isLoading || status === AuthStatus.LOADING) {
     return (
       <div className="flex items-center justify-center h-screen">

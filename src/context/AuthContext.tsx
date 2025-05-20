@@ -11,7 +11,7 @@ import { Session, User, Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Simplified auth states
+// The application uses a simplified auth state model with just three core states
 export enum AuthStatus {
   LOADING = 'LOADING',
   AUTHENTICATED = 'AUTHENTICATED',
@@ -177,7 +177,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Authentication state management
+  // Authentication state management using the simplified three-state system
   useEffect(() => {
     // Set up the auth state change listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
