@@ -37,6 +37,11 @@ const AuthCallbackHandler = () => {
               onboarding_complete: true,
             });
             
+            // Save Steam info to localStorage
+            localStorage.setItem("steamId", steam_id);
+            localStorage.setItem("personaName", decodeURIComponent(steam_name));
+            if (steam_avatar) localStorage.setItem("avatar", decodeURIComponent(steam_avatar));
+            
             await refreshProfile();
             toast.success('Steam account linked successfully!');
             
@@ -75,7 +80,7 @@ const AuthCallbackHandler = () => {
             // User has Steam linked, go to their library
             navigate('/library');
           } else {
-            // User authenticated but needs to link Steam
+            // User authenticated but needs to link Steam - show button on index page
             navigate('/');
           }
         } else {

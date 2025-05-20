@@ -1,45 +1,41 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import AboutDialog from "./AboutDialog";
 import { Link } from "react-router-dom";
 import DiscordIcon from "./icons/DiscordIcon";
-import { Button } from "@/components/ui/button";
 
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const {
-    isFullScreenMode
-  } = useFullScreenMode();
+  const { isFullScreenMode } = useFullScreenMode();
   
-  const openPrivacyPolicy = (e: React.MouseEvent) => {
+  // Use useCallback to prevent unnecessary re-renders
+  const openPrivacyPolicy = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    console.log("Opening Privacy Policy dialog");
     setPrivacyPolicyOpen(true);
-  };
+  }, []);
   
-  const openTermsOfService = (e: React.MouseEvent) => {
+  const openTermsOfService = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    console.log("Opening Terms of Service dialog");
     setTermsOfServiceOpen(true);
-  };
+  }, []);
   
-  const openAbout = (e: React.MouseEvent) => {
+  const openAbout = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    console.log("Opening About dialog");
     setAboutOpen(true);
-  };
+  }, []);
 
   // Hide footer in full screen mode
   if (isFullScreenMode) {
     return null;
   }
   
-  return <footer className="w-full p-6 mt-16 relative z-10">
+  return (
+    <footer className="w-full p-6 mt-16 relative z-10">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
@@ -77,11 +73,12 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Dialog components with increased z-index */}
-      <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />
-      <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />
-      <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
-    </footer>;
+      {/* Dialog components with React.memo to prevent unnecessary re-renders */}
+      {privacyPolicyOpen && <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />}
+      {termsOfServiceOpen && <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />}
+      {aboutOpen && <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />}
+    </footer>
+  );
 };
 
 export default Footer;

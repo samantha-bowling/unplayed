@@ -2,7 +2,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { SteamSessionProvider } from './hooks/useSteamSession';
 import { AuthProvider } from './context/AuthContext';
 import { DemoModeProvider } from './context/DemoModeContext';
 import { FullScreenModeProvider } from './context/FullScreenModeContext';
@@ -30,11 +29,9 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <AuthProvider>
           <DemoModeProvider>
-            <SteamSessionProvider>
-              <FullScreenModeProvider>
-                <App />
-              </FullScreenModeProvider>
-            </SteamSessionProvider>
+            <FullScreenModeProvider>
+              <App />
+            </FullScreenModeProvider>
           </DemoModeProvider>
         </AuthProvider>
       </BrowserRouter>

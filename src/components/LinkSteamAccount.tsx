@@ -3,8 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import SteamLoginButton from './SteamLoginButton';
 import { Button } from './ui/button';
-import SteamLoader from './SteamLoader';
-import { toast } from 'sonner';
 
 interface LinkSteamAccountProps {
   onSkip?: () => void;

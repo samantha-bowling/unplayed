@@ -41,7 +41,7 @@ const SteamLoginButton = ({
     setButtonLoading(true);
     
     const uid = encodeURIComponent(user.id);
-    const redirectTo = `${window.location.origin}${redirectPath}`;
+    const redirectTo = `${window.location.origin}/auth/callback`;
     const steamRedirectUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
     
     console.log('[Steam Auth] Starting Steam account linking');

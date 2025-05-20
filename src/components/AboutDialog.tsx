@@ -1,4 +1,4 @@
-
+import { memo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +23,6 @@ interface AboutDialogProps {
 }
 
 const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
-  console.log("AboutDialog render: open =", open);
-  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -207,5 +205,5 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
   );
 };
 
-export default AboutDialog;
-
+// Memoize the AboutDialog to prevent unnecessary re-renders
+export default memo(AboutDialog);

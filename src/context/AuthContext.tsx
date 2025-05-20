@@ -23,6 +23,12 @@ export type AuthError = {
   message: string;
 };
 
+type SteamUser = {
+  steamId: string;
+  personaName: string;
+  avatar: string;
+};
+
 type AuthContextType = {
   status: AuthStatus;
   session: Session | null;
@@ -35,9 +41,15 @@ type AuthContextType = {
   refreshProfile: () => Promise<any>;
   clearError: () => void;
   isLoading: boolean;
+  // Steam session properties merged in
+  steamUser: SteamUser | null;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Track the last time we refreshed the profile to avoid excessive refreshes
+let lastProfileRefresh = 0;
+const PROFILE_REFRESH_COOLDOWN = 2000; // 2 seconds cooldown
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>(AuthStatus.LOADING);
@@ -46,15 +58,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<any | null>(null);
   const [error, setError] = useState<AuthError | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [steamUser, setSteamUser] = useState<SteamUser | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
 
-  // Profile refresh function
+  // Load steam user from localStorage on component mount
+  useEffect(() => {
+    const steamId = localStorage.getItem("steamId");
+    const personaName = localStorage.getItem("personaName");
+    const avatar = localStorage.getItem("avatar");
+
+    if (steamId && personaName && avatar) {
+      setSteamUser({ steamId, personaName, avatar });
+    }
+  }, []);
+
+  // Profile refresh function with debouncing
   const refreshProfile = useCallback(async () => {
     if (!user) return null;
     
+    // Implement simple debouncing to prevent excessive refreshes
+    const now = Date.now();
+    if (now - lastProfileRefresh < PROFILE_REFRESH_COOLDOWN) {
+      console.log('[Auth] Profile refresh skipped (cooldown active)');
+      return profile; // Return existing profile during cooldown
+    }
+    
     try {
       setIsLoading(true);
+      lastProfileRefresh = now;
       
       const { data, error: err } = await supabase
         .from('users')
@@ -84,7 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, profile]);
 
   // Sign in with provider (Discord, Twitch, Steam)
   const signInWithProvider = useCallback(async (
@@ -97,7 +129,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setStatus(AuthStatus.LOADING);
       
       if (provider === 'steam') {
-        // Handle Steam auth separately since it's not directly supported by Supabase auth
+        // Handle Steam auth - redirect directly to auth/callback
         const uid = user?.id;
         if (!uid) {
           throw new Error('You must be logged in to link a Steam account');
@@ -164,6 +196,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setUser(null);
       setProfile(null);
+      
+      // Clear steam user data on logout
+      setSteamUser(null);
+      localStorage.removeItem("steamId");
+      localStorage.removeItem("personaName");
+      localStorage.removeItem("avatar");
       
       toast.info('You have been signed out');
     } catch (err: any) {
@@ -253,6 +291,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     refreshProfile,
     clearError,
     isLoading,
+    steamUser,
   };
 
   return (
