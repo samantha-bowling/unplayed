@@ -8,18 +8,20 @@ import { toast } from 'sonner';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 import { AuthStorage } from '@/utils/auth-service';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
+import { useQueryClient } from '@tanstack/react-query';
 
 /**
  * Dedicated component for handling Steam account linking.
  * This component processes callbacks from the Steam authentication process.
  */
 const SteamAuthHandler = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [processing, setProcessing] = useState(true);
+  const queryClient = useQueryClient();
 
   // Parse Steam parameters
   const steam_id = searchParams.get('steam_id');
@@ -63,13 +65,9 @@ const SteamAuthHandler = () => {
             onboarding_complete: true,
           });
           
-          // Save Steam info to localStorage for immediate use
-          localStorage.setItem("steamId", steam_id);
-          localStorage.setItem("personaName", decodeURIComponent(steam_name));
-          if (steam_avatar) localStorage.setItem("avatar", decodeURIComponent(steam_avatar));
+          // Invalidate profile cache to force refresh with new Steam data
+          queryClient.invalidateQueries({ queryKey: ['profile', uid] });
           
-          // Force refresh profile to get updated data
-          await refreshProfile(true);
           toast.success('Steam account linked successfully!');
           
           // Navigate to library after successful Steam linking
@@ -91,7 +89,7 @@ const SteamAuthHandler = () => {
     };
 
     processSteamAuth();
-  }, [user, refreshProfile, navigate, steam_id, steam_name, steam_avatar, uid]);
+  }, [user, navigate, steam_id, steam_name, steam_avatar, uid, queryClient]);
 
   if (error) {
     return (

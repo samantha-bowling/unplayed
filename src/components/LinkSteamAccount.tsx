@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import SteamLoginButton from './SteamLoginButton';
 import { Button } from './ui/button';
+import { useProfile } from '@/hooks/use-profile';
 
 interface LinkSteamAccountProps {
   onSkip?: () => void;
@@ -11,10 +12,16 @@ interface LinkSteamAccountProps {
 
 export default function LinkSteamAccount({ onSkip, showSkip = false }: LinkSteamAccountProps) {
   const { user } = useAuth();
+  const { profile, isLoading } = useProfile();
   const [acknowledgedPrivacy, setAcknowledgedPrivacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   if (!user) {
+    return null;
+  }
+
+  // If the profile already has a Steam ID, don't show the linking UI
+  if (profile?.steam_id && !isLoading) {
     return null;
   }
 

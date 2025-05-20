@@ -1,18 +1,19 @@
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
+import { UnplayedDataType } from '@/types/unplayed-data.types';
 import { transformUserGameData } from '@/utils/transform-unplayed-data';
 import { normalizeDemoGames } from '@/utils/normalize-games';
+import { useProfile } from '@/hooks/use-profile';
 
 /**
  * Custom hook to provide unplayed game data, either from real API calls or demo data
  */
 export const useUnplayedData = () => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { isDemo, demoData } = useDemoMode();
   
   // Query for real data when authenticated and not in demo mode
@@ -21,7 +22,7 @@ export const useUnplayedData = () => {
     isLoading: isLoadingUserGames, 
     error: userGamesError 
   } = useQuery({
-    queryKey: ['unplayedData', user?.id, isDemo],
+    queryKey: ['unplayedData', user?.id, isDemo, profile?.steam_id],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -54,7 +55,7 @@ export const useUnplayedData = () => {
 
       return userGamesData;
     },
-    enabled: !!user && !isDemo,
+    enabled: !!user && !isDemo && !!profile?.steam_id,
   });
 
   // Query for game time estimates
@@ -62,7 +63,7 @@ export const useUnplayedData = () => {
     data: gameEstimatesData,
     isLoading: isLoadingEstimates,
   } = useQuery({
-    queryKey: ['gameEstimates', userGamesData, isDemo],
+    queryKey: ['gameEstimates', user?.id, isDemo, userGamesData?.length],
     queryFn: async () => {
       if (!userGamesData || userGamesData.length === 0) return {};
       

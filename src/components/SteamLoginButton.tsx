@@ -2,6 +2,7 @@
 // src/components/SteamLoginButton.tsx
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
+import { useProfile } from '@/hooks/use-profile';
 
 interface SteamLoginButtonProps {
   className?: string;
@@ -30,6 +31,7 @@ const SteamLoginButton = ({
   }
 
   const { user, signInWithProvider } = useAuth();
+  const { profile } = useProfile();
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const handleSteamLink = () => {

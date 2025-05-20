@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AuthStatus } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
 import { AuthStorage } from '@/utils/auth-service';
+import { useProfile } from '@/hooks/use-profile';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -14,11 +15,14 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { status, user, profile, isLoading } = useAuth();
+  const { status, user, isLoading: authLoading } = useAuth();
+  const { profile, isLoading: profileLoading } = useProfile();
   const location = useLocation();
 
-  // Show loading state
-  if (status === AuthStatus.LOADING || isLoading) {
+  // Show loading state only when necessary authentication data is loading
+  const isLoading = authLoading || (status === AuthStatus.AUTHENTICATED && profileLoading && requiredRole);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <SteamLoader message="Verifying access..." size="md" variant="secondary" />

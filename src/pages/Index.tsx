@@ -1,3 +1,4 @@
+
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -5,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
+import { useProfile } from "@/hooks/use-profile";
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -29,13 +31,16 @@ const Index = () => {
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
-  const { user, profile, refreshProfile, isLoading: authLoading, status, signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
 
-  // Main loading state when checking auth
-  if (authLoading) {
+  // Main loading state when checking auth and profile
+  const isLoading = profileLoading && user;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <SteamLoader message="Loading your profile..." size="md" variant="secondary" />
@@ -102,9 +107,14 @@ const Index = () => {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ steamId: profile.steam_id }),
                 })
-                  .then(() => window.location.reload())
+                  .then(() => {
+                    // Invalidate queries after import
+                    refreshProfile(true);
+                  })
                   .catch((err) => {
                     console.error("Import failed", err);
+                  })
+                  .finally(() => {
                     setIsImporting(false);
                   });
               }}
