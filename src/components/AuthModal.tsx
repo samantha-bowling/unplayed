@@ -40,7 +40,7 @@ const AuthModal = ({
         <DialogHeader>
           <DialogTitle className="text-center text-xl">Sign In to Unplayed</DialogTitle>
           <DialogDescription className="text-center text-muted-foreground">
-            Choose a provider to continue. You'll link your Steam account after login.
+            Choose a provider to continue.
           </DialogDescription>
         </DialogHeader>
 
