@@ -5,7 +5,15 @@
  */
 
 import { Session } from '@supabase/supabase-js';
-import { AuthStorage, isSessionExpired, isSessionExpiringSoon, getSessionTimeRemaining, formatSessionTimeRemaining, sanitizeRedirectUrl, forceSignOut } from './auth-service';
+import { 
+  AuthStorage, 
+  isSessionExpired as checkSessionExpired, 
+  isSessionExpiringSoon as checkSessionExpiringSoon, 
+  getSessionTimeRemaining as getSessionRemainingTime, 
+  formatSessionTimeRemaining as formatRemainingTime, 
+  sanitizeRedirectUrl as sanitizeRedirectURL, 
+  forceSignOut as signOutForced 
+} from './auth-service';
 
 // Constants for localStorage keys
 const LOCAL_STORAGE_KEYS = {
@@ -23,27 +31,27 @@ export const clearAuthData = () => {
 
 // Force user sign out and redirect to auth page
 export const forceSignOut = async () => {
-  return forceSignOut();
+  return signOutForced();
 };
 
 // Check if a session is expired
 export const isSessionExpired = (session: Session | null): boolean => {
-  return isSessionExpired(session);
+  return checkSessionExpired(session);
 };
 
 // Check if session is about to expire soon (within buffer minutes)
 export const isSessionExpiringSoon = (session: Session | null, bufferMinutes = 5): boolean => {
-  return isSessionExpiringSoon(session, bufferMinutes);
+  return checkSessionExpiringSoon(session, bufferMinutes);
 };
 
 // Calculate time remaining in session
 export const getSessionTimeRemaining = (session: Session | null): number => {
-  return getSessionTimeRemaining(session);
+  return getSessionRemainingTime(session);
 };
 
 // Format time remaining in friendly format
 export const formatSessionTimeRemaining = (session: Session | null): string => {
-  return formatSessionTimeRemaining(session);
+  return formatRemainingTime(session);
 };
 
 // Set flag that auth animation has been shown
@@ -63,5 +71,5 @@ export const resetAuthAnimationFlag = () => {
 
 // Sanitize auth redirect URL to prevent open redirect vulnerabilities
 export const sanitizeRedirectUrl = (url: string | null): string => {
-  return sanitizeRedirectUrl(url);
+  return sanitizeRedirectURL(url);
 };

@@ -4,7 +4,7 @@
  * This file is kept for backward compatibility but will be removed in a future update.
  */
 
-import { AuthStorage } from './auth-service';
+import { AuthStorage as AuthStorageService } from './auth-service';
 
 /**
  * Simple storage to persist flags across page reloads
@@ -12,15 +12,15 @@ import { AuthStorage } from './auth-service';
  */
 export const AuthStorage = {
   setFlag: (key: string, value: string | boolean) => {
-    AuthStorage.setAuthFlag(key as any, String(value));
+    AuthStorageService.setAuthFlag(key as any, String(value));
   },
 
   getFlag: (key: string): string | null => {
-    return AuthStorage.getAuthFlag(key as any);
+    return AuthStorageService.getAuthFlag(key as any);
   },
 
   clearFlag: (key: string) => {
-    AuthStorage.removeAuthFlag(key as any);
+    AuthStorageService.removeAuthFlag(key as any);
   }
 };
 
@@ -29,12 +29,12 @@ export const AuthStorage = {
  * @deprecated Use AuthStorage.setRedirectPath from auth-service.ts instead
  */
 export const setRedirectPath = (path: string) => {
-  AuthStorage.setRedirectPath(path);
+  AuthStorageService.setRedirectPath(path);
 };
 
 /**
  * @deprecated Use AuthStorage.getRedirectPath from auth-service.ts instead
  */
 export const getRedirectPath = (): string => {
-  return AuthStorage.getRedirectPath();
+  return AuthStorageService.getRedirectPath();
 };
