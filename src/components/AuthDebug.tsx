@@ -7,13 +7,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuthStatus, AuthError, useAuth } from '@/context/AuthContext';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/use-profile';
 
 /**
  * AuthDebug component for troubleshooting authentication issues
  * This component provides diagnostics and debugging tools for Steam authentication
  */
 const AuthDebug = () => {
-  const { session, user, status, error, refreshProfile } = useAuth();
+  const { session, user, status, error } = useAuth();
+  const { refreshProfile } = useProfile();
   const [debugResults, setDebugResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);

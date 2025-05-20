@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/use-profile";
 
 /**
  * Authentication Debug Page
@@ -16,7 +17,7 @@ const AuthDebugPage = () => {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [nextRefresh, setNextRefresh] = useState<number | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
-  const { refreshProfile } = useAuth();
+  const { refreshProfile } = useProfile();
   const { toast } = useToast();
   
   // Set up and clean up periodic refresh on toggle

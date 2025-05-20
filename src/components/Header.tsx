@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Menu, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,10 +11,12 @@ import FullScreenModeToggle from './FullScreenModeToggle';
 import DiscordIcon from './icons/DiscordIcon';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useProfile } from '@/hooks/use-profile';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, profile, signOut, isLoading, status } = useAuth();
+  const { user, signOut, isLoading, status } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
