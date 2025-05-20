@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SteamLoginButton from './SteamLoginButton';
 import { Button } from './ui/button';
 import { useProfile } from '@/hooks/use-profile';
+import { toast } from 'sonner';
 
 interface LinkSteamAccountProps {
   onSkip?: () => void;
@@ -17,13 +18,21 @@ export default function LinkSteamAccount({ onSkip, showSkip = false }: LinkSteam
   const [error, setError] = useState<string | null>(null);
   
   if (!user) {
+    console.log('[LinkSteamAccount] No user found, not rendering component');
     return null;
   }
 
   // If the profile already has a Steam ID, don't show the linking UI
   if (profile?.steam_id && !isLoading) {
+    console.log('[LinkSteamAccount] User already has Steam linked, not showing linking UI');
     return null;
   }
+
+  const handleError = (errorMessage: string) => {
+    console.error('[LinkSteamAccount] Error:', errorMessage);
+    setError(errorMessage);
+    toast.error(errorMessage);
+  };
 
   return (
     <div className="w-full max-w-md space-y-6 mx-auto">

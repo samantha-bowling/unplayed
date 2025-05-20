@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { useProfile } from '@/hooks/use-profile';
+import { toast } from 'sonner';
 
 interface SteamLoginButtonProps {
   className?: string;
@@ -37,14 +38,18 @@ const SteamLoginButton = ({
   const handleSteamLink = () => {
     if (!user) {
       console.error('[Steam Auth] Cannot link Steam account: User not authenticated');
+      toast.error("You need to be logged in to link your Steam account");
       return;
     }
     
     setButtonLoading(true);
+    console.log('[Steam Auth] Starting Steam account linking process for user', user.id);
     
     // Use the centralized signInWithProvider method with steam provider
     signInWithProvider('steam', { redirectTo: `${window.location.origin}/auth/steam-callback` })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[Steam Auth] Error initiating Steam auth:', error);
+        toast.error("Failed to start Steam authentication. Please try again.");
         setButtonLoading(false);
       });
   };

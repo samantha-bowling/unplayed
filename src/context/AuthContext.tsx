@@ -71,9 +71,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         
         const redirectTo = options?.redirectTo || `${window.location.origin}/auth/steam-callback`;
-        const steamAuthUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
         
-        console.log(`[Auth] Initiating Steam linking for user ${uid}`);
+        // Use the API redirect path defined in netlify.toml instead of constructing Supabase URL directly
+        const steamAuthUrl = `/api/auth/steam?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
+        
+        console.log(`[Auth] Initiating Steam linking for user ${uid}, redirecting to ${steamAuthUrl}`);
         window.location.href = steamAuthUrl;
         return;
       }
