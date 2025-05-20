@@ -225,16 +225,82 @@ const useDustScoreData = () => {
     playtimeFactor: 1.0, // Full factor because games are unplayed
   };
   
-  // Demo top dust contributors
-  const demoTopContributors: GameDustData[] = demoData.library.map((game, index) => ({
-    id: game.id,
-    title: game.title,
-    dustScore: 95 - index * 5, // Decreasing scores for demo
-    addedDate: new Date(Date.now() - (index + 1) * 30 * 24 * 60 * 60 * 1000).toISOString(), // Staggered dates
-    releaseDate: new Date(Date.now() - (index + 5) * 90 * 24 * 60 * 60 * 1000).toISOString(), // Earlier release dates
-    playtimeMinutes: 0,
-    imageUrl: game.image
-  }));
+  // FIXED: Hardcoded top dust contributors for demo mode to avoid using demoData.library
+  // This way we don't depend on demoData.library which may be undefined
+  const demoTopContributors: GameDustData[] = [
+    {
+      id: 1,
+      title: "The Witcher 3: Wild Hunt",
+      dustScore: 95,
+      addedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 5 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg"
+    },
+    {
+      id: 2,
+      title: "Hades",
+      dustScore: 90,
+      addedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 6 * 90 * 24 * 60 * 60 * 1000).toISOString(), 
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_616x353.jpg"
+    },
+    {
+      id: 3,
+      title: "Stardew Valley",
+      dustScore: 85,
+      addedDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 7 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_616x353.jpg"
+    },
+    {
+      id: 4,
+      title: "Cyberpunk 2077",
+      dustScore: 80,
+      addedDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 8 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg"
+    },
+    {
+      id: 5,
+      title: "Hollow Knight",
+      dustScore: 75,
+      addedDate: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 9 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/capsule_616x353.jpg"
+    },
+    {
+      id: 6,
+      title: "Disco Elysium",
+      dustScore: 70,
+      addedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 10 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/632470/capsule_616x353.jpg"
+    },
+    {
+      id: 7,
+      title: "Divinity: Original Sin 2",
+      dustScore: 65,
+      addedDate: new Date(Date.now() - 210 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 11 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/435150/capsule_616x353.jpg"
+    },
+    {
+      id: 8,
+      title: "Red Dead Redemption 2",
+      dustScore: 60,
+      addedDate: new Date(Date.now() - 240 * 24 * 60 * 60 * 1000).toISOString(),
+      releaseDate: new Date(Date.now() - 12 * 90 * 24 * 60 * 60 * 1000).toISOString(),
+      playtimeMinutes: 0,
+      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg"
+    }
+  ];
   
   // Mock clean score data for demo mode
   const demoCleanScore = 68; // Medium-high clean score for demo
