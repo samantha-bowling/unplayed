@@ -52,8 +52,9 @@ serve(async (req) => {
     );
   }
 
-  // Handle login route
-  if (path.endsWith("/steam-auth")) {
+  // Modified path checking to be more flexible - handle both /steam-auth and /steam-auth/
+  if (path.includes("/steam-auth") && !path.includes("/callback")) {
+    console.log("[Steam Auth] Processing steam login request");
     const redirectTo = url.searchParams.get("redirectTo");
     const steamLoginUrl = new URL("https://steamcommunity.com/openid/login");
 
@@ -69,8 +70,8 @@ serve(async (req) => {
     return Response.redirect(steamLoginUrl.toString(), 302);
   }
 
-  // Handle OpenID callback from Steam
-  if (path.endsWith("/steam-auth/callback")) {
+  // Handle OpenID callback from Steam - also made more flexible with path checking
+  if (path.includes("/steam-auth/callback")) {
     try {
       console.log(`[Steam Auth] Handling callback from Steam`);
       const claimedId = url.searchParams.get("openid.claimed_id") || "";
