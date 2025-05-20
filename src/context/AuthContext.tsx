@@ -1,3 +1,4 @@
+
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -12,7 +13,6 @@ import { toast } from 'sonner';
 import { AuthState, AuthStorage, forceSignOut } from '@/utils/auth-service';
 
 // The application uses a simplified auth state model with just three core states
-// Keep for backward compatibility - we'll gradually migrate to AuthState from auth-service
 export enum AuthStatus {
   LOADING = 'LOADING',
   AUTHENTICATED = 'AUTHENTICATED',
@@ -24,102 +24,28 @@ export type AuthError = {
   message: string;
 };
 
-type SteamUser = {
-  steamId: string;
-  personaName: string;
-  avatar: string;
-};
-
 type AuthContextType = {
   status: AuthStatus;
   session: Session | null;
   user: User | null;
-  profile: any | null;
   error: AuthError | null;
   signInWithProvider: (provider: Provider | 'steam', options?: { redirectTo?: string }) => Promise<void>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: (forceRefresh?: boolean) => Promise<any>;
   clearError: () => void;
   isLoading: boolean;
-  // Steam session properties merged in
-  steamUser: SteamUser | null;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Track the last time we refreshed the profile to avoid excessive refreshes
-let lastProfileRefresh = 0;
-const PROFILE_REFRESH_COOLDOWN = 2000; // 2 seconds cooldown
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>(AuthStatus.LOADING);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
   const [error, setError] = useState<AuthError | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [steamUser, setSteamUser] = useState<SteamUser | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
-
-  // Load steam user from localStorage on component mount
-  useEffect(() => {
-    const steamId = localStorage.getItem("steamId");
-    const personaName = localStorage.getItem("personaName");
-    const avatar = localStorage.getItem("avatar");
-
-    if (steamId && personaName && avatar) {
-      setSteamUser({ steamId, personaName, avatar });
-    }
-  }, []);
-
-  // Profile refresh function with enhanced forceRefresh parameter
-  const refreshProfile = useCallback(async (forceRefresh = false) => {
-    if (!user) return null;
-    
-    // If forceRefresh is true, bypass the cooldown check
-    const now = Date.now();
-    if (!forceRefresh && now - lastProfileRefresh < PROFILE_REFRESH_COOLDOWN) {
-      console.log('[Auth] Profile refresh skipped (cooldown active)');
-      return profile; // Return existing profile during cooldown
-    }
-    
-    try {
-      setIsLoading(true);
-      lastProfileRefresh = now;
-      
-      console.log(`[Auth] Refreshing profile for user ${user.id}, force=${forceRefresh}`);
-      
-      const { data, error: err } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (err) {
-        console.error('Failed to load profile:', err.message);
-        setError({
-          code: 'profile_error',
-          message: err.message
-        });
-        return null;
-      }
-
-      console.log('Profile refreshed successfully:', data ? 'found' : 'not found');
-      setProfile(data);
-      return data;
-    } catch (err: any) {
-      console.error('Failed to load profile:', err.message);
-      setError({
-        code: 'profile_error',
-        message: err.message
-      });
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, profile]);
 
   // Consolidated signInWithProvider function that includes the logic from src/utils/auth/signInWithProvider.ts
   const signInWithProvider = useCallback(async (
@@ -144,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           throw new Error('You must be logged in to link a Steam account');
         }
         
-        const redirectTo = options?.redirectTo || `${window.location.origin}/auth/callback`;
+        const redirectTo = options?.redirectTo || `${window.location.origin}/auth/steam-callback`;
         const steamAuthUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
         
         console.log(`[Auth] Initiating Steam linking for user ${uid}`);
@@ -230,16 +156,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setStatus(AuthStatus.UNAUTHENTICATED);
       setSession(null);
       setUser(null);
-      setProfile(null);
       
       // Clear auth state in storage
       AuthStorage.clearAuthData();
-      
-      // Clear Steam user data on logout
-      setSteamUser(null);
-      localStorage.removeItem("steamId");
-      localStorage.removeItem("personaName");
-      localStorage.removeItem("avatar");
       
       toast.info('You have been signed out');
     } catch (err: any) {
@@ -266,19 +185,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(currentSession.user);
           // Update auth state in storage
           AuthStorage.setAuthState(AuthState.AUTHENTICATED);
-          
-          // If we just signed in, refresh the profile
-          if (event === 'SIGNED_IN') {
-            // Use setTimeout to avoid potential deadlock with Supabase
-            setTimeout(() => {
-              refreshProfile(true);
-            }, 0);
-          }
         } else {
           setStatus(AuthStatus.UNAUTHENTICATED);
           setSession(null);
           setUser(null);
-          setProfile(null);
           // Update auth state in storage
           AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
         }
@@ -312,9 +222,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(data.session.user);
           // Update auth state in storage
           AuthStorage.setAuthState(AuthState.AUTHENTICATED);
-          
-          // Check for user profile only upon initial session load
-          refreshProfile();
         }
       } catch (err: any) {
         console.error('Critical error:', err.message);
@@ -335,21 +242,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [refreshProfile]);
+  }, []);
 
   const contextValue = {
     status,
     session,
     user,
-    profile,
     error,
     signInWithProvider,
     signInWithEmail,
     signOut,
-    refreshProfile,
     clearError,
     isLoading,
-    steamUser,
   };
 
   return (
