@@ -1,4 +1,3 @@
-
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -10,8 +9,10 @@ import React, {
 import { Session, User, Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AuthState, AuthStorage, forceSignOut } from '@/utils/auth-service';
 
 // The application uses a simplified auth state model with just three core states
+// Keep for backward compatibility - we'll gradually migrate to AuthState from auth-service
 export enum AuthStatus {
   LOADING = 'LOADING',
   AUTHENTICATED = 'AUTHENTICATED',
@@ -158,6 +159,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         message: err.message,
       });
       setStatus(AuthStatus.UNAUTHENTICATED);
+      // Update auth state in storage
+      AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
     } finally {
       setIsLoading(false);
     }
@@ -182,6 +185,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         message: err.message,
       });
       setStatus(AuthStatus.UNAUTHENTICATED);
+      // Update auth state in storage
+      AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
     } finally {
       setIsLoading(false);
     }
@@ -192,12 +197,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       await supabase.auth.signOut();
+      
+      // Clear auth state and data
       setStatus(AuthStatus.UNAUTHENTICATED);
       setSession(null);
       setUser(null);
       setProfile(null);
       
-      // Clear steam user data on logout
+      // Clear auth state in storage
+      AuthStorage.clearAuthData();
+      
+      // Clear Steam user data on logout
       setSteamUser(null);
       localStorage.removeItem("steamId");
       localStorage.removeItem("personaName");
@@ -226,11 +236,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setStatus(AuthStatus.AUTHENTICATED);
           setSession(currentSession);
           setUser(currentSession.user);
+          // Update auth state in storage
+          AuthStorage.setAuthState(AuthState.AUTHENTICATED);
         } else {
           setStatus(AuthStatus.UNAUTHENTICATED);
           setSession(null);
           setUser(null);
           setProfile(null);
+          // Update auth state in storage
+          AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
         }
       }
     );
@@ -248,14 +262,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             message: err.message,
           });
           setStatus(AuthStatus.UNAUTHENTICATED);
+          // Update auth state in storage
+          AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
         } else if (!data.session) {
           console.log('No session found');
           setStatus(AuthStatus.UNAUTHENTICATED);
+          // Update auth state in storage
+          AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
         } else {
           console.log('Session found');
           setStatus(AuthStatus.AUTHENTICATED);
           setSession(data.session);
           setUser(data.session.user);
+          // Update auth state in storage
+          AuthStorage.setAuthState(AuthState.AUTHENTICATED);
           
           // Check for user profile only upon initial session load
           refreshProfile();
@@ -267,6 +287,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           message: err.message,
         });
         setStatus(AuthStatus.UNAUTHENTICATED);
+        // Update auth state in storage
+        AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
       } finally {
         setIsLoading(false);
       }

@@ -12,6 +12,7 @@ import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 import DemoModeFallback from '@/components/DemoModeFallback';
 import { SteamIcon } from '@/components/icons/SteamIcon';
+import { AuthStorage } from '@/utils/auth-service';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -33,7 +34,7 @@ const AuthPage = () => {
     // If user is already authenticated, redirect them
     if (user) {
       const params = new URLSearchParams(location.search);
-      const redirectTo = params.get('redirectTo') || '/';
+      const redirectTo = params.get('redirectTo') || AuthStorage.getRedirectPath();
       navigate(redirectTo, { replace: true });
     }
   }, [user, navigate, location.search]);

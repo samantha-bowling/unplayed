@@ -1,6 +1,11 @@
 
+/**
+ * @deprecated Use the new auth-service.ts instead
+ * This file is kept for backward compatibility but will be removed in a future update.
+ */
+
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { AuthStorage, isSessionExpired, isSessionExpiringSoon, getSessionTimeRemaining, formatSessionTimeRemaining, sanitizeRedirectUrl, forceSignOut } from './auth-service';
 
 // Constants for localStorage keys
 const LOCAL_STORAGE_KEYS = {
@@ -13,110 +18,50 @@ const LOCAL_STORAGE_KEYS = {
 
 // Clear all auth-related data from local storage
 export const clearAuthData = () => {
-  Object.values(LOCAL_STORAGE_KEYS).forEach(key => {
-    localStorage.removeItem(key);
-  });
+  AuthStorage.clearAuthData();
 };
 
 // Force user sign out and redirect to auth page
 export const forceSignOut = async () => {
-  await supabase.auth.signOut();
-  clearAuthData();
-  window.location.href = '/auth';
+  return forceSignOut();
 };
 
 // Check if a session is expired
 export const isSessionExpired = (session: Session | null): boolean => {
-  if (!session) return true;
-  
-  const expiresAt = new Date(session.expires_at * 1000);
-  return expiresAt < new Date();
+  return isSessionExpired(session);
 };
 
 // Check if session is about to expire soon (within buffer minutes)
 export const isSessionExpiringSoon = (session: Session | null, bufferMinutes = 5): boolean => {
-  if (!session) return true;
-  
-  const expiresAt = new Date(session.expires_at * 1000);
-  const bufferMs = bufferMinutes * 60 * 1000;
-  return expiresAt.getTime() - Date.now() < bufferMs;
+  return isSessionExpiringSoon(session, bufferMinutes);
 };
 
 // Calculate time remaining in session
 export const getSessionTimeRemaining = (session: Session | null): number => {
-  if (!session) return 0;
-  
-  const expiresAt = new Date(session.expires_at * 1000);
-  return Math.max(0, expiresAt.getTime() - Date.now());
+  return getSessionTimeRemaining(session);
 };
 
 // Format time remaining in friendly format
 export const formatSessionTimeRemaining = (session: Session | null): string => {
-  const ms = getSessionTimeRemaining(session);
-  
-  if (ms <= 0) return 'Expired';
-  
-  const minutes = Math.floor(ms / (1000 * 60));
-  const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-  
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
-  }
-  
-  return `${seconds}s`;
+  return formatSessionTimeRemaining(session);
 };
 
 // Set flag that auth animation has been shown
 export const markAuthAnimationShown = () => {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_ANIMATION_SHOWN, 'true');
-  } catch (err) {
-    console.error('Error setting auth animation flag:', err);
-  }
+  AuthStorage.markAuthAnimationShown();
 };
 
 // Check if auth animation has been shown
 export const hasAuthAnimationBeenShown = (): boolean => {
-  try {
-    return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_ANIMATION_SHOWN) === 'true';
-  } catch (err) {
-    console.error('Error checking auth animation flag:', err);
-    return false;
-  }
+  return AuthStorage.hasAuthAnimationBeenShown();
 };
 
 // Reset the auth animation flag
 export const resetAuthAnimationFlag = () => {
-  try {
-    localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_ANIMATION_SHOWN);
-  } catch (err) {
-    console.error('Error resetting auth animation flag:', err);
-  }
+  AuthStorage.resetAuthAnimationFlag();
 };
 
 // Sanitize auth redirect URL to prevent open redirect vulnerabilities
 export const sanitizeRedirectUrl = (url: string | null): string => {
-  // Default redirect location
-  const defaultRedirect = '/';
-  
-  // If no URL provided, use default
-  if (!url) return defaultRedirect;
-  
-  try {
-    // If it's a relative URL (starts with /) it's safe
-    if (url.startsWith('/')) return url;
-    
-    // For absolute URLs, check if it's on the same origin
-    const urlObj = new URL(url, window.location.origin);
-    if (urlObj.origin === window.location.origin) {
-      return urlObj.pathname + urlObj.search + urlObj.hash;
-    }
-    
-    // If not same origin, return default
-    return defaultRedirect;
-  } catch (e) {
-    // Invalid URL, return default
-    console.error('Invalid redirect URL:', url);
-    return defaultRedirect;
-  }
+  return sanitizeRedirectUrl(url);
 };

@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import AuthSessionManager, { AuthFlowState } from './AuthSessionManager';
+import { AuthStorage, AuthState } from '../auth-service';
 
 export const signInWithProvider = async (
   provider: 'discord' | 'twitch',
@@ -10,11 +10,11 @@ export const signInWithProvider = async (
   console.log(`[Auth] Signing in with ${provider}, redirect: ${redirectTo || 'default'}`);
   
   try {
-    // Update auth flow state
-    AuthSessionManager.setAuthFlowState(AuthFlowState.LOADING);
+    // Update auth state
+    AuthStorage.setAuthState(AuthState.LOADING);
     
     // Set flags with automatic expiration as a safety mechanism
-    AuthSessionManager.setAuthFlag('AUTH_IN_PROGRESS', 'true', 5 * 60 * 1000); // 5 minutes max
+    AuthStorage.setAuthFlag('AUTH_IN_PROGRESS', 'true', 5 * 60 * 1000); // 5 minutes max
 
     // Make sure we have a valid redirect URL
     const normalizedRedirectTo = redirectTo || `${window.location.origin}/auth/callback`;
@@ -31,8 +31,8 @@ export const signInWithProvider = async (
 
     if (error) {
       console.error(`[Auth] ${provider} sign in error:`, error);
-      // Update auth flow state to error
-      AuthSessionManager.setAuthFlowState(AuthFlowState.UNAUTHENTICATED);
+      // Update auth state to error
+      AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
       // Clear auth flags on error
       removeSessionFlagsOnError();
       throw error;
@@ -43,8 +43,8 @@ export const signInWithProvider = async (
   } catch (error: any) {
     console.error(`[Auth] Sign in with ${provider} failed:`, error);
     toast.error(`Login with ${provider} failed: ${error.message}`);
-    // Update auth flow state to error
-    AuthSessionManager.setAuthFlowState(AuthFlowState.UNAUTHENTICATED);
+    // Update auth state to error
+    AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
     // Clear auth flags on error
     removeSessionFlagsOnError();
     throw error;
@@ -53,7 +53,7 @@ export const signInWithProvider = async (
 
 function removeSessionFlagsOnError() {
   try {
-    AuthSessionManager.removeAuthFlag('AUTH_IN_PROGRESS');
+    AuthStorage.removeAuthFlag('AUTH_IN_PROGRESS');
   } catch (err) {
     console.error('[Auth] Failed to clear auth session flags:', err);
   }

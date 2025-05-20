@@ -1,18 +1,10 @@
 
 /**
- * AuthSessionManager - Simplified utility for managing authentication session flags
- * 
- * This utility helps prevent race conditions by providing a single source
- * of truth for authentication state management.
+ * @deprecated Use the new auth-service.ts instead
+ * This file is kept for backward compatibility but will be removed in a future update.
  */
 
-// Constants for sessionStorage keys
-const SESSION_FLAGS = {
-  AUTH_IN_PROGRESS: 'authInProgress',
-  JUST_LOGGED_IN: 'justLoggedIn',
-  FROM_AUTH_CALLBACK: 'fromAuthCallback',
-  AUTH_FLOW_STATUS: 'authFlowStatus',
-};
+import { AuthStorage, AuthState } from '../auth-service';
 
 // Simplified authentication flow states - only use these three states
 export enum AuthFlowState {
@@ -21,136 +13,130 @@ export enum AuthFlowState {
   UNAUTHENTICATED = 'unauthenticated'
 }
 
-// Safely check if sessionStorage is available
-const isSessionStorageAvailable = () => {
-  try {
-    const testKey = '__test__';
-    sessionStorage.setItem(testKey, testKey);
-    sessionStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    console.warn('[AuthSessionManager] SessionStorage is not available:', e);
-    return false;
+// Map old states to new states for backward compatibility
+const mapToNewState = (oldState: AuthFlowState): AuthState => {
+  switch (oldState) {
+    case AuthFlowState.LOADING: return AuthState.LOADING;
+    case AuthFlowState.AUTHENTICATED: return AuthState.AUTHENTICATED;
+    case AuthFlowState.UNAUTHENTICATED: return AuthState.UNAUTHENTICATED;
+    default: return AuthState.LOADING;
   }
 };
 
 /**
  * Set an authentication flag with optional expiration
+ * @deprecated Use AuthStorage.setAuthFlag from auth-service.ts instead
  */
 export const setAuthFlag = (
-  flag: keyof typeof SESSION_FLAGS, 
+  flag: string, 
   value: string = 'true',
   expirationMs?: number
 ): void => {
-  if (!isSessionStorageAvailable()) return;
+  // Map old flag names to new ones
+  let newFlagName: any = flag;
+  if (flag === 'AUTH_FLOW_STATUS') newFlagName = 'AUTH_STATE';
   
-  try {
-    sessionStorage.setItem(SESSION_FLAGS[flag], value);
-    
-    // Add expiration if specified
-    if (expirationMs) {
-      setTimeout(() => {
-        // Only clear if it's still set with the same value
-        if (getAuthFlag(flag) === value) {
-          removeAuthFlag(flag);
-        }
-      }, expirationMs);
-    }
-  } catch (error) {
-    console.error(`[AuthSessionManager] Failed to set flag ${flag}:`, error);
-  }
+  AuthStorage.setAuthFlag(newFlagName as any, value, expirationMs);
 };
 
 /**
  * Get an authentication flag
+ * @deprecated Use AuthStorage.getAuthFlag from auth-service.ts instead
  */
-export const getAuthFlag = (flag: keyof typeof SESSION_FLAGS): string | null => {
-  if (!isSessionStorageAvailable()) return null;
+export const getAuthFlag = (flag: string): string | null => {
+  // Map old flag names to new ones
+  let newFlagName: any = flag;
+  if (flag === 'AUTH_FLOW_STATUS') newFlagName = 'AUTH_STATE';
   
-  try {
-    return sessionStorage.getItem(SESSION_FLAGS[flag]);
-  } catch (error) {
-    console.error(`[AuthSessionManager] Failed to get flag ${flag}:`, error);
-    return null;
-  }
+  return AuthStorage.getAuthFlag(newFlagName as any);
 };
 
 /**
  * Remove an authentication flag
+ * @deprecated Use AuthStorage.removeAuthFlag from auth-service.ts instead
  */
-export const removeAuthFlag = (flag: keyof typeof SESSION_FLAGS): void => {
-  if (!isSessionStorageAvailable()) return;
+export const removeAuthFlag = (flag: string): void => {
+  // Map old flag names to new ones
+  let newFlagName: any = flag;
+  if (flag === 'AUTH_FLOW_STATUS') newFlagName = 'AUTH_STATE';
   
-  try {
-    sessionStorage.removeItem(SESSION_FLAGS[flag]);
-  } catch (error) {
-    console.error(`[AuthSessionManager] Failed to remove flag ${flag}:`, error);
-  }
+  AuthStorage.removeAuthFlag(newFlagName as any);
 };
 
 /**
  * Check if a flag exists and is set to 'true'
+ * @deprecated Use AuthStorage.hasAuthFlag from auth-service.ts instead
  */
-export const hasAuthFlag = (flag: keyof typeof SESSION_FLAGS): boolean => {
-  return getAuthFlag(flag) === 'true';
+export const hasAuthFlag = (flag: string): boolean => {
+  // Map old flag names to new ones
+  let newFlagName: any = flag;
+  if (flag === 'AUTH_FLOW_STATUS') newFlagName = 'AUTH_STATE';
+  
+  return AuthStorage.hasAuthFlag(newFlagName as any);
 };
 
 /**
  * Set the current authentication flow state to one of the three simplified states
+ * @deprecated Use AuthStorage.setAuthState from auth-service.ts instead
  */
 export const setAuthFlowState = (state: AuthFlowState): void => {
-  setAuthFlag('AUTH_FLOW_STATUS', state);
+  AuthStorage.setAuthState(mapToNewState(state));
 };
 
 /**
  * Get the current authentication flow state
+ * @deprecated Use AuthStorage.getAuthState from auth-service.ts instead
  */
 export const getAuthFlowState = (): AuthFlowState => {
-  const state = getAuthFlag('AUTH_FLOW_STATUS') as AuthFlowState;
-  return state || AuthFlowState.LOADING;
+  const newState = AuthStorage.getAuthState();
+  
+  // Map new states to old states for backward compatibility
+  switch (newState) {
+    case AuthState.LOADING: return AuthFlowState.LOADING;
+    case AuthState.AUTHENTICATED: return AuthFlowState.AUTHENTICATED;
+    case AuthState.UNAUTHENTICATED: return AuthFlowState.UNAUTHENTICATED;
+    default: return AuthFlowState.LOADING;
+  }
 };
 
 /**
  * Clear all authentication-related flags
+ * @deprecated Use AuthStorage.clearAuthData from auth-service.ts instead
  */
 export const clearAllAuthFlags = (): void => {
-  if (!isSessionStorageAvailable()) return;
-  
-  Object.keys(SESSION_FLAGS).forEach((key) => {
-    try {
-      sessionStorage.removeItem(SESSION_FLAGS[key as keyof typeof SESSION_FLAGS]);
-    } catch (error) {
-      console.error(`[AuthSessionManager] Failed to clear flag ${key}:`, error);
-    }
-  });
+  AuthStorage.clearAuthData();
 };
 
 /**
  * Mark that a user has just logged in
+ * @deprecated Use AuthStorage.markJustLoggedIn from auth-service.ts instead
  */
 export const markJustLoggedIn = (): void => {
-  setAuthFlag('JUST_LOGGED_IN', 'true');
+  AuthStorage.markJustLoggedIn();
 };
 
 /**
  * Remove the just logged in flag (typically after onboarding)
+ * @deprecated Use AuthStorage.clearJustLoggedIn from auth-service.ts instead
  */
 export const clearJustLoggedIn = (): void => {
-  removeAuthFlag('JUST_LOGGED_IN');
+  AuthStorage.clearJustLoggedIn();
 };
 
 /**
  * Mark that authentication callback has been processed
+ * @deprecated Use AuthStorage.markFromAuthCallback from auth-service.ts instead
  */
 export const markFromAuthCallback = (): void => {
-  setAuthFlag('FROM_AUTH_CALLBACK', 'true', 2 * 60 * 1000); // 2 minutes expiration
+  AuthStorage.markFromAuthCallback();
 };
 
 /**
  * Check if the current flow is from an auth callback
+ * @deprecated Use AuthStorage.isFromAuthCallback from auth-service.ts instead
  */
 export const isFromAuthCallback = (): boolean => {
-  return hasAuthFlag('FROM_AUTH_CALLBACK');
+  return AuthStorage.isFromAuthCallback();
 };
 
 export default {

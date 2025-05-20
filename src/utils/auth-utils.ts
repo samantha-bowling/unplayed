@@ -1,46 +1,40 @@
 
-// src/utils/auth-utils.ts
-// Simplified utilities for auth flow management
+/**
+ * @deprecated Use the new auth-service.ts instead
+ * This file is kept for backward compatibility but will be removed in a future update.
+ */
+
+import { AuthStorage } from './auth-service';
 
 /**
  * Simple storage to persist flags across page reloads
+ * @deprecated Use AuthStorage from auth-service.ts instead
  */
 export const AuthStorage = {
   setFlag: (key: string, value: string | boolean) => {
-    try {
-      localStorage.setItem(`auth_${key}`, String(value));
-    } catch (e) {
-      console.error('Error saving auth flag to localStorage:', e);
-    }
+    AuthStorage.setAuthFlag(key as any, String(value));
   },
 
   getFlag: (key: string): string | null => {
-    try {
-      return localStorage.getItem(`auth_${key}`);
-    } catch (e) {
-      console.error('Error retrieving auth flag from localStorage:', e);
-      return null;
-    }
+    return AuthStorage.getAuthFlag(key as any);
   },
 
   clearFlag: (key: string) => {
-    try {
-      localStorage.removeItem(`auth_${key}`);
-    } catch (e) {
-      console.error('Error removing auth flag from localStorage:', e);
-    }
+    AuthStorage.removeAuthFlag(key as any);
   }
 };
 
 /**
  * Store redirect path for after authentication
+ * @deprecated Use AuthStorage.setRedirectPath from auth-service.ts instead
  */
 export const setRedirectPath = (path: string) => {
-  AuthStorage.setFlag('redirect_path', path);
+  AuthStorage.setRedirectPath(path);
 };
 
+/**
+ * @deprecated Use AuthStorage.getRedirectPath from auth-service.ts instead
+ */
 export const getRedirectPath = (): string => {
-  const path = AuthStorage.getFlag('redirect_path');
-  AuthStorage.clearFlag('redirect_path');
-  return path || '/';
+  return AuthStorage.getRedirectPath();
 };

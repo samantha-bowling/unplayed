@@ -1,3 +1,7 @@
+/**
+ * @deprecated This file contains mostly dummy functions for analytics that aren't used in production.
+ * It should be properly implemented or removed in a future update.
+ */
 
 import { AuthStatus } from '@/context/AuthContext';
 

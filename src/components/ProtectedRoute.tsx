@@ -6,6 +6,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { AuthStatus } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
+import { AuthStorage } from '@/utils/auth-service';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -27,6 +28,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   // If not authenticated, redirect to auth page
   if (status === AuthStatus.UNAUTHENTICATED || !user) {
+    // Store the current path for redirect after login
+    AuthStorage.setRedirectPath(location.pathname);
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 

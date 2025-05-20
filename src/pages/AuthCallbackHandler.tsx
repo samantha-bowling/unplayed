@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import SteamLoader from '@/components/SteamLoader';
 import { toast } from 'sonner';
 import { callUpsertUser } from '@/utils/auth/callUpsertUser';
+import { AuthStorage } from '@/utils/auth-service';
 
 const AuthCallbackHandler = () => {
   const { user, refreshProfile } = useAuth();
@@ -24,6 +25,9 @@ const AuthCallbackHandler = () => {
   useEffect(() => {
     const processAuthCallback = async () => {
       try {
+        // Mark that we're handling an auth callback
+        AuthStorage.markFromAuthCallback();
+        
         // Check for Steam parameters (handle Steam account linking)
         if (steam_id && steam_name && uid) {
           console.log('[AuthCallback] Processing Steam link callback');
@@ -70,10 +74,13 @@ const AuthCallbackHandler = () => {
         }
         
         // Get redirect destination if specified
-        const redirectTo = searchParams.get('redirectTo') || '/';
+        const redirectTo = AuthStorage.getRedirectPath();
         
         // If user exists, get their profile and check if they have a Steam account
         if (user) {
+          // Mark successful login
+          AuthStorage.markJustLoggedIn();
+          
           const profile = await refreshProfile();
           
           if (profile?.steam_id) {
