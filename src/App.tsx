@@ -16,6 +16,7 @@ import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
 import LoginErrorPage from "./pages/LoginErrorPage";
 import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
+import SteamAuthHandler from "@/pages/SteamAuthHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const App = () => {
@@ -35,6 +36,7 @@ const App = () => {
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/auth/callback" element={<AuthCallbackHandler />} />
+      <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
       <Route path="/login-error" element={<LoginErrorPage />} />
       <Route
         path="/auth-debug"

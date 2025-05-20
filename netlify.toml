@@ -38,6 +38,12 @@ status = 200
 force = true
 
 [[redirects]]
+from = "/auth/steam-callback"
+to = "/index.html"
+status = 200
+force = true
+
+[[redirects]]
 from = "/welcome"
 to = "/index.html"
 status = 200

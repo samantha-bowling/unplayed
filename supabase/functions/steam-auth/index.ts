@@ -141,8 +141,8 @@ serve(async (req) => {
       // Successful Steam account linking
       console.log(`[Steam Auth] Successfully linked Steam ID ${steamId} to user ${uid}`);
       
-      // Redirect to frontend with Steam data
-      const redirectUrl = new URL(`${FRONTEND_URL}/welcome`);
+      // Redirect to the new dedicated Steam auth callback handler with Steam data
+      const redirectUrl = new URL(`${FRONTEND_URL}/auth/steam-callback`);
       redirectUrl.searchParams.set("steam_id", steamId);
       redirectUrl.searchParams.set("steam_name", encodeURIComponent(player.personaname || ""));
       redirectUrl.searchParams.set("steam_avatar", encodeURIComponent(player.avatarfull || ""));
