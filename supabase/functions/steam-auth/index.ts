@@ -26,15 +26,20 @@ serve(async (req) => {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 
+  console.log(`[Steam Auth] Request received: ${req.method} ${path}`);
+  console.log(`[Steam Auth] Query params:`, Object.fromEntries(url.searchParams.entries()));
+  console.log(`[Steam Auth] Headers:`, Object.fromEntries(req.headers.entries()));
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log(`[Steam Auth] Responding to OPTIONS request with CORS headers`);
     return new Response(null, { headers: corsHeaders });
   }
 
   // Verify we have a valid UID (user must be authenticated already)
   const uid = url.searchParams.get("uid");
   if (!uid) {
-    console.error("Missing Supabase user ID - Steam linking requires authentication first");
+    console.error("[Steam Auth] Missing Supabase user ID - Steam linking requires authentication first");
     return new Response(
       JSON.stringify({ 
         error: "Authentication required", 
@@ -60,18 +65,21 @@ serve(async (req) => {
     steamLoginUrl.searchParams.set("openid.claimed_id", "http://specs.openid.net/auth/2.0/identifier_select");
 
     console.log(`[Steam Auth] Redirecting to Steam login for user ${uid}`);
+    console.log(`[Steam Auth] Steam URL: ${steamLoginUrl.toString()}`);
     return Response.redirect(steamLoginUrl.toString(), 302);
   }
 
   // Handle OpenID callback from Steam
   if (path.endsWith("/steam-auth/callback")) {
     try {
+      console.log(`[Steam Auth] Handling callback from Steam`);
       const claimedId = url.searchParams.get("openid.claimed_id") || "";
       const match = claimedId.match(/\/(\d{17,})$/);
       const steamId = match?.[1];
 
       if (!steamId) {
         console.error("[Steam Auth] Missing or invalid Steam ID in callback");
+        console.error("[Steam Auth] Claimed ID:", claimedId);
         return new Response(
           JSON.stringify({ error: "Invalid Steam ID" }),
           { 
@@ -108,6 +116,7 @@ serve(async (req) => {
 
       // Get Steam user profile information
       const steamApiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`;
+      console.log(`[Steam Auth] Fetching Steam profile from: ${steamApiUrl}`);
       const steamRes = await fetch(steamApiUrl);
       const steamData = await steamRes.json();
       const player = steamData?.response?.players?.[0];
@@ -140,6 +149,7 @@ serve(async (req) => {
 
       // Successful Steam account linking
       console.log(`[Steam Auth] Successfully linked Steam ID ${steamId} to user ${uid}`);
+      console.log(`[Steam Auth] Steam profile name: ${player.personaname}`);
       
       // Redirect to the new dedicated Steam auth callback handler with Steam data
       const redirectUrl = new URL(`${FRONTEND_URL}/auth/steam-callback`);
@@ -148,6 +158,7 @@ serve(async (req) => {
       redirectUrl.searchParams.set("steam_avatar", encodeURIComponent(player.avatarfull || ""));
       redirectUrl.searchParams.set("uid", uid);
 
+      console.log(`[Steam Auth] Redirecting to: ${redirectUrl.toString()}`);
       return Response.redirect(redirectUrl.toString(), 302);
     } catch (e) {
       console.error("[Steam Auth] Error processing Steam callback:", e);
@@ -161,6 +172,7 @@ serve(async (req) => {
     }
   }
 
+  console.log(`[Steam Auth] Unhandled path: ${path}`);
   return new Response(
     JSON.stringify({ error: "Not Found" }),
     { 

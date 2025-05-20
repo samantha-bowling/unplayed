@@ -33,10 +33,20 @@ const SteamAuthHandler = () => {
     const processSteamAuth = async () => {
       try {
         console.log('[SteamAuth] Processing Steam auth callback');
+        console.log('[SteamAuth] URL params:', {
+          steam_id,
+          steam_name,
+          steam_avatar,
+          uid
+        });
         
         // Validate required parameters
         if (!steam_id || !steam_name || !uid) {
-          console.error('[SteamAuth] Missing required Steam parameters');
+          console.error('[SteamAuth] Missing required Steam parameters:', {
+            steam_id,
+            steam_name,
+            uid
+          });
           setErrorCode('missing_parameters');
           setError('Missing required Steam account information');
           setProcessing(false);
@@ -56,6 +66,7 @@ const SteamAuthHandler = () => {
         AuthStorage.markFromAuthCallback();
         
         try {
+          console.log('[SteamAuth] Updating user profile with Steam data');
           // Update user profile with Steam information
           await callUpsertUser({
             id: uid,
