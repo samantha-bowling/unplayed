@@ -11,10 +11,9 @@ export const signInWithProvider = async (
   
   try {
     // Update auth flow state
-    AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_STARTED);
+    AuthSessionManager.setAuthFlowState(AuthFlowState.LOADING);
     
     // Set flags with automatic expiration as a safety mechanism
-    AuthSessionManager.setAuthFlag('AUTH_STARTED', 'true', 5 * 60 * 1000); // 5 minutes max
     AuthSessionManager.setAuthFlag('AUTH_IN_PROGRESS', 'true', 5 * 60 * 1000); // 5 minutes max
 
     // Make sure we have a valid redirect URL
@@ -33,7 +32,7 @@ export const signInWithProvider = async (
     if (error) {
       console.error(`[Auth] ${provider} sign in error:`, error);
       // Update auth flow state to error
-      AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
+      AuthSessionManager.setAuthFlowState(AuthFlowState.UNAUTHENTICATED);
       // Clear auth flags on error
       removeSessionFlagsOnError();
       throw error;
@@ -45,7 +44,7 @@ export const signInWithProvider = async (
     console.error(`[Auth] Sign in with ${provider} failed:`, error);
     toast.error(`Login with ${provider} failed: ${error.message}`);
     // Update auth flow state to error
-    AuthSessionManager.setAuthFlowState(AuthFlowState.AUTH_ERROR);
+    AuthSessionManager.setAuthFlowState(AuthFlowState.UNAUTHENTICATED);
     // Clear auth flags on error
     removeSessionFlagsOnError();
     throw error;
@@ -54,7 +53,6 @@ export const signInWithProvider = async (
 
 function removeSessionFlagsOnError() {
   try {
-    AuthSessionManager.removeAuthFlag('AUTH_STARTED');
     AuthSessionManager.removeAuthFlag('AUTH_IN_PROGRESS');
   } catch (err) {
     console.error('[Auth] Failed to clear auth session flags:', err);

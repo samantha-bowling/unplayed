@@ -1,12 +1,10 @@
-
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useSteamSession } from "@/hooks/useSteamSession";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
-import { useIsMounted } from "@/hooks/useIsMounted";
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -31,8 +29,7 @@ const Index = () => {
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
-  const { user, profile, refreshProfile, isLoading: authLoading, status } = useAuth();
-  const { user: steamUser, logout: steamLogout } = useSteamSession();
+  const { user, profile, refreshProfile, isLoading: authLoading, status, signOut } = useAuth();
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
@@ -123,7 +120,7 @@ const Index = () => {
               </p>
             )}
             <button
-              onClick={steamLogout}
+              onClick={signOut}
               className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
             >
               Log Out
