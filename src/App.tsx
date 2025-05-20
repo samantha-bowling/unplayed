@@ -2,8 +2,6 @@
 // src/App.tsx
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useAuth, AuthStatus } from "@/context/AuthContext";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/context/AuthContext";
 import SteamLoader from "@/components/SteamLoader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -37,79 +35,77 @@ const App = () => {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Suspense fallback={
-        <div className="flex items-center justify-center h-screen">
-          <SteamLoader message="Loading content..." size="md" variant="secondary" />
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <SteamLoader message="Loading content..." size="md" variant="secondary" />
+      </div>
+    }>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackHandler />} />
+        <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
+        <Route path="/login-error" element={<LoginErrorPage />} />
+        <Route
+          path="/auth-debug"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AuthDebugPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/support" element={<SupportPage />} />
+        <Route
+          path="/admin/support"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminSupportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route
+          path="/library"
+          element={
+            <ProtectedRoute>
+              <LibraryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/picker"
+          element={
+            <ProtectedRoute>
+              <PickerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dust"
+          element={
+            <ProtectedRoute>
+              <DustPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/spend"
+          element={
+            <ProtectedRoute>
+              <SpendPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      
+      {/* Global transition loading indicator */}
+      {isPending && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <SteamLoader message="Processing..." size="sm" variant="secondary" />
         </div>
-      }>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackHandler />} />
-          <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
-          <Route path="/login-error" element={<LoginErrorPage />} />
-          <Route
-            path="/auth-debug"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AuthDebugPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/support" element={<SupportPage />} />
-          <Route
-            path="/admin/support"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminSupportPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route
-            path="/library"
-            element={
-              <ProtectedRoute>
-                <LibraryPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/picker"
-            element={
-              <ProtectedRoute>
-                <PickerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dust"
-            element={
-              <ProtectedRoute>
-                <DustPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/spend"
-            element={
-              <ProtectedRoute>
-                <SpendPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        
-        {/* Global transition loading indicator */}
-        {isPending && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <SteamLoader message="Processing..." size="sm" variant="secondary" />
-          </div>
-        )}
-      </Suspense>
-    </QueryClientProvider>
+      )}
+    </Suspense>
   );
 };
 

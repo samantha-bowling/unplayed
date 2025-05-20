@@ -15,12 +15,13 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { status, user, isLoading: authLoading } = useAuth();
+  const { status, user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const location = useLocation();
 
   // Show loading state only when necessary authentication data is loading
-  const isLoading = authLoading || (status === AuthStatus.AUTHENTICATED && profileLoading && requiredRole);
+  const isLoading = status === AuthStatus.LOADING || 
+    (status === AuthStatus.AUTHENTICATED && requiredRole && profileLoading);
 
   if (isLoading) {
     return (

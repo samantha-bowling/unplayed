@@ -43,12 +43,16 @@ const SteamLoginButton = ({
     setButtonLoading(true);
     
     // Use the centralized signInWithProvider method with steam provider
-    // Update the redirectTo to use the new dedicated Steam auth handler
     signInWithProvider('steam', { redirectTo: `${window.location.origin}/auth/steam-callback` })
       .catch(() => {
         setButtonLoading(false);
       });
   };
+
+  // Don't show button if user already has Steam linked
+  if (profile?.steam_id) {
+    return null;
+  }
 
   return (
     <div className={`${centered ? 'mx-auto' : ''} group w-full max-w-xs`}>
