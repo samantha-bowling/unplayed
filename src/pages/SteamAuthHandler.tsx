@@ -67,14 +67,29 @@ const SteamAuthHandler = () => {
         
         try {
           console.log('[SteamAuth] Updating user profile with Steam data');
-          // Update user profile with Steam information
-          await callUpsertUser({
+          
+          const decodedSteamName = steam_name ? decodeURIComponent(steam_name) : '';
+          const decodedSteamAvatar = steam_avatar ? decodeURIComponent(steam_avatar) : undefined;
+          
+          // Log the exact payload we're sending to upsert-user
+          console.log('[SteamAuth] Upsert user payload:', {
             id: uid,
             steam_id,
-            steam_name: decodeURIComponent(steam_name),
-            steam_avatar: steam_avatar ? decodeURIComponent(steam_avatar) : undefined,
+            steam_name: decodedSteamName,
+            steam_avatar: decodedSteamAvatar,
             onboarding_complete: true,
           });
+          
+          // Update user profile with Steam information
+          const result = await callUpsertUser({
+            id: uid,
+            steam_id,
+            steam_name: decodedSteamName,
+            steam_avatar: decodedSteamAvatar,
+            onboarding_complete: true,
+          });
+          
+          console.log('[SteamAuth] Upsert successful, result:', result);
           
           // Invalidate profile cache to force refresh with new Steam data
           queryClient.invalidateQueries({ queryKey: ['profile', uid] });

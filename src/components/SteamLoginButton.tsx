@@ -45,8 +45,12 @@ const SteamLoginButton = ({
     setButtonLoading(true);
     console.log('[Steam Auth] Starting Steam account linking process for user', user.id);
     
+    // Log the redirect URL we're using
+    const redirectUrl = `${window.location.origin}/auth/steam-callback`;
+    console.log('[Steam Auth] Using redirect URL:', redirectUrl);
+    
     // Use the centralized signInWithProvider method with steam provider
-    signInWithProvider('steam', { redirectTo: `${window.location.origin}/auth/steam-callback` })
+    signInWithProvider('steam', { redirectTo: redirectUrl })
       .catch((error) => {
         console.error('[Steam Auth] Error initiating Steam auth:', error);
         toast.error("Failed to start Steam authentication. Please try again.");

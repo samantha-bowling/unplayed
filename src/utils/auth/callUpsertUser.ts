@@ -11,7 +11,10 @@ export type UpsertUserPayload = {
 
 export async function callUpsertUser(payload: UpsertUserPayload) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upsert-user`, {
+    console.log('🔄 Calling upsert-user with payload:', payload);
+    
+    // Use the Netlify redirect path instead of direct Supabase function URL
+    const response = await fetch(`/api/upsert-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -20,6 +23,7 @@ export async function callUpsertUser(payload: UpsertUserPayload) {
     });
 
     const result = await response.json();
+    console.log('📥 Upsert user response:', result);
 
     if (!response.ok) {
       console.error('🔴 Upsert failed:', result.error);
