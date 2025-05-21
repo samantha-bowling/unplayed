@@ -31,7 +31,7 @@ const AdminSteamDataPage = () => {
       const { data: statsCounts, error: statsError } = await supabase
         .from("steam_app_queue")
         .select('status, count(*)', { count: 'exact' })
-        .groupby('status');
+        .group('status');
 
       if (statsError) throw statsError;
 
