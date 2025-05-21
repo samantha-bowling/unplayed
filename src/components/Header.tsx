@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { Menu, LogIn } from 'lucide-react';
+import { Menu, LogIn, ChevronDown, Settings, Shield, Database, Bug } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -11,6 +12,17 @@ import DiscordIcon from './icons/DiscordIcon';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProfile } from '@/hooks/use-profile';
+
+// Import dropdown menu components
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,8 +75,8 @@ const Header = () => {
           <>
             <NavLink href="/library" label="Library" />
             <NavLink href="/picker" label="Random Picker" />
-            {/* Show admin menu items for admin users only */}
-            {isAdmin && (
+            {/* Hide admin links from main navigation when we have the dropdown */}
+            {isAdmin && !stableRenderState.hasProfile && (
               <>
                 <NavLink href="/auth-debug" label="Debug" />
                 <NavLink href="/admin/support" label="Admin Support" />
@@ -108,15 +120,86 @@ const Header = () => {
           <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
         ) : stableRenderState.isAuthenticated ? (
           <div className="flex items-center space-x-4">
-            <Avatar className="cursor-pointer border border-unplayed-mint/30">
-              {stableRenderState.hasProfile && profile?.steam_avatar ? (
-                <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
-              ) : (
-                <AvatarFallback className="bg-gray-800 text-unplayed-mint">
-                  {profile?.steam_name?.substring(0, 2) || 'UN'}
-                </AvatarFallback>
-              )}
-            </Avatar>
+            {/* If user is admin, wrap avatar in dropdown menu */}
+            {isAdmin && stableRenderState.hasProfile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-pointer">
+                    <Avatar className="border border-unplayed-mint/30">
+                      {profile?.steam_avatar ? (
+                        <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
+                      ) : (
+                        <AvatarFallback className="bg-gray-800 text-unplayed-mint">
+                          {profile?.steam_name?.substring(0, 2) || 'UN'}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="flex items-center">
+                      <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
+                      <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
+                    </div>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="text-unplayed-mint">Admin Controls</span>
+                      <span className="text-xs text-gray-400">Manage system settings</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                      onClick={() => navigate('/auth-debug')}
+                    >
+                      <Bug className="mr-2 h-4 w-4 text-unplayed-mint" />
+                      <span>Auth Debug</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                      onClick={() => navigate('/admin/support')}
+                    >
+                      <Shield className="mr-2 h-4 w-4 text-unplayed-pink" />
+                      <span>Admin Support</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                      onClick={() => navigate('/admin/steam-data')}
+                    >
+                      <Database className="mr-2 h-4 w-4 text-unplayed-amber" />
+                      <span>Steam Data</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  
+                  <DropdownMenuItem 
+                    className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-unplayed-red"
+                    onClick={signOut}
+                  >
+                    <LogIn className="mr-2 h-4 w-4 rotate-180" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              // Non-admin user avatar
+              <Avatar className="cursor-pointer border border-unplayed-mint/30">
+                {stableRenderState.hasProfile && profile?.steam_avatar ? (
+                  <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
+                ) : (
+                  <AvatarFallback className="bg-gray-800 text-unplayed-mint">
+                    {profile?.steam_name?.substring(0, 2) || 'UN'}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            )}
+            
+            {/* Show user info and demo toggle for all users */}
             <div className="flex flex-col text-sm">
               <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
               
@@ -130,9 +213,13 @@ const Header = () => {
                 />
               </div>
             </div>
-            <button onClick={signOut} className="text-unplayed-red hover:text-red-400 transition-colors">
-              Logout
-            </button>
+            
+            {/* Only show logout button for non-admin users since admin has it in dropdown */}
+            {!isAdmin && (
+              <button onClick={signOut} className="text-unplayed-red hover:text-red-400 transition-colors">
+                Logout
+              </button>
+            )}
           </div>
         ) : (
           // Show login button instead of Steam login
@@ -182,7 +269,7 @@ const Header = () => {
               <>
                 <NavLink href="/library" label="Library" />
                 <NavLink href="/picker" label="Random Picker" />
-                {/* Show admin menu items for admin users in mobile menu too */}
+                {/* Display admin links in the mobile menu */}
                 {isAdmin && (
                   <>
                     <NavLink href="/auth-debug" label="Debug" />
