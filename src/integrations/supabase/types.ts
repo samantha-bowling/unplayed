@@ -434,6 +434,10 @@ export type Database = {
         }
         Returns: number
       }
+      increment: {
+        Args: { value: number }
+        Returns: number
+      }
       mark_onboarding_complete: {
         Args: Record<PropertyKey, never>
         Returns: undefined

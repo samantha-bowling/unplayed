@@ -125,7 +125,8 @@ serve(async (req) => {
         console.log(`No valid details returned for app ${appId}`);
         
         // Mark this app as failed in the queue
-        await supabase
+        // Use direct update instead of rpc call
+        const { error: updateError } = await supabase
           .from("steam_app_queue")
           .update({ 
             status: "failed", 
@@ -133,6 +134,10 @@ serve(async (req) => {
             last_attempt: new Date().toISOString()
           })
           .eq("app_id", appId);
+          
+        if (updateError) {
+          console.error(`Error updating queue status for app ${appId}:`, updateError);
+        }
         
         return new Response(
           JSON.stringify({ error: "No valid details returned from Steam" }),
@@ -168,7 +173,8 @@ serve(async (req) => {
       }
       
       // Update the queue status
-      await supabase
+      // Use direct update instead of rpc call
+      const { error: queueUpdateError } = await supabase
         .from("steam_app_queue")
         .update({ 
           status: "completed", 
@@ -176,6 +182,10 @@ serve(async (req) => {
           last_attempt: new Date().toISOString()
         })
         .eq("app_id", appId);
+        
+      if (queueUpdateError) {
+        console.error(`Error updating queue status for app ${appId}:`, queueUpdateError);
+      }
       
       return new Response(
         JSON.stringify({ 
@@ -251,6 +261,7 @@ serve(async (req) => {
               console.error(`Error fetching details for app ${appId}:`, response.status);
               results.failed++;
               
+              // Use direct update instead of rpc call
               await supabase
                 .from("steam_app_queue")
                 .update({ 
@@ -270,6 +281,7 @@ serve(async (req) => {
               console.log(`No valid details returned for app ${appId}`);
               results.failed++;
               
+              // Use direct update instead of rpc call
               await supabase
                 .from("steam_app_queue")
                 .update({ 
@@ -306,6 +318,7 @@ serve(async (req) => {
               console.error(`Error upserting game ${appId}:`, upsertError);
               results.failed++;
               
+              // Use direct update instead of rpc call
               await supabase
                 .from("steam_app_queue")
                 .update({ 
@@ -319,6 +332,7 @@ serve(async (req) => {
             }
             
             // Update the queue status
+            // Use direct update instead of rpc call
             await supabase
               .from("steam_app_queue")
               .update({ 
@@ -334,6 +348,7 @@ serve(async (req) => {
             results.failed++;
             
             // Update queue status
+            // Use direct update instead of rpc call
             await supabase
               .from("steam_app_queue")
               .update({ 

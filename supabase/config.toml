@@ -29,3 +29,5 @@ project_id = "gwmygthanyycveyqqspr"
 [functions.get-queue-stats-by-status]
   verify_jwt = true
 
+[functions.fetch-steam-app-details]
+  verify_jwt = true
