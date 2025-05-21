@@ -1,4 +1,3 @@
-
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +23,7 @@ import SteamLoader from "@/components/SteamLoader";
 import { Button } from "@/components/ui/button";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
+import { toast } from "sonner";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -101,18 +101,31 @@ const Index = () => {
             <button
               onClick={() => {
                 setIsImporting(true);
-              
-                fetch("https://gwmygthanyycveyqqspr.functions.supabase.co/import-library", {
+                toast.info("Importing your Steam library...");
+                
+                // Use the Netlify redirect path instead of direct Supabase function URL
+                fetch("/api/import-library", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ steamId: profile.steam_id }),
                 })
-                  .then(() => {
+                  .then(response => {
+                    if (!response.ok) {
+                      return response.json().then(data => {
+                        throw new Error(data.error || `Server error: ${response.status}`);
+                      });
+                    }
+                    return response.json();
+                  })
+                  .then(data => {
+                    console.log("Import response:", data);
+                    toast.success(`Successfully imported ${data.imported || 0} games!`);
                     // Invalidate queries after import
                     refreshProfile(true);
                   })
                   .catch((err) => {
                     console.error("Import failed", err);
+                    toast.error(`Import failed: ${err.message}`);
                   })
                   .finally(() => {
                     setIsImporting(false);

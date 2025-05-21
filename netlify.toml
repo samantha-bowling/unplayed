@@ -14,6 +14,12 @@ status = 200
 force = true
 
 [[redirects]]
+from = "/api/import-library"
+to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/import-library"
+status = 200
+force = true
+
+[[redirects]]
 from = "/api/webhooks/stripe"
 to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/handle-stripe-donation"
 status = 200
