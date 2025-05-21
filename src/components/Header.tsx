@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Menu, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -64,9 +63,13 @@ const Header = () => {
           <>
             <NavLink href="/library" label="Library" />
             <NavLink href="/picker" label="Random Picker" />
-            {/* Show Debug menu item for admin users only */}
+            {/* Show admin menu items for admin users only */}
             {isAdmin && (
-              <NavLink href="/auth-debug" label="Debug" />
+              <>
+                <NavLink href="/auth-debug" label="Debug" />
+                <NavLink href="/admin/support" label="Admin Support" />
+                <NavLink href="/admin/steam-data" label="Steam Data" />
+              </>
             )}
           </>
         )}
@@ -179,9 +182,13 @@ const Header = () => {
               <>
                 <NavLink href="/library" label="Library" />
                 <NavLink href="/picker" label="Random Picker" />
-                {/* Show Debug menu item for admin users only in mobile menu too */}
+                {/* Show admin menu items for admin users in mobile menu too */}
                 {isAdmin && (
-                  <NavLink href="/auth-debug" label="Debug" />
+                  <>
+                    <NavLink href="/auth-debug" label="Debug" />
+                    <NavLink href="/admin/support" label="Admin Support" />
+                    <NavLink href="/admin/steam-data" label="Steam Data" />
+                  </>
                 )}
               </>
             )}

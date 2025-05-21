@@ -11,6 +11,7 @@ import PickerPage from "./pages/PickerPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
 import SupportPage from "./pages/SupportPage";
 import AdminSupportPage from "./pages/AdminSupportPage";
+import AdminSteamDataPage from "./pages/AdminSteamDataPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
@@ -60,6 +61,14 @@ const App = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminSupportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/steam-data"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminSteamDataPage />
             </ProtectedRoute>
           }
         />
