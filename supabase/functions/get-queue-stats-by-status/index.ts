@@ -26,11 +26,11 @@ serve(async (req) => {
   try {
     console.log("Getting queue stats by status");
     
-    // Query to get counts grouped by status
+    // Query to get counts grouped by status - fixing the syntax error here
     const { data: statusCounts, error } = await supabase
       .from('steam_app_queue')
-      .select('status, count')
-      .groupby('status');
+      .select('status, count(*)')
+      .group('status');
     
     if (error) {
       console.error("Error fetching queue stats:", error);

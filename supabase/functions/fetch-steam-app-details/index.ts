@@ -27,7 +27,7 @@ function processAppDetails(appId: number, details: any) {
       image_url: details.data.header_image ? details.data.header_image.split('/').pop() : null,
       header_image: details.data.header_image || null,
       price_cents: details.data.price_overview ? details.data.price_overview.initial : null,
-      release_date: details.data.release_date && details.data.release_date.date 
+      release_date: details.data.release_date && details.data.release_date.date && details.data.release_date.date !== "" 
         ? new Date(details.data.release_date.date).toISOString() 
         : null,
       metacritic_score: details.data.metacritic ? details.data.metacritic.score : null,
@@ -60,6 +60,19 @@ function determinePlatforms(platforms: any) {
   if (platforms.linux) result.push('linux');
   
   return result.length > 0 ? result : null;
+}
+
+// Safely increment the attempts value
+async function incrementAttempts(appId: number) {
+  const { data, error } = await supabase
+    .rpc('increment', { value: 1 });
+    
+  if (error) {
+    console.error(`Error incrementing attempts for app ${appId}:`, error);
+    return 1; // Default increment if RPC fails
+  }
+  
+  return data || 1;
 }
 
 serve(async (req) => {
@@ -124,13 +137,12 @@ serve(async (req) => {
       if (!details || !details.success) {
         console.log(`No valid details returned for app ${appId}`);
         
-        // Mark this app as failed in the queue
-        // Use direct update instead of rpc call
+        // Mark this app as failed in the queue - Fixed direct update
         const { error: updateError } = await supabase
           .from("steam_app_queue")
           .update({ 
             status: "failed", 
-            attempts: supabase.rpc("increment", { value: 1 }),
+            attempts: await incrementAttempts(appId),
             last_attempt: new Date().toISOString()
           })
           .eq("app_id", appId);
@@ -172,13 +184,12 @@ serve(async (req) => {
         );
       }
       
-      // Update the queue status
-      // Use direct update instead of rpc call
+      // Update the queue status - Fixed direct update
       const { error: queueUpdateError } = await supabase
         .from("steam_app_queue")
         .update({ 
           status: "completed", 
-          attempts: supabase.rpc("increment", { value: 1 }),
+          attempts: await incrementAttempts(appId),
           last_attempt: new Date().toISOString()
         })
         .eq("app_id", appId);
@@ -261,12 +272,12 @@ serve(async (req) => {
               console.error(`Error fetching details for app ${appId}:`, response.status);
               results.failed++;
               
-              // Use direct update instead of rpc call
+              // Fixed direct update with proper increment handling
               await supabase
                 .from("steam_app_queue")
                 .update({ 
                   status: "error", 
-                  attempts: supabase.rpc("increment", { value: 1 }),
+                  attempts: await incrementAttempts(appId),
                   last_attempt: new Date().toISOString()
                 })
                 .eq("app_id", appId);
@@ -281,12 +292,12 @@ serve(async (req) => {
               console.log(`No valid details returned for app ${appId}`);
               results.failed++;
               
-              // Use direct update instead of rpc call
+              // Fixed direct update with proper increment handling
               await supabase
                 .from("steam_app_queue")
                 .update({ 
                   status: "failed", 
-                  attempts: supabase.rpc("increment", { value: 1 }),
+                  attempts: await incrementAttempts(appId),
                   last_attempt: new Date().toISOString()
                 })
                 .eq("app_id", appId);
@@ -318,12 +329,12 @@ serve(async (req) => {
               console.error(`Error upserting game ${appId}:`, upsertError);
               results.failed++;
               
-              // Use direct update instead of rpc call
+              // Fixed direct update with proper increment handling
               await supabase
                 .from("steam_app_queue")
                 .update({ 
                   status: "error", 
-                  attempts: supabase.rpc("increment", { value: 1 }),
+                  attempts: await incrementAttempts(appId),
                   last_attempt: new Date().toISOString()
                 })
                 .eq("app_id", appId);
@@ -332,12 +343,12 @@ serve(async (req) => {
             }
             
             // Update the queue status
-            // Use direct update instead of rpc call
+            // Fixed direct update with proper increment handling
             await supabase
               .from("steam_app_queue")
               .update({ 
                 status: "completed", 
-                attempts: supabase.rpc("increment", { value: 1 }),
+                attempts: await incrementAttempts(appId),
                 last_attempt: new Date().toISOString()
               })
               .eq("app_id", appId);
@@ -348,12 +359,12 @@ serve(async (req) => {
             results.failed++;
             
             // Update queue status
-            // Use direct update instead of rpc call
+            // Fixed direct update with proper increment handling
             await supabase
               .from("steam_app_queue")
               .update({ 
                 status: "error", 
-                attempts: supabase.rpc("increment", { value: 1 }),
+                attempts: await incrementAttempts(appId),
                 last_attempt: new Date().toISOString()
               })
               .eq("app_id", appId);
