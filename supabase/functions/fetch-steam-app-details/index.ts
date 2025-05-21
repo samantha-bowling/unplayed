@@ -1,0 +1,398 @@
+
+// supabase/functions/fetch-steam-app-details/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+// CORS headers for browser preflight requests
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
+
+// Process app details from Steam's API response
+function processAppDetails(appId: number, details: any) {
+  try {
+    if (!details || !details.success) return null;
+    
+    return {
+      id: appId,
+      name: details.data.name,
+      description: details.data.detailed_description || details.data.about_the_game || null,
+      image_url: details.data.header_image ? details.data.header_image.split('/').pop() : null,
+      header_image: details.data.header_image || null,
+      price_cents: details.data.price_overview ? details.data.price_overview.initial : null,
+      release_date: details.data.release_date && details.data.release_date.date 
+        ? new Date(details.data.release_date.date).toISOString() 
+        : null,
+      metacritic_score: details.data.metacritic ? details.data.metacritic.score : null,
+      developer: Array.isArray(details.data.developers) ? details.data.developers : null,
+      publisher: Array.isArray(details.data.publishers) ? details.data.publishers : null,
+      genres: details.data.genres 
+        ? details.data.genres.map((genre: any) => genre.description) 
+        : [],
+      categories: details.data.categories 
+        ? details.data.categories.map((category: any) => category.description) 
+        : [],
+      platforms: determinePlatforms(details.data.platforms),
+      screenshots: details.data.screenshots 
+        ? details.data.screenshots.map((screenshot: any) => screenshot.path_full) 
+        : null,
+    };
+  } catch (error) {
+    console.error(`Error processing app details for ${appId}:`, error);
+    return null;
+  }
+}
+
+// Helper to determine platforms from Steam's response
+function determinePlatforms(platforms: any) {
+  if (!platforms) return null;
+  
+  const result = [];
+  if (platforms.windows) result.push('windows');
+  if (platforms.mac) result.push('mac');
+  if (platforms.linux) result.push('linux');
+  
+  return result.length > 0 ? result : null;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
+
+  try {
+    console.log("Starting fetch-steam-app-details function");
+    
+    // Parse request for appId or batch processing parameter
+    let appId: number | null = null;
+    let processBatch: boolean = false;
+    let batchSize: number = 10;
+    
+    // Try to parse request body
+    try {
+      const body = await req.json();
+      appId = body.appId ? Number(body.appId) : null;
+      processBatch = body.processBatch === true;
+      batchSize = body.batchSize ? Number(body.batchSize) : batchSize;
+    } catch {
+      // If body parsing fails, check URL parameters
+      const url = new URL(req.url);
+      const appIdParam = url.searchParams.get('appId');
+      const processBatchParam = url.searchParams.get('processBatch');
+      
+      appId = appIdParam ? Number(appIdParam) : null;
+      processBatch = processBatchParam === 'true';
+      
+      const batchSizeParam = url.searchParams.get('batchSize');
+      if (batchSizeParam) batchSize = Number(batchSizeParam);
+    }
+    
+    // Validate batchSize to prevent abuse
+    if (batchSize > 50) batchSize = 50;
+    
+    // If processing a single appId
+    if (appId && !processBatch) {
+      console.log(`Fetching details for app ID: ${appId}`);
+      
+      // Fetch from Steam Store API
+      const storeUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}`;
+      const response = await fetch(storeUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error fetching details for app ${appId}:`, response.status, errorText);
+        return new Response(
+          JSON.stringify({ error: "Steam API error", details: errorText }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      const data = await response.json();
+      const details = data[appId];
+      
+      if (!details || !details.success) {
+        console.log(`No valid details returned for app ${appId}`);
+        
+        // Mark this app as failed in the queue
+        await supabase
+          .from("steam_app_queue")
+          .update({ 
+            status: "failed", 
+            attempts: supabase.rpc("increment", { value: 1 }),
+            last_attempt: new Date().toISOString()
+          })
+          .eq("app_id", appId);
+        
+        return new Response(
+          JSON.stringify({ error: "No valid details returned from Steam" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Process the app details
+      const processedDetails = processAppDetails(appId, details);
+      
+      if (!processedDetails) {
+        console.error(`Failed to process details for app ${appId}`);
+        return new Response(
+          JSON.stringify({ error: "Failed to process app details" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Upsert the game details to our database
+      const { error: upsertError } = await supabase
+        .from("games")
+        .upsert(processedDetails, {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        });
+      
+      if (upsertError) {
+        console.error(`Error upserting game ${appId}:`, upsertError);
+        return new Response(
+          JSON.stringify({ error: "Database error", details: upsertError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Update the queue status
+      await supabase
+        .from("steam_app_queue")
+        .update({ 
+          status: "completed", 
+          attempts: supabase.rpc("increment", { value: 1 }),
+          last_attempt: new Date().toISOString()
+        })
+        .eq("app_id", appId);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          appId,
+          details: processedDetails
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // Process a batch of apps from the queue
+    else if (processBatch) {
+      console.log(`Processing batch of up to ${batchSize} apps`);
+      
+      // Get next batch of apps from the queue
+      const { data: queueItems, error: queueError } = await supabase
+        .from("steam_app_queue")
+        .select("app_id, name")
+        .eq("status", "pending")
+        .order("priority", { ascending: false })
+        .order("attempts", { ascending: true })
+        .limit(batchSize);
+      
+      if (queueError) {
+        console.error("Error fetching from queue:", queueError);
+        return new Response(
+          JSON.stringify({ error: "Queue fetch error", details: queueError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (!queueItems || queueItems.length === 0) {
+        console.log("No pending items found in queue");
+        return new Response(
+          JSON.stringify({ message: "No pending items in queue" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.log(`Found ${queueItems.length} items to process`);
+      
+      // Background processing of the batch
+      const processBatchPromise = async () => {
+        const results = {
+          total: queueItems.length,
+          success: 0,
+          failed: 0,
+          details: {} as Record<number, any>
+        };
+        
+        for (const item of queueItems) {
+          const appId = item.app_id;
+          console.log(`Processing app ${appId} (${item.name || 'Unknown'})`);
+          
+          try {
+            // Mark as processing
+            await supabase
+              .from("steam_app_queue")
+              .update({ 
+                status: "processing", 
+                last_attempt: new Date().toISOString()
+              })
+              .eq("app_id", appId);
+            
+            // Add delay to avoid hitting Steam API rate limits
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Fetch from Steam Store API
+            const storeUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}`;
+            const response = await fetch(storeUrl);
+            
+            if (!response.ok) {
+              console.error(`Error fetching details for app ${appId}:`, response.status);
+              results.failed++;
+              
+              await supabase
+                .from("steam_app_queue")
+                .update({ 
+                  status: "error", 
+                  attempts: supabase.rpc("increment", { value: 1 }),
+                  last_attempt: new Date().toISOString()
+                })
+                .eq("app_id", appId);
+              
+              continue;
+            }
+            
+            const data = await response.json();
+            const details = data[appId];
+            
+            if (!details || !details.success) {
+              console.log(`No valid details returned for app ${appId}`);
+              results.failed++;
+              
+              await supabase
+                .from("steam_app_queue")
+                .update({ 
+                  status: "failed", 
+                  attempts: supabase.rpc("increment", { value: 1 }),
+                  last_attempt: new Date().toISOString()
+                })
+                .eq("app_id", appId);
+              
+              continue;
+            }
+            
+            // Process the app details
+            const processedDetails = processAppDetails(appId, details);
+            
+            if (!processedDetails) {
+              console.error(`Failed to process details for app ${appId}`);
+              results.failed++;
+              continue;
+            }
+            
+            // Add to results
+            results.details[appId] = processedDetails;
+            
+            // Upsert the game details to our database
+            const { error: upsertError } = await supabase
+              .from("games")
+              .upsert(processedDetails, {
+                onConflict: "id",
+                ignoreDuplicates: false,
+              });
+            
+            if (upsertError) {
+              console.error(`Error upserting game ${appId}:`, upsertError);
+              results.failed++;
+              
+              await supabase
+                .from("steam_app_queue")
+                .update({ 
+                  status: "error", 
+                  attempts: supabase.rpc("increment", { value: 1 }),
+                  last_attempt: new Date().toISOString()
+                })
+                .eq("app_id", appId);
+              
+              continue;
+            }
+            
+            // Update the queue status
+            await supabase
+              .from("steam_app_queue")
+              .update({ 
+                status: "completed", 
+                attempts: supabase.rpc("increment", { value: 1 }),
+                last_attempt: new Date().toISOString()
+              })
+              .eq("app_id", appId);
+            
+            results.success++;
+          } catch (error) {
+            console.error(`Error processing app ${appId}:`, error);
+            results.failed++;
+            
+            // Update queue status
+            await supabase
+              .from("steam_app_queue")
+              .update({ 
+                status: "error", 
+                attempts: supabase.rpc("increment", { value: 1 }),
+                last_attempt: new Date().toISOString()
+              })
+              .eq("app_id", appId);
+          }
+        }
+        
+        return results;
+      };
+      
+      // For Edge Functions supporting waitUntil, we can continue processing after response
+      if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+        // Send immediate response while continuing processing in background
+        EdgeRuntime.waitUntil(processBatchPromise().catch(err => {
+          console.error("Background batch processing failed:", err);
+        }));
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Batch processing started",
+            batchSize,
+            itemsInBatch: queueItems.length,
+            processing: "background"
+          }), 
+          { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        // For environments not supporting waitUntil, process and wait for completion
+        const results = await processBatchPromise();
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            completed: true, 
+            ...results
+          }), 
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+    // Neither appId nor processBatch provided
+    else {
+      console.error("No valid parameters provided");
+      return new Response(
+        JSON.stringify({ error: "Missing required parameters. Provide either appId or set processBatch=true" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    return new Response(
+      JSON.stringify({ error: "Unexpected error", details: err.message }), 
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});

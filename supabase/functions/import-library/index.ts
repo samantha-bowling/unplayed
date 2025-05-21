@@ -210,6 +210,28 @@ async function enrichGamesWithSteamDetails(games, apiKey) {
           if (details.categories) {
             game.categories = details.categories.map(c => c.description);
           }
+
+          // Add additional fields we might want to capture
+          if (details.developers) {
+            game.developers = details.developers;
+          }
+
+          if (details.publishers) {
+            game.publishers = details.publishers;
+          }
+
+          // Also queue this app for full enrichment in the background
+          await supabase
+            .from("steam_app_queue")
+            .upsert({
+              app_id: game.appid,
+              name: game.name,
+              priority: 5, // Higher priority for games users actually own
+              status: "pending"
+            }, {
+              onConflict: "app_id",
+              ignoreDuplicates: true
+            });
         }
       }
       
@@ -268,6 +290,16 @@ async function processGamesInBatches(userId, steamId, games) {
         if (game.categories && Array.isArray(game.categories)) {
           gameData.categories = game.categories;
         }
+
+        // Add developers if available from enrichment
+        if (game.developers && Array.isArray(game.developers)) {
+          gameData.developer = game.developers;
+        }
+
+        // Add publishers if available from enrichment
+        if (game.publishers && Array.isArray(game.publishers)) {
+          gameData.publisher = game.publishers;
+        }
         
         return gameData;
       })
@@ -289,6 +321,21 @@ async function processGamesInBatches(userId, steamId, games) {
       
       totalGamesUpserted += gameUpserts.length;
       console.log(`Upserted ${gameUpserts.length} games in batch ${batchIndex + 1}`);
+
+      // After upserting games, also queue them for full enrichment
+      for (const game of gameUpserts) {
+        await supabase
+          .from("steam_app_queue")
+          .upsert({
+            app_id: game.id,
+            name: game.name,
+            priority: 5, // Higher priority for games users actually own
+            status: "pending"
+          }, {
+            onConflict: "app_id",
+            ignoreDuplicates: true
+          });
+      }
     }
     
     // Get current timestamp
