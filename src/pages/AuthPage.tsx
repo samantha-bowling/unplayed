@@ -72,7 +72,7 @@ const AuthPage = () => {
 
       {!isLoading && !error && !showSuccessAnimation && (
         <div className="space-y-6 w-full max-w-sm">
-          <h1 className="text-3xl font-bold">Sign in to Unplayed</h1>
+          <h1 className="text-3xl font-bold">Sign in to unplayed</h1>
           <p className="text-muted-foreground text-sm">
             Connect your account to start managing your backlog.
           </p>
