@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import useUnplayedData from '@/hooks/use-unplayed-data';
 import useDustScoreData from '@/hooks/use-dust-score-data';
 import {
   Tooltip,
@@ -28,6 +27,8 @@ const DustScoreMeter = ({
   const { user } = useAuth();
 
   useEffect(() => {
+    if (actualScore === undefined) return;
+    
     const duration = 2000;
     const start = 0;
     const end = actualScore;
@@ -150,7 +151,7 @@ const DustScoreMeter = ({
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
           <div className="mt-auto pt-4 text-center flex justify-center">
             <p className="text-sm text-unplayed-mint">
-              You’re in Demo Mode. Sign in to track your Dust Score.
+              You're in Demo Mode. Sign in to track your Dust Score.
             </p>
           </div>
         )}

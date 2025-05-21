@@ -10,11 +10,14 @@ import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
 import DustScorePerGame from "@/components/dust/DustScorePerGame";
 import useDustScoreData from "@/hooks/use-dust-score-data";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
   const { user } = useAuth();
   const { data, isLoading } = useDustScoreData();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,6 +46,9 @@ const DustPage = () => {
               <p className="text-gray-400 mb-6">
                 Sign in with Steam to see your personalized dust report.
               </p>
+              <Button onClick={() => navigate("/")}>
+                Return to Home
+              </Button>
             </div>
           ) : (
             <>

@@ -49,13 +49,17 @@ export const useUnplayedData = () => {
             price_cents
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('dust_score', { ascending: false });
       
       if (userGamesError) throw userGamesError;
 
       return userGamesData;
     },
     enabled: !!user && !isDemo && !!profile?.steam_id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchInterval: 10 * 60 * 1000, // 10 minutes
   });
 
   // Query for game time estimates
@@ -102,14 +106,8 @@ export const useUnplayedData = () => {
     ? transformUserGameData(userGamesData, gameEstimatesData || {}) 
     : normalizeDemoGames(demoData);
 
-  // Calculate lastRefreshed timestamp
-  const lastRefreshed = userGamesData?.reduce((latest: Date | null, game) => {
-    const dates = [game.acquisition_date, game.last_played_date]
-      .filter(Boolean)
-      .map(date => new Date(date));
-    const mostRecent = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
-    return !latest || (mostRecent && mostRecent > latest) ? mostRecent : latest;
-  }, null);
+  // Calculate lastRefreshed timestamp from profile's last_sync
+  const lastRefreshed = profile?.last_sync ? new Date(profile.last_sync) : null;
 
   return {
     data,

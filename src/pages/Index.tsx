@@ -1,3 +1,4 @@
+
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,10 +25,12 @@ import { Button } from "@/components/ui/button";
 import useUnplayedData from "@/hooks/use-unplayed-data";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<string>("Preparing to import...");
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
@@ -36,9 +39,27 @@ const Index = () => {
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
+  const queryClient = useQueryClient();
 
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
+
+  // Function to update all data after import
+  const refreshAllData = () => {
+    // Set a slight delay to ensure backend processing completes
+    setTimeout(() => {
+      // Invalidate all relevant queries
+      queryClient.invalidateQueries({ queryKey: ['unplayedData'] });
+      queryClient.invalidateQueries({ queryKey: ['detailedDustData'] });
+      queryClient.invalidateQueries({ queryKey: ['gameEstimates'] });
+      queryClient.invalidateQueries({ queryKey: ['libraryGames'] });
+      queryClient.invalidateQueries({ queryKey: ['pickerGames'] });
+      queryClient.invalidateQueries({ queryKey: ['spendingData'] });
+      
+      // Refresh profile as well
+      refreshProfile(true);
+    }, 1000);
+  };
 
   if (isLoading) {
     return (
@@ -101,7 +122,10 @@ const Index = () => {
             <button
               onClick={() => {
                 setIsImporting(true);
-                toast.info("Importing your Steam library...");
+                setImportProgress("Connecting to Steam...");
+                toast.info("Importing your Steam library...", {
+                  description: "This may take a few minutes for large libraries."
+                });
                 
                 // Use the Netlify redirect path instead of direct Supabase function URL
                 fetch("/api/import-library", {
@@ -119,9 +143,11 @@ const Index = () => {
                   })
                   .then(data => {
                     console.log("Import response:", data);
-                    toast.success(`Successfully imported ${data.imported || 0} games!`);
-                    // Invalidate queries after import
-                    refreshProfile(true);
+                    toast.success(`Successfully imported ${data.imported || 0} games!`, {
+                      description: "Your dashboard will update shortly."
+                    });
+                    // Update all data
+                    refreshAllData();
                   })
                   .catch((err) => {
                     console.error("Import failed", err);
@@ -139,7 +165,7 @@ const Index = () => {
             
             {lastRefreshed && (
               <p className="text-sm text-muted-foreground mt-2">
-                Last updated: {lastRefreshed.toLocaleString()}
+                Last updated: {new Date(lastRefreshed).toLocaleString()}
               </p>
             )}
             <button
@@ -152,7 +178,8 @@ const Index = () => {
           
           {isImporting && (
             <div className="mt-6">
-              <SteamLoader message="Importing your Steam shame..." size="md" variant="secondary" />
+              <SteamLoader message="Importing your Steam library..." size="md" variant="secondary" />
+              <p className="text-sm text-gray-400 mt-2">This may take a few minutes for large libraries</p>
             </div>
           )}
         </>
