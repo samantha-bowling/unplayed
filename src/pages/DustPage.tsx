@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wind, Medal } from "lucide-react";
+import { Loader2, Wind, Medal, RefreshCw } from "lucide-react";
 import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
 import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
@@ -13,6 +13,7 @@ import useDustScoreData from "@/hooks/use-dust-score-data";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
@@ -53,14 +54,23 @@ const DustPage = () => {
               </p>
             </div>
             
-            <Button 
-              variant="outline" 
-              onClick={refreshData} 
-              className="text-unplayed-mint border-unplayed-mint/30"
-            >
-              <Loader2 className="w-4 h-4 mr-2" />
-              Refresh Data
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    onClick={refreshData} 
+                    className="text-unplayed-mint border-unplayed-mint/30 bg-unplayed-mint/10 hover:bg-unplayed-mint/20"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh Data
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Update the dust report with latest data</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           {isLoading ? (

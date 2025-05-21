@@ -1,3 +1,4 @@
+
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +26,8 @@ import useUnplayedData from "@/hooks/use-unplayed-data";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RefreshCw, Import } from "lucide-react";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -133,57 +136,78 @@ const Index = () => {
             Time to face your backlog.
           </p>
           <div className="flex justify-center gap-4">
-            <button
-              onClick={() => {
-                setIsImporting(true);
-                setImportProgress("Connecting to Steam...");
-                toast.info("Importing your Steam library...", {
-                  description: "This may take a few minutes for large libraries."
-                });
-                
-                // Use the Netlify redirect path instead of direct Supabase function URL
-                fetch("/api/import-library", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ steamId: profile.steam_id }),
-                })
-                  .then(response => {
-                    if (!response.ok) {
-                      return response.json().then(data => {
-                        throw new Error(data.error || `Server error: ${response.status}`);
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      setIsImporting(true);
+                      setImportProgress("Connecting to Steam...");
+                      toast.info("Importing your Steam library...", {
+                        description: "This may take a few minutes for large libraries."
                       });
-                    }
-                    return response.json();
-                  })
-                  .then(data => {
-                    console.log("Import response:", data);
-                    toast.success(`Successfully imported ${data.imported || 0} games!`, {
-                      description: "Your dashboard will update shortly."
-                    });
-                    // Update all data
-                    refreshAllData();
-                  })
-                  .catch((err) => {
-                    console.error("Import failed", err);
-                    toast.error(`Import failed: ${err.message}`);
-                  })
-                  .finally(() => {
-                    setIsImporting(false);
-                  });
-              }}
-              className="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-200"
-              disabled={isImporting}
-            >
-              {isImporting ? "Importing..." : "Refresh My Data"}
-            </button>
+                      
+                      // Use the Netlify redirect path instead of direct Supabase function URL
+                      fetch("/api/import-library", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ steamId: profile.steam_id }),
+                      })
+                        .then(response => {
+                          if (!response.ok) {
+                            return response.json().then(data => {
+                              throw new Error(data.error || `Server error: ${response.status}`);
+                            });
+                          }
+                          return response.json();
+                        })
+                        .then(data => {
+                          console.log("Import response:", data);
+                          toast.success(`Successfully imported ${data.imported || 0} games!`, {
+                            description: "Your dashboard will update shortly."
+                          });
+                          // Update all data
+                          refreshAllData();
+                        })
+                        .catch((err) => {
+                          console.error("Import failed", err);
+                          toast.error(`Import failed: ${err.message}`);
+                        })
+                        .finally(() => {
+                          setIsImporting(false);
+                        });
+                    }}
+                    className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
+                    disabled={isImporting}
+                  >
+                    <Import className="mr-2 h-4 w-4" />
+                    {isImporting ? "Importing..." : "Import Steam Library"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Fetch your games from Steam and recalculate dust scores</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
             {!isImporting && (
-              <button
-                onClick={refreshAllData}
-                className="bg-unplayed-mint/20 text-unplayed-mint font-semibold py-2 px-6 rounded hover:bg-unplayed-mint/30"
-              >
-                Refresh Dashboard
-              </button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={refreshAllData}
+                      variant="outline"
+                      className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Refresh Dashboard
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Update the dashboard with latest data without importing from Steam</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             
             {lastRefreshed && (
@@ -191,13 +215,6 @@ const Index = () => {
                 Last updated: {new Date(lastRefreshed).toLocaleString()}
               </p>
             )}
-            
-            <button
-              onClick={signOut}
-              className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
-            >
-              Log Out
-            </button>
           </div>
           
           {isImporting && (
