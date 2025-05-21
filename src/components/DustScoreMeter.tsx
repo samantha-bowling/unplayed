@@ -21,13 +21,20 @@ const DustScoreMeter = ({
   score,
   isDemo = false
 }: DustScoreProps) => {
-  const { data } = useDustScoreData();
+  const { data, isLoading } = useDustScoreData();
   const actualScore = score ?? data.dustScore;
   const [animatedScore, setAnimatedScore] = useState(0);
   const { user } = useAuth();
 
+  // Debug logging to help trace the issue
   useEffect(() => {
-    if (actualScore === undefined) return;
+    console.log("DustScoreMeter received score:", score);
+    console.log("DustScoreMeter using actualScore:", actualScore);
+    console.log("Full dust data:", data);
+  }, [score, actualScore, data]);
+
+  useEffect(() => {
+    if (actualScore === undefined || actualScore === null) return;
     
     const duration = 2000;
     const start = 0;
@@ -63,6 +70,20 @@ const DustScoreMeter = ({
 
   const showCleanScore = data.cleanScore !== undefined && user;
 
+  if (isLoading) {
+    return (
+      <div className="terminal-container equal-height-container">
+        <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
+        <div className="terminal-content flex flex-col items-center justify-center p-8">
+          <div className="animate-pulse">
+            <div className="w-32 h-32 rounded-full bg-gray-700"></div>
+          </div>
+          <p className="text-gray-400 mt-4">Calculating dust...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <div className="mb-4 flex items-center">
@@ -96,7 +117,7 @@ const DustScoreMeter = ({
               fill="none"
               stroke={actualScore < 200 ? '#A3F7BF' : actualScore < 500 ? '#FF9F39' : actualScore < 1000 ? '#F6AD55' : '#FF3C38'}
               strokeWidth="8"
-              strokeDasharray={`${Math.min(animatedScore / 1000, 1) * 283} 283`}
+              strokeDasharray={`${Math.min(animatedScore / 1500, 1) * 283} 283`}
               className="transition-all duration-300"
             />
           </svg>

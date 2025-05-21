@@ -16,6 +16,9 @@ interface DustScoreBreakdownProps {
 }
 
 const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) => {
+  // Debug logging
+  console.log("DustScoreBreakdown component received:", { totalScore, breakdown });
+
   // If no breakdown data is available, show placeholder
   if (!breakdown) {
     return (
@@ -32,7 +35,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   }
   
   // Calculate percentages for the visualizations
-  const total = totalScore;
+  const total = totalScore || 1; // Prevent division by zero
   const ageScorePercent = Math.round((breakdown.ageScore / total) * 100);
   const ownershipScorePercent = Math.round((breakdown.ownershipScore / total) * 100);
   const playtimeFactorPercent = Math.round(breakdown.playtimeFactor * 100);

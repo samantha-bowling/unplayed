@@ -1,4 +1,3 @@
-
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +36,7 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading, lastRefreshed } = useUnplayedData();
+  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
 
@@ -48,6 +47,11 @@ const Index = () => {
   const refreshAllData = () => {
     // Set a slight delay to ensure backend processing completes
     setTimeout(() => {
+      // Show toast notification
+      toast.info("Refreshing your data...", {
+        description: "This may take a moment to update all your stats."
+      });
+      
       // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ['unplayedData'] });
       queryClient.invalidateQueries({ queryKey: ['detailedDustData'] });
@@ -56,8 +60,18 @@ const Index = () => {
       queryClient.invalidateQueries({ queryKey: ['pickerGames'] });
       queryClient.invalidateQueries({ queryKey: ['spendingData'] });
       
+      // Explicit refetch of unplayed data
+      refetch?.();
+      
       // Refresh profile as well
       refreshProfile(true);
+      
+      // Notify success after a short delay
+      setTimeout(() => {
+        toast.success("Data refresh complete!", { 
+          description: "Your dashboard has been updated with the latest information."
+        });
+      }, 2000);
     }, 1000);
   };
 
@@ -163,11 +177,21 @@ const Index = () => {
               {isImporting ? "Importing..." : "Refresh My Data"}
             </button>
             
+            {!isImporting && (
+              <button
+                onClick={refreshAllData}
+                className="bg-unplayed-mint/20 text-unplayed-mint font-semibold py-2 px-6 rounded hover:bg-unplayed-mint/30"
+              >
+                Refresh Dashboard
+              </button>
+            )}
+            
             {lastRefreshed && (
               <p className="text-sm text-muted-foreground mt-2">
                 Last updated: {new Date(lastRefreshed).toLocaleString()}
               </p>
             )}
+            
             <button
               onClick={signOut}
               className="bg-red-600 text-white font-semibold py-2 px-6 rounded hover:bg-red-500"
@@ -178,7 +202,7 @@ const Index = () => {
           
           {isImporting && (
             <div className="mt-6">
-              <SteamLoader message="Importing your Steam library..." size="md" variant="secondary" />
+              <SteamLoader message={isImporting ? importProgress : "Import complete!"} size="md" variant="secondary" />
               <p className="text-sm text-gray-400 mt-2">This may take a few minutes for large libraries</p>
             </div>
           )}

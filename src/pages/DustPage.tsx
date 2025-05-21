@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ import DustScorePerGame from "@/components/dust/DustScorePerGame";
 import useDustScoreData from "@/hooks/use-dust-score-data";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
@@ -19,19 +20,47 @@ const DustPage = () => {
   const { data, isLoading } = useDustScoreData();
   const navigate = useNavigate();
 
+  // Debug logging
+  useEffect(() => {
+    console.log("DustPage data:", data);
+    console.log("DustPage dust score:", data.dustScore);
+    console.log("DustPage dust score breakdown:", data.dustScoreBreakdown);
+  }, [data]);
+
+  const refreshData = () => {
+    // Show loading toast
+    toast.loading("Refreshing dust data...");
+    
+    // Force a hard refresh of the page after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow w-full navbar-offset py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold font-space text-unplayed-mint mb-2">
-              Your Dust Report™
-            </h1>
-            <p className="text-lg text-gray-300">
-              A totally scientific breakdown of your glorious neglect.
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold font-space text-unplayed-mint mb-2">
+                Your Dust Report™
+              </h1>
+              <p className="text-lg text-gray-300">
+                A totally scientific breakdown of your glorious neglect.
+              </p>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              onClick={refreshData} 
+              className="text-unplayed-mint border-unplayed-mint/30"
+            >
+              <Loader2 className="w-4 h-4 mr-2" />
+              Refresh Data
+            </Button>
           </div>
 
           {isLoading ? (
@@ -95,6 +124,11 @@ const DustPage = () => {
                   />
                 </TabsContent>
               </Tabs>
+              
+              <div className="mt-12 text-center text-sm text-gray-500">
+                <p>Note: Dust scores are calculated based on game age, ownership time, and playtime.</p>
+                <p>The algorithm is completely arbitrary but feels right.</p>
+              </div>
             </>
           )}
         </div>

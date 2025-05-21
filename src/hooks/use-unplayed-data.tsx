@@ -20,11 +20,14 @@ export const useUnplayedData = () => {
   const { 
     data: userGamesData, 
     isLoading: isLoadingUserGames, 
-    error: userGamesError 
+    error: userGamesError,
+    refetch: refetchUserGames,
   } = useQuery({
     queryKey: ['unplayedData', user?.id, isDemo, profile?.steam_id],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
+      
+      console.log('Fetching unplayed data for user:', user.id);
       
       const { data: userGamesData, error: userGamesError } = await supabase
         .from('user_games')
@@ -52,8 +55,19 @@ export const useUnplayedData = () => {
         .eq('user_id', user.id)
         .order('dust_score', { ascending: false });
       
-      if (userGamesError) throw userGamesError;
+      if (userGamesError) {
+        console.error('Error fetching user games:', userGamesError);
+        throw userGamesError;
+      }
 
+      console.log(`Found ${userGamesData?.length || 0} games for user ${user.id}`);
+      
+      // Log a sample dust score to help debug
+      if (userGamesData && userGamesData.length > 0) {
+        console.log('Sample dust scores:', userGamesData.slice(0, 3).map(g => g.dust_score));
+        console.log('Max dust score:', Math.max(...userGamesData.map(g => g.dust_score || 0)));
+      }
+      
       return userGamesData;
     },
     enabled: !!user && !isDemo && !!profile?.steam_id,
@@ -98,7 +112,8 @@ export const useUnplayedData = () => {
       data: normalizeDemoGames(demoData),
       isLoading: false,
       error: null,
-      lastRefreshed: null
+      lastRefreshed: null,
+      refetch: () => Promise.resolve()
     };
   }
 
@@ -114,6 +129,7 @@ export const useUnplayedData = () => {
     isLoading,
     error,
     lastRefreshed,
+    refetch: refetchUserGames
   };
 };
 
