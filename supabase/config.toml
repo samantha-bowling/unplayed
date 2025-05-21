@@ -1,35 +1,30 @@
 
 project_id = "gwmygthanyycveyqqspr"
 
-[functions.steam-auth]
-verify_jwt = false
+[api]
+  enabled = true
+  port = 54321
+  schemas = ["public", "storage", "graphql_public"]
 
-[functions.upsert-user]
-verify_jwt = false
+[db]
+  port = 54322
 
-[functions.handle-stripe-donation]
-verify_jwt = false
+[studio]
+  enabled = true
+  port = 54323
+  
+[inbucket]
+  enabled = true
+  port = 54324
 
-[functions.calculate-donor-tiers]
-verify_jwt = true
+[storage]
+  enabled = true
+  
+[auth]
+  enabled = true
+  
+[realtime]
+  enabled = true
 
-[functions.fetch-hltb-estimate]
-verify_jwt = true
-
-[functions.backfill-hltb-estimates]
-verify_jwt = true
-
-[functions.refresh-game-price]
-verify_jwt = true
-
-[functions.calculate-leaderboard-rankings]
-verify_jwt = true
-
-[functions.import-library]
-verify_jwt = false
-
-[functions.fetch-steam-app-list]
-verify_jwt = true
-
-[functions.fetch-steam-app-details]
-verify_jwt = true
+[functions.get-queue-stats-by-status]
+  verify_jwt = true

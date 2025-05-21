@@ -8,16 +8,33 @@ import { RefreshCw, Database, BarChart } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 
+// Define TypeScript interfaces for better type safety
+interface QueueStats {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  total: number;
+}
+
+interface SyncData {
+  id: string;
+  last_sync: string;
+  processed_apps: number;
+  total_apps: number;
+  status: string;
+}
+
 const AdminSteamDataPage = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [queueStats, setQueueStats] = useState({
+  const [queueStats, setQueueStats] = useState<QueueStats>({
     pending: 0,
     processing: 0,
     completed: 0,
     failed: 0,
     total: 0
   });
-  const [lastSync, setLastSync] = useState<any>(null);
+  const [lastSync, setLastSync] = useState<SyncData | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   // Fetch queue statistics
@@ -27,20 +44,28 @@ const AdminSteamDataPage = () => {
 
   const fetchQueueStats = async () => {
     try {
-      // Get counts of queue items by status
-      const { data: statsCounts, error: statsError } = await supabase
-        .from("steam_app_queue")
-        .select('status, count(*)', { count: 'exact' })
-        .group('status');
-
-      if (statsError) throw statsError;
+      // Use a raw SQL query for counting by status - more reliable approach
+      const { data: statusCounts, error: sqlError } = await supabase.rpc(
+        'get_queue_stats_by_status'
+      );
+      
+      if (sqlError) {
+        console.error("SQL query error:", sqlError);
+        // Fallback to direct count if the RPC function fails
+        await fetchQueueStatsDirectly();
+        return;
+      }
 
       // Get total count
       const { count: totalCount, error: countError } = await supabase
         .from("steam_app_queue")
         .select('*', { count: 'exact', head: true });
 
-      if (countError) throw countError;
+      if (countError) {
+        console.error("Error fetching total count:", countError);
+        toast.error("Failed to load queue statistics");
+        return;
+      }
 
       // Get the most recent sync record
       const { data: syncData, error: syncError } = await supabase
@@ -52,11 +77,12 @@ const AdminSteamDataPage = () => {
 
       if (syncError && syncError.code !== 'PGRST116') {
         // PGRST116 is the "No rows returned" error - this is fine for first run
-        throw syncError;
+        console.error("Error fetching sync data:", syncError);
       }
 
-      // Process the statistics
-      const stats = {
+      // Process the statistics from the SQL query
+      // Initialize with zeros
+      const stats: QueueStats = {
         pending: 0,
         processing: 0,
         completed: 0,
@@ -64,10 +90,11 @@ const AdminSteamDataPage = () => {
         total: totalCount || 0
       };
 
-      if (statsCounts) {
-        statsCounts.forEach((item: any) => {
+      // Map the SQL results to our stats object
+      if (statusCounts && Array.isArray(statusCounts)) {
+        statusCounts.forEach((item: { status: string; count: number }) => {
           if (item.status in stats) {
-            stats[item.status as keyof typeof stats] = item.count;
+            stats[item.status as keyof QueueStats] = item.count;
           }
         });
       }
@@ -77,8 +104,64 @@ const AdminSteamDataPage = () => {
         setLastSync(syncData);
       }
     } catch (error) {
-      console.error("Error fetching queue statistics:", error);
+      console.error("Error in fetchQueueStats:", error);
       toast.error("Failed to load queue statistics");
+      // Attempt direct counting as fallback
+      await fetchQueueStatsDirectly();
+    }
+  };
+
+  // Fallback method that counts each status individually
+  const fetchQueueStatsDirectly = async () => {
+    try {
+      console.log("Using fallback direct counting method");
+      
+      // Get total count
+      const { count: totalCount, error: totalError } = await supabase
+        .from("steam_app_queue")
+        .select('*', { count: 'exact', head: true });
+      
+      if (totalError) throw totalError;
+      
+      // Count each status individually
+      const statuses = ['pending', 'processing', 'completed', 'failed'];
+      const stats: QueueStats = {
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+        total: totalCount || 0
+      };
+      
+      // Execute count queries for each status
+      for (const status of statuses) {
+        const { count, error } = await supabase
+          .from("steam_app_queue")
+          .select('*', { count: 'exact', head: true })
+          .eq('status', status);
+        
+        if (!error && count !== null) {
+          stats[status as keyof QueueStats] = count;
+        }
+      }
+      
+      setQueueStats(stats);
+      
+      // Get the most recent sync record
+      const { data: syncData, error: syncError } = await supabase
+        .from("steam_app_sync")
+        .select('*')
+        .order('last_sync', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!syncError && syncData) {
+        setLastSync(syncData);
+      }
+      
+    } catch (error) {
+      console.error("Error in direct count fallback:", error);
+      toast.error("Failed to load queue statistics using fallback method");
     }
   };
 
@@ -93,6 +176,7 @@ const AdminSteamDataPage = () => {
       if (error) {
         console.error("Error fetching Steam app list:", error);
         toast.error("Failed to fetch Steam app list");
+        setIsLoading(false);
         return;
       }
       
@@ -124,6 +208,7 @@ const AdminSteamDataPage = () => {
       if (error) {
         console.error("Error processing app details:", error);
         toast.error("Failed to process app details");
+        setIsFetchingDetails(false);
         return;
       }
       
