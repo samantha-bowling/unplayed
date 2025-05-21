@@ -27,4 +27,3 @@ verify_jwt = true
 
 [functions.import-library]
 verify_jwt = false
-

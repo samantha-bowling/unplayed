@@ -159,40 +159,55 @@ export type Database = {
         Row: {
           categories: string[] | null
           created_at: string
+          description: string | null
+          developer: string[] | null
           genres: string[] | null
           header_image: string | null
           id: number
           image_url: string | null
           metacritic_score: number | null
           name: string
+          platforms: string[] | null
           price_cents: number | null
+          publisher: string[] | null
           release_date: string | null
+          screenshots: string[] | null
           updated_at: string
         }
         Insert: {
           categories?: string[] | null
           created_at?: string
+          description?: string | null
+          developer?: string[] | null
           genres?: string[] | null
           header_image?: string | null
           id: number
           image_url?: string | null
           metacritic_score?: number | null
           name: string
+          platforms?: string[] | null
           price_cents?: number | null
+          publisher?: string[] | null
           release_date?: string | null
+          screenshots?: string[] | null
           updated_at?: string
         }
         Update: {
           categories?: string[] | null
           created_at?: string
+          description?: string | null
+          developer?: string[] | null
           genres?: string[] | null
           header_image?: string | null
           id?: number
           image_url?: string | null
           metacritic_score?: number | null
           name?: string
+          platforms?: string[] | null
           price_cents?: number | null
+          publisher?: string[] | null
           release_date?: string | null
+          screenshots?: string[] | null
           updated_at?: string
         }
         Relationships: []
@@ -255,6 +270,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      steam_app_queue: {
+        Row: {
+          app_id: number
+          attempts: number | null
+          created_at: string | null
+          last_attempt: string | null
+          name: string | null
+          priority: number | null
+          status: string | null
+        }
+        Insert: {
+          app_id: number
+          attempts?: number | null
+          created_at?: string | null
+          last_attempt?: string | null
+          name?: string | null
+          priority?: number | null
+          status?: string | null
+        }
+        Update: {
+          app_id?: number
+          attempts?: number | null
+          created_at?: string | null
+          last_attempt?: string | null
+          name?: string | null
+          priority?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      steam_app_sync: {
+        Row: {
+          id: string
+          last_sync: string | null
+          processed_apps: number | null
+          status: string | null
+          total_apps: number | null
+        }
+        Insert: {
+          id?: string
+          last_sync?: string | null
+          processed_apps?: number | null
+          status?: string | null
+          total_apps?: number | null
+        }
+        Update: {
+          id?: string
+          last_sync?: string | null
+          processed_apps?: number | null
+          status?: string | null
+          total_apps?: number | null
+        }
+        Relationships: []
       }
       user_games: {
         Row: {
