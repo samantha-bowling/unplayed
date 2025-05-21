@@ -100,8 +100,27 @@ const SteamAuthHandler = () => {
           navigate('/library');
         } catch (err: any) {
           console.error('[SteamAuth] Steam linking error:', err);
-          setErrorCode('linking_failed');
-          setError(`Failed to link Steam account: ${err.message}`);
+          
+          // Enhanced error logging for debugging
+          if (err.status) {
+            console.error(`[SteamAuth] HTTP Status: ${err.status}`);
+          }
+          
+          // Try to provide more meaningful error messages based on common issues
+          if (err.message?.includes('404')) {
+            setErrorCode('api_not_found');
+            setError('The API endpoint for linking your Steam account could not be found. This may be due to a deployment issue.');
+          } else if (err.message?.includes('500')) {
+            setErrorCode('server_error');
+            setError('The server encountered an error while linking your Steam account. Please try again later.');
+          } else if (err.message?.includes('timeout') || err.message?.includes('network')) {
+            setErrorCode('network_error');
+            setError('A network error occurred while linking your Steam account. Please check your connection and try again.');
+          } else {
+            setErrorCode('linking_failed');
+            setError(`Failed to link Steam account: ${err.message}`);
+          }
+          
           setProcessing(false);
         }
       } catch (err: any) {

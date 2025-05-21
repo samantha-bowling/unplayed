@@ -4,6 +4,9 @@ project_id = "gwmygthanyycveyqqspr"
 [functions.steam-auth]
 verify_jwt = false
 
+[functions.upsert-user]
+verify_jwt = false
+
 [functions.handle-stripe-donation]
 verify_jwt = false
 
