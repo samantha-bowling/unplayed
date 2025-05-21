@@ -8,10 +8,12 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import LibraryPreview from '@/components/LibraryPreview';
 import LibraryFilters from '@/components/LibraryFilters';
 import GameGrid from '@/components/GameGrid';
+import PaginatedGameGrid from '@/components/PaginatedGameGrid';
 import UnplayedCounter from '@/components/UnplayedCounter';
 import GenreHoarding from '@/components/GenreHoarding';
 import ShelfLife from '@/components/ShelfLife';
 import useLibraryData from '@/hooks/use-library-data';
+import usePaginatedLibrary from '@/hooks/use-paginated-library';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -34,8 +36,15 @@ const LibraryPage: React.FC = () => {
   const [focusedGameId, setFocusedGameId] = useState<number | null>(null);
   const gameGridRef = useRef<HTMLDivElement>(null);
   
-  // Get library data and actions from our hook
-  const { 
+  // Flag to toggle between legacy and paginated mode
+  const [usePagination, setUsePagination] = useState<boolean>(true);
+  
+  // Get library data from our hooks
+  const legacyData = useLibraryData();
+  const paginatedData = usePaginatedLibrary();
+  
+  // Use the appropriate data source based on the pagination flag
+  const {
     games, 
     isLoading, 
     error,
@@ -48,13 +57,10 @@ const LibraryPage: React.FC = () => {
     sortBy,
     sortDirection,
     updateSort,
-    viewMode,
-    updateViewMode,
-    markAsPlayed,
-    toggleGameHidden,
-    saveGameNote,
-    findGameById
-  } = useLibraryData();
+  } = usePagination ? paginatedData : legacyData;
+  
+  // Also get view mode from legacy data
+  const { viewMode, updateViewMode } = legacyData;
 
   // Get motivational message based on library size
   const getMotivationalMessage = () => {
@@ -70,25 +76,43 @@ const LibraryPage: React.FC = () => {
 
   // Handle mark as played action
   const handleMarkAsPlayed = (userGameId: string) => {
-    markAsPlayed.mutate(
-      { userGameId },
-      {
-        onSuccess: () => {
+    if (usePagination) {
+      paginatedData.markAsPlayed(userGameId)
+        .then(() => {
           toast({
             title: "Game marked as played",
             description: "Your game has been marked as played successfully.",
           });
-        },
-        onError: (error) => {
+        })
+        .catch((error) => {
           toast({
             title: "Error",
             description: "Failed to mark game as played.",
             variant: "destructive",
           });
           console.error("Error marking game as played:", error);
+        });
+    } else {
+      legacyData.markAsPlayed.mutate(
+        { userGameId },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Game marked as played",
+              description: "Your game has been marked as played successfully.",
+            });
+          },
+          onError: (error) => {
+            toast({
+              title: "Error",
+              description: "Failed to mark game as played.",
+              variant: "destructive",
+            });
+            console.error("Error marking game as played:", error);
+          }
         }
-      }
-    );
+      );
+    }
   };
 
   // Create a lookup function to find userGameId by game.id
@@ -113,50 +137,88 @@ const LibraryPage: React.FC = () => {
 
   // Handle toggle hidden action
   const handleToggleHidden = (userGameId: string, hidden: boolean) => {
-    toggleGameHidden.mutate(
-      { userGameId, hidden },
-      {
-        onSuccess: () => {
+    if (usePagination) {
+      paginatedData.toggleGameHidden(userGameId, hidden)
+        .then(() => {
           toast({
             title: hidden ? "Game hidden" : "Game unhidden",
             description: hidden 
               ? "This game has been hidden from your main view." 
               : "This game is now visible in your library.",
           });
-        },
-        onError: (error) => {
+        })
+        .catch((error) => {
           toast({
             title: "Error",
             description: "Failed to update game visibility.",
             variant: "destructive",
           });
           console.error("Error toggling game visibility:", error);
+        });
+    } else {
+      legacyData.toggleGameHidden.mutate(
+        { userGameId, hidden },
+        {
+          onSuccess: () => {
+            toast({
+              title: hidden ? "Game hidden" : "Game unhidden",
+              description: hidden 
+                ? "This game has been hidden from your main view." 
+                : "This game is now visible in your library.",
+            });
+          },
+          onError: (error) => {
+            toast({
+              title: "Error",
+              description: "Failed to update game visibility.",
+              variant: "destructive",
+            });
+            console.error("Error toggling game visibility:", error);
+          }
         }
-      }
-    );
+      );
+    }
   };
 
   // Handle save note action
   const handleSaveNote = (userGameId: string, note: string) => {
-    saveGameNote.mutate(
-      { userGameId, note },
-      {
-        onSuccess: () => {
+    if (usePagination) {
+      paginatedData.saveGameNote(userGameId, note)
+        .then(() => {
           toast({
             title: "Note saved",
             description: "Your game note has been saved successfully.",
           });
-        },
-        onError: (error) => {
+        })
+        .catch((error) => {
           toast({
             title: "Error",
             description: "Failed to save game note.",
             variant: "destructive",
           });
           console.error("Error saving game note:", error);
+        });
+    } else {
+      legacyData.saveGameNote.mutate(
+        { userGameId, note },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Note saved",
+              description: "Your game note has been saved successfully.",
+            });
+          },
+          onError: (error) => {
+            toast({
+              title: "Error",
+              description: "Failed to save game note.",
+              variant: "destructive",
+            });
+            console.error("Error saving game note:", error);
+          }
         }
-      }
-    );
+      );
+    }
   };
   
   // Handle genre selection from the pie chart
@@ -240,6 +302,22 @@ const LibraryPage: React.FC = () => {
               </h1>
               
               <div className="flex items-center space-x-2">
+                <Button 
+                  size="sm" 
+                  variant={usePagination ? "default" : "outline"}
+                  onClick={() => setUsePagination(true)}
+                  className={usePagination ? "bg-unplayed-amber/80 hover:bg-unplayed-amber" : ""}
+                >
+                  Optimized Mode
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={!usePagination ? "default" : "outline"}
+                  onClick={() => setUsePagination(false)}
+                  className={!usePagination ? "bg-unplayed-amber/80 hover:bg-unplayed-amber" : ""}
+                >
+                  Legacy Mode
+                </Button>
                 <FullScreenModeToggle />
               </div>
             </div>
@@ -321,7 +399,9 @@ const LibraryPage: React.FC = () => {
                 <Sparkles className="mr-2 h-4 w-4" />
                 Explore Your Collection
                 {!isLoading && games.length > 0 && (
-                  <span className="ml-2 text-sm text-gray-400">({games.length} games)</span>
+                  <span className="ml-2 text-sm text-gray-400">
+                    ({usePagination ? `${paginatedData.pagination.totalItems} games` : `${games.length} games`})
+                  </span>
                 )}
               </h2>
               
@@ -349,14 +429,30 @@ const LibraryPage: React.FC = () => {
             {/* Game display - either grid or zen mode */}
             <div ref={gameGridRef}>
               {viewMode === 'grid' ? (
-                <GameGrid 
-                  games={games}
-                  isLoading={isLoading}
-                  onMarkAsPlayed={handleMarkAsPlayed}
-                  onToggleHidden={handleToggleHidden}
-                  onSaveNote={handleSaveNote}
-                  focusedGameId={focusedGameId}
-                />
+                usePagination ? (
+                  <PaginatedGameGrid 
+                    games={paginatedData.games}
+                    isLoading={paginatedData.isLoading}
+                    onMarkAsPlayed={handleMarkAsPlayed}
+                    onToggleHidden={handleToggleHidden}
+                    onSaveNote={handleSaveNote}
+                    focusedGameId={focusedGameId}
+                    pagination={paginatedData.pagination}
+                    goToPage={paginatedData.goToPage}
+                    nextPage={paginatedData.nextPage}
+                    previousPage={paginatedData.previousPage}
+                    setPageSize={paginatedData.setPageSize}
+                  />
+                ) : (
+                  <GameGrid 
+                    games={legacyData.games}
+                    isLoading={legacyData.isLoading}
+                    onMarkAsPlayed={handleMarkAsPlayed}
+                    onToggleHidden={handleToggleHidden}
+                    onSaveNote={handleSaveNote}
+                    focusedGameId={focusedGameId}
+                  />
+                )
               ) : (
                 <LibraryPreview
                   viewMode="zen"

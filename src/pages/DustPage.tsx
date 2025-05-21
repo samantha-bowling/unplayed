@@ -14,12 +14,16 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
-  const { data, isLoading } = useDustScoreData();
+  const { data, isLoading, refetch } = useDustScoreData();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Debug logging
   useEffect(() => {
@@ -28,14 +32,28 @@ const DustPage = () => {
     console.log("DustPage dust score breakdown:", data.dustScoreBreakdown);
   }, [data]);
 
-  const refreshData = () => {
-    // Show loading toast
+  const refreshData = async () => {
+    // Show refreshing state
+    setIsRefreshing(true);
     toast.loading("Refreshing dust data...");
     
-    // Force a hard refresh of the page after a short delay
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    try {
+      // Perform targeted cache invalidation for dust-related queries
+      await queryClient.invalidateQueries({ 
+        queryKey: queryKeys.detailedDustData(user?.id)
+      });
+      
+      // Explicitly refetch the dust score data
+      await refetch();
+      
+      // Show success message
+      toast.success("Dust data refreshed successfully");
+    } catch (error) {
+      console.error("Error refreshing dust data:", error);
+      toast.error("Failed to refresh dust data");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -60,10 +78,11 @@ const DustPage = () => {
                   <Button 
                     variant="outline" 
                     onClick={refreshData} 
+                    disabled={isRefreshing}
                     className="text-unplayed-mint border-unplayed-mint/30 bg-unplayed-mint/10 hover:bg-unplayed-mint/20"
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh Data
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    {isRefreshing ? "Refreshing..." : "Refresh Data"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

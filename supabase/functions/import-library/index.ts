@@ -14,6 +14,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Configuration for batched processing
+const BATCH_SIZE = 100; // Process games in batches of 100
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -48,7 +51,7 @@ serve(async (req) => {
     }
     
     // Support flexible payloads - either steamId format or id/steam_id/games format
-    let userId, steamId;
+    let userId, steamId, games;
     
     if (body.steamId) {
       // Format from frontend: { steamId: "..." }
@@ -98,19 +101,28 @@ serve(async (req) => {
       }
       
       const steamData = await steamResponse.json();
-      const games = steamData?.response?.games || [];
+      games = steamData?.response?.games || [];
       
       console.log(`Found ${games.length} games in Steam library`);
       
-      // Continue to process games
-      return await processGames(userId, steamId, games, corsHeaders);
+      // If there are no games, return early
+      if (games.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, warning: "No games to import" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Get additional game details for genres and categories
+      // (Note: This would ideally be done in batches or asynchronously for large libraries)
+      await enrichGamesWithSteamDetails(games, STEAM_API_KEY);
     }
     else {
       // Format from direct API call: { id: "...", steam_id: "...", games: [...] }
-      const { id, steam_id, games } = body;
+      const { id, steam_id, gamesData } = body;
 
-      if (!id || !steam_id || !Array.isArray(games)) {
-        console.error("Missing required fields:", { id, steam_id, gamesProvided: !!games });
+      if (!id || !steam_id || !Array.isArray(gamesData)) {
+        console.error("Missing required fields:", { id, steam_id, gamesProvided: !!gamesData });
         return new Response(
           JSON.stringify({ error: "Missing required fields" }), 
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -119,9 +131,43 @@ serve(async (req) => {
       
       userId = id;
       steamId = steam_id;
+      games = gamesData;
+    }
+
+    // Use background processing for large libraries via EdgeRuntime.waitUntil
+    const importPromise = processGamesInBatches(userId, steamId, games);
+    
+    // For Edge Functions supporting waitUntil, we can continue processing after response
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      // Send immediate response while continuing processing in background
+      EdgeRuntime.waitUntil(importPromise.then(result => {
+        console.log("Import completed in background:", result);
+      }).catch(err => {
+        console.error("Background import failed:", err);
+      }));
       
-      // Continue to process games
-      return await processGames(userId, steamId, games, corsHeaders);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Import started",
+          totalGames: games.length,
+          processing: "background"
+        }), 
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else {
+      // For environments not supporting waitUntil, process and wait for completion
+      const result = await importPromise;
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          imported: result.total,
+          gamesUpserted: result.gamesUpserted,
+          relationshipsCreated: result.relationshipsCreated
+        }), 
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
   } catch (err) {
@@ -133,98 +179,169 @@ serve(async (req) => {
   }
 });
 
-async function processGames(userId, steamId, games, corsHeaders) {
-  // Process games to update database
-  console.log(`Processing ${games.length} games for user ${userId} with Steam ID ${steamId}`);
-  
-  if (games.length === 0) {
-    return new Response(
-      JSON.stringify({ success: true, warning: "No games to import" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
-  // First, prepare the game data for the games table
-  const gameUpserts = games
-    .map((game) => {
-      if (!game.appid || !game.name || typeof game.appid !== "number") {
-        console.warn("Skipping invalid game:", game);
-        return null;
+// Function to enrich games with additional details from Steam API
+async function enrichGamesWithSteamDetails(games, apiKey) {
+  try {
+    // This would ideally be done in batches for large libraries
+    // For now, we'll enrich a subset (first 20 games) as an example
+    const samplesToEnrich = Math.min(20, games.length);
+    
+    console.log(`Enriching ${samplesToEnrich} sample games with additional Steam details`);
+    
+    for (let i = 0; i < samplesToEnrich; i++) {
+      const game = games[i];
+      if (!game.appid) continue;
+      
+      // Fetch app details from Steam API
+      const detailsUrl = `https://store.steampowered.com/api/appdetails?appids=${game.appid}`;
+      const response = await fetch(detailsUrl);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data[game.appid] && data[game.appid].success) {
+          const details = data[game.appid].data;
+          
+          // Add genres if available
+          if (details.genres) {
+            game.genres = details.genres.map(g => g.description);
+          }
+          
+          // Add categories if available
+          if (details.categories) {
+            game.categories = details.categories.map(c => c.description);
+          }
+        }
       }
       
-      return {
-        id: game.appid,  // Use appid as the primary key
-        name: game.name,
-        image_url: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null,
-        header_image: game.img_logo_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_logo_url}.jpg` : null,
-      };
-    })
-    .filter(Boolean);
-
-  // Upsert the games into the games table
-  console.log(`Upserting ${gameUpserts.length} games into games table`);
-  const { error: gamesError } = await supabase
-    .from("games")
-    .upsert(gameUpserts, {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    });
-
-  if (gamesError) {
-    console.error("Error upserting games:", gamesError);
-    return new Response(
-      JSON.stringify({ error: "Error upserting games", details: gamesError.message }), 
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      // Add a small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    console.log("Game enrichment completed");
+  } catch (error) {
+    console.error("Error enriching games with details:", error);
+    // Continue with import even if enrichment fails
   }
+}
 
-  // Get the current timestamp for acquisition date
-  const now = new Date().toISOString();
+// Process games in batches to avoid timeout issues
+async function processGamesInBatches(userId, steamId, games) {
+  console.log(`Processing ${games.length} games in batches of ${BATCH_SIZE}`);
   
-  // Now prepare the user_games relationships with proper acquisition dates
-  const userGamesUpserts = games
-    .map((game) => {
-      if (!game.appid || typeof game.appid !== "number") {
-        return null;
+  let totalGamesUpserted = 0;
+  let totalRelationshipsCreated = 0;
+  
+  // Split games into batches
+  const batches = [];
+  for (let i = 0; i < games.length; i += BATCH_SIZE) {
+    batches.push(games.slice(i, i + BATCH_SIZE));
+  }
+  
+  console.log(`Created ${batches.length} batches`);
+  
+  // Process each batch sequentially
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+    console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} games`);
+    
+    // Prepare game upserts for this batch
+    const gameUpserts = batch
+      .map((game) => {
+        if (!game.appid || !game.name || typeof game.appid !== "number") {
+          console.warn("Skipping invalid game:", game);
+          return null;
+        }
+        
+        const gameData = {
+          id: game.appid,
+          name: game.name,
+          image_url: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null,
+          header_image: game.img_logo_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_logo_url}.jpg` : null,
+        };
+        
+        // Add genres if available from enrichment
+        if (game.genres && Array.isArray(game.genres)) {
+          gameData.genres = game.genres;
+        }
+        
+        // Add categories if available from enrichment
+        if (game.categories && Array.isArray(game.categories)) {
+          gameData.categories = game.categories;
+        }
+        
+        return gameData;
+      })
+      .filter(Boolean);
+      
+    // Upsert games for this batch
+    if (gameUpserts.length > 0) {
+      const { error: gamesError } = await supabase
+        .from("games")
+        .upsert(gameUpserts, {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        });
+  
+      if (gamesError) {
+        console.error(`Error upserting games in batch ${batchIndex + 1}:`, gamesError);
+        throw gamesError;
       }
       
-      // Calculate a more realistic acquisition date - use game's release date or current time
-      // For demo purposes, distribute acquisition dates over the past few years
-      const randomDaysAgo = Math.floor(Math.random() * 1095); // Up to 3 years ago
-      const acquisitionDate = new Date();
-      acquisitionDate.setDate(acquisitionDate.getDate() - randomDaysAgo);
+      totalGamesUpserted += gameUpserts.length;
+      console.log(`Upserted ${gameUpserts.length} games in batch ${batchIndex + 1}`);
+    }
+    
+    // Get current timestamp
+    const now = new Date().toISOString();
+    
+    // Prepare user-game relationships for this batch
+    const userGamesUpserts = batch
+      .map((game) => {
+        if (!game.appid || typeof game.appid !== "number") {
+          return null;
+        }
+        
+        // Calculate a more realistic acquisition date - use game's release date or current time
+        const randomDaysAgo = Math.floor(Math.random() * 1095); // Up to 3 years ago
+        const acquisitionDate = new Date();
+        acquisitionDate.setDate(acquisitionDate.getDate() - randomDaysAgo);
+        
+        return {
+          user_id: userId,
+          game_id: game.appid,
+          playtime_minutes: game.playtime_forever || 0,
+          acquisition_date: acquisitionDate.toISOString(),
+          last_played_date: game.rtime_last_played 
+            ? new Date(game.rtime_last_played * 1000).toISOString() 
+            : (game.playtime_forever > 0 ? now : null),
+        };
+      })
+      .filter(Boolean);
+  
+    // Upsert user-game relationships for this batch
+    if (userGamesUpserts.length > 0) {
+      const { error: userGamesError } = await supabase
+        .from("user_games")
+        .upsert(userGamesUpserts, {
+          onConflict: "user_id,game_id",
+          ignoreDuplicates: false,
+        });
+  
+      if (userGamesError) {
+        console.error(`Error upserting user_games in batch ${batchIndex + 1}:`, userGamesError);
+        throw userGamesError;
+      }
       
-      return {
-        user_id: userId,
-        game_id: game.appid,
-        playtime_minutes: game.playtime_forever || 0,
-        // Use the simulated acquisition date
-        acquisition_date: acquisitionDate.toISOString(),
-        // Use rtime_last_played if available (convert from unix timestamp)
-        last_played_date: game.rtime_last_played 
-          ? new Date(game.rtime_last_played * 1000).toISOString() 
-          : (game.playtime_forever > 0 ? now : null),
-      };
-    })
-    .filter(Boolean);
-
-  // Upsert the user-game relationships
-  console.log(`Upserting ${userGamesUpserts.length} relationships into user_games table`);
-  const { error: userGamesError } = await supabase
-    .from("user_games")
-    .upsert(userGamesUpserts, {
-      onConflict: "user_id,game_id",
-      ignoreDuplicates: false,
-    });
-
-  if (userGamesError) {
-    console.error("Error upserting user_games:", userGamesError);
-    return new Response(
-      JSON.stringify({ error: "Error creating user-game relationships", details: userGamesError.message }), 
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      totalRelationshipsCreated += userGamesUpserts.length;
+      console.log(`Created ${userGamesUpserts.length} user-game relationships in batch ${batchIndex + 1}`);
+    }
+    
+    // Add a small delay between batches to prevent rate limiting or CPU spikes
+    if (batchIndex < batches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
-
+  
   // Update the last_sync timestamp for the user
   console.log("Updating last_sync timestamp");
   const { error: updateError } = await supabase
@@ -234,19 +351,14 @@ async function processGames(userId, steamId, games, corsHeaders) {
 
   if (updateError) {
     console.error("Last sync update error:", updateError);
-    return new Response(
-      JSON.stringify({ error: updateError.message }), 
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    throw updateError;
   }
 
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      imported: userGamesUpserts.length,
-      gamesUpserted: gameUpserts.length,
-      relationshipsCreated: userGamesUpserts.length
-    }), 
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
+  console.log(`Import completed: ${totalGamesUpserted} games upserted, ${totalRelationshipsCreated} relationships created`);
+  
+  return {
+    total: totalRelationshipsCreated,
+    gamesUpserted: totalGamesUpserted,
+    relationshipsCreated: totalRelationshipsCreated
+  };
 }

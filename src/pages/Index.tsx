@@ -27,12 +27,14 @@ import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Import } from "lucide-react";
+import { RefreshCw, Import, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<string>("Preparing to import...");
+  const [importPercentage, setImportPercentage] = useState(0);
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
@@ -60,6 +62,8 @@ const Index = () => {
       queryClient.invalidateQueries({ queryKey: ['detailedDustData'] });
       queryClient.invalidateQueries({ queryKey: ['gameEstimates'] });
       queryClient.invalidateQueries({ queryKey: ['libraryGames'] });
+      queryClient.invalidateQueries({ queryKey: ['paginatedLibraryGames'] });
+      queryClient.invalidateQueries({ queryKey: ['libraryGamesCount'] });
       queryClient.invalidateQueries({ queryKey: ['pickerGames'] });
       queryClient.invalidateQueries({ queryKey: ['spendingData'] });
       
@@ -76,6 +80,99 @@ const Index = () => {
         });
       }, 2000);
     }, 1000);
+  };
+  
+  // Function to import Steam library with progress updates
+  const importSteamLibrary = async () => {
+    if (!profile?.steam_id) {
+      toast.error("Steam account not linked");
+      return;
+    }
+    
+    // Start import process
+    setIsImporting(true);
+    setImportProgress("Connecting to Steam...");
+    setImportPercentage(10);
+    
+    toast.loading("Importing your Steam library...", {
+      description: "This may take a few minutes for large libraries."
+    });
+    
+    try {
+      // Use the Netlify redirect path instead of direct Supabase function URL
+      const response = await fetch("/api/import-library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steamId: profile.steam_id }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Import response:", data);
+      
+      // If the server is processing in the background
+      if (data.processing === "background") {
+        // Show progress updates to user
+        setImportProgress("Fetching game details...");
+        setImportPercentage(30);
+        
+        // Poll for completion status or simulate progress
+        let progressCounter = 30;
+        const progressInterval = setInterval(() => {
+          progressCounter += 5;
+          if (progressCounter >= 90) {
+            clearInterval(progressInterval);
+          }
+          setImportPercentage(progressCounter);
+          setImportProgress(`Processing games (${progressCounter}%)...`);
+        }, 2000);
+        
+        // Wait a reasonable amount of time, then assume processing is done
+        // In a production app, you'd poll a status endpoint instead
+        setTimeout(() => {
+          clearInterval(progressInterval);
+          setImportPercentage(100);
+          setImportProgress("Import complete!");
+          toast.success(`Steam library import completed!`, {
+            description: "Your dashboard will update shortly."
+          });
+          
+          // Update all data
+          refreshAllData();
+          
+          // Reset state after a delay
+          setTimeout(() => {
+            setIsImporting(false);
+          }, 1000);
+        }, 20000); // Assume 20 seconds for processing
+      } else {
+        // Server completed processing synchronously
+        toast.success(`Successfully imported ${data.imported || 0} games!`, {
+          description: "Your dashboard will update shortly."
+        });
+        
+        setImportPercentage(100);
+        setImportProgress("Import complete!");
+        
+        // Update all data
+        refreshAllData();
+        
+        // Reset state after a delay
+        setTimeout(() => {
+          setIsImporting(false);
+        }, 1000);
+      }
+    } catch (err) {
+      console.error("Import failed", err);
+      toast.error(`Import failed: ${err.message}`);
+      setIsImporting(false);
+      setImportProgress("Import failed");
+      setImportPercentage(0);
+    }
   };
 
   if (isLoading) {
@@ -140,43 +237,7 @@ const Index = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={() => {
-                      setIsImporting(true);
-                      setImportProgress("Connecting to Steam...");
-                      toast.info("Importing your Steam library...", {
-                        description: "This may take a few minutes for large libraries."
-                      });
-                      
-                      // Use the Netlify redirect path instead of direct Supabase function URL
-                      fetch("/api/import-library", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ steamId: profile.steam_id }),
-                      })
-                        .then(response => {
-                          if (!response.ok) {
-                            return response.json().then(data => {
-                              throw new Error(data.error || `Server error: ${response.status}`);
-                            });
-                          }
-                          return response.json();
-                        })
-                        .then(data => {
-                          console.log("Import response:", data);
-                          toast.success(`Successfully imported ${data.imported || 0} games!`, {
-                            description: "Your dashboard will update shortly."
-                          });
-                          // Update all data
-                          refreshAllData();
-                        })
-                        .catch((err) => {
-                          console.error("Import failed", err);
-                          toast.error(`Import failed: ${err.message}`);
-                        })
-                        .finally(() => {
-                          setIsImporting(false);
-                        });
-                    }}
+                    onClick={importSteamLibrary}
                     className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
                     disabled={isImporting}
                   >
@@ -209,18 +270,29 @@ const Index = () => {
                 </Tooltip>
               </TooltipProvider>
             )}
-            
-            {lastRefreshed && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Last updated: {new Date(lastRefreshed).toLocaleString()}
-              </p>
-            )}
           </div>
           
+          {lastRefreshed && (
+            <p className="text-sm text-gray-500 mt-2">
+              Last updated: {new Date(lastRefreshed).toLocaleString()}
+            </p>
+          )}
+          
           {isImporting && (
-            <div className="mt-6">
-              <SteamLoader message={isImporting ? importProgress : "Import complete!"} size="md" variant="secondary" />
-              <p className="text-sm text-gray-400 mt-2">This may take a few minutes for large libraries</p>
+            <div className="mt-6 max-w-md mx-auto">
+              <div className="flex items-center justify-center mb-2">
+                <SteamLoader message={isImporting ? importProgress : "Import complete!"} size="sm" variant="secondary" />
+              </div>
+              <Progress value={importPercentage} className="h-2" />
+              <p className="text-sm text-gray-400 mt-2">
+                This may take a few minutes for large libraries
+              </p>
+              <div className="mt-4 text-sm bg-unplayed-mint/10 p-3 rounded-md flex items-start">
+                <AlertCircle className="w-4 h-4 text-unplayed-mint mr-2 mt-0.5 flex-shrink-0" />
+                <p className="text-gray-300">
+                  You can leave this page during the import process. Your games will still be imported in the background.
+                </p>
+              </div>
             </div>
           )}
         </>

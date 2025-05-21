@@ -13,6 +13,8 @@ import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 import DemoModeFallback from '@/components/DemoModeFallback';
 import { SteamIcon } from '@/components/icons/SteamIcon';
 import { AuthStorage } from '@/utils/auth-service';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -23,21 +25,43 @@ const AuthPage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const handleEmailLogin = async () => {
     clearError();
     await signInWithEmail(email);
     setShowSuccessAnimation(true);
   };
+  
+  const handleProviderSignIn = async (provider: 'discord' | 'twitch') => {
+    // Clear any caches if user was previously logged in with a different account
+    queryClient.invalidateQueries();
+    
+    await signInWithProvider(provider, { 
+      redirectTo: `${window.location.origin}/auth/callback` 
+    });
+  };
 
   useEffect(() => {
     // If user is already authenticated, redirect them
     if (user) {
+      // Prefetch critical user data in the background
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.profile(user.id),
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      });
+      
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.unplayedData(user.id),
+        staleTime: 2 * 60 * 1000, // 2 minutes
+      });
+      
+      // Then redirect
       const params = new URLSearchParams(location.search);
       const redirectTo = params.get('redirectTo') || AuthStorage.getRedirectPath();
       navigate(redirectTo, { replace: true });
     }
-  }, [user, navigate, location.search]);
+  }, [user, navigate, location.search, queryClient]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
@@ -78,10 +102,10 @@ const AuthPage = () => {
           </p>
           
           <div className="flex flex-col gap-4">
-            <Button onClick={() => signInWithProvider('discord', { redirectTo: `${window.location.origin}/auth/callback` })}>
+            <Button onClick={() => handleProviderSignIn('discord')}>
               Sign in with Discord
             </Button>
-            <Button onClick={() => signInWithProvider('twitch', { redirectTo: `${window.location.origin}/auth/callback` })}>
+            <Button onClick={() => handleProviderSignIn('twitch')}>
               Sign in with Twitch
             </Button>
             
