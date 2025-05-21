@@ -137,7 +137,15 @@ async function processGames(userId, steamId, games, corsHeaders) {
   // Process games to update database
   console.log(`Processing ${games.length} games for user ${userId} with Steam ID ${steamId}`);
   
-  const upserts = games
+  if (games.length === 0) {
+    return new Response(
+      JSON.stringify({ success: true, warning: "No games to import" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // First, prepare the game data for the games table
+  const gameUpserts = games
     .map((game) => {
       if (!game.appid || !game.name || typeof game.appid !== "number") {
         console.warn("Skipping invalid game:", game);
@@ -145,38 +153,63 @@ async function processGames(userId, steamId, games, corsHeaders) {
       }
       
       return {
-        user_id: userId,
-        steam_id: steamId,
-        appid: game.appid,
+        id: game.appid,  // Use appid as the primary key
         name: game.name,
-        img_icon_url: game.img_icon_url,
-        img_logo_url: game.img_logo_url,
-        playtime_forever: game.playtime_forever,
-        playtime_windows_forever: game.playtime_windows_forever,
-        playtime_mac_forever: game.playtime_mac_forever,
-        playtime_linux_forever: game.playtime_linux_forever,
-        has_community_visible_stats: game.has_community_visible_stats ?? false,
+        image_url: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null,
+        header_image: game.img_logo_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_logo_url}.jpg` : null,
       };
     })
     .filter(Boolean);
 
-  if (upserts.length === 0) {
+  // Upsert the games into the games table
+  console.log(`Upserting ${gameUpserts.length} games into games table`);
+  const { error: gamesError } = await supabase
+    .from("games")
+    .upsert(gameUpserts, {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    });
+
+  if (gamesError) {
+    console.error("Error upserting games:", gamesError);
     return new Response(
-      JSON.stringify({ success: true, warning: "No valid games to import" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Error upserting games", details: gamesError.message }), 
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  // Insert games into the database
-  console.log(`Upserting ${upserts.length} games`);
-  const { error: insertError } = await supabase.from("game_library").upsert(upserts, {
-    onConflict: "user_id,appid",
-  });
+  // Now prepare the user_games relationships
+  const userGamesUpserts = games
+    .map((game) => {
+      if (!game.appid || typeof game.appid !== "number") {
+        return null;
+      }
+      
+      return {
+        user_id: userId,
+        game_id: game.appid,
+        playtime_minutes: game.playtime_forever || 0,
+        // Calculate timestamp for acquisition date (just using current time for now)
+        acquisition_date: new Date().toISOString(),
+        // Add any last played date if available from Steam
+        last_played_date: null, // Steam API doesn't provide this directly
+      };
+    })
+    .filter(Boolean);
 
-  if (insertError) {
-    console.error("Insert error:", insertError);
+  // Upsert the user-game relationships
+  console.log(`Upserting ${userGamesUpserts.length} relationships into user_games table`);
+  const { error: userGamesError } = await supabase
+    .from("user_games")
+    .upsert(userGamesUpserts, {
+      onConflict: "user_id,game_id",
+      ignoreDuplicates: false,
+    });
+
+  if (userGamesError) {
+    console.error("Error upserting user_games:", userGamesError);
     return new Response(
-      JSON.stringify({ error: insertError.message }), 
+      JSON.stringify({ error: "Error creating user-game relationships", details: userGamesError.message }), 
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -197,7 +230,12 @@ async function processGames(userId, steamId, games, corsHeaders) {
   }
 
   return new Response(
-    JSON.stringify({ success: true, imported: upserts.length }), 
+    JSON.stringify({ 
+      success: true, 
+      imported: userGamesUpserts.length,
+      gamesUpserted: gameUpserts.length,
+      relationshipsCreated: userGamesUpserts.length
+    }), 
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
