@@ -1,9 +1,9 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { LibraryGame, SortOption } from '@/hooks/use-library-data';
+import { queryKeys } from './use-query-keys';
 
 // Constants for pagination
 const DEFAULT_PAGE_SIZE = 24;
@@ -81,7 +81,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
   
   // Count query to get total number of games (for pagination)
   const countQuery = useQuery({
-    queryKey: ['libraryGamesCount', user?.id, filters],
+    queryKey: queryKeys.libraryGamesCount(user?.id, filters),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -99,40 +99,81 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
         query = query.eq('playtime_minutes', 0);
       }
       
+      // Handle genre filtering
       if (filters.selectedGenre && filters.selectedGenre.trim() !== '') {
-        // Need to join with games table to filter by genre
-        query = query.select('game_id', { count: 'exact' })
-          .eq('user_id', user.id)
-          .or(`games.genres.cs.{${filters.selectedGenre}}`);
+        // First get game ids that match the genre
+        try {
+          console.log('Fetching games with genre:', filters.selectedGenre);
+          const { data: genreGames, error: genreError } = await supabase
+            .from('games')
+            .select('id')
+            .contains('genres', [filters.selectedGenre.trim()]);
+          
+          if (genreError) {
+            console.error('Error fetching games by genre:', genreError);
+            return { count: 0 };
+          }
+          
+          if (genreGames && genreGames.length > 0) {
+            // Filter user_games by the game ids that match the genre
+            query = query.in('game_id', genreGames.map(g => g.id));
+          } else {
+            console.log('No games found with genre:', filters.selectedGenre);
+            return { count: 0 };
+          }
+        } catch (error) {
+          console.error('Exception when filtering by genre:', error);
+          return { count: 0 };
+        }
       }
       
       // Apply search filter if provided
       if (filters.search && filters.search.trim() !== '') {
         // We need to modify our strategy here - we'll get the game IDs first
-        const { data: gameIds } = await supabase
-          .from('games')
-          .select('id')
-          .ilike('name', `%${filters.search.trim()}%`);
-        
-        if (gameIds && gameIds.length > 0) {
-          query = query.in('game_id', gameIds.map(g => g.id));
-        } else {
-          // No games match the search, return empty result
+        try {
+          const { data: gameIds, error: searchError } = await supabase
+            .from('games')
+            .select('id')
+            .ilike('name', `%${filters.search.trim()}%`);
+          
+          if (searchError) {
+            console.error('Error searching games:', searchError);
+            return { count: 0 };
+          }
+          
+          if (gameIds && gameIds.length > 0) {
+            query = query.in('game_id', gameIds.map(g => g.id));
+          } else {
+            // No games match the search, return empty result
+            console.log('No games found matching search:', filters.search);
+            return { count: 0 };
+          }
+        } catch (error) {
+          console.error('Exception when searching games:', error);
           return { count: 0 };
         }
       }
       
-      const { count, error } = await query;
-      
-      if (error) throw error;
-      return { count: count || 0 };
+      try {
+        const { count, error } = await query;
+        
+        if (error) {
+          console.error('Error counting games:', error);
+          throw error;
+        }
+        
+        return { count: count || 0 };
+      } catch (error) {
+        console.error('Exception in count query:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
   
   // Main data query
   const { data, isLoading, error } = useQuery({
-    queryKey: ['paginatedLibraryGames', user?.id, pagination, filters, sortBy, sortDirection],
+    queryKey: queryKeys.paginatedLibraryGames(user?.id, pagination.page),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -174,35 +215,57 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
         query = query.eq('playtime_minutes', 0);
       }
       
-      // Add search filter if provided
-      if (filters.search && filters.search.trim() !== '') {
-        // We need a different strategy for text search
-        // First get the game IDs that match the search
-        const { data: gameIds } = await supabase
-          .from('games')
-          .select('id')
-          .ilike('name', `%${filters.search.trim()}%`);
-        
-        if (gameIds && gameIds.length > 0) {
-          query = query.in('game_id', gameIds.map(g => g.id));
-        } else {
-          // No games match the search, return empty array
+      // Handle genre filtering
+      if (filters.selectedGenre && filters.selectedGenre.trim() !== '') {
+        try {
+          console.log('Fetching games with genre for main query:', filters.selectedGenre);
+          const { data: genreGames, error: genreError } = await supabase
+            .from('games')
+            .select('id')
+            .contains('genres', [filters.selectedGenre.trim()]);
+          
+          if (genreError) {
+            console.error('Error fetching games by genre:', genreError);
+            return [];
+          }
+          
+          if (genreGames && genreGames.length > 0) {
+            // Filter user_games by the game ids that match the genre
+            query = query.in('game_id', genreGames.map(g => g.id));
+          } else {
+            console.log('No games found with genre:', filters.selectedGenre);
+            return [];
+          }
+        } catch (error) {
+          console.error('Exception when filtering by genre:', error);
           return [];
         }
       }
       
-      // Handle genre filtering
-      if (filters.selectedGenre && filters.selectedGenre.trim() !== '') {
-        // Get game IDs with the selected genre
-        const { data: genreGames } = await supabase
-          .from('games')
-          .select('id')
-          .contains('genres', [filters.selectedGenre.trim()]);
-        
-        if (genreGames && genreGames.length > 0) {
-          query = query.in('game_id', genreGames.map(g => g.id));
-        } else {
-          // No games match the genre, return empty array
+      // Add search filter if provided
+      if (filters.search && filters.search.trim() !== '') {
+        try {
+          // We need a different strategy for text search
+          // First get the game IDs that match the search
+          const { data: gameIds, error: searchError } = await supabase
+            .from('games')
+            .select('id')
+            .ilike('name', `%${filters.search.trim()}%`);
+          
+          if (searchError) {
+            console.error('Error searching games:', searchError);
+            return [];
+          }
+          
+          if (gameIds && gameIds.length > 0) {
+            query = query.in('game_id', gameIds.map(g => g.id));
+          } else {
+            // No games match the search, return empty array
+            console.log('No games found matching search:', filters.search);
+            return [];
+          }
+        } catch (error) {
+          console.error('Exception when searching games:', error);
           return [];
         }
       }
@@ -230,24 +293,36 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           query = query.order('games(name)', { ascending: true });
       }
       
-      const { data: userGames, error } = await query;
-      
-      if (error) throw error;
-      
-      // Transform the nested data into a flatter structure
-      return userGames.map((item: any): LibraryGame => ({
-        ...item.games,
-        userGame: {
-          id: item.id,
-          game_id: item.game_id,
-          playtime_minutes: item.playtime_minutes,
-          hidden: item.hidden,
-          dust_score: item.dust_score,
-          last_played_date: item.last_played_date,
-          acquisition_date: item.acquisition_date,
-          notes: item.notes,
+      try {
+        const { data: userGames, error: fetchError } = await query;
+        
+        if (fetchError) {
+          console.error('Error fetching user games:', fetchError);
+          throw fetchError;
         }
-      }));
+        
+        if (!userGames) {
+          return [];
+        }
+        
+        // Transform the nested data into a flatter structure
+        return userGames.map((item: any): LibraryGame => ({
+          ...item.games,
+          userGame: {
+            id: item.id,
+            game_id: item.game_id,
+            playtime_minutes: item.playtime_minutes,
+            hidden: item.hidden,
+            dust_score: item.dust_score,
+            last_played_date: item.last_played_date,
+            acquisition_date: item.acquisition_date,
+            notes: item.notes,
+          }
+        }));
+      } catch (error) {
+        console.error('Exception in main data query:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
