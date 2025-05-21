@@ -81,17 +81,24 @@ const calculateCleanScore = (
 
 /**
  * Custom hook to provide detailed dust score data
+ * @returns Object containing data, loading state, error, and refetch function
  */
 const useDustScoreData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: basicData, isLoading: isBasicDataLoading, error: basicDataError } = useUnplayedData();
+  const { 
+    data: basicData, 
+    isLoading: isBasicDataLoading, 
+    error: basicDataError,
+    refetch: refetchBasicData 
+  } = useUnplayedData();
   
   // Query for detailed dust data when not in demo mode
   const { 
     data: detailedDustData, 
     isLoading: isDetailedDataLoading, 
-    error: detailedDataError 
+    error: detailedDataError,
+    refetch: refetchDetailedData
   } = useQuery({
     queryKey: ['detailedDustData', user?.id, isDemo],
     queryFn: async () => {
@@ -268,7 +275,9 @@ const useDustScoreData = () => {
     return {
       data: enhancedDemoData,
       isLoading: false,
-      error: null
+      error: null,
+      // Add a mock refetch function for consistency in demo mode
+      refetch: () => Promise.resolve(enhancedDemoData)
     };
   }
   
@@ -278,10 +287,28 @@ const useDustScoreData = () => {
     ...(detailedDustData || {}),
   };
   
+  // Create a combined refetch function that refreshes both queries
+  const refetch = async () => {
+    console.log('Refetching dust score data');
+    // Start with refetching the basic data
+    if (refetchBasicData) {
+      await refetchBasicData();
+    }
+    
+    // Then refetch the detailed data if available
+    if (refetchDetailedData) {
+      await refetchDetailedData();
+    }
+    
+    // Return the combined data
+    return combinedData;
+  };
+  
   return {
     data: combinedData,
     isLoading,
-    error
+    error,
+    refetch
   };
 };
 

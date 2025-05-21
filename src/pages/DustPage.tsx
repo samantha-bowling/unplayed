@@ -21,7 +21,6 @@ const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
-  // Make sure useDustScoreData is properly implemented to return the refetch function
   const { data, isLoading, refetch } = useDustScoreData();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -44,9 +43,10 @@ const DustPage = () => {
         queryKey: queryKeys.detailedDustData(user?.id)
       });
       
-      // Explicitly refetch the dust score data
+      // Explicitly refetch the dust score data if available
       if (refetch) {
         await refetch();
+        console.log("Dust data refetched successfully");
       } else {
         console.warn("Refetch function not available in useDustScoreData hook");
       }
