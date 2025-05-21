@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Shield, Bug, Database } from 'lucide-react';
+import { Shield, Bug, Database, UserMinus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
@@ -34,6 +34,14 @@ const AdminDashboardPage = () => {
       path: '/admin/steam-data',
       color: 'bg-gradient-to-br from-amber-900/40 to-amber-700/20',
       borderColor: 'border-unplayed-amber/30',
+    },
+    {
+      title: 'Account Deletions',
+      description: 'View analytics and feedback from deleted accounts.',
+      icon: <UserMinus className="h-8 w-8 text-unplayed-red" />,
+      path: '/admin/account-deletions',
+      color: 'bg-gradient-to-br from-red-900/40 to-red-700/20',
+      borderColor: 'border-unplayed-red/30',
     },
   ];
 
