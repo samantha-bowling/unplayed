@@ -389,6 +389,7 @@ export type Database = {
           last_sync: string | null
           leaderboard_visibility: string
           onboarding_complete: boolean | null
+          role: string | null
           steam_avatar: string | null
           steam_id: string
           steam_name: string
@@ -400,6 +401,7 @@ export type Database = {
           last_sync?: string | null
           leaderboard_visibility?: string
           onboarding_complete?: boolean | null
+          role?: string | null
           steam_avatar?: string | null
           steam_id: string
           steam_name: string
@@ -411,6 +413,7 @@ export type Database = {
           last_sync?: string | null
           leaderboard_visibility?: string
           onboarding_complete?: boolean | null
+          role?: string | null
           steam_avatar?: string | null
           steam_id?: string
           steam_name?: string

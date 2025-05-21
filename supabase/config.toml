@@ -28,3 +28,4 @@ project_id = "gwmygthanyycveyqqspr"
 
 [functions.get-queue-stats-by-status]
   verify_jwt = true
+

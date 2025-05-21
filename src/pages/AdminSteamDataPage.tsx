@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,14 +43,14 @@ const AdminSteamDataPage = () => {
 
   const fetchQueueStats = async () => {
     try {
-      // Use a raw SQL query for counting by status - more reliable approach
-      const { data: statusCounts, error: sqlError } = await supabase.rpc(
-        'get_queue_stats_by_status'
+      // Call the Edge Function directly instead of using RPC
+      const { data: statusCounts, error: functionError } = await supabase.functions.invoke(
+        'get-queue-stats-by-status'
       );
       
-      if (sqlError) {
-        console.error("SQL query error:", sqlError);
-        // Fallback to direct count if the RPC function fails
+      if (functionError) {
+        console.error("Edge function error:", functionError);
+        // Fallback to direct count if the Edge function fails
         await fetchQueueStatsDirectly();
         return;
       }
@@ -80,7 +79,7 @@ const AdminSteamDataPage = () => {
         console.error("Error fetching sync data:", syncError);
       }
 
-      // Process the statistics from the SQL query
+      // Process the statistics from the Edge function
       // Initialize with zeros
       const stats: QueueStats = {
         pending: 0,
@@ -90,7 +89,7 @@ const AdminSteamDataPage = () => {
         total: totalCount || 0
       };
 
-      // Map the SQL results to our stats object
+      // Map the Edge function results to our stats object
       if (statusCounts && Array.isArray(statusCounts)) {
         statusCounts.forEach((item: { status: string; count: number }) => {
           if (item.status in stats) {
