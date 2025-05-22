@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -92,11 +91,11 @@ export const useSpendingData = () => {
             .filter(game => game.playtimeMinutes === 0)
             .map(game => ({
               id: game.id,
-              title: game.title,
+              title: game.name,
               price: game.price || 0,
               originalPrice: null,
               discount: null,
-              imageUrl: game.imageUrl,
+              imageUrl: game.image,
               currency: 'USD'
             }))
             .sort((a, b) => b.price - a.price)
@@ -165,11 +164,11 @@ export const useSpendingData = () => {
         
         return {
           id: game.id,
-          title: game.title,
+          title: game.name,
           price,
           originalPrice,
           discount: priceData?.discount_percent || null,
-          imageUrl: game.imageUrl,
+          imageUrl: game.image,
           currency: priceData?.currency || 'USD',
         };
       })

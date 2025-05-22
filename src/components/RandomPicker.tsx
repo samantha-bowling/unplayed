@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MousePointer, ExternalLink } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -165,7 +164,7 @@ const RandomPicker = ({
     
     toast({
       title: "Launching game",
-      description: `Opening ${selectedGame.title} in Steam`,
+      description: `Opening ${selectedGame.name} in Steam`,
     });
   };
 
