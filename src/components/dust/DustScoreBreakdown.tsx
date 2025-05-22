@@ -34,11 +34,19 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
     );
   }
   
+  // Ensure we have valid values for calculation
+  const ageScore = breakdown.ageScore || 0;
+  const ownershipScore = breakdown.ownershipScore || 0;
+  const playtimeFactor = breakdown.playtimeFactor || 1.0;
+  
   // Calculate percentages for the visualizations
-  const total = totalScore || 1; // Prevent division by zero
-  const ageScorePercent = Math.round((breakdown.ageScore / total) * 100);
-  const ownershipScorePercent = Math.round((breakdown.ownershipScore / total) * 100);
-  const playtimeFactorPercent = Math.round(breakdown.playtimeFactor * 100);
+  const actualTotal = totalScore || 1; // Prevent division by zero
+  
+  // Calculate what percentage each component contributes to the total
+  const rawTotal = ageScore + ownershipScore;
+  const ageScorePercent = Math.round((ageScore / (rawTotal || 1)) * 100);
+  const ownershipScorePercent = Math.round((ownershipScore / (rawTotal || 1)) * 100);
+  const playtimeFactorPercent = Math.round(playtimeFactor * 100);
   
   return (
     <Card className="terminal-container">
@@ -63,7 +71,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-unplayed-amber">{breakdown.ageScore}</span>
+                      <span className="text-lg font-bold text-unplayed-amber">{ageScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Points based on how old the games in your library are</p>
@@ -74,7 +82,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <Progress value={ageScorePercent} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-unplayed-amber mt-[-8px] rounded-full" style={{ width: `${ageScorePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                {ageScorePercent}% of your total score comes from game age
+                {ageScorePercent}% of your raw score comes from game age
               </p>
             </div>
             
@@ -87,7 +95,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-unplayed-mint">{breakdown.ownershipScore}</span>
+                      <span className="text-lg font-bold text-unplayed-mint">{ownershipScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Points based on how long you've owned your games</p>
@@ -98,7 +106,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <Progress value={ownershipScorePercent} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-unplayed-mint mt-[-8px] rounded-full" style={{ width: `${ownershipScorePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                {ownershipScorePercent}% of your total score comes from ownership time
+                {ownershipScorePercent}% of your raw score comes from ownership time
               </p>
             </div>
             
@@ -111,7 +119,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-unplayed-pink">{breakdown.playtimeFactor.toFixed(1)}x</span>
+                      <span className="text-lg font-bold text-unplayed-pink">{playtimeFactor.toFixed(2)}x</span>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Multiplier based on your game playtime (lower for played games)</p>

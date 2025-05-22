@@ -464,6 +464,19 @@ export type Database = {
         }
         Returns: number
       }
+      get_dust_score_breakdown: {
+        Args: {
+          game_id: number
+          acquisition_date: string
+          release_date: string
+          playtime_minutes: number
+        }
+        Returns: Json
+      }
+      get_user_game_dust_breakdown: {
+        Args: { p_user_game_id: string }
+        Returns: Json
+      }
       increment: {
         Args: { value: number }
         Returns: number

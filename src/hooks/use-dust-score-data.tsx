@@ -12,6 +12,7 @@ import {
   CleanScoreTier
 } from '@/types/unplayed-data.types';
 import { normalizeDemoGames } from '@/utils/normalize-games';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 // Clean Score tiers configuration
 const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
@@ -99,7 +100,7 @@ const useDustScoreData = () => {
     error: detailedDataError,
     refetch: refetchDetailedData
   } = useQuery({
-    queryKey: ['detailedDustData', user?.id, isDemo],
+    queryKey: queryKeys.detailedDustData(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -139,6 +140,26 @@ const useDustScoreData = () => {
         };
       }
       
+      // Get dust breakdowns for top contributors
+      const topContributorsWithIds = userGamesWithDust
+        .filter(game => game.dust_score && game.dust_score > 0)
+        .slice(0, 20);
+        
+      // Fetch dust breakdowns for top contributors using our new DB function
+      const breakdownPromises = topContributorsWithIds.map(async (game) => {
+        const { data: breakdown, error: breakdownError } = await supabase
+          .rpc('get_user_game_dust_breakdown', { p_user_game_id: game.id });
+          
+        if (breakdownError) {
+          console.error("Error fetching breakdown:", breakdownError);
+          return null;
+        }
+        
+        return breakdown;
+      });
+      
+      const breakdowns = await Promise.all(breakdownPromises);
+      
       // Calculate average dust score
       const totalDustScore = userGamesWithDust.reduce((sum, game) => 
         sum + (game.dust_score || 0), 0);
@@ -147,26 +168,54 @@ const useDustScoreData = () => {
         : 0;
       
       // Extract top dust contributors
-      const topContributors: GameDustData[] = userGamesWithDust
-        .filter(game => game.dust_score && game.dust_score > 0)
-        .slice(0, 20)
-        .map(game => ({
-          id: game.game_id,
-          name: game.games?.name || 'Unknown Game',
-          dustScore: game.dust_score || 0,
-          addedDate: game.acquisition_date || new Date().toISOString(),
-          releaseDate: game.games?.release_date || null,
-          playtimeMinutes: game.playtime_minutes || 0,
-          image: game.games?.header_image || game.games?.image_url || null
-        }));
+      const topContributors: GameDustData[] = topContributorsWithIds
+        .map((game, index) => {
+          const breakdown = breakdowns[index] || {};
+          
+          return {
+            id: game.game_id,
+            name: game.games?.name || 'Unknown Game',
+            dustScore: game.dust_score || 0,
+            addedDate: game.acquisition_date || new Date().toISOString(),
+            releaseDate: game.games?.release_date || null,
+            playtimeMinutes: game.playtime_minutes || 0,
+            image: game.games?.header_image || game.games?.image_url || null,
+            breakdown: {
+              ageScore: breakdown?.ageScore || 0,
+              ownershipScore: breakdown?.ownershipScore || 0,
+              playtimeFactor: breakdown?.playtimeFactor || 1.0
+            }
+          };
+        });
+        
+      // Calculate aggregate dust score breakdown
+      let totalAgeScore = 0;
+      let totalOwnershipScore = 0;
+      let avgPlaytimeFactor = 0;
       
-      // For the demo breakdown, we'll estimate the composition based on the PostgreSQL function
-      // In a real implementation, we'd need to fetch these values from the database
-      // This is a simplified estimate based on the algorithm
-      const totalScore = totalDustScore;
-      const estimatedAgeScore = Math.round(totalScore * 0.15); // ~15% from game age
-      const estimatedOwnershipScore = Math.round(totalScore * 0.65); // ~65% from ownership time
-      const estimatedPlaytimeFactor = 1.0; // Average multiplier for all games
+      const validBreakdowns = breakdowns.filter(Boolean);
+      
+      if (validBreakdowns.length > 0) {
+        totalAgeScore = validBreakdowns.reduce((sum, b) => sum + (b?.ageScore || 0), 0);
+        totalOwnershipScore = validBreakdowns.reduce((sum, b) => sum + (b?.ownershipScore || 0), 0);
+        
+        // Calculate weighted average playtime factor
+        const totalFactorWeight = validBreakdowns.reduce((sum, b) => {
+          const score = b?.totalScore || 0;
+          return sum + score;
+        }, 0);
+        
+        avgPlaytimeFactor = totalFactorWeight > 0 
+          ? validBreakdowns.reduce((sum, b) => {
+              const score = b?.totalScore || 0;
+              const factor = b?.playtimeFactor || 1.0;
+              return sum + (factor * score);
+            }, 0) / totalFactorWeight
+          : 1.0;
+      } else {
+        // Fallback if no breakdowns are available
+        avgPlaytimeFactor = 1.0;
+      }
       
       // Calculate Clean Score metrics
       const totalGames = userGamesWithDust.length;
@@ -205,9 +254,9 @@ const useDustScoreData = () => {
       
       return {
         dustScoreBreakdown: {
-          ageScore: estimatedAgeScore,
-          ownershipScore: estimatedOwnershipScore,
-          playtimeFactor: estimatedPlaytimeFactor
+          ageScore: totalAgeScore,
+          ownershipScore: totalOwnershipScore,
+          playtimeFactor: avgPlaytimeFactor
         },
         topDustContributors: topContributors,
         avgDustScore,
@@ -215,7 +264,9 @@ const useDustScoreData = () => {
         cleanScoreBreakdown,
         cleanTier,
         cleanStreak,
-        recentlyPlayedCount
+        recentlyPlayedCount,
+        totalGames,
+        unplayedGames: totalGames - playedGames
       };
     },
     enabled: !!user && !isDemo,
@@ -304,10 +355,15 @@ const useDustScoreData = () => {
   };
   
   return {
-    data: combinedData,
-    isLoading,
-    error,
-    refetch
+    data: isDemo 
+      ? normalizeDemoGames(demoData) 
+      : { ...basicData, ...detailedDustData },
+    isLoading: isBasicDataLoading || isDetailedDataLoading,
+    error: basicDataError || detailedDataError,
+    refetch: async () => {
+      if (refetchBasicData) await refetchBasicData();
+      if (refetchDetailedData) await refetchDetailedData();
+    }
   };
 };
 
