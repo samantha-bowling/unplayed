@@ -180,9 +180,10 @@ const useDustScoreData = () => {
         };
       });
 
-      let totalAgeScore = 0;
-      let totalOwnershipScore = 0;
-      let avgPlaytimeFactor = 1.0;
+      // Initialize variables with explicit number type to avoid TypeScript errors
+      let totalAgeScore: number = 0;
+      let totalOwnershipScore: number = 0;
+      let avgPlaytimeFactor: number = 1.0;
       const validBreakdowns = breakdowns.filter(Boolean);
 
       if (validBreakdowns.length > 0) {

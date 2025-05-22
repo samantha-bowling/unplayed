@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { getBestGameImage, formatGameTitle } from '@/utils/image-utils';
+import { formatGameTitle } from '@/utils/image-utils';
 
 interface GameCardProps {
   id: string;
@@ -54,9 +54,6 @@ const GameCard: React.FC<GameCardProps> = ({
     return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
   };
 
-  // Use the standardized image utility with null for header_image since we only have imageUrl here
-  const displayImage = getBestGameImage(null, imageUrl);
-
   return (
     <div 
       className={cn(
@@ -69,7 +66,7 @@ const GameCard: React.FC<GameCardProps> = ({
     >
       <div className="aspect-video w-full relative">
         <img 
-          src={displayImage}
+          src={imageUrl || '/placeholder.svg'}
           alt={title}
           className="w-full h-full object-cover"
           loading="lazy"

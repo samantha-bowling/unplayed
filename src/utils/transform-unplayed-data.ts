@@ -1,3 +1,4 @@
+
 import { UnplayedDataType, GameListItem, CleanScoreBreakdown, CleanScoreTier, GenreData } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
 import { getBestGameImage } from './image-utils';
@@ -257,53 +258,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
   // Create normalized gamesList
   const gamesList = buildGamesList(data);
   
-  const unplayedGames = data.filter(item => !item.playtime_minutes || item.playtime_minutes === 0).length;
-  const playedGames = data.length - unplayedGames;
-  
-  // Calculate total playtime (convert minutes to hours)
-  const totalPlaytime = data.reduce((sum, item) => sum + (item.playtime_minutes || 0), 0) / 60;
-  
-  // Calculate total spent based on price_cents (if available)
-  const totalSpent = data.reduce((sum, item) => {
-    const priceCents = item.games?.price_cents || 0;
-    return sum + (priceCents / 100);
-  }, 0);
-
-  // Extract dust score (use highest if multiple)
-  const dustScore = data.reduce((highest, item) => 
-    Math.max(highest, item.dust_score || 0), 0);
-  
-  // Calculate total potential gameplay hours using HLTB data with fallback
-  const potentialGameplayHours = data
-    .filter(item => !item.playtime_minutes || item.playtime_minutes === 0)
-    .reduce((sum, item) => {
-      const estimate = estimatesMap[item.game_id];
-      // Use main_hours if available, otherwise fall back to 12.5 hours
-      const gameHours = estimate?.main_hours || 12.5;
-      return sum + gameHours;
-    }, 0);
-  
-  // Calculate recently played games (in the last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentlyPlayedCount = data.filter(item => {
-    if (!item.last_played_date) return false;
-    const lastPlayed = new Date(item.last_played_date);
-    return lastPlayed >= thirtyDaysAgo;
-  }).length;
-  
-  // Clean streak (would usually come from database, but creating a simulated value)
-  const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
-  
-  // Calculate clean score
-  const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier } = calculateCleanScore(
-    playedGames,
-    data.length,
-    totalPlaytime,
-    12.5,
-    recentlyPlayedCount
-  );
-
+  // Return final structured data
   return {
     unplayedGames,
     totalGames: data.length,
