@@ -3,6 +3,7 @@ import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 
 /**
  * Utility to normalize game data coming from various sources
+ * Standardizing on 'name' and 'image' property names throughout the application
  */
 
 export const createEmptyGamesList = (): GameListItem[] => {
@@ -11,13 +12,16 @@ export const createEmptyGamesList = (): GameListItem[] => {
 
 export const buildGamesList = (data: any[]): GameListItem[] => {
   if (!data || !Array.isArray(data)) {
+    console.log('buildGamesList: Invalid data provided', data);
     return [];
   }
   
+  console.log('Building games list from data:', data.length, 'items');
+  
   return data.map(item => ({
     id: item.game_id || item.id || item.appid,
-    title: item.games?.name || item.name || 'Unknown Game', // Map name to title as required by GameListItem
-    imageUrl: item.games?.image_url || item.games?.header_image || item.image || item.img_icon_url || '',
+    name: item.games?.name || item.name || 'Unknown Game',
+    image: item.games?.image_url || item.games?.header_image || item.image || item.img_icon_url || '',
     playtimeMinutes: item.playtime_minutes || item.playtime_forever || 0,
     releaseDate: item.games?.release_date || null,
     price: item.games?.price_cents ? item.games.price_cents / 100 : undefined,
@@ -27,6 +31,8 @@ export const buildGamesList = (data: any[]): GameListItem[] => {
 };
 
 export const normalizeDemoGames = (games: any): UnplayedDataType => {
+  console.log('normalizeDemoGames input:', games ? typeof games : 'undefined');
+  
   if (!games) {
     return {
       unplayedGames: 0,
@@ -59,16 +65,18 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
   const gamesList = Array.isArray(games) 
     ? games.map(game => ({
         id: game.appid || game.id,
-        title: game.name, // Map name to title to match GameListItem interface
-        imageUrl: game.img_icon_url || game.image || '',
-        playtimeMinutes: game.playtime_forever || 0,
+        name: game.name || game.title || 'Unknown Game',
+        image: game.image || game.imageUrl || game.img_icon_url || '',
+        playtimeMinutes: game.playtime_forever || game.playtime || 0,
         releaseDate: null,
         genres: [],
         categories: []
       }))
     : games.gamesList || buildGamesList(games.library || []);
   
-  // If games is already an UnplayedDataType, return it
+  console.log('normalizeDemoGames processed gamesList:', gamesList.length, 'items');
+  
+  // If games is already an UnplayedDataType, return it with updated gamesList
   if ('unplayedGames' in games && 'totalGames' in games) {
     return {
       ...games,
@@ -80,8 +88,8 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
   if (games.library) {
     const formattedLibrary = games.library.map((item: any) => ({
       ...item,
-      // Ensure imageUrl is set for consistency
-      imageUrl: item.imageUrl || item.image || ''
+      // Ensure image is set for consistency
+      image: item.image || item.imageUrl || ''
     }));
 
     return {
@@ -94,8 +102,8 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       genres: games.genres || [],
       shelfLife: games.shelfLife?.map((item: any) => ({
         ...item,
-        // Ensure imageUrl is always present
-        imageUrl: item.imageUrl || ''
+        // Ensure image is always present
+        image: item.image || item.imageUrl || ''
       })) || [],
       library: formattedLibrary || [],
       gamesList,

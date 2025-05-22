@@ -25,20 +25,21 @@ export interface CleanScoreTier {
 // Extended type for per-game dust data
 export interface GameDustData {
   id: number;
-  title: string;
+  name: string;
   dustScore: number;
   addedDate: string;
   releaseDate: string | null;
   playtimeMinutes: number;
-  imageUrl: string | null;
+  image: string | null;
 }
 
 // Define a normalized game item structure that works across both real and demo data
+// Now using 'name' and 'image' to match Steam's convention
 export interface GameListItem {
   id: number;
-  title: string;
+  name: string;
   playtimeMinutes: number;
-  imageUrl: string | null;
+  image: string | null;
   price?: number;
   releaseDate?: string | null;
   genres?: string[]; // Adding genres property

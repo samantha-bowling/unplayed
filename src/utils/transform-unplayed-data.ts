@@ -1,4 +1,3 @@
-
 import { UnplayedDataType, GameListItem, CleanScoreBreakdown, CleanScoreTier } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
 
@@ -195,9 +194,9 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     .slice(0, 5) // Take oldest 5
     .map(item => ({
       id: item.game_id,
-      title: item.games?.name || 'Unknown Game',
+      name: item.games?.name || 'Unknown Game', // Changed from title to name
       addedDate: item.acquisition_date || new Date().toISOString(),
-      imageUrl: item.games?.image_url || item.games?.header_image || 'https://placehold.co/600x400?text=No+Image'
+      image: item.games?.image_url || item.games?.header_image || 'https://placehold.co/600x400?text=No+Image' // Changed from imageUrl to image
     }));
   
   // Create library data
@@ -207,7 +206,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     .slice(0, 8) // Take 8 random games
     .map(item => ({
       id: item.game_id,
-      title: item.games?.name || 'Unknown Game',
+      name: item.games?.name || 'Unknown Game', // Changed from title to name
       image: item.games?.header_image || 'https://placehold.co/600x400?text=No+Image',
       playtime: item.playtime_minutes || 0
     }));

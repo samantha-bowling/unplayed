@@ -28,12 +28,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
   return (
     <div className="pixel-card animate-fade-in">
       <img 
-        src={game.imageUrl || ''} 
-        alt={game.title} 
+        src={game.image || ''} 
+        alt={game.name} 
         className="w-full h-48 object-cover rounded-md mb-4" 
       />
       
-      <h3 className="text-xl font-bold text-white mb-2">{game.title}</h3>
+      <h3 className="text-xl font-bold text-white mb-2">{game.name}</h3>
       
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center text-gray-400">
@@ -60,7 +60,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
       
       <div className="mt-4 text-center">
         <p className="text-unplayed-amber font-medium">
-          Fate has spoken: Play <span className="text-unplayed-pink">{game.title}</span>
+          Fate has spoken: Play <span className="text-unplayed-pink">{game.name}</span>
         </p>
       </div>
       

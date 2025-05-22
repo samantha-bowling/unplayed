@@ -25,7 +25,11 @@ const PickerGameCard: React.FC<PickerGameCardProps> = ({
   return (
     <div className="relative">
       <GamePickCard 
-        game={game}
+        game={{
+          ...game,
+          title: game.name, // Map name to title for backward compatibility
+          imageUrl: game.image // Map image to imageUrl for backward compatibility
+        }}
         compact={false}
         onClick={onClick}
       />

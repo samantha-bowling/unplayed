@@ -9,13 +9,13 @@ export interface DemoDataType {
   genres: Array<{ name: string; value: number; color: string }>;
   shelfLife: Array<{ 
     id: number;
-    title: string;
+    name: string;  // Changed from title to name
     addedDate: string;
-    imageUrl: string;
+    image: string;  // Changed from imageUrl to image
   }>;
   library: Array<{
     id: number;
-    title: string;
+    name: string;  // Changed from title to name
     image: string;
     playtime: number;
   }>;
@@ -44,33 +44,33 @@ export const DEMO_DATA: DemoDataType = {
   shelfLife: [
     {
       id: 1,
-      title: "Half-Life 2",
+      name: "Half-Life 2",  // Changed from title to name
       addedDate: "2015-06-12",
-      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/220/capsule_184x69.jpg"
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/220/capsule_184x69.jpg"  // Changed from imageUrl to image
     },
     {
       id: 2,
-      title: "Deus Ex: Human Revolution",
+      name: "Deus Ex: Human Revolution",  // Changed from title to name
       addedDate: "2016-02-18",
-      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/238010/capsule_184x69.jpg"
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/238010/capsule_184x69.jpg"  // Changed from imageUrl to image
     },
     {
       id: 3,
-      title: "Portal 2",
+      name: "Portal 2",  // Changed from title to name
       addedDate: "2016-11-05",
-      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_184x69.jpg"
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_184x69.jpg"  // Changed from imageUrl to image
     },
     {
       id: 4,
-      title: "BioShock Infinite",
+      name: "BioShock Infinite",  // Changed from title to name
       addedDate: "2017-05-24",
-      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/8870/capsule_184x69.jpg"
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/8870/capsule_184x69.jpg"  // Changed from imageUrl to image
     },
     {
       id: 5,
-      title: "Mass Effect 2",
+      name: "Mass Effect 2",  // Changed from title to name
       addedDate: "2018-01-10",
-      imageUrl: "https://cdn.cloudflare.steamstatic.com/steam/apps/24980/capsule_184x69.jpg"
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/24980/capsule_184x69.jpg"  // Changed from imageUrl to image
     }
   ],
 
@@ -78,49 +78,49 @@ export const DEMO_DATA: DemoDataType = {
   library: [
     {
       id: 1,
-      title: "The Witcher 3: Wild Hunt",
+      name: "The Witcher 3: Wild Hunt",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 2,
-      title: "Hades",
+      name: "Hades",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 3,
-      title: "Stardew Valley",
+      name: "Stardew Valley",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 4,
-      title: "Cyberpunk 2077",
+      name: "Cyberpunk 2077",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 5,
-      title: "Hollow Knight",
+      name: "Hollow Knight",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 6,
-      title: "Disco Elysium",
+      name: "Disco Elysium",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/632470/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 7,
-      title: "Divinity: Original Sin 2",
+      name: "Divinity: Original Sin 2",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/435150/capsule_616x353.jpg",
       playtime: 0
     }, 
     {
       id: 8,
-      title: "Red Dead Redemption 2",
+      name: "Red Dead Redemption 2",  // Changed from title to name
       image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg",
       playtime: 0
     }
