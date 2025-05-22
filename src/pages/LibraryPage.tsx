@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
-import { withDemoIndicator } from '@/components/withDemoIndicator';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import { ZenLayout } from '@/layouts';
 import LibraryPreview from '@/components/LibraryPreview';
 import LibraryFilters from '@/components/LibraryFilters';
 import GameGrid from '@/components/GameGrid';
@@ -270,20 +269,13 @@ const LibraryPage: React.FC = () => {
   // In Full Screen Mode, render only the LibraryPreview component
   if (isFullScreenMode) {
     return (
-      <FullScreenModeWrapper>
-        <div className="min-h-screen flex items-center justify-center">
-          <LibraryPreview 
-            zenModeFullScreen={true}
-            viewMode={viewMode}
-            onViewModeChange={updateViewMode}
-          />
-          
-          {/* Add Full Screen Mode toggle in the corner */}
-          <div className="absolute top-4 right-4 z-10">
-            <FullScreenModeToggle />
-          </div>
-        </div>
-      </FullScreenModeWrapper>
+      <ZenLayout>
+        <LibraryPreview 
+          zenModeFullScreen={true}
+          viewMode={viewMode}
+          onViewModeChange={updateViewMode}
+        />
+      </ZenLayout>
     );
   }
 
@@ -486,4 +478,4 @@ const LibraryPage: React.FC = () => {
   );
 };
 
-export default withDemoIndicator(LibraryPage);
+export default LibraryPage;

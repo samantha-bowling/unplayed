@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MainLayout, FullScreenLayout } from '@/layouts';
+import { MainLayout, FullScreenLayout, ZenLayout } from '@/layouts';
 import RandomPicker from '@/components/RandomPicker';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import useUnplayedData from '@/hooks/use-unplayed-data';
@@ -42,15 +42,15 @@ const PickerPage: React.FC = () => {
     }
   }, [navigationState]);
 
-  // In Full Screen Mode, use the FullScreenLayout instead of MainLayout
+  // In Full Screen Mode, use the ZenLayout instead of MainLayout
   if (isFullScreenMode) {
     return (
-      <FullScreenLayout>
+      <ZenLayout>
         <RandomPicker 
           fullScreen={true} 
           initialFilters={navigationState}
         />
-      </FullScreenLayout>
+      </ZenLayout>
     );
   }
 
