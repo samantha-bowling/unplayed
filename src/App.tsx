@@ -1,6 +1,6 @@
 
 // src/App.tsx
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth, AuthStatus } from "@/context/AuthContext";
 import SteamLoader from "@/components/SteamLoader";
 import Index from "./pages/Index";
@@ -28,7 +28,6 @@ import routes from "./config/routes";
 const App = () => {
   const { status } = useAuth();
   const [isPending] = useTransition();
-  const location = useLocation();
 
   // Show central loading UI only during initial app loading
   if (status === AuthStatus.LOADING) {

@@ -1,8 +1,5 @@
-
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,11 +9,9 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Zap, Loader2 } from "lucide-react";
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
+import AdminLayout from '@/layouts/AdminLayout';
 
 const QueueManagerPage = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.app_metadata?.roles?.includes('admin');
-  
   const [batchSize, setBatchSize] = useState<number>(25);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isPrioritizing, setIsPrioritizing] = useState<boolean>(false);
@@ -230,166 +225,155 @@ const QueueManagerPage = () => {
     setContinuousMode(!continuousMode);
   };
 
-  // Redirect or show access denied for non-admins
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto px-4 py-24 text-center">
-        <h1 className="text-2xl font-bold mb-4 text-unplayed-red">Access Denied</h1>
-        <p className="text-gray-400">You do not have permission to access this page.</p>
-        <Link to="/" className="btn-primary mt-6 inline-block">
-          Return to Dashboard
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-24">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Queue Manager</h1>
-        <p className="text-gray-400">
-          Advanced tools for managing the Steam game processing queue.
-        </p>
-      </div>
+    <AdminLayout requiredRole="admin">
+      <div className="container max-w-7xl mx-auto px-4 py-24">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Queue Manager</h1>
+          <p className="text-gray-400">
+            Advanced tools for managing the Steam game processing queue.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Queue Statistics Card */}
-        <QueueStatsCard 
-          stats={stats}
-          onRefresh={fetchQueueStats}
-          isLoading={isLoadingStats}
-          processedCount={processedCount}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Queue Statistics Card */}
+          <QueueStatsCard 
+            stats={stats}
+            onRefresh={fetchQueueStats}
+            isLoading={isLoadingStats}
+            processedCount={processedCount}
+          />
 
-        {/* Batch Processing Card */}
+          {/* Batch Processing Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Batch Processing</CardTitle>
+              <CardDescription>
+                Configure and manage batch processing of Steam app details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label htmlFor="batch-size">Batch Size: {batchSize} games</Label>
+                  {batchSize > 30 && (
+                    <div className="flex items-center text-amber-500 text-xs">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Higher risk of rate limiting
+                    </div>
+                  )}
+                </div>
+                <Slider
+                  id="batch-size"
+                  min={5}
+                  max={50}
+                  step={5}
+                  value={[batchSize]}
+                  onValueChange={(value) => setBatchSize(value[0])}
+                  className="py-4"
+                />
+                <p className="text-xs text-gray-400">
+                  Adjust batch size based on your needs. Larger batches process more games but might hit rate limits.
+                </p>
+              </div>
+              
+              {continuousMode && (
+                <div className="rounded-md bg-blue-950/50 p-3 border border-blue-800">
+                  <div className="flex items-center text-blue-400 mb-2">
+                    <Zap className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Continuous Mode Active</span>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Automatically processing batches of {batchSize} games with 3-second intervals between batches.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-3">
+              <Button 
+                onClick={processBatch} 
+                disabled={isProcessing || stats.pending === 0}
+                className="w-full"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  `Process Batch (${batchSize} Games)`
+                )}
+              </Button>
+              
+              <Button 
+                variant={continuousMode ? "destructive" : "outline"}
+                onClick={toggleContinuousMode}
+                disabled={stats.pending === 0}
+                className="w-full"
+              >
+                {continuousMode ? "Pause Continuous Processing" : "Enable Continuous Processing"}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+
+        {/* Prioritize User Games Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Batch Processing</CardTitle>
+            <CardTitle className="text-xl">Prioritize User Games</CardTitle>
             <CardDescription>
-              Configure and manage batch processing of Steam app details
+              Set high priority for a specific user's games in the processing queue
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="batch-size">Batch Size: {batchSize} games</Label>
-                {batchSize > 30 && (
-                  <div className="flex items-center text-amber-500 text-xs">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Higher risk of rate limiting
-                  </div>
-                )}
-              </div>
-              <Slider
-                id="batch-size"
-                min={5}
-                max={50}
-                step={5}
-                value={[batchSize]}
-                onValueChange={(value) => setBatchSize(value[0])}
-                className="py-4"
+              <Label htmlFor="user-id">User ID</Label>
+              <Input
+                id="user-id"
+                placeholder="Enter Supabase User ID"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
               />
               <p className="text-xs text-gray-400">
-                Adjust batch size based on your needs. Larger batches process more games but might hit rate limits.
+                Enter the Supabase User ID to prioritize all their games in the processing queue.
               </p>
             </div>
             
-            {continuousMode && (
-              <div className="rounded-md bg-blue-950/50 p-3 border border-blue-800">
-                <div className="flex items-center text-blue-400 mb-2">
-                  <Zap className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">Continuous Mode Active</span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  Automatically processing batches of {batchSize} games with 3-second intervals between batches.
-                </p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="priority-level">Priority Level: {priorityLevel}</Label>
+              <Slider
+                id="priority-level"
+                min={1}
+                max={10}
+                step={1}
+                value={[priorityLevel]}
+                onValueChange={(value) => setPriorityLevel(value[0])}
+                className="py-4"
+              />
+              <p className="text-xs text-gray-400">
+                Higher priority (10) means games will be processed before lower priority items.
+              </p>
+            </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-3">
+          <CardFooter>
             <Button 
-              onClick={processBatch} 
-              disabled={isProcessing || stats.pending === 0}
+              onClick={prioritizeUserGames}
+              disabled={!userId || isPrioritizing}
               className="w-full"
             >
-              {isProcessing ? (
+              {isPrioritizing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
+                  Prioritizing...
                 </>
               ) : (
-                `Process Batch (${batchSize} Games)`
+                "Prioritize User's Games"
               )}
-            </Button>
-            
-            <Button 
-              variant={continuousMode ? "destructive" : "outline"}
-              onClick={toggleContinuousMode}
-              disabled={stats.pending === 0}
-              className="w-full"
-            >
-              {continuousMode ? "Pause Continuous Processing" : "Enable Continuous Processing"}
             </Button>
           </CardFooter>
         </Card>
       </div>
-
-      {/* Prioritize User Games Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Prioritize User Games</CardTitle>
-          <CardDescription>
-            Set high priority for a specific user's games in the processing queue
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="user-id">User ID</Label>
-            <Input
-              id="user-id"
-              placeholder="Enter Supabase User ID"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-            />
-            <p className="text-xs text-gray-400">
-              Enter the Supabase User ID to prioritize all their games in the processing queue.
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="priority-level">Priority Level: {priorityLevel}</Label>
-            <Slider
-              id="priority-level"
-              min={1}
-              max={10}
-              step={1}
-              value={[priorityLevel]}
-              onValueChange={(value) => setPriorityLevel(value[0])}
-              className="py-4"
-            />
-            <p className="text-xs text-gray-400">
-              Higher priority (10) means games will be processed before lower priority items.
-            </p>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            onClick={prioritizeUserGames}
-            disabled={!userId || isPrioritizing}
-            className="w-full"
-          >
-            {isPrioritizing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Prioritizing...
-              </>
-            ) : (
-              "Prioritize User's Games"
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+    </AdminLayout>
   );
 };
 

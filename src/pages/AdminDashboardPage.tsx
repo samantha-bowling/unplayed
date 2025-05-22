@@ -3,11 +3,11 @@ import React from 'react';
 import { Shield, Bug, Database, UserMinus, ActivitySquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthPermission } from '@/hooks/use-auth-permission';
+import AdminLayout from '@/layouts/AdminLayout';
 
 const AdminDashboardPage = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.app_metadata?.roles?.includes('admin');
+  const { isAdmin } = useAuthPermission();
 
   // Admin tools configuration
   const adminTools = [
@@ -54,56 +54,45 @@ const AdminDashboardPage = () => {
     },
   ];
 
-  // Redirect or show access denied for non-admins
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto px-4 py-24 text-center">
-        <h1 className="text-2xl font-bold mb-4 text-unplayed-red">Access Denied</h1>
-        <p className="text-gray-400">You do not have permission to access this page.</p>
-        <Link to="/" className="btn-primary mt-6 inline-block">
-          Return to Dashboard
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-24">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-gray-400">
-          Central hub for all administrative tools and controls.
-        </p>
-      </div>
+    <AdminLayout requiredRole="admin">
+      <div className="container mx-auto px-4 py-24">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+          <p className="text-gray-400">
+            Central hub for all administrative tools and controls.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {adminTools.map((tool) => (
-          <Link to={tool.path} key={tool.title} className="block">
-            <Card className={`h-full transition-all hover:scale-103 hover:shadow-lg ${tool.color} border ${tool.borderColor} ${tool.highlight ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent' : ''}`}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl">{tool.title}</CardTitle>
-                  <div className="p-2 rounded-md bg-black/20">{tool.icon}</div>
-                </div>
-                <CardDescription>
-                  {tool.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-16 flex items-center justify-center">
-                  {/* Placeholder for potential stats or status indicators */}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-2 border-t border-gray-800">
-                <span className="text-sm text-gray-400 hover:text-white transition-colors">
-                  Access Tool →
-                </span>
-              </CardFooter>
-            </Card>
-          </Link>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {adminTools.map((tool) => (
+            <Link to={tool.path} key={tool.title} className="block">
+              <Card className={`h-full transition-all hover:scale-103 hover:shadow-lg ${tool.color} border ${tool.borderColor} ${tool.highlight ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent' : ''}`}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl">{tool.title}</CardTitle>
+                    <div className="p-2 rounded-md bg-black/20">{tool.icon}</div>
+                  </div>
+                  <CardDescription>
+                    {tool.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-16 flex items-center justify-center">
+                    {/* Placeholder for potential stats or status indicators */}
+                  </div>
+                </CardContent>
+                <CardFooter className="pt-2 border-t border-gray-800">
+                  <span className="text-sm text-gray-400 hover:text-white transition-colors">
+                    Access Tool →
+                  </span>
+                </CardFooter>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

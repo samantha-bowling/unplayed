@@ -1,14 +1,11 @@
 
-// src/components/ProtectedRoute.tsx
-
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { AuthStatus } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
 import { AuthStorage } from '@/utils/auth-service';
-import { useProfile } from '@/hooks/use-profile';
-import { hasRole } from '@/utils/auth-utils';
+import { useAuthPermission } from '@/hooks/use-auth-permission';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -17,12 +14,12 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { status, user } = useAuth();
-  const { profile, isLoading: profileLoading } = useProfile();
+  const { hasRole, isLoading: permissionLoading } = useAuthPermission();
   const location = useLocation();
 
   // Show loading state only when necessary authentication data is loading
   const isLoading = status === AuthStatus.LOADING || 
-    (status === AuthStatus.AUTHENTICATED && requiredRole && profileLoading);
+    (status === AuthStatus.AUTHENTICATED && requiredRole && permissionLoading);
 
   if (isLoading) {
     return (
@@ -39,8 +36,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
-  // Check for required role using the standardized utility function
-  if (requiredRole && !hasRole(user, requiredRole, profile)) {
+  // Check for required role using the useAuthPermission hook
+  if (requiredRole && !hasRole(requiredRole)) {
     return <Navigate to="/" replace />;
   }
 
