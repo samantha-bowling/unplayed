@@ -1,3 +1,4 @@
+
 import { useUnplayedData } from '@/hooks/use-unplayed-data';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -185,6 +186,7 @@ const useDustScoreData = () => {
       const validBreakdowns = breakdowns.filter(Boolean);
 
       if (validBreakdowns.length > 0) {
+        // Fix TypeScript errors in these reduce operations by adding explicit number type to the accumulator
         totalAgeScore = validBreakdowns.reduce((sum: number, b: unknown) => {
           const val = safeGetNumber(b, 'ageScore', 0);
           return sum + val;

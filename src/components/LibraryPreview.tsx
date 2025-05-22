@@ -5,10 +5,27 @@ import { useAuth } from '@/context/AuthContext';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import { Maximize, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { Maximize, LayoutGrid, List, Loader2, ChevronRight } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LibraryGame } from '@/hooks/use-library-data';
 import FloatingIcons from '@/components/FloatingIcons';
+import { getBestGameImage } from '@/utils/image-utils';
+import { Link } from 'react-router-dom';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
@@ -100,6 +117,8 @@ const LibraryPreview = ({
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const [zenPositions, setZenPositions] = useState<any[]>([]);
   const [iconCount, setIconCount] = useState(0);
+  const [displayCount, setDisplayCount] = useState<number>(8);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Ref to track if positions have been generated
   const positionsGeneratedRef = useRef(false);
@@ -110,8 +129,13 @@ const LibraryPreview = ({
   // Use games from props if available, otherwise use unplayedData
   const displayGames = propGames || unplayedData.library;
   
-  // Get sample games (up to 10 for demo display, or the actual games passed via props)
-  const sampleGames = propGames ? displayGames.slice(0, Math.min(displayGames.length, 30)) : displayGames.slice(0, 10);
+  // Calculate the total number of pages
+  const totalPages = Math.ceil(displayGames.length / displayCount);
+  
+  // Get current games based on pagination
+  const startIndex = (currentPage - 1) * displayCount;
+  const endIndex = Math.min(startIndex + displayCount, displayGames.length);
+  const currentGames = displayGames.slice(startIndex, endIndex);
 
   // Update the context whenever viewMode changes
   useEffect(() => {
@@ -130,20 +154,20 @@ const LibraryPreview = ({
   // Generate new positions when switching to zen mode or when full screen changes
   useEffect(() => {
     if (viewMode === 'zen' || positionsGeneratedRef.current === false) {
-      const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
+      const newPositions = generateZenPositions(currentGames.length, isFullScreenMode);
       setZenPositions(newPositions);
       positionsGeneratedRef.current = true;
     }
     
     // Set icon count for FloatingIcons - about 30% of game count in zen mode
     if (viewMode === 'zen') {
-      const gameCount = sampleGames.length;
+      const gameCount = currentGames.length;
       const newIconCount = Math.min(25, Math.max(5, Math.floor(gameCount * 0.3)));
       setIconCount(newIconCount);
     } else {
       setIconCount(0);
     }
-  }, [viewMode, isFullScreenMode, sampleGames.length]);
+  }, [viewMode, isFullScreenMode, currentGames.length]);
 
   // When entering full screen, make sure the context has the current view mode
   const handleEnterFullScreen = () => {
@@ -153,7 +177,7 @@ const LibraryPreview = ({
 
     // Regenerate positions for zen mode when entering fullscreen
     if (viewMode === 'zen') {
-      const newPositions = generateZenPositions(sampleGames.length, true);
+      const newPositions = generateZenPositions(currentGames.length, true);
       setZenPositions(newPositions);
     }
   };
@@ -169,11 +193,11 @@ const LibraryPreview = ({
 
     // Regenerate positions when switching to zen mode
     if (newMode === 'zen') {
-      const newPositions = generateZenPositions(sampleGames.length, isFullScreenMode);
+      const newPositions = generateZenPositions(currentGames.length, isFullScreenMode);
       setZenPositions(newPositions);
       
       // Set icon count for FloatingIcons when switching to zen mode
-      const gameCount = sampleGames.length;
+      const gameCount = currentGames.length;
       const newIconCount = Math.min(25, Math.max(5, Math.floor(gameCount * 0.3)));
       setIconCount(newIconCount);
     } else {
@@ -184,6 +208,18 @@ const LibraryPreview = ({
     if (onViewModeChange) {
       onViewModeChange(newMode);
     }
+  };
+
+  // Handle display count change
+  const handleDisplayCountChange = (value: string) => {
+    const newDisplayCount = parseInt(value);
+    setDisplayCount(newDisplayCount);
+    setCurrentPage(1); // Reset to first page when changing display count
+  };
+
+  // Handle page change
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
   };
 
   // Loading state
@@ -210,6 +246,18 @@ const LibraryPreview = ({
         <h3 className="terminal-header text-2xl">Your Unplayed Library</h3>
         
         <div className="flex space-x-2">
+          <Select value={displayCount.toString()} onValueChange={handleDisplayCountChange}>
+            <SelectTrigger className="w-[100px]">
+              <SelectValue placeholder="Show" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="8">8 Games</SelectItem>
+              <SelectItem value="12">12 Games</SelectItem>
+              <SelectItem value="24">24 Games</SelectItem>
+              <SelectItem value="48">48 Games</SelectItem>
+            </SelectContent>
+          </Select>
+          
           <ToggleGroup type="single" value={viewMode} onValueChange={value => value && handleViewModeChange(value as 'grid' | 'zen')}>
             <ToggleGroupItem value="grid" aria-label="Grid View" className="px-3 py-1">
               <LayoutGrid className="h-4 w-4 mr-1" />
@@ -236,11 +284,15 @@ const LibraryPreview = ({
       {/* Grid view mode */}
       {viewMode === 'grid' ? (
         <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4 ${showFullScreenMode ? 'p-8 pt-0' : ''}`}>
-          {sampleGames.map(game => {
+          {currentGames.map(game => {
             // Handle both LibraryGame and GameListItem types
             const gameId = 'id' in game ? game.id : game.gameId;
             const title = 'name' in game ? game.name : game.title;
-            const image = 'image_url' in game ? (game.image_url || game.header_image) : game.image;
+            
+            // Enhanced image handling using our new utility
+            const imageUrl = 'image_url' in game ? game.image_url : null;
+            const headerImage = 'header_image' in game ? game.header_image : null;
+            const image = 'image' in game ? game.image : getBestGameImage(headerImage, imageUrl);
             
             return (
               <div 
@@ -278,7 +330,7 @@ const LibraryPreview = ({
             </div>
           )}
           
-          {sampleGames.map((game, index) => {
+          {currentGames.map((game, index) => {
             // Handle both LibraryGame and GameListItem types
             const gameId = 'id' in game ? game.id : game.gameId;
             const title = 'name' in game ? game.name : game.title;
@@ -330,25 +382,82 @@ const LibraryPreview = ({
         </div>
       )}
       
+      {/* Pagination controls - display if we have more than one page */}
+      {totalPages > 1 && viewMode === 'grid' && (
+        <div className="mt-6 mb-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))} 
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Logic to show correct page numbers
+                let pageNum = i + 1;
+                
+                // If more than 5 pages, adjust the displayed page numbers
+                if (totalPages > 5) {
+                  if (currentPage <= 3) {
+                    // Near the start
+                    pageNum = i + 1;
+                    if (i === 4) pageNum = totalPages;
+                  } else if (currentPage >= totalPages - 2) {
+                    // Near the end
+                    pageNum = totalPages - 4 + i;
+                    if (i === 0) pageNum = 1;
+                  } else {
+                    // In the middle
+                    pageNum = currentPage - 2 + i;
+                    if (i === 0) pageNum = 1;
+                    if (i === 4) pageNum = totalPages;
+                  }
+                }
+                
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink 
+                      isActive={currentPage === pageNum} 
+                      onClick={() => handlePageChange(pageNum)}
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+      
       {/* Only show these controls when not in full screen mode and when not using as a view mode in library page */}
       {!showFullScreenMode && !propGames && (
         <div className="text-center mt-6 flex flex-col items-center">
           <p className="text-gray-400">
-            Showing {sampleGames.length} of {unplayedData.totalGames} unplayed games
+            Showing {currentGames.length} of {unplayedData.totalGames} unplayed games
           </p>
           
           {isDemo ? (
             <div className="mt-auto pt-4 text-center flex justify-center">
               <p className="text-sm text-unplayed-mint">
-                You’re in Demo Mode. Sign in to track your Unplayed Library.
+                You're in Demo Mode. Sign in to track your Unplayed Library.
               </p>
             </div>
           ) : (
-            <button className="btn-secondary mt-4">
+            <Link to="/library" className="btn-secondary mt-4 inline-flex items-center gap-2">
               View Full Library
-            </button>
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           )}
-          
         </div>
       )}
     </div>

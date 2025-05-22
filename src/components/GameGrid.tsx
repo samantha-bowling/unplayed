@@ -4,6 +4,7 @@ import GameCard from './GameCard';
 import GameCardSkeleton from './GameCardSkeleton';
 import { LibraryGame } from '@/hooks/use-library-data';
 import { Loader2 } from 'lucide-react';
+import { getBestGameImage } from '@/utils/image-utils';
 
 interface GameGridProps {
   games: LibraryGame[];
@@ -98,27 +99,32 @@ const GameGrid: React.FC<GameGridProps> = ({
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {displayedGames.map((game) => (
-          <div 
-            key={game.userGame.id} 
-            id={`game-${game.id}`}
-            className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
-          >
-            <GameCard
-              id={game.userGame.id}
-              gameId={game.id}
-              title={game.name}
-              imageUrl={game.image_url || game.header_image}
-              dustScore={game.userGame.dust_score}
-              playtimeMinutes={game.userGame.playtime_minutes}
-              isHidden={game.userGame.hidden}
-              notes={game.userGame.notes}
-              onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
-              onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
-              onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
-            />
-          </div>
-        ))}
+        {displayedGames.map((game) => {
+          // Get the best image using our utility
+          const imageUrl = getBestGameImage(game.header_image, game.image_url);
+          
+          return (
+            <div 
+              key={game.userGame.id} 
+              id={`game-${game.id}`}
+              className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
+            >
+              <GameCard
+                id={game.userGame.id}
+                gameId={game.id}
+                title={game.name}
+                imageUrl={imageUrl}
+                dustScore={game.userGame.dust_score}
+                playtimeMinutes={game.userGame.playtime_minutes}
+                isHidden={game.userGame.hidden}
+                notes={game.userGame.notes}
+                onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
+                onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
+                onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
+              />
+            </div>
+          );
+        })}
         
         {/* Show skeleton cards for the next batch that's loading */}
         {visibleGames < totalGames && (
