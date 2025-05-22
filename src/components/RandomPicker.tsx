@@ -12,6 +12,7 @@ import MoodFilterDropdown from './MoodFilterDropdown';
 import SelectedGame from './SelectedGame';
 import RecentlySelected from './RecentlySelected';
 import { PickerNavigationState } from '@/utils/navigation';
+import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -48,14 +49,15 @@ const selectionQuips = [
   "Booting up the illusion of control..."
 ];
 
-interface RandomPickerProps {
+interface RandomPickerProps extends WithDemoProps {
   fullScreen?: boolean;
   initialFilters?: PickerNavigationState | null;
 }
 
 const RandomPicker = ({
   fullScreen = false,
-  initialFilters = null
+  initialFilters = null,
+  isDemo = false
 }: RandomPickerProps) => {
   const {
     games,
@@ -250,4 +252,5 @@ const RandomPicker = ({
   );
 };
 
-export default RandomPicker;
+// Export the component wrapped with the withDemoIndicator HOC
+export default withDemoIndicator(RandomPicker);

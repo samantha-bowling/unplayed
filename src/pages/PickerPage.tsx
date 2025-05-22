@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MainLayout, FullScreenLayout } from '@/layouts';
 import RandomPicker from '@/components/RandomPicker';
-import { withDemoIndicator } from '@/components/withDemoIndicator';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { PickerNavigationState } from '@/utils/navigation';
@@ -69,4 +68,4 @@ const PickerPage: React.FC = () => {
   );
 };
 
-export default withDemoIndicator(PickerPage);
+export default PickerPage;
