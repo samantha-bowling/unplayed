@@ -17,7 +17,7 @@ export const buildGamesList = (data: any[]): GameListItem[] => {
   return data.map(item => ({
     id: item.game_id || item.id || item.appid,
     title: item.games?.name || item.name || 'Unknown Game', // Map name to title as required by GameListItem
-    imageUrl: item.games?.image_url || item.games?.header_image || item.img_icon_url || '',
+    imageUrl: item.games?.image_url || item.games?.header_image || item.image || item.img_icon_url || '',
     playtimeMinutes: item.playtime_minutes || item.playtime_forever || 0,
     releaseDate: item.games?.release_date || null,
     price: item.games?.price_cents ? item.games.price_cents / 100 : undefined,
@@ -60,7 +60,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
     ? games.map(game => ({
         id: game.appid || game.id,
         title: game.name, // Map name to title to match GameListItem interface
-        imageUrl: game.img_icon_url || '',
+        imageUrl: game.img_icon_url || game.image || '',
         playtimeMinutes: game.playtime_forever || 0,
         releaseDate: null,
         genres: [],
@@ -78,6 +78,12 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
   
   // If games.library exists, use it to create a basic structure
   if (games.library) {
+    const formattedLibrary = games.library.map((item: any) => ({
+      ...item,
+      // Ensure imageUrl is set for consistency
+      imageUrl: item.imageUrl || item.image || ''
+    }));
+
     return {
       unplayedGames: games.unplayedGames || 0,
       totalGames: games.totalGames || 0,
@@ -86,8 +92,12 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       totalSpent: games.totalSpent || 0,
       potentialGameplayHours: games.potentialGameplayHours || 0,
       genres: games.genres || [],
-      shelfLife: games.shelfLife || [],
-      library: games.library || [],
+      shelfLife: games.shelfLife?.map((item: any) => ({
+        ...item,
+        // Ensure imageUrl is always present
+        imageUrl: item.imageUrl || ''
+      })) || [],
+      library: formattedLibrary || [],
       gamesList,
       cleanScore: games.cleanScore || 0,
       cleanScoreBreakdown: games.cleanScoreBreakdown || {

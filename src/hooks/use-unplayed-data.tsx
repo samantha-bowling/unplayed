@@ -107,9 +107,17 @@ export const useUnplayedData = () => {
   const isLoading = isLoadingUserGames || isLoadingEstimates;
   const error = userGamesError;
 
+  // For demo mode, normalize the demo data properly
   if (isDemo) {
+    console.log('Using demo data:', demoData);
+    
+    // Make a deep copy of demo data to avoid mutations
+    const normalizedDemoData = normalizeDemoGames(JSON.parse(JSON.stringify(demoData)));
+    
+    console.log('Normalized demo data gamesList:', normalizedDemoData.gamesList);
+    
     return {
-      data: normalizeDemoGames(demoData),
+      data: normalizedDemoData,
       isLoading: false,
       error: null,
       lastRefreshed: null,
@@ -117,9 +125,14 @@ export const useUnplayedData = () => {
     };
   }
 
+  // For real data, transform user game data
   const data = userGamesData 
     ? transformUserGameData(userGamesData, gameEstimatesData || {}) 
     : normalizeDemoGames(demoData);
+  
+  // Log transformed data for debugging
+  console.log('Transformed data gamesList sample:', 
+    data.gamesList?.length ? data.gamesList.slice(0, 3) : 'No games in list');
 
   // Calculate lastRefreshed timestamp from profile's last_sync
   const lastRefreshed = profile?.last_sync ? new Date(profile.last_sync) : null;

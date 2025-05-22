@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MousePointer, ExternalLink } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -86,6 +87,13 @@ const RandomPicker = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
   
+  // Log data received for debugging
+  useEffect(() => {
+    console.log('RandomPicker - Games received:', games?.length || 0);
+    console.log('RandomPicker - Sample games:', games?.slice(0, 3));
+    console.log('RandomPicker - Demo mode:', isDemo);
+  }, [games, isDemo]);
+  
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
     if (initialFilters) {
@@ -134,6 +142,7 @@ const RandomPicker = ({
         return;
       }
       
+      console.log('Selected game:', newSelectedGame);
       setSelectedGame(newSelectedGame);
       
       // Save to local history
