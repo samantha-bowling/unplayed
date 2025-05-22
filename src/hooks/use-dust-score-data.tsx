@@ -16,65 +16,20 @@ import {
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { safeGetNumber } from '@/utils/safe-json';
-
-const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
-  { name: 'Pristine Collection', color: '#4ade80', range: [90, 100] },
-  { name: 'Dust-Free Shelf', color: '#22d3ee', range: [75, 89] },
-  { name: 'Reasonably Clean', color: '#60a5fa', range: [50, 74] },
-  { name: 'Needs a Wipe', color: '#f59e0b', range: [25, 49] },
-  { name: 'Filthy Casual', color: '#f87171', range: [0, 24] }
-];
-
-const calculateCleanScore = (
-  playedGames: number, 
-  totalGames: number,
-  totalPlaytime: number,
-  averageExpectedPlaytime: number = 12.5,
-  recentlyPlayedGames: number
-): { cleanScore: number, breakdown: CleanScoreBreakdown, tier: CleanScoreTier } => {
-  if (totalGames < 5) {
-    const smallLibraryBonus = 1.2;
-    totalGames = Math.max(5, totalGames);
-    playedGames = Math.min(playedGames * smallLibraryBonus, totalGames);
-  }
-
-  const completionRate = totalGames > 0 ? playedGames / totalGames : 0;
-  let engagementFactor = 0;
-
-  if (totalGames > 0) {
-    const expectedTotalPlaytime = averageExpectedPlaytime * totalGames;
-    engagementFactor = expectedTotalPlaytime > 0 
-      ? Math.min(totalPlaytime / expectedTotalPlaytime, 1) 
-      : 0;
-  }
-
-  const recencyFactor = totalGames > 0 ? Math.min(recentlyPlayedGames / totalGames, 1) : 0;
-
-  const cleanScore = Math.round(
-    (completionRate * 0.4 + engagementFactor * 0.3 + recencyFactor * 0.3) * 100
-  );
-
-  const tier = CLEAN_SCORE_TIERS.find(
-    tier => cleanScore >= tier.range[0] && cleanScore <= tier.range[1]
-  ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1];
-
-  return {
-    cleanScore,
-    breakdown: {
-      completionRate: Math.round(completionRate * 100),
-      engagementFactor: Math.round(engagementFactor * 100),
-      recencyFactor: Math.round(recencyFactor * 100)
-    },
-    tier
-  };
-};
+import { 
+  CLEAN_SCORE_TIERS, 
+  calculateCleanScore, 
+  processDustBreakdown, 
+  processDustBreakdowns 
+} from '@/utils/dust-score-utils';
 
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
+  const processed = processDustBreakdown(breakdown);
   return {
-    ageScore: safeGetNumber(breakdown, 'ageScore', 0),
-    ownershipScore: safeGetNumber(breakdown, 'ownershipScore', 0),
-    playtimeFactor: safeGetNumber(breakdown, 'playtimeFactor', 1.0),
-    totalScore: safeGetNumber(breakdown, 'totalScore', 0)
+    ageScore: processed.ageScore,
+    ownershipScore: processed.ownershipScore,
+    playtimeFactor: processed.playtimeFactor,
+    totalScore: processed.totalScore
   };
 };
 
@@ -133,10 +88,12 @@ const useDustScoreData = () => {
         };
       }
 
+      // Get top contributors
       const topContributorsWithIds = userGamesWithDust
         .filter(game => game.dust_score && game.dust_score > 0)
         .slice(0, 20);
 
+      // Fetch breakdowns for top contributors
       const breakdowns = await Promise.all(
         topContributorsWithIds.map(async (game) => {
           try {
@@ -156,12 +113,14 @@ const useDustScoreData = () => {
         })
       );
 
+      // Calculate dust metrics
       const totalDustScore = userGamesWithDust.reduce((sum, game) =>
         sum + (game.dust_score || 0), 0);
       const avgDustScore = userGamesWithDust.length > 0
         ? parseFloat((totalDustScore / userGamesWithDust.length).toFixed(1))
         : 0;
 
+      // Process contributors with type-safe breakdown handling
       const topContributors: GameDustData[] = topContributorsWithIds.map((game, index) => {
         const breakdownData = parseDustBreakdown(breakdowns[index]);
         return {
@@ -180,47 +139,10 @@ const useDustScoreData = () => {
         };
       });
 
-      // Create a local helper to ensure number return types
-      const getSafeNumber = (b: unknown, key: string, fallback = 0): number => {
-        const val = safeGetNumber(b, key, fallback);
-        return typeof val === 'number' ? val : fallback;
-      };
+      // Process dust breakdowns with our type-safe utility
+      const { totalAgeScore, totalOwnershipScore, avgPlaytimeFactor } = processDustBreakdowns(breakdowns);
 
-      // Initialize variables with explicit number type
-      let totalAgeScore = 0;
-      let totalOwnershipScore = 0;
-      let avgPlaytimeFactor = 1.0;
-      const validBreakdowns = breakdowns.filter(Boolean);
-
-      if (validBreakdowns.length > 0) {
-        // Calculate total age score with explicit typing
-        totalAgeScore = validBreakdowns.reduce((sum: number, b: unknown) => {
-          const val: number = getSafeNumber(b, 'ageScore', 0);
-          return sum + val;
-        }, 0);
-
-        // Calculate total ownership score with explicit typing
-        totalOwnershipScore = validBreakdowns.reduce((sum: number, b: unknown) => {
-          const val: number = getSafeNumber(b, 'ownershipScore', 0);
-          return sum + val;
-        }, 0);
-
-        // Calculate the total factor weight with explicit typing
-        const totalFactorWeight: number = validBreakdowns.reduce((sum: number, b: unknown) => {
-          const val: number = getSafeNumber(b, 'totalScore', 0);
-          return sum + val;
-        }, 0);
-
-        // Now we can safely calculate the weighted average
-        if (totalFactorWeight > 0) {
-          avgPlaytimeFactor = validBreakdowns.reduce((sum: number, b: unknown) => {
-            const playtimeFactor: number = getSafeNumber(b, 'playtimeFactor', 1.0);
-            const weight: number = getSafeNumber(b, 'totalScore', 0);
-            return sum + (playtimeFactor * weight);
-          }, 0) / totalFactorWeight;
-        }
-      }
-
+      // Calculate clean score metrics
       const totalGames = userGamesWithDust.length;
       const playedGames = userGamesWithDust.filter(game =>
         (game.playtime_minutes || 0) > 0
@@ -229,6 +151,7 @@ const useDustScoreData = () => {
         sum + ((game.playtime_minutes || 0) / 60), 0
       );
 
+      // Count recently played games
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const recentlyPlayedCount = userGamesWithDust.filter(game => {
@@ -237,8 +160,10 @@ const useDustScoreData = () => {
         return lastPlayed >= thirtyDaysAgo;
       }).length;
 
+      // Generate a random clean streak (1-7) for now
       const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
 
+      // Calculate clean score using our type-safe utility
       const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier } =
         calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, 12.5, recentlyPlayedCount);
 
@@ -262,6 +187,7 @@ const useDustScoreData = () => {
     enabled: !!user && !isDemo,
   });
 
+  // Demo mode data preparation
   const demoDustBreakdown: DustScoreBreakdown = {
     ageScore: 45,
     ownershipScore: 180,
