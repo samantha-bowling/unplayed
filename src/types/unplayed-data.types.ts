@@ -25,6 +25,16 @@ export interface DustScoreBreakdown {
 }
 
 /**
+ * Type for the response from dust score breakdown database function
+ */
+export interface DustScoreBreakdownResponse {
+  ageScore: number;
+  ownershipScore: number;
+  playtimeFactor: number;
+  totalScore: number;
+}
+
+/**
  * Game data with dust-specific information
  */
 export interface GameDustData {

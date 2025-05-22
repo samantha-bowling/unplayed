@@ -9,7 +9,8 @@ import {
   GameDustData, 
   GameListItem, 
   CleanScoreBreakdown,
-  CleanScoreTier
+  CleanScoreTier,
+  DustScoreBreakdownResponse
 } from '@/types/unplayed-data.types';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { queryKeys } from '@/hooks/use-query-keys';
@@ -170,7 +171,9 @@ const useDustScoreData = () => {
       // Extract top dust contributors
       const topContributors: GameDustData[] = topContributorsWithIds
         .map((game, index) => {
-          const breakdown = breakdowns[index] || {};
+          const breakdown = breakdowns[index];
+          // Proper type assertion
+          const typedBreakdown = breakdown as unknown as DustScoreBreakdownResponse;
           
           return {
             id: game.game_id,
@@ -181,9 +184,9 @@ const useDustScoreData = () => {
             playtimeMinutes: game.playtime_minutes || 0,
             image: game.games?.header_image || game.games?.image_url || null,
             breakdown: {
-              ageScore: breakdown?.ageScore || 0,
-              ownershipScore: breakdown?.ownershipScore || 0,
-              playtimeFactor: breakdown?.playtimeFactor || 1.0
+              ageScore: typedBreakdown?.ageScore || 0,
+              ownershipScore: typedBreakdown?.ownershipScore || 0,
+              playtimeFactor: typedBreakdown?.playtimeFactor || 1.0
             }
           };
         });
@@ -196,19 +199,27 @@ const useDustScoreData = () => {
       const validBreakdowns = breakdowns.filter(Boolean);
       
       if (validBreakdowns.length > 0) {
-        totalAgeScore = validBreakdowns.reduce((sum, b) => sum + (b?.ageScore || 0), 0);
-        totalOwnershipScore = validBreakdowns.reduce((sum, b) => sum + (b?.ownershipScore || 0), 0);
+        totalAgeScore = validBreakdowns.reduce((sum, b) => {
+          const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
+          return sum + (typedBreakdown?.ageScore || 0);
+        }, 0);
+        
+        totalOwnershipScore = validBreakdowns.reduce((sum, b) => {
+          const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
+          return sum + (typedBreakdown?.ownershipScore || 0);
+        }, 0);
         
         // Calculate weighted average playtime factor
         const totalFactorWeight = validBreakdowns.reduce((sum, b) => {
-          const score = b?.totalScore || 0;
-          return sum + score;
+          const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
+          return sum + (typedBreakdown?.totalScore || 0);
         }, 0);
         
         avgPlaytimeFactor = totalFactorWeight > 0 
           ? validBreakdowns.reduce((sum, b) => {
-              const score = b?.totalScore || 0;
-              const factor = b?.playtimeFactor || 1.0;
+              const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
+              const score = typedBreakdown?.totalScore || 0;
+              const factor = typedBreakdown?.playtimeFactor || 1.0;
               return sum + (factor * score);
             }, 0) / totalFactorWeight
           : 1.0;
