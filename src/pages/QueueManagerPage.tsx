@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Zap, Loader2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import QueueStatsCard from "@/components/admin/QueueStatsCard";
 
 const QueueManagerPage = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const QueueManagerPage = () => {
   const [priorityLevel, setPriorityLevel] = useState<number>(10);
   const [continuousMode, setContinuousMode] = useState<boolean>(false);
   const [processedCount, setProcessedCount] = useState<number>(0);
+  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
   const [stats, setStats] = useState({
     pending: 0,
     processing: 0,
@@ -56,6 +58,7 @@ const QueueManagerPage = () => {
 
   const fetchQueueStats = async () => {
     try {
+      setIsLoadingStats(true);
       // Get total counts for different statuses
       // First try to use edge function
       const { data: statusCounts, error: functionError } = await supabase.functions.invoke(
@@ -69,17 +72,6 @@ const QueueManagerPage = () => {
         return;
       }
       
-      // Get total count
-      const { count: totalCount, error: countError } = await supabase
-        .from("steam_app_queue")
-        .select('*', { count: 'exact', head: true });
-
-      if (countError) {
-        console.error("Error fetching total count:", countError);
-        toast.error("Failed to load queue statistics");
-        return;
-      }
-      
       // Process the statistics from the Edge function
       // Initialize with zeros
       const newStats = {
@@ -87,16 +79,24 @@ const QueueManagerPage = () => {
         processing: 0,
         completed: 0,
         failed: 0,
-        total: totalCount || 0
+        total: 0
       };
 
       // Map the Edge function results to our stats object
       if (statusCounts && Array.isArray(statusCounts)) {
         statusCounts.forEach((item: { status: string; count: number }) => {
-          if (item.status in newStats) {
+          if (item.status === "total") {
+            newStats.total = item.count;
+          } else if (item.status in newStats) {
             newStats[item.status as keyof typeof newStats] = item.count;
           }
         });
+      }
+
+      // If total wasn't included in the response, calculate it
+      if (newStats.total === 0) {
+        newStats.total = newStats.pending + newStats.processing + 
+                         newStats.completed + newStats.failed;
       }
 
       setStats(newStats);
@@ -105,6 +105,8 @@ const QueueManagerPage = () => {
       toast.error("Failed to load queue statistics");
       // Attempt direct counting as fallback
       await fetchQueueStatsDirectly();
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -146,6 +148,8 @@ const QueueManagerPage = () => {
     } catch (error) {
       console.error("Error in direct count fallback:", error);
       toast.error("Failed to load queue statistics using fallback method");
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -203,7 +207,7 @@ const QueueManagerPage = () => {
         return;
       }
       
-      toast.success("User games prioritized successfully!");
+      toast.success(`Successfully prioritized ${data?.queuedGames || 0} games for processing!`);
       console.log("Prioritization response:", data);
       
       // Refresh queue stats after prioritization
@@ -250,84 +254,12 @@ const QueueManagerPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Queue Statistics Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Queue Statistics</CardTitle>
-            <CardDescription>
-              Current status of the Steam app processing queue
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm font-medium">Pending</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="outline" className="mr-2">{stats.pending}</Badge>
-                    <Progress
-                      value={stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}
-                      className="h-2"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Processing</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="outline" className="mr-2">{stats.processing}</Badge>
-                    <Progress
-                      value={stats.total > 0 ? (stats.processing / stats.total) * 100 : 0}
-                      className="h-2"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm font-medium">Completed</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="outline" className="mr-2">{stats.completed}</Badge>
-                    <Progress
-                      value={stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}
-                      className="h-2"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Failed</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="outline" className="mr-2">{stats.failed}</Badge>
-                    <Progress
-                      value={stats.total > 0 ? (stats.failed / stats.total) * 100 : 0}
-                      className="h-2"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="pt-2 border-t border-gray-800">
-                <p className="text-sm font-medium">Total Items in Queue</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              
-              {processedCount > 0 && (
-                <div className="pt-2 border-t border-gray-800">
-                  <p className="text-sm font-medium">Processed in this session</p>
-                  <p className="text-xl font-medium">{processedCount} games</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              onClick={fetchQueueStats}
-              className="w-full"
-            >
-              Refresh Statistics
-            </Button>
-          </CardFooter>
-        </Card>
+        <QueueStatsCard 
+          stats={stats}
+          onRefresh={fetchQueueStats}
+          isLoading={isLoadingStats}
+          processedCount={processedCount}
+        />
 
         {/* Batch Processing Card */}
         <Card>

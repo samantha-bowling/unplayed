@@ -50,6 +50,7 @@ const AdminDashboardPage = () => {
       path: '/admin/queue-manager',
       color: 'bg-gradient-to-br from-blue-900/40 to-blue-700/20',
       borderColor: 'border-blue-400/30',
+      highlight: true,
     },
   ];
 
@@ -78,7 +79,7 @@ const AdminDashboardPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {adminTools.map((tool) => (
           <Link to={tool.path} key={tool.title} className="block">
-            <Card className={`h-full transition-all hover:scale-103 hover:shadow-lg ${tool.color} border ${tool.borderColor}`}>
+            <Card className={`h-full transition-all hover:scale-103 hover:shadow-lg ${tool.color} border ${tool.borderColor} ${tool.highlight ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent' : ''}`}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl">{tool.title}</CardTitle>

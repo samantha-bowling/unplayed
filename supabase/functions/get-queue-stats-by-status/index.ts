@@ -26,23 +26,79 @@ serve(async (req) => {
   try {
     console.log("Getting queue stats by status");
 
+    // Try to use a more efficient query first
+    try {
+      const { data, error } = await supabase.rpc('get_queue_stats');
+      
+      if (!error && data) {
+        console.log("Successfully fetched queue stats using RPC");
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        console.log("RPC function not available, falling back to manual counts");
+      }
+    } catch (rpcError) {
+      console.log("RPC error, falling back to manual counts:", rpcError);
+    }
+
     // Get distinct statuses and their counts manually since group() is causing issues
     const statusesToQuery = ["pending", "processing", "completed", "failed", "error"];
     const statusCounts = [];
 
-    // Query each status count individually
+    // Query each status count individually with retries
     for (const status of statusesToQuery) {
-      const { count, error } = await supabase
-        .from("steam_app_queue")
-        .select("*", { count: "exact", head: true })
-        .eq("status", status);
+      let retries = 3;
+      let success = false;
       
-      if (error) {
-        console.error(`Error counting ${status} items:`, error);
-        continue;
+      while (retries > 0 && !success) {
+        try {
+          const { count, error } = await supabase
+            .from("steam_app_queue")
+            .select("*", { count: "exact", head: true })
+            .eq("status", status);
+          
+          if (error) {
+            console.error(`Error counting ${status} items (attempt ${4-retries}/3):`, error);
+            retries--;
+            if (retries > 0) {
+              // Add small delay before retry
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            continue;
+          }
+          
+          statusCounts.push({ status, count: count || 0 });
+          success = true;
+        } catch (countError) {
+          console.error(`Unexpected error counting ${status} items (attempt ${4-retries}/3):`, countError);
+          retries--;
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
       }
       
-      statusCounts.push({ status, count: count || 0 });
+      // If all retries failed, add zero count
+      if (!success) {
+        statusCounts.push({ status, count: 0 });
+      }
+    }
+
+    // Add total count if we have data
+    if (statusCounts.length > 0) {
+      try {
+        const { count: totalCount, error: totalError } = await supabase
+          .from("steam_app_queue")
+          .select("*", { count: "exact", head: true });
+          
+        if (!totalError) {
+          statusCounts.push({ status: "total", count: totalCount || 0 });
+        }
+      } catch (totalError) {
+        console.error("Error getting total count:", totalError);
+      }
     }
 
     return new Response(JSON.stringify(statusCounts), {
