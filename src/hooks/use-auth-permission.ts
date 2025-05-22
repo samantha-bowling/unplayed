@@ -11,7 +11,7 @@ import { isAdmin, hasRole, canAccess, getUserRoles, UserRole } from '@/utils/aut
 
 export function useAuthPermission() {
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { profile, isLoading: profileLoading } = useProfile();
 
   return {
     // Check if user is authenticated
@@ -34,6 +34,9 @@ export function useAuthPermission() {
     
     // Helper for checking user role enum
     UserRole,
+
+    // Add loading state to indicate when profile data is being fetched
+    isLoading: profileLoading,
   };
 }
 
