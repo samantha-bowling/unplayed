@@ -83,7 +83,7 @@ const calculateCleanScore = (
 /**
  * Safely parses dust score breakdown from JSON response
  * @param breakdown The raw response from the Supabase function
- * @returns A properly typed DustScoreBreakdown object with fallback values
+ * @returns A properly typed DustScoreBreakdownResponse object with fallback values
  */
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
   if (!breakdown || typeof breakdown !== 'object') {
@@ -232,24 +232,28 @@ const useDustScoreData = () => {
       if (validBreakdowns.length > 0) {
         totalAgeScore = validBreakdowns.reduce((sum, b) => {
           const parsedData = parseDustBreakdown(b);
-          return sum + parsedData.ageScore;
+          // Fix: Explicit numeric conversion to ensure types match
+          return sum + Number(parsedData.ageScore);
         }, 0);
         
         totalOwnershipScore = validBreakdowns.reduce((sum, b) => {
           const parsedData = parseDustBreakdown(b);
-          return sum + parsedData.ownershipScore;
+          // Fix: Explicit numeric conversion to ensure types match
+          return sum + Number(parsedData.ownershipScore);
         }, 0);
         
         // Calculate weighted average playtime factor
         const totalFactorWeight = validBreakdowns.reduce((sum, b) => {
           const parsedData = parseDustBreakdown(b);
-          return sum + parsedData.totalScore;
+          // Fix: Explicit numeric conversion to ensure types match
+          return sum + Number(parsedData.totalScore);
         }, 0);
         
         avgPlaytimeFactor = totalFactorWeight > 0 
           ? validBreakdowns.reduce((sum, b) => {
               const parsedData = parseDustBreakdown(b);
-              return sum + (parsedData.playtimeFactor * parsedData.totalScore);
+              // Fix: Explicit numeric conversion to ensure types match
+              return sum + (Number(parsedData.playtimeFactor) * Number(parsedData.totalScore));
             }, 0) / totalFactorWeight
           : 1.0;
       } else {
