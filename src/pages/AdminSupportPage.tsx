@@ -1,13 +1,20 @@
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import SupportPage from "./SupportPage";
+import { Navigate, useLocation } from "react-router-dom";
 
 const AdminSupportPage = () => {
   const [isCalculating, setIsCalculating] = useState(false);
+  const location = useLocation();
+  
+  // Check if this is the old Steam Data page and redirect if so
+  if (location.pathname === "/auth/steam-data") {
+    return <Navigate to="/admin/queue-manager" replace />;
+  }
 
   // Admin function to trigger tier calculation
   const calculateTiers = useCallback(async () => {

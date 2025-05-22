@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Menu, LogIn, ChevronDown, Settings, Shield, Database, Bug, UserMinus } from 'lucide-react';
+import { Menu, LogIn, ChevronDown, Settings, Shield, Database, Bug, UserMinus, ActivitySquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -83,7 +82,7 @@ const Header = () => {
                 <>
                   <NavLink href="/auth-debug" label="Debug" />
                   <NavLink href="/admin/support" label="Admin Support" />
-                  <NavLink href="/admin/steam-data" label="Steam Data" />
+                  <NavLink href="/admin/queue-manager" label="Queue Manager" />
                 </>
               )}
             </>
@@ -127,8 +126,8 @@ const Header = () => {
               {isAdmin && stableRenderState.hasProfile ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                      <Avatar className="border border-unplayed-mint/30">
+                    <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
+                      <Avatar className="border border-unplayed-mint/30 cursor-pointer">
                         {profile?.steam_avatar ? (
                           <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
                         ) : (
@@ -141,7 +140,7 @@ const Header = () => {
                         <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
                         <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
                       </div>
-                    </div>
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
                     <DropdownMenuLabel>
@@ -184,6 +183,14 @@ const Header = () => {
                         <UserMinus className="mr-2 h-4 w-4 text-unplayed-red" />
                         <span>Account Deletions</span>
                       </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                        onClick={() => navigate('/admin/queue-manager')}
+                      >
+                        <ActivitySquare className="mr-2 h-4 w-4 text-blue-400" />
+                        <span>Queue Manager</span>
+                      </DropdownMenuItem>
                     </DropdownMenuGroup>
                     
                     <DropdownMenuSeparator className="bg-gray-700" />
@@ -201,8 +208,8 @@ const Header = () => {
                 // Non-admin user avatar with dropdown
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                      <Avatar className="border border-unplayed-mint/30">
+                    <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
+                      <Avatar className="border border-unplayed-mint/30 cursor-pointer">
                         {stableRenderState.hasProfile && profile?.steam_avatar ? (
                           <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
                         ) : (
@@ -215,7 +222,7 @@ const Header = () => {
                         <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
                         <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
                       </div>
-                    </div>
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
                     <DropdownMenuLabel>
@@ -313,7 +320,7 @@ const Header = () => {
                     <>
                       <NavLink href="/auth-debug" label="Debug" />
                       <NavLink href="/admin/support" label="Admin Support" />
-                      <NavLink href="/admin/steam-data" label="Steam Data" />
+                      <NavLink href="/admin/queue-manager" label="Queue Manager" />
                       <NavLink href="/admin/account-deletions" label="Account Deletions" />
                     </>
                   )}

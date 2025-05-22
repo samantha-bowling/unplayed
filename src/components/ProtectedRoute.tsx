@@ -38,8 +38,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
-  // Check for required role if specified
-  if (requiredRole && profile?.role !== requiredRole) {
+  // Check for required role using app_metadata instead of profile.role
+  if (requiredRole === "admin" && !user.app_metadata?.roles?.includes('admin')) {
     return <Navigate to="/" replace />;
   }
 

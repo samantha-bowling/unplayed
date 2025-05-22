@@ -1,6 +1,6 @@
 
 // src/App.tsx
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useAuth, AuthStatus } from "@/context/AuthContext";
 import SteamLoader from "@/components/SteamLoader";
 import Index from "./pages/Index";
@@ -75,13 +75,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* Add redirect from the old path to the new queue manager path */}
+        <Route 
           path="/admin/steam-data"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminSteamDataPage />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/admin/queue-manager" replace />}
+        />
+        <Route
+          path="/auth/steam-data"
+          element={<Navigate to="/admin/queue-manager" replace />}
         />
         <Route
           path="/admin/account-deletions"
