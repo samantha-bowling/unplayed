@@ -1,8 +1,7 @@
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Header from "@/components/Header";
-import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
+import { FullScreenLayout } from "@/layouts";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Home, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -49,62 +48,59 @@ const NotFound = () => {
   }, [location.pathname, location.search, toast, navigate]);
 
   return (
-    <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-black text-white">
-        <Header />
-        <div className="flex-grow flex items-center justify-center header-spacing p-4">
-          <div className="text-center max-w-md">
-            <div className="mb-6 flex justify-center">
-              <div className="p-4 rounded-full bg-red-900/30 border border-red-700/30">
-                <AlertCircle className="h-16 w-16 text-red-500" />
-              </div>
+    <FullScreenLayout>
+      <div className="flex-grow flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="mb-6 flex justify-center">
+            <div className="p-4 rounded-full bg-red-900/30 border border-red-700/30">
+              <AlertCircle className="h-16 w-16 text-red-500" />
             </div>
-            
-            <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
-            
-            {isAuthRelated ? (
-              <>
-                <p className="text-xl text-gray-300 mb-6">
-                  We encountered an issue during the authentication process.
-                </p>
-                <div className="mb-8 p-4 bg-gray-800/50 rounded-md border border-gray-700 text-left text-sm">
-                  <p className="font-mono text-gray-300 mb-2">Debugging information:</p>
-                  <p className="font-mono text-gray-400">Path: {location.pathname}</p>
-                  <p className="font-mono text-gray-400">Query: {location.search || "none"}</p>
-                </div>
-                <div className="space-y-4">
-                  <Button 
-                    onClick={() => navigate('/auth')}
-                    className="w-full bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" /> Try Authentication Again
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/')}
-                    variant="outline"
-                    className="w-full border-gray-600"
-                  >
-                    <Home className="mr-2 h-4 w-4" /> Return to Home Page
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-xl text-gray-300 mb-6">
-                  Sorry, the page you're looking for doesn't exist.
-                </p>
+          </div>
+          
+          <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
+          
+          {isAuthRelated ? (
+            <>
+              <p className="text-xl text-gray-300 mb-6">
+                We encountered an issue during the authentication process.
+              </p>
+              <div className="mb-8 p-4 bg-gray-800/50 rounded-md border border-gray-700 text-left text-sm">
+                <p className="font-mono text-gray-300 mb-2">Debugging information:</p>
+                <p className="font-mono text-gray-400">Path: {location.pathname}</p>
+                <p className="font-mono text-gray-400">Query: {location.search || "none"}</p>
+              </div>
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => navigate('/auth')}
+                  className="w-full bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" /> Try Authentication Again
+                </Button>
                 <Button 
                   onClick={() => navigate('/')}
-                  className="bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
+                  variant="outline"
+                  className="w-full border-gray-600"
                 >
-                  <Home className="mr-2 h-4 w-4" /> Return to Home
+                  <Home className="mr-2 h-4 w-4" /> Return to Home Page
                 </Button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-xl text-gray-300 mb-6">
+                Sorry, the page you're looking for doesn't exist.
+              </p>
+              <Button 
+                onClick={() => navigate('/')}
+                className="bg-unplayed-mint text-black hover:bg-unplayed-mint/80"
+              >
+                <Home className="mr-2 h-4 w-4" /> Return to Home
+              </Button>
+            </>
+          )}
         </div>
       </div>
-    </FullScreenModeWrapper>
+    </FullScreenLayout>
   );
 };
 

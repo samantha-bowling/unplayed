@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth, AuthStatus } from '@/context/AuthContext';
+import { AuthLayout } from '@/layouts';
 
 const LoginErrorPage = () => {
   const navigate = useNavigate();
@@ -52,90 +54,73 @@ const LoginErrorPage = () => {
                        errorMessage.toLowerCase().includes('jwt');
 
   return (
-    <motion.div 
-      className="min-h-screen bg-black flex flex-col"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <motion.div 
-          className="text-4xl font-space font-bold mb-8"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <span className="text-unplayed-mint">unplayed</span>
-          <span className="text-unplayed-pink">.wtf</span>
-        </motion.div>
-        
-        <motion.div 
-          className="w-full max-w-lg"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-        >
-          <div className="terminal-container mb-8">
-            <h1 className="terminal-header text-2xl mb-6 text-gray-300">Login Error</h1>
+    <AuthLayout>
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="w-full"
+      >
+        <div className="terminal-container mb-8">
+          <h1 className="terminal-header text-2xl mb-6 text-gray-300">Login Error</h1>
+          
+          <div className="space-y-6">
+            <AuthErrorHandler 
+              errorCode={errorCode} 
+              errorMessage={errorMessage} 
+              errorId={errorId} 
+              onRetry={handleRetry}
+              className="mb-6"
+            />
             
-            <div className="space-y-6">
-              <AuthErrorHandler 
-                errorCode={errorCode} 
-                errorMessage={errorMessage} 
-                errorId={errorId} 
-                onRetry={handleRetry}
-                className="mb-6"
-              />
-              
-              {isTokenError && (
-                <motion.div 
-                  className="p-4 border border-unplayed-amber/30 rounded-md bg-black/50"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle className="h-5 w-5 text-unplayed-amber mt-0.5" />
-                    <div>
-                      <h3 className="text-sm font-medium text-unplayed-amber mb-1">JWT Token Error</h3>
-                      <p className="text-xs text-gray-400 mb-3">
-                        This appears to be an issue with authentication token generation. 
-                        Please try the following:
-                      </p>
-                      <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
-                        <li>Clear your browser cache and cookies</li>
-                        <li>Try using a different browser</li>
-                        <li>If the issue persists, please contact support with error ID: {errorId || 'N/A'}</li>
-                      </ul>
-                    </div>
+            {isTokenError && (
+              <motion.div 
+                className="p-4 border border-unplayed-amber/30 rounded-md bg-black/50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-unplayed-amber mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-unplayed-amber mb-1">JWT Token Error</h3>
+                    <p className="text-xs text-gray-400 mb-3">
+                      This appears to be an issue with authentication token generation. 
+                      Please try the following:
+                    </p>
+                    <ul className="text-xs text-gray-400 list-disc pl-5 space-y-1">
+                      <li>Clear your browser cache and cookies</li>
+                      <li>Try using a different browser</li>
+                      <li>If the issue persists, please contact support with error ID: {errorId || 'N/A'}</li>
+                    </ul>
                   </div>
-                </motion.div>
-              )}
-              
-              <div className="terminal-box p-4 bg-gray-900/50 rounded-md mt-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-400">
-                    <span>Redirecting to home in </span> 
-                    <span className="text-unplayed-mint font-mono">{countdown}</span>
-                    <span> seconds...</span>
-                  </div>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={navigateToHome}
-                    className="h-7 text-xs"
-                  >
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    Skip
-                  </Button>
                 </div>
+              </motion.div>
+            )}
+            
+            <div className="terminal-box p-4 bg-gray-900/50 rounded-md mt-6">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-400">
+                  <span>Redirecting to home in </span> 
+                  <span className="text-unplayed-mint font-mono">{countdown}</span>
+                  <span> seconds...</span>
+                </div>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={navigateToHome}
+                  className="h-7 text-xs"
+                >
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  Skip
+                </Button>
               </div>
             </div>
           </div>
-        </motion.div>
-      </div>
-    </motion.div>
+        </div>
+      </motion.div>
+    </AuthLayout>
   );
 };
 
