@@ -1,3 +1,4 @@
+
 import { useUnplayedData } from '@/hooks/use-unplayed-data';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -179,34 +180,42 @@ const useDustScoreData = () => {
         };
       });
 
-      // Initialize variables with explicit number type to avoid TypeScript errors
-      let totalAgeScore: number = 0;
-      let totalOwnershipScore: number = 0;
-      let avgPlaytimeFactor: number = 1.0;
+      // Create a local helper to ensure number return types
+      const getSafeNumber = (b: unknown, key: string, fallback = 0): number => {
+        const val = safeGetNumber(b, key, fallback);
+        return typeof val === 'number' ? val : fallback;
+      };
+
+      // Initialize variables with explicit number type
+      let totalAgeScore = 0;
+      let totalOwnershipScore = 0;
+      let avgPlaytimeFactor = 1.0;
       const validBreakdowns = breakdowns.filter(Boolean);
 
       if (validBreakdowns.length > 0) {
-        // Fix TypeScript errors by explicitly casting to number
+        // Calculate total age score with explicit typing
         totalAgeScore = validBreakdowns.reduce((sum: number, b: unknown) => {
-          const val = safeGetNumber(b, 'ageScore', 0);
+          const val: number = getSafeNumber(b, 'ageScore', 0);
           return sum + val;
         }, 0);
 
+        // Calculate total ownership score with explicit typing
         totalOwnershipScore = validBreakdowns.reduce((sum: number, b: unknown) => {
-          const val = safeGetNumber(b, 'ownershipScore', 0);
+          const val: number = getSafeNumber(b, 'ownershipScore', 0);
           return sum + val;
         }, 0);
 
-        // Calculate the total factor weight using explicit number typing
+        // Calculate the total factor weight with explicit typing
         const totalFactorWeight: number = validBreakdowns.reduce((sum: number, b: unknown) => {
-          return sum + safeGetNumber(b, 'totalScore', 0);
+          const val: number = getSafeNumber(b, 'totalScore', 0);
+          return sum + val;
         }, 0);
 
-        // Now we can safely check if totalFactorWeight is greater than 0
+        // Now we can safely calculate the weighted average
         if (totalFactorWeight > 0) {
           avgPlaytimeFactor = validBreakdowns.reduce((sum: number, b: unknown) => {
-            const playtimeFactor = safeGetNumber(b, 'playtimeFactor', 1.0);
-            const weight = safeGetNumber(b, 'totalScore', 0);
+            const playtimeFactor: number = getSafeNumber(b, 'playtimeFactor', 1.0);
+            const weight: number = getSafeNumber(b, 'totalScore', 0);
             return sum + (playtimeFactor * weight);
           }, 0) / totalFactorWeight;
         }
