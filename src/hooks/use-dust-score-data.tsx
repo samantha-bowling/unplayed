@@ -81,29 +81,38 @@ const calculateCleanScore = (
 };
 
 /**
+ * Safely extract a typed value from a JSON object
+ * @param obj The source object
+ * @param key The property key to access
+ * @param fallback Default value to return if property is missing or wrong type
+ * @returns The typed value or fallback
+ */
+function safeGetNumber(obj: unknown, key: string, fallback: number): number {
+  if (!obj || typeof obj !== 'object') return fallback;
+  const data = obj as Record<string, unknown>;
+  const value = data[key];
+  
+  // Handle different types that could be returned from JSON
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? fallback : parsed;
+  }
+  
+  return fallback;
+}
+
+/**
  * Safely parses dust score breakdown from JSON response
  * @param breakdown The raw response from the Supabase function
  * @returns A properly typed DustScoreBreakdownResponse object with fallback values
  */
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
-  if (!breakdown || typeof breakdown !== 'object') {
-    return {
-      ageScore: 0,
-      ownershipScore: 0,
-      playtimeFactor: 1.0,
-      totalScore: 0
-    };
-  }
-  
-  // Safe casting to allow property access
-  const data = breakdown as Record<string, unknown>;
-  
-  // Safely extract values with type checking
   return {
-    ageScore: typeof data.ageScore === 'number' ? data.ageScore : 0,
-    ownershipScore: typeof data.ownershipScore === 'number' ? data.ownershipScore : 0,
-    playtimeFactor: typeof data.playtimeFactor === 'number' ? data.playtimeFactor : 1.0,
-    totalScore: typeof data.totalScore === 'number' ? data.totalScore : 0
+    ageScore: safeGetNumber(breakdown, 'ageScore', 0),
+    ownershipScore: safeGetNumber(breakdown, 'ownershipScore', 0),
+    playtimeFactor: safeGetNumber(breakdown, 'playtimeFactor', 1.0),
+    totalScore: safeGetNumber(breakdown, 'totalScore', 0)
   };
 };
 
@@ -203,7 +212,7 @@ const useDustScoreData = () => {
       // Extract top dust contributors with safe parsing
       const topContributors: GameDustData[] = topContributorsWithIds
         .map((game, index) => {
-          // Safely parse breakdown data
+          // Safely parse breakdown data using our utility function
           const breakdownData = parseDustBreakdown(breakdowns[index]);
           
           return {
@@ -230,30 +239,22 @@ const useDustScoreData = () => {
       const validBreakdowns = breakdowns.filter(Boolean);
       
       if (validBreakdowns.length > 0) {
-        totalAgeScore = validBreakdowns.reduce((sum, b) => {
-          const parsedData = parseDustBreakdown(b);
-          // Fix: Explicit numeric conversion to ensure types match
-          return sum + Number(parsedData.ageScore);
-        }, 0);
+        // Use our safeGetNumber helper in reduce functions for type safety
+        totalAgeScore = validBreakdowns.reduce((sum, b) => 
+          sum + safeGetNumber(b, 'ageScore', 0), 0);
         
-        totalOwnershipScore = validBreakdowns.reduce((sum, b) => {
-          const parsedData = parseDustBreakdown(b);
-          // Fix: Explicit numeric conversion to ensure types match
-          return sum + Number(parsedData.ownershipScore);
-        }, 0);
+        totalOwnershipScore = validBreakdowns.reduce((sum, b) => 
+          sum + safeGetNumber(b, 'ownershipScore', 0), 0);
         
         // Calculate weighted average playtime factor
-        const totalFactorWeight = validBreakdowns.reduce((sum, b) => {
-          const parsedData = parseDustBreakdown(b);
-          // Fix: Explicit numeric conversion to ensure types match
-          return sum + Number(parsedData.totalScore);
-        }, 0);
+        const totalFactorWeight = validBreakdowns.reduce((sum, b) => 
+          sum + safeGetNumber(b, 'totalScore', 0), 0);
         
         avgPlaytimeFactor = totalFactorWeight > 0 
           ? validBreakdowns.reduce((sum, b) => {
-              const parsedData = parseDustBreakdown(b);
-              // Fix: Explicit numeric conversion to ensure types match
-              return sum + (Number(parsedData.playtimeFactor) * Number(parsedData.totalScore));
+              const playtimeFactor = safeGetNumber(b, 'playtimeFactor', 1.0);
+              const totalScore = safeGetNumber(b, 'totalScore', 0);
+              return sum + (playtimeFactor * totalScore);
             }, 0) / totalFactorWeight
           : 1.0;
       } else {
