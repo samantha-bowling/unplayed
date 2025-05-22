@@ -1,4 +1,3 @@
-
 import { useUnplayedData } from '@/hooks/use-unplayed-data';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -153,12 +152,12 @@ const useDustScoreData = () => {
         .slice(0, 20)
         .map(game => ({
           id: game.game_id,
-          title: game.games?.name || 'Unknown Game',
+          name: game.games?.name || 'Unknown Game',
           dustScore: game.dust_score || 0,
           addedDate: game.acquisition_date || new Date().toISOString(),
           releaseDate: game.games?.release_date || null,
           playtimeMinutes: game.playtime_minutes || 0,
-          imageUrl: game.games?.header_image || game.games?.image_url || null
+          image: game.games?.header_image || game.games?.image_url || null
         }));
       
       // For the demo breakdown, we'll estimate the composition based on the PostgreSQL function
@@ -235,12 +234,12 @@ const useDustScoreData = () => {
   // Demo top dust contributors
   const demoTopContributors: GameDustData[] = demoData.library.map((game, index) => ({
     id: game.id,
-    title: game.title,
+    name: game.name,
     dustScore: 95 - index * 5, // Decreasing scores for demo
     addedDate: new Date(Date.now() - (index + 1) * 30 * 24 * 60 * 60 * 1000).toISOString(), // Staggered dates
     releaseDate: new Date(Date.now() - (index + 5) * 90 * 24 * 60 * 60 * 1000).toISOString(), // Earlier release dates
     playtimeMinutes: 0,
-    imageUrl: game.image
+    image: game.image
   }));
   
   // Mock clean score data for demo mode

@@ -34,9 +34,9 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
   if (compact) {
     return (
       <div className="bg-black/30 rounded p-2 text-sm flex items-center">
-        <img src={game.imageUrl || ''} alt={game.title} className="w-8 h-8 object-cover rounded mr-2" />
+        <img src={game.image || ''} alt={game.name} className="w-8 h-8 object-cover rounded mr-2" />
         <div className="overflow-hidden">
-          <span className="text-gray-300 truncate block">{game.title}</span>
+          <span className="text-gray-300 truncate block">{game.name}</span>
           {pick && (
             <span className="text-gray-500 text-xs">
               {formatDate(pick.picked_at)}
@@ -52,9 +52,9 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
 
   return (
     <div className="pixel-card" onClick={onClick}>
-      <img src={game.imageUrl || ''} alt={game.title} className="w-full h-36 object-cover rounded-md mb-2" />
+      <img src={game.image || ''} alt={game.name} className="w-full h-36 object-cover rounded-md mb-2" />
       
-      <h4 className="text-lg font-medium text-white mb-1">{game.title}</h4>
+      <h4 className="text-lg font-medium text-white mb-1">{game.name}</h4>
       
       <div className="flex items-center text-gray-400 text-sm mb-2">
         <Clock className="h-4 w-4 mr-1" />

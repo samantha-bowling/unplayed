@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import { Button } from '@/components/ui/button';
@@ -121,15 +120,15 @@ const ShelfLife = ({
           >
             <div className="flex-shrink-0 w-16 h-12 overflow-hidden rounded">
               <img 
-                src={game.imageUrl} 
-                alt={game.title} 
+                src={game.image} 
+                alt={game.name} 
                 className="w-full h-full object-cover" 
                 loading="lazy"
               />
             </div>
             
             <div className="ml-4 flex-grow">
-              <h4 className="text-white font-medium truncate">{game.title}</h4>
+              <h4 className="text-white font-medium truncate">{game.name}</h4>
               
               <div className="flex items-center text-xs text-gray-400">
                 <TooltipProvider>

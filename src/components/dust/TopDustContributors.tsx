@@ -1,4 +1,3 @@
-
 import { GameDustData } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ghost } from 'lucide-react';
@@ -105,10 +104,10 @@ const TopDustContributors = ({ contributors }: TopDustContributorsProps) => {
             {sortedContributors.map((game) => (
               <TableRow key={game.id}>
                 <TableCell className="flex items-center gap-2">
-                  {game.imageUrl ? (
+                  {game.image ? (
                     <img 
-                      src={game.imageUrl} 
-                      alt={game.title} 
+                      src={game.image} 
+                      alt={game.name} 
                       className="h-8 w-16 object-cover rounded"
                     />
                   ) : (
@@ -116,7 +115,7 @@ const TopDustContributors = ({ contributors }: TopDustContributorsProps) => {
                       No image
                     </div>
                   )}
-                  <span className="line-clamp-1">{game.title}</span>
+                  <span className="line-clamp-1">{game.name}</span>
                 </TableCell>
                 <TableCell>
                   <span className="font-bold text-unplayed-mint">{game.dustScore}</span>
