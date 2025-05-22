@@ -1,4 +1,3 @@
-
 import { useUnplayedData } from '@/hooks/use-unplayed-data';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -187,7 +186,7 @@ const useDustScoreData = () => {
       const validBreakdowns = breakdowns.filter(Boolean);
 
       if (validBreakdowns.length > 0) {
-        // Fix TypeScript errors in these reduce operations by adding explicit number type to the accumulator
+        // Fix TypeScript errors by explicitly casting to number
         totalAgeScore = validBreakdowns.reduce((sum: number, b: unknown) => {
           const val = safeGetNumber(b, 'ageScore', 0);
           return sum + val;
@@ -198,18 +197,19 @@ const useDustScoreData = () => {
           return sum + val;
         }, 0);
 
-        const totalFactorWeight = validBreakdowns.reduce((sum: number, b: unknown) => {
-          const val = safeGetNumber(b, 'totalScore', 0);
-          return sum + val;
+        // Calculate the total factor weight using explicit number typing
+        const totalFactorWeight: number = validBreakdowns.reduce((sum: number, b: unknown) => {
+          return sum + safeGetNumber(b, 'totalScore', 0);
         }, 0);
 
-        avgPlaytimeFactor = totalFactorWeight > 0
-          ? validBreakdowns.reduce((sum: number, b: unknown) => {
-              const playtimeFactor = safeGetNumber(b, 'playtimeFactor', 1.0);
-              const weight = safeGetNumber(b, 'totalScore', 0);
-              return sum + (playtimeFactor * weight);
-            }, 0) / totalFactorWeight
-          : 1.0;
+        // Now we can safely check if totalFactorWeight is greater than 0
+        if (totalFactorWeight > 0) {
+          avgPlaytimeFactor = validBreakdowns.reduce((sum: number, b: unknown) => {
+            const playtimeFactor = safeGetNumber(b, 'playtimeFactor', 1.0);
+            const weight = safeGetNumber(b, 'totalScore', 0);
+            return sum + (playtimeFactor * weight);
+          }, 0) / totalFactorWeight;
+        }
       }
 
       const totalGames = userGamesWithDust.length;
