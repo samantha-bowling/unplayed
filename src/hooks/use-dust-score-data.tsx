@@ -14,6 +14,7 @@ import {
 } from '@/types/unplayed-data.types';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { safeGetNumber } from '@/utils/safe-json';
 
 // Clean Score tiers configuration
 const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
@@ -79,28 +80,6 @@ const calculateCleanScore = (
     tier
   };
 };
-
-/**
- * Safely extract a typed value from a JSON object
- * @param obj The source object
- * @param key The property key to access
- * @param fallback Default value to return if property is missing or wrong type
- * @returns The typed value or fallback
- */
-function safeGetNumber(obj: unknown, key: string, fallback: number): number {
-  if (!obj || typeof obj !== 'object') return fallback;
-  const data = obj as Record<string, unknown>;
-  const value = data[key];
-  
-  // Handle different types that could be returned from JSON
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const parsed = parseFloat(value);
-    return isNaN(parsed) ? fallback : parsed;
-  }
-  
-  return fallback;
-}
 
 /**
  * Safely parses dust score breakdown from JSON response
