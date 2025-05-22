@@ -81,6 +81,33 @@ const calculateCleanScore = (
 };
 
 /**
+ * Safely parses dust score breakdown from JSON response
+ * @param breakdown The raw response from the Supabase function
+ * @returns A properly typed DustScoreBreakdown object with fallback values
+ */
+const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
+  if (!breakdown || typeof breakdown !== 'object') {
+    return {
+      ageScore: 0,
+      ownershipScore: 0,
+      playtimeFactor: 1.0,
+      totalScore: 0
+    };
+  }
+  
+  // Safe casting to allow property access
+  const data = breakdown as Record<string, unknown>;
+  
+  // Safely extract values with type checking
+  return {
+    ageScore: typeof data.ageScore === 'number' ? data.ageScore : 0,
+    ownershipScore: typeof data.ownershipScore === 'number' ? data.ownershipScore : 0,
+    playtimeFactor: typeof data.playtimeFactor === 'number' ? data.playtimeFactor : 1.0,
+    totalScore: typeof data.totalScore === 'number' ? data.totalScore : 0
+  };
+};
+
+/**
  * Custom hook to provide detailed dust score data
  * @returns Object containing data, loading state, error, and refetch function
  */
@@ -148,15 +175,20 @@ const useDustScoreData = () => {
         
       // Fetch dust breakdowns for top contributors using our new DB function
       const breakdownPromises = topContributorsWithIds.map(async (game) => {
-        const { data: breakdown, error: breakdownError } = await supabase
-          .rpc('get_user_game_dust_breakdown', { p_user_game_id: game.id });
+        try {
+          const { data: breakdown, error: breakdownError } = await supabase
+            .rpc('get_user_game_dust_breakdown', { p_user_game_id: game.id });
+            
+          if (breakdownError) {
+            console.error("Error fetching breakdown:", breakdownError);
+            return null;
+          }
           
-        if (breakdownError) {
-          console.error("Error fetching breakdown:", breakdownError);
+          return breakdown;
+        } catch (err) {
+          console.error("Exception in breakdown fetch:", err);
           return null;
         }
-        
-        return breakdown;
       });
       
       const breakdowns = await Promise.all(breakdownPromises);
@@ -168,12 +200,11 @@ const useDustScoreData = () => {
         ? parseFloat((totalDustScore / userGamesWithDust.length).toFixed(1)) 
         : 0;
       
-      // Extract top dust contributors
+      // Extract top dust contributors with safe parsing
       const topContributors: GameDustData[] = topContributorsWithIds
         .map((game, index) => {
-          const breakdown = breakdowns[index];
-          // Proper type assertion
-          const typedBreakdown = breakdown as unknown as DustScoreBreakdownResponse;
+          // Safely parse breakdown data
+          const breakdownData = parseDustBreakdown(breakdowns[index]);
           
           return {
             id: game.game_id,
@@ -184,14 +215,14 @@ const useDustScoreData = () => {
             playtimeMinutes: game.playtime_minutes || 0,
             image: game.games?.header_image || game.games?.image_url || null,
             breakdown: {
-              ageScore: typedBreakdown?.ageScore || 0,
-              ownershipScore: typedBreakdown?.ownershipScore || 0,
-              playtimeFactor: typedBreakdown?.playtimeFactor || 1.0
+              ageScore: breakdownData.ageScore,
+              ownershipScore: breakdownData.ownershipScore,
+              playtimeFactor: breakdownData.playtimeFactor
             }
           };
         });
         
-      // Calculate aggregate dust score breakdown
+      // Calculate aggregate dust score breakdown with safe parsing
       let totalAgeScore = 0;
       let totalOwnershipScore = 0;
       let avgPlaytimeFactor = 0;
@@ -200,27 +231,25 @@ const useDustScoreData = () => {
       
       if (validBreakdowns.length > 0) {
         totalAgeScore = validBreakdowns.reduce((sum, b) => {
-          const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
-          return sum + (typedBreakdown?.ageScore || 0);
+          const parsedData = parseDustBreakdown(b);
+          return sum + parsedData.ageScore;
         }, 0);
         
         totalOwnershipScore = validBreakdowns.reduce((sum, b) => {
-          const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
-          return sum + (typedBreakdown?.ownershipScore || 0);
+          const parsedData = parseDustBreakdown(b);
+          return sum + parsedData.ownershipScore;
         }, 0);
         
         // Calculate weighted average playtime factor
         const totalFactorWeight = validBreakdowns.reduce((sum, b) => {
-          const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
-          return sum + (typedBreakdown?.totalScore || 0);
+          const parsedData = parseDustBreakdown(b);
+          return sum + parsedData.totalScore;
         }, 0);
         
         avgPlaytimeFactor = totalFactorWeight > 0 
           ? validBreakdowns.reduce((sum, b) => {
-              const typedBreakdown = b as unknown as DustScoreBreakdownResponse;
-              const score = typedBreakdown?.totalScore || 0;
-              const factor = typedBreakdown?.playtimeFactor || 1.0;
-              return sum + (factor * score);
+              const parsedData = parseDustBreakdown(b);
+              return sum + (parsedData.playtimeFactor * parsedData.totalScore);
             }, 0) / totalFactorWeight
           : 1.0;
       } else {
