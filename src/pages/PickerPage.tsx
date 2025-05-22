@@ -1,9 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
+import { MainLayout, FullScreenLayout } from '@/layouts';
 import RandomPicker from '@/components/RandomPicker';
 import { withDemoIndicator } from '@/components/withDemoIndicator';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -45,39 +43,29 @@ const PickerPage: React.FC = () => {
     }
   }, [navigationState]);
 
-  // In Full Screen Mode, render only the RandomPicker component
+  // In Full Screen Mode, use the FullScreenLayout instead of MainLayout
   if (isFullScreenMode) {
     return (
-      <FullScreenModeWrapper>
-        <div className="min-h-screen flex items-center justify-center">
-          <RandomPicker 
-            fullScreen={true} 
-            initialFilters={navigationState}
-          />
-        </div>
-      </FullScreenModeWrapper>
+      <FullScreenLayout>
+        <RandomPicker 
+          fullScreen={true} 
+          initialFilters={navigationState}
+        />
+      </FullScreenLayout>
     );
   }
 
   return (
-    <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col">
-        <Header />
+    <MainLayout>
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold font-space mb-6">
+          <span className="text-unplayed-amber">Picker</span>
+          <span className="text-white">.exe</span>
+        </h1>
         
-        <main className="flex-grow px-4 py-8 header-spacing">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold font-space mb-6">
-              <span className="text-unplayed-amber">Picker</span>
-              <span className="text-white">.exe</span>
-            </h1>
-            
-            <RandomPicker initialFilters={navigationState} />
-          </div>
-        </main>
-        
-        <Footer />
+        <RandomPicker initialFilters={navigationState} />
       </div>
-    </FullScreenModeWrapper>
+    </MainLayout>
   );
 };
 
