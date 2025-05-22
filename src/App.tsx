@@ -14,6 +14,7 @@ import AdminSupportPage from "./pages/AdminSupportPage";
 import AdminSteamDataPage from "./pages/AdminSteamDataPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
+import QueueManagerPage from "./pages/QueueManagerPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
@@ -87,6 +88,14 @@ const App = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminAccountDeletionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/queue-manager"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <QueueManagerPage />
             </ProtectedRoute>
           }
         />

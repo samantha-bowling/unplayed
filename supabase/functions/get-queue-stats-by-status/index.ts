@@ -11,7 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
 serve(async (req) => {
@@ -25,39 +25,35 @@ serve(async (req) => {
 
   try {
     console.log("Getting queue stats by status");
-    
-    // Query to get counts grouped by status - fixing the syntax error here
-    const { data: statusCounts, error } = await supabase
-      .from('steam_app_queue')
-      .select('status, count(*)')
-      .group('status');
-    
-    if (error) {
-      console.error("Error fetching queue stats:", error);
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        }
-      );
+
+    // Get distinct statuses and their counts manually since group() is causing issues
+    const statusesToQuery = ["pending", "processing", "completed", "failed", "error"];
+    const statusCounts = [];
+
+    // Query each status count individually
+    for (const status of statusesToQuery) {
+      const { count, error } = await supabase
+        .from("steam_app_queue")
+        .select("*", { count: "exact", head: true })
+        .eq("status", status);
+      
+      if (error) {
+        console.error(`Error counting ${status} items:`, error);
+        continue;
+      }
+      
+      statusCounts.push({ status, count: count || 0 });
     }
-    
-    return new Response(
-      JSON.stringify(statusCounts || []),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      }
-    );
-  } catch (err) {
-    console.error("Unexpected error in get-queue-stats-by-status:", err);
-    return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      }
-    );
+
+    return new Response(JSON.stringify(statusCounts), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Unexpected error in get-queue-stats-by-status:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });

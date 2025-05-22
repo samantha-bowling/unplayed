@@ -15,10 +15,28 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+// Adaptive rate limiting settings
+const DEFAULT_DELAY_MS = 300;
+const MIN_DELAY_MS = 200;
+const MAX_DELAY_MS = 1000;
+let currentDelayMs = DEFAULT_DELAY_MS;
+let consecutiveSuccess = 0;
+let consecutiveErrors = 0;
+
 // Process app details from Steam's API response
 function processAppDetails(appId: number, details: any) {
   try {
     if (!details || !details.success) return null;
+    
+    // Handle invalid release dates that cause Invalid time value errors
+    let releaseDate = null;
+    if (details.data.release_date && details.data.release_date.date && details.data.release_date.date !== "") {
+      try {
+        releaseDate = new Date(details.data.release_date.date).toISOString();
+      } catch (e) {
+        console.log(`Invalid release date for app ${appId}: ${details.data.release_date.date}`);
+      }
+    }
     
     return {
       id: appId,
@@ -27,9 +45,7 @@ function processAppDetails(appId: number, details: any) {
       image_url: details.data.header_image ? details.data.header_image.split('/').pop() : null,
       header_image: details.data.header_image || null,
       price_cents: details.data.price_overview ? details.data.price_overview.initial : null,
-      release_date: details.data.release_date && details.data.release_date.date && details.data.release_date.date !== "" 
-        ? new Date(details.data.release_date.date).toISOString() 
-        : null,
+      release_date: releaseDate,
       metacritic_score: details.data.metacritic ? details.data.metacritic.score : null,
       developer: Array.isArray(details.data.developers) ? details.data.developers : null,
       publisher: Array.isArray(details.data.publishers) ? details.data.publishers : null,
@@ -62,17 +78,46 @@ function determinePlatforms(platforms: any) {
   return result.length > 0 ? result : null;
 }
 
-// Safely increment the attempts value
+// Safely increment the attempts value for a queue item
 async function incrementAttempts(appId: number) {
-  const { data, error } = await supabase
-    .rpc('increment', { value: 1 });
+  try {
+    const { data: queueItem } = await supabase
+      .from("steam_app_queue")
+      .select("attempts")
+      .eq("app_id", appId)
+      .single();
+      
+    const currentAttempts = queueItem?.attempts || 0;
+    return currentAttempts + 1;
+  } catch (error) {
+    console.error(`Error getting current attempts for app ${appId}:`, error);
+    return 1; // Default to 1 if we can't get the current value
+  }
+}
+
+// Adjust the delay time based on API responses
+function adjustDelayTime(success: boolean) {
+  if (success) {
+    consecutiveSuccess++;
+    consecutiveErrors = 0;
     
-  if (error) {
-    console.error(`Error incrementing attempts for app ${appId}:`, error);
-    return 1; // Default increment if RPC fails
+    // Reduce delay after multiple consecutive successes
+    if (consecutiveSuccess >= 5 && currentDelayMs > MIN_DELAY_MS) {
+      currentDelayMs = Math.max(MIN_DELAY_MS, currentDelayMs - 20);
+      console.log(`Reduced delay to ${currentDelayMs}ms after ${consecutiveSuccess} successful requests`);
+    }
+  } else {
+    consecutiveErrors++;
+    consecutiveSuccess = 0;
+    
+    // Increase delay after errors
+    if (consecutiveErrors >= 2) {
+      currentDelayMs = Math.min(MAX_DELAY_MS, currentDelayMs + 100);
+      console.log(`Increased delay to ${currentDelayMs}ms after ${consecutiveErrors} failed requests`);
+    }
   }
   
-  return data || 1;
+  return currentDelayMs;
 }
 
 serve(async (req) => {
@@ -111,7 +156,7 @@ serve(async (req) => {
       if (batchSizeParam) batchSize = Number(batchSizeParam);
     }
     
-    // Validate batchSize to prevent abuse
+    // Validate batchSize to prevent abuse (max 50)
     if (batchSize > 50) batchSize = 50;
     
     // If processing a single appId
@@ -137,7 +182,7 @@ serve(async (req) => {
       if (!details || !details.success) {
         console.log(`No valid details returned for app ${appId}`);
         
-        // Mark this app as failed in the queue - Fixed direct update
+        // Mark this app as failed in the queue
         const { error: updateError } = await supabase
           .from("steam_app_queue")
           .update({ 
@@ -184,7 +229,7 @@ serve(async (req) => {
         );
       }
       
-      // Update the queue status - Fixed direct update
+      // Update the queue status
       const { error: queueUpdateError } = await supabase
         .from("steam_app_queue")
         .update({ 
@@ -211,10 +256,10 @@ serve(async (req) => {
     else if (processBatch) {
       console.log(`Processing batch of up to ${batchSize} apps`);
       
-      // Get next batch of apps from the queue
+      // Get next batch of apps from the queue, with priority sorting
       const { data: queueItems, error: queueError } = await supabase
         .from("steam_app_queue")
-        .select("app_id, name")
+        .select("app_id, name, priority")
         .eq("status", "pending")
         .order("priority", { ascending: false })
         .order("attempts", { ascending: true })
@@ -244,12 +289,14 @@ serve(async (req) => {
           total: queueItems.length,
           success: 0,
           failed: 0,
-          details: {} as Record<number, any>
+          skipped: 0,
+          details: {} as Record<number, any>,
+          currentDelay: currentDelayMs
         };
         
         for (const item of queueItems) {
           const appId = item.app_id;
-          console.log(`Processing app ${appId} (${item.name || 'Unknown'})`);
+          console.log(`Processing app ${appId} (${item.name || 'Unknown'}) with priority ${item.priority || 0}`);
           
           try {
             // Mark as processing
@@ -261,8 +308,8 @@ serve(async (req) => {
               })
               .eq("app_id", appId);
             
-            // Add delay to avoid hitting Steam API rate limits
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Add adaptive delay to avoid hitting Steam API rate limits
+            await new Promise(resolve => setTimeout(resolve, currentDelayMs));
             
             // Fetch from Steam Store API
             const storeUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}`;
@@ -272,11 +319,18 @@ serve(async (req) => {
               console.error(`Error fetching details for app ${appId}:`, response.status);
               results.failed++;
               
-              // Fixed direct update with proper increment handling
+              // Update status based on response status
+              let newStatus = "error";
+              if (response.status === 429) {
+                console.log("Rate limiting detected, increasing delay");
+                currentDelayMs = adjustDelayTime(false);
+                newStatus = "pending"; // Requeue for later if rate limited
+              }
+              
               await supabase
                 .from("steam_app_queue")
                 .update({ 
-                  status: "error", 
+                  status: newStatus, 
                   attempts: await incrementAttempts(appId),
                   last_attempt: new Date().toISOString()
                 })
@@ -288,11 +342,13 @@ serve(async (req) => {
             const data = await response.json();
             const details = data[appId];
             
+            // Successfully received response, adjust delay time
+            currentDelayMs = adjustDelayTime(true);
+            
             if (!details || !details.success) {
               console.log(`No valid details returned for app ${appId}`);
               results.failed++;
               
-              // Fixed direct update with proper increment handling
               await supabase
                 .from("steam_app_queue")
                 .update({ 
@@ -311,11 +367,24 @@ serve(async (req) => {
             if (!processedDetails) {
               console.error(`Failed to process details for app ${appId}`);
               results.failed++;
+              
+              await supabase
+                .from("steam_app_queue")
+                .update({ 
+                  status: "error", 
+                  attempts: await incrementAttempts(appId),
+                  last_attempt: new Date().toISOString()
+                })
+                .eq("app_id", appId);
+                
               continue;
             }
             
             // Add to results
-            results.details[appId] = processedDetails;
+            results.details[appId] = {
+              name: processedDetails.name,
+              release_date: processedDetails.release_date,
+            };
             
             // Upsert the game details to our database
             const { error: upsertError } = await supabase
@@ -329,7 +398,6 @@ serve(async (req) => {
               console.error(`Error upserting game ${appId}:`, upsertError);
               results.failed++;
               
-              // Fixed direct update with proper increment handling
               await supabase
                 .from("steam_app_queue")
                 .update({ 
@@ -343,7 +411,6 @@ serve(async (req) => {
             }
             
             // Update the queue status
-            // Fixed direct update with proper increment handling
             await supabase
               .from("steam_app_queue")
               .update({ 
@@ -359,7 +426,6 @@ serve(async (req) => {
             results.failed++;
             
             // Update queue status
-            // Fixed direct update with proper increment handling
             await supabase
               .from("steam_app_queue")
               .update({ 
@@ -387,7 +453,8 @@ serve(async (req) => {
             message: "Batch processing started",
             batchSize,
             itemsInBatch: queueItems.length,
-            processing: "background"
+            processing: "background",
+            currentDelay: currentDelayMs
           }), 
           { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );

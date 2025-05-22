@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Shield, Bug, Database, UserMinus } from 'lucide-react';
+import { Shield, Bug, Database, UserMinus, ActivitySquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
@@ -42,6 +42,14 @@ const AdminDashboardPage = () => {
       path: '/admin/account-deletions',
       color: 'bg-gradient-to-br from-red-900/40 to-red-700/20',
       borderColor: 'border-unplayed-red/30',
+    },
+    {
+      title: 'Game Queue Manager',
+      description: 'Advanced tools for managing the Steam game processing queue.',
+      icon: <ActivitySquare className="h-8 w-8 text-blue-400" />,
+      path: '/admin/queue-manager',
+      color: 'bg-gradient-to-br from-blue-900/40 to-blue-700/20',
+      borderColor: 'border-blue-400/30',
     },
   ];
 
