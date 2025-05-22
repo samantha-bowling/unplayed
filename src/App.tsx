@@ -23,6 +23,7 @@ import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import SteamAuthHandler from "@/pages/SteamAuthHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useTransition, Suspense } from "react";
+import routes from "./config/routes";
 
 const App = () => {
   const { status } = useAuth();
@@ -45,64 +46,70 @@ const App = () => {
       </div>
     }>
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthCallbackHandler />} />
-        <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
-        <Route path="/login-error" element={<LoginErrorPage />} />
+        {/* Public routes */}
+        <Route path={routes.HOME.path} element={<Index />} />
+        <Route path={routes.AUTH.path} element={<AuthPage />} />
+        <Route path={routes.AUTH_CALLBACK.path} element={<AuthCallbackHandler />} />
+        <Route path={routes.STEAM_CALLBACK.path} element={<SteamAuthHandler />} />
+        <Route path={routes.LOGIN_ERROR.path} element={<LoginErrorPage />} />
+        <Route path={routes.SUPPORT.path} element={<SupportPage />} />
+        <Route path={routes.LEADERBOARD.path} element={<LeaderboardPage />} />
+
+        {/* Admin routes with role protection */}
         <Route
-          path="/auth-debug"
+          path={routes.AUTH_DEBUG.path}
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole={routes.AUTH_DEBUG.requiredRole}>
               <AuthDebugPage />
             </ProtectedRoute>
           }
         />
-        <Route path="/support" element={<SupportPage />} />
         <Route
-          path="/admin/dashboard"
+          path={routes.ADMIN_DASHBOARD.path}
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole={routes.ADMIN_DASHBOARD.requiredRole}>
               <AdminDashboardPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/admin/support"
+          path={routes.ADMIN_SUPPORT.path}
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole={routes.ADMIN_SUPPORT.requiredRole}>
               <AdminSupportPage />
             </ProtectedRoute>
           }
         />
-        {/* Add redirect from the old path to the new queue manager path */}
-        <Route 
-          path="/admin/steam-data"
-          element={<Navigate to="/admin/queue-manager" replace />}
-        />
         <Route
-          path="/auth/steam-data"
-          element={<Navigate to="/admin/queue-manager" replace />}
-        />
-        <Route
-          path="/admin/account-deletions"
+          path={routes.ADMIN_ACCOUNT_DELETIONS.path}
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole={routes.ADMIN_ACCOUNT_DELETIONS.requiredRole}>
               <AdminAccountDeletionsPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/admin/queue-manager"
+          path={routes.ADMIN_QUEUE_MANAGER.path}
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole={routes.ADMIN_QUEUE_MANAGER.requiredRole}>
               <QueueManagerPage />
             </ProtectedRoute>
           }
         />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+        {/* Redirects */}
+        <Route 
+          path={routes.ADMIN_STEAM_DATA.path}
+          element={<Navigate to={routes.ADMIN_STEAM_DATA.redirectPath || "/"} replace />}
+        />
         <Route
-          path="/library"
+          path={routes.AUTH_STEAM_DATA.path}
+          element={<Navigate to={routes.AUTH_STEAM_DATA.redirectPath || "/"} replace />}
+        />
+
+        {/* Protected routes requiring authentication */}
+        <Route
+          path={routes.LIBRARY.path}
           element={
             <ProtectedRoute>
               <LibraryPage />
@@ -110,7 +117,7 @@ const App = () => {
           }
         />
         <Route
-          path="/picker"
+          path={routes.PICKER.path}
           element={
             <ProtectedRoute>
               <PickerPage />
@@ -118,7 +125,7 @@ const App = () => {
           }
         />
         <Route
-          path="/dust"
+          path={routes.DUST.path}
           element={
             <ProtectedRoute>
               <DustPage />
@@ -126,13 +133,15 @@ const App = () => {
           }
         />
         <Route
-          path="/spend"
+          path={routes.SPEND.path}
           element={
             <ProtectedRoute>
               <SpendPage />
             </ProtectedRoute>
           }
         />
+
+        {/* 404 handler */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       

@@ -8,6 +8,7 @@ import { AuthStatus } from '@/context/AuthContext';
 import SteamLoader from './SteamLoader';
 import { AuthStorage } from '@/utils/auth-service';
 import { useProfile } from '@/hooks/use-profile';
+import { hasRole } from '@/utils/auth-utils';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -38,8 +39,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to={`/auth?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
-  // Check for required role using app_metadata instead of profile.role
-  if (requiredRole === "admin" && !user.app_metadata?.roles?.includes('admin')) {
+  // Check for required role using the standardized utility function
+  if (requiredRole && !hasRole(user, requiredRole, profile)) {
     return <Navigate to="/" replace />;
   }
 

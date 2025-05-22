@@ -6,14 +6,21 @@ import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import SupportPage from "./SupportPage";
 import { Navigate, useLocation } from "react-router-dom";
+import { useAuthPermission } from "@/hooks/use-auth-permission";
 
 const AdminSupportPage = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const location = useLocation();
+  const { isAdmin } = useAuthPermission();
   
   // Check if this is the old Steam Data page and redirect if so
   if (location.pathname === "/auth/steam-data") {
     return <Navigate to="/admin/queue-manager" replace />;
+  }
+
+  // Check admin permission using our new utility
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
   }
 
   // Admin function to trigger tier calculation
