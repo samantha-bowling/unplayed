@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import useDustScoreData from '@/hooks/use-dust-score-data';
+import useUnplayedData from '@/hooks/use-unplayed-data';
 import {
   Tooltip,
   TooltipContent,
@@ -10,185 +10,159 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import CleanScoreMeterSmall from './dust/CleanScoreMeterSmall';
 
-interface DustScoreProps extends WithDemoProps {
+interface DustScoreMeterProps extends WithDemoProps {
   score?: number;
+  compact?: boolean;
 }
 
 const DustScoreMeter = ({
   score,
+  compact = false,
   isDemo = false
-}: DustScoreProps) => {
-  const { data, isLoading } = useDustScoreData();
-  const actualScore = score ?? data.dustScore;
-  const [animatedScore, setAnimatedScore] = useState(0);
+}: DustScoreMeterProps) => {
+  const { data: unplayedData } = useUnplayedData();
   const { user } = useAuth();
 
-  // Debug logging to help trace the issue
-  useEffect(() => {
-    console.log("DustScoreMeter received score:", score);
-    console.log("DustScoreMeter using actualScore:", actualScore);
-    console.log("Full dust data:", data);
-  }, [score, actualScore, data]);
+  const actualScore = score ?? unplayedData.dustScore;
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
+
+  // Calculate percentage based on dust score tiers (0-1000 scale)
+  const maxScore = 1000;
+  const targetPercentage = Math.min((actualScore / maxScore) * 100, 100);
 
   useEffect(() => {
-    if (actualScore === undefined || actualScore === null) return;
-    
-    const duration = 2000;
-    const start = 0;
-    const end = actualScore;
+    const duration = 1500;
     const frameDuration = 1000 / 60;
     const totalFrames = Math.round(duration / frameDuration);
-    const increment = (end - start) / totalFrames;
+    const scoreIncrement = actualScore / totalFrames;
+    const percentageIncrement = targetPercentage / totalFrames;
+
     let currentFrame = 0;
     const timer = setInterval(() => {
       currentFrame++;
-      const currentValue = Math.round(start + increment * currentFrame);
-      setAnimatedScore(currentValue);
+      const scoreValue = Math.min(Math.round(scoreIncrement * currentFrame), actualScore);
+      const percentageValue = Math.min(percentageIncrement * currentFrame, targetPercentage);
+
+      setAnimatedScore(scoreValue);
+      setAnimatedPercentage(percentageValue);
+
       if (currentFrame === totalFrames) {
         clearInterval(timer);
       }
     }, frameDuration);
+
     return () => clearInterval(timer);
-  }, [actualScore]);
+  }, [actualScore, targetPercentage]);
 
-  // Updated severity thresholds for total dust scores
-  const getSeverityColor = () => {
-    if (actualScore < 1000) return 'text-green-400';
-    if (actualScore < 5000) return 'text-orange-400';
-    if (actualScore < 10000) return 'text-amber-600';
-    return 'text-unplayed-red';
-  };
-
-  const getSeverityText = () => {
-    if (actualScore < 1000) return 'Freshly Polished ✨';
-    if (actualScore < 5000) return 'Dust Storm Brewing 🌬️';
-    if (actualScore < 10000) return 'Duststorm Warning 🌪️';
-    return "Hoarder's Horizon 🤍";
-  };
-
-  const showCleanScore = data.cleanScore !== undefined && user;
-
-  // Format large numbers with commas
-  const formatNumber = (num: number) => {
-    return num.toLocaleString();
-  };
-
-  if (isLoading) {
+  if (compact) {
     return (
-      <div className="terminal-container equal-height-container">
-        <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
-        <div className="terminal-content flex flex-col items-center justify-center p-8">
-          <div className="animate-pulse">
-            <div className="w-32 h-32 rounded-full bg-gray-700"></div>
+      <div className="flex items-center justify-between gap-4 px-4 py-2 rounded-md bg-black/40 border border-unplayed-red/30 min-w-[250px]">
+        <div>
+          <div className="text-2xl font-bold font-vt text-unplayed-red">
+            {animatedScore}
           </div>
-          <p className="text-gray-400 mt-4">Calculating dust...</p>
+          <div className="text-sm text-gray-400">
+            Dust Score
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="ml-1 text-gray-500 hover:text-gray-400">
+                    <InfoIcon size={14} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    Higher scores indicate more neglected games in your library
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
+          <div 
+            className="absolute inset-0 rounded-full border-4 border-unplayed-red transition-all duration-1000 ease-out"
+            style={{
+              clipPath: `polygon(50% 50%, 50% 0%, ${
+                animatedPercentage <= 25 
+                  ? `${50 + animatedPercentage * 2}% 0%`
+                  : animatedPercentage <= 50
+                  ? `100% 0%, 100% ${(animatedPercentage - 25) * 4}%`
+                  : animatedPercentage <= 75
+                  ? `100% 0%, 100% 100%, ${100 - (animatedPercentage - 50) * 4}% 100%`
+                  : `100% 0%, 100% 100%, 0% 100%, 0% ${100 - (animatedPercentage - 75) * 4}%`
+              })`
+            }}
+          ></div>
         </div>
       </div>
     );
   }
 
-  // Calculate circle scale factor for large numbers to fit in circle
-  const getScaleFactor = () => {
-    if (actualScore < 1000) return 1;
-    if (actualScore < 10000) return 10;
-    if (actualScore < 100000) return 100;
-    return 1000;
-  };
-  
-  const scaleFactor = getScaleFactor();
-  const scaledScore = actualScore / scaleFactor;
-  const maxDisplayScore = 1500; // Maximum value for the circle
-
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
-      <div className="mb-4 flex items-center">
-        <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button className="ml-2 text-gray-500 hover:text-gray-400">
-                <InfoIcon size={16} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p>
-                Dust Score shows your total accumulated dust across all games.
-                Higher scores indicate more neglected games in your library.
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      <h3 className="terminal-header text-2xl mb-2">Dust Score</h3>
 
-      <div className="terminal-content flex flex-col items-center">
-        <div className="relative w-48 h-48 mb-4">
-          <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="none"
-              stroke={actualScore < 1000 ? '#A3F7BF' : actualScore < 5000 ? '#FF9F39' : actualScore < 10000 ? '#F6AD55' : '#FF3C38'}
-              strokeWidth="8"
-              strokeDasharray={`${Math.min(scaledScore / maxDisplayScore, 1) * 283} 283`}
-              className="transition-all duration-300"
-            />
-          </svg>
+      <div className="terminal-content flex flex-col items-center py-6">
+        <div className="relative w-32 h-32 mb-6">
+          {/* Background circle */}
+          <div className="absolute inset-0 rounded-full border-8 border-gray-700"></div>
+          
+          {/* Animated fill circle */}
+          <div 
+            className="absolute inset-0 rounded-full border-8 border-unplayed-red transition-all duration-1000 ease-out"
+            style={{
+              clipPath: `polygon(50% 50%, 50% 0%, ${
+                animatedPercentage <= 25 
+                  ? `${50 + animatedPercentage * 2}% 0%`
+                  : animatedPercentage <= 50
+                  ? `100% 0%, 100% ${(animatedPercentage - 25) * 4}%`
+                  : animatedPercentage <= 75
+                  ? `100% 0%, 100% 100%, ${100 - (animatedPercentage - 50) * 4}% 100%`
+                  : `100% 0%, 100% 100%, 0% 100%, 0% ${100 - (animatedPercentage - 75) * 4}%`
+              })`
+            }}
+          ></div>
+          
+          {/* Center text */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-3xl font-bold font-vt text-unplayed-red">
+              {animatedScore}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-gray-300 text-center text-lg mb-4">
+          Your library's dust accumulation level
+        </p>
+
+        <div className="text-sm text-gray-400 text-center flex items-center justify-center">
+          <span>
+            Games gathering digital dust in your collection
+          </span>
 
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-                  <span className={`${getSeverityColor()} text-4xl font-bold font-vt ${actualScore >= 10000 ? 'text-3xl' : ''}`}>
-                    {formatNumber(animatedScore)}
-                  </span>
-                  <span className="text-gray-400 text-xs mt-1">DUST UNITS</span>
-                </div>
+                <button className="ml-1 text-gray-500 hover:text-gray-400">
+                  <InfoIcon size={14} />
+                </button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="text-center">
-                <p className="text-sm">Total dust accumulated across all your games</p>
+              <TooltipContent className="max-w-xs">
+                <p>
+                  Dust Score measures how neglected your game library is. Higher scores indicate more unplayed games that have been sitting unused for longer periods.
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
 
-        <div className="text-center mt-2">
-          <p className={`${getSeverityColor()} text-xl font-medium`}>{getSeverityText()}</p>
-          <p className="text-sm text-gray-400 mt-2">
-            {actualScore < 1000
-              ? "Your library is in good shape! Keep it up."
-              : actualScore < 5000
-              ? "Some games could use your attention soon."
-              : actualScore < 10000
-              ? "Warning: Your backlog is getting out of control."
-              : "Critical: Your library has reached dust apocalypse levels."}
-          </p>
-        </div>
-
-        {showCleanScore && (
-          <div className="mt-6 pt-3 border-t border-gray-700 w-full">
-            <CleanScoreMeterSmall score={data.cleanScore || 0} tier={data.cleanTier} />
-          </div>
-        )}
-
-        {user && !isDemo && (
-          <div className="mt-4 pt-2">
-            <Link
-              to="/dust"
-              className="px-4 py-2 bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint text-sm rounded-md transition-colors"
-            >
-              View Detailed Report
-            </Link>
-          </div>
-        )}
-
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-auto pt-4 text-center flex justify-center">
+          <div className="mt-4 text-center flex justify-center">
             <p className="text-sm text-unplayed-mint">
               You're in Demo Mode. Sign in to track your Dust Score.
             </p>

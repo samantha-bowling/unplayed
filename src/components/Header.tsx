@@ -1,407 +1,214 @@
-
-import { useState, useEffect } from 'react';
-import { Menu, LogIn, ChevronDown, Settings, Shield, Bug, UserMinus, ActivitySquare, Clock } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useDemoMode } from '@/context/DemoModeContext';
-import { useFullScreenMode } from '@/context/FullScreenModeContext';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
+import { DiscordIcon } from 'lucide-react';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import DiscordIcon from './icons/DiscordIcon';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useProfile } from '@/hooks/use-profile';
-import AccountDeletionModal from './AccountDeletionModal';
-
-// Import dropdown menu components
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showDeletionModal, setShowDeletionModal] = useState(false);
-  const { user, signOut, isLoading, status } = useAuth();
-  const { profile } = useProfile();
-  const navigate = useNavigate();
-  const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
-  const { isFullScreenMode } = useFullScreenMode();
-  
-  // Add a stable render state to prevent flickering during auth transitions
-  const [stableRenderState, setStableRenderState] = useState({
-    isAuthenticated: false,
-    isLoading: true,
-    hasProfile: false,
-  });
-
-  // Update stable render state when auth state changes
-  useEffect(() => {
-    setStableRenderState({
-      isAuthenticated: !!user,
-      isLoading,
-      hasProfile: !!profile,
-    });
-  }, [user, profile, isLoading]);
-
-  // Check if user has admin role - only using app_metadata since profile.roles doesn't exist
-  const isAdmin = user?.app_metadata?.roles?.includes('admin');
-
-  // Hide header in full screen mode if it's fully activated
-  if (isFullScreenMode) {
-    return (
-      <div className="fixed w-full px-4 py-2 flex justify-end top-0 left-0 z-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
-        <FullScreenModeToggle />
-      </div>
-    );
-  }
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const location = useLocation();
 
   return (
-    <>
-      <header className="fixed top-0 left-0 w-full px-4 py-4 flex items-center justify-between z-50 glass-panel bg-black/60 backdrop-blur-md border-b border-white/10">
-        <div className="flex items-center">
-          <Link to="/" className="text-2xl font-space font-bold">
-            <span className="text-unplayed-mint">unplayed</span>
-            <span className="text-unplayed-pink">.wtf</span>
-          </Link>
-        </div>
-
-        <div className="hidden md:flex items-center space-x-6">
-          <NavLink href="/" label="Dashboard" />
-          {stableRenderState.isAuthenticated && (
-            <>
-              <NavLink href="/picker" label="Picker" />
-              <NavLink href="/library" label="Library" />
-              {/* Hide admin links from main navigation when we have the dropdown */}
-              {isAdmin && !stableRenderState.hasProfile && (
-                <>
-                  <NavLink href="/auth-debug" label="Debug" />
-                  <NavLink href="/admin/support" label="Admin Support" />
-                  <NavLink href="/admin/queue-manager" label="Queue Manager" />
-                </>
-              )}
-            </>
-          )}
-          <NavLink href="/leaderboard" label="Leaderboard" />
-          
-          {/* Discord Link with Button styling to match FullScreenModeToggle */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 p-0 flex items-center justify-center bg-black/50 border-gray-700 hover:bg-black/70"
-                  asChild
-                >
-                  <a 
-                    href="https://discord.gg/TvcNPryU8N" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    aria-label="Join our Discord"
-                  >
-                    <DiscordIcon size={18} />
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Join our Discord</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <FullScreenModeToggle />
-
-          {stableRenderState.isLoading ? (
-            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
-          ) : stableRenderState.isAuthenticated ? (
-            <div className="flex items-center space-x-4">
-              {/* If user is admin, wrap avatar in dropdown menu */}
-              {isAdmin && stableRenderState.hasProfile ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
-                      <Avatar className="border border-unplayed-mint/30 cursor-pointer">
-                        {profile?.steam_avatar ? (
-                          <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
-                        ) : (
-                          <AvatarFallback className="bg-gray-800 text-unplayed-mint">
-                            {profile?.steam_name?.substring(0, 2) || 'UN'}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="flex items-center">
-                        <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
-                        <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col">
-                        <span className="text-unplayed-mint">Admin Controls</span>
-                        <span className="text-xs text-gray-400">Manage system settings</span>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                    
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => navigate('/auth-debug')}
-                      >
-                        <Bug className="mr-2 h-4 w-4 text-unplayed-mint" />
-                        <span>Auth Debug</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => navigate('/admin/support')}
-                      >
-                        <Shield className="mr-2 h-4 w-4 text-unplayed-pink" />
-                        <span>Admin Support</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => navigate('/admin/hltb-data')}
-                      >
-                        <Clock className="mr-2 h-4 w-4 text-purple-400" />
-                        <span>HLTB Data</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => navigate('/admin/account-deletions')}
-                      >
-                        <UserMinus className="mr-2 h-4 w-4 text-unplayed-red" />
-                        <span>Account Deletions</span>
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => navigate('/admin/queue-manager')}
-                      >
-                        <ActivitySquare className="mr-2 h-4 w-4 text-blue-400" />
-                        <span>Queue Manager</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                    
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                    
-                    <DropdownMenuItem 
-                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-unplayed-red"
-                      onClick={signOut}
-                    >
-                      <LogIn className="mr-2 h-4 w-4 rotate-180" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                // Non-admin user avatar with dropdown
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
-                      <Avatar className="border border-unplayed-mint/30 cursor-pointer">
-                        {stableRenderState.hasProfile && profile?.steam_avatar ? (
-                          <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
-                        ) : (
-                          <AvatarFallback className="bg-gray-800 text-unplayed-mint">
-                            {profile?.steam_name?.substring(0, 2) || 'UN'}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="flex items-center">
-                        <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
-                        <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col">
-                        <span className="text-unplayed-mint">User Settings</span>
-                        <span className="text-xs text-gray-400">Manage your account</span>
-                      </div>
-                    </DropdownMenuLabel>
-                    
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                    
-                    {/* Demo Mode Toggle */}
-                    <div className="px-2 py-1.5 flex items-center justify-between">
-                      <span className="text-sm text-gray-400">Preview Mode</span>
-                      <Switch 
-                        checked={isDemoExplicit}
-                        onCheckedChange={setIsDemoExplicit}
-                        className="scale-75 data-[state=checked]:bg-unplayed-amber"
-                      />
-                    </div>
-                    
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                    
-                    {/* Logout Option */}
-                    <DropdownMenuItem 
-                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                      onClick={signOut}
-                    >
-                      <LogIn className="mr-2 h-4 w-4 rotate-180" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                    
-                    {/* Delete Account Option */}
-                    <DropdownMenuItem 
-                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-unplayed-red"
-                      onClick={() => setShowDeletionModal(true)}
-                    >
-                      <UserMinus className="mr-2 h-4 w-4" />
-                      <span>Delete Account</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          ) : (
-            // Show login button instead of Steam login
-            <Button 
-              onClick={() => navigate('/auth')}
-              variant="outline"
-              className="flex items-center gap-2 bg-black/50 border-gray-700 hover:bg-black/70"
+    <nav className="bg-black/95 backdrop-blur-sm border-b border-unplayed-mint/20 sticky top-0 z-50">
+      {/* Mobile menu button */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              aria-expanded="false"
             >
-              <LogIn size={16} />
-              <span>Sign In</span>
-            </Button>
-          )}
-        </div>
+              <span className="sr-only">Open main menu</span>
+              {/* Menu icon */}
+              <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              {/* Close icon */}
+              <svg className="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-        <div className="md:hidden flex items-center space-x-3">
-          {/* Discord Icon for Mobile - Updated to match FullScreenModeToggle */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 p-0 flex items-center justify-center bg-black/50 border-gray-700 hover:bg-black/70"
-            asChild
-          >
-            <a 
-              href="https://discord.gg/TvcNPryU8N" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              aria-label="Join our Discord"
-            >
-              <DiscordIcon size={18} />
-            </a>
-          </Button>
-          
-          <FullScreenModeToggle />
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="text-unplayed-mint p-2"
-          >
-            <Menu />
-          </button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="absolute top-16 right-0 left-0 glass-panel z-10 py-4 md:hidden animate-fade-in">
-            <div className="flex flex-col space-y-4 items-center">
-              <NavLink href="/" label="Dashboard" />
-              {user && (
-                <>
-                  <NavLink href="/picker" label="Picker" />
-                  <NavLink href="/library" label="Library" />
-                  {/* Display admin links in the mobile menu */}
-                  {isAdmin && (
-                    <>
-                      <NavLink href="/auth-debug" label="Debug" />
-                      <NavLink href="/admin/support" label="Admin Support" />
-                      <NavLink href="/admin/queue-manager" label="Queue Manager" />
-                      <NavLink href="/admin/account-deletions" label="Account Deletions" />
-                      <NavLink href="/admin/hltb-data" label="HLTB Data" />
-                    </>
-                  )}
-                </>
-              )}
-              <NavLink href="/leaderboard" label="Leaderboard" />
-              
-              {isLoading ? (
-                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
-              ) : user ? (
-                <div className="flex flex-col items-center space-y-2">
-                  <Avatar className="cursor-pointer border border-unplayed-mint/30">
-                    {profile?.steam_avatar ? (
-                      <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
-                    ) : (
-                      <AvatarFallback className="bg-gray-800 text-unplayed-mint">
-                        {profile?.steam_name?.substring(0, 2) || 'UN'}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="text-sm text-gray-300">
-                    {profile?.steam_name || 'User'}
-                  </div>
-                  
-                  {/* Demo Mode toggle for logged-in users on mobile */}
-                  <div className="flex items-center space-x-2 text-xs">
-                    <span className="text-gray-400">Preview Mode</span>
-                    <Switch 
-                      checked={isDemoExplicit}
-                      onCheckedChange={setIsDemoExplicit}
-                      className="scale-75 data-[state=checked]:bg-unplayed-amber"
-                    />
-                  </div>
-                  
-                  <button onClick={signOut} className="btn-secondary w-full mt-2">
-                    Logout
-                  </button>
-                  
-                  {/* Delete account button for mobile */}
-                  {!isAdmin && (
-                    <button 
-                      onClick={() => setShowDeletionModal(true)} 
-                      className="text-unplayed-red hover:text-red-400 transition-colors w-full mt-2"
-                    >
-                      <UserMinus size={16} className="inline mr-1" />
-                      Delete Account
-                    </button>
-                  )}
-                </div>
-              ) : (
-                // Show login button in mobile menu instead of Steam login
-                <Button 
-                  onClick={() => navigate('/auth')}
-                  className="w-full"
-                >
-                  <LogIn size={16} className="mr-2" />
-                  Sign In
-                </Button>
-              )}
-            </div>
+            {/* Logo */}
+            <Link to="/" className="flex-shrink-0 flex items-center ml-4">
+              <div className="w-8 h-8 bg-unplayed-mint rounded mr-3 flex items-center justify-center">
+                <span className="text-black font-bold text-sm">U</span>
+              </div>
+              <span className="text-white font-bold text-lg">unplayed</span>
+            </Link>
           </div>
-        )}
-      </header>
-      
-      {/* Account deletion modal */}
-      <AccountDeletionModal 
-        open={showDeletionModal}
-        onOpenChange={setShowDeletionModal}
-      />
-    </>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:ml-6 md:space-x-8">
+            <Link
+              to="/"
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                location.pathname === "/" 
+                  ? "text-unplayed-mint border-b-2 border-unplayed-mint" 
+                  : "text-gray-300 hover:text-unplayed-mint"
+              }`}
+            >
+              Dashboard
+            </Link>
+            
+            <Link
+              to="/picker"
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                location.pathname === "/picker" 
+                  ? "text-unplayed-amber border-b-2 border-unplayed-amber" 
+                  : "text-gray-300 hover:text-unplayed-amber"
+              }`}
+            >
+              Picker
+            </Link>
+
+            <Link
+              to="/library"
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                location.pathname === "/library" 
+                  ? "text-unplayed-pink border-b-2 border-unplayed-pink" 
+                  : "text-gray-300 hover:text-unplayed-pink"
+              }`}
+            >
+              Library
+            </Link>
+
+            <Link
+              to="/leaderboard"
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                location.pathname === "/leaderboard" 
+                  ? "text-unplayed-mint border-b-2 border-unplayed-mint" 
+                  : "text-gray-300 hover:text-unplayed-mint"
+              }`}
+            >
+              Leaderboard
+            </Link>
+
+            <a
+              href="https://discord.gg/f6nA55Sg4G"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 text-sm font-medium text-gray-300 hover:text-purple-400 transition-colors flex items-center"
+            >
+              <DiscordIcon className="h-4 w-4 mr-1" />
+              Discord
+            </a>
+
+            <FullScreenModeToggle />
+          </div>
+
+          {/* Desktop Auth Section */}
+          <div className="hidden md:flex md:items-center md:ml-auto">
+            {user ? (
+              <button
+                onClick={() => signOut()}
+                className="bg-unplayed-red hover:bg-unplayed-red/80 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="bg-unplayed-mint hover:bg-unplayed-mint/80 text-black font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors"
+              >
+                Sign In / Sign Up
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black/95 border-t border-unplayed-mint/20">
+          <Link
+            to="/"
+            className={`block px-3 py-2 text-base font-medium transition-colors ${
+              location.pathname === "/" 
+                ? "text-unplayed-mint bg-unplayed-mint/10" 
+                : "text-gray-300 hover:text-unplayed-mint hover:bg-unplayed-mint/5"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Dashboard
+          </Link>
+          
+          <Link
+            to="/picker"
+            className={`block px-3 py-2 text-base font-medium transition-colors ${
+              location.pathname === "/picker" 
+                ? "text-unplayed-amber bg-unplayed-amber/10" 
+                : "text-gray-300 hover:text-unplayed-amber hover:bg-unplayed-amber/5"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Picker
+          </Link>
+
+          <Link
+            to="/library"
+            className={`block px-3 py-2 text-base font-medium transition-colors ${
+              location.pathname === "/library" 
+                ? "text-unplayed-pink bg-unplayed-pink/10" 
+                : "text-gray-300 hover:text-unplayed-pink hover:bg-unplayed-pink/5"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Library
+          </Link>
+
+          <Link
+            to="/leaderboard"
+            className={`block px-3 py-2 text-base font-medium transition-colors ${
+              location.pathname === "/leaderboard" 
+                ? "text-unplayed-mint bg-unplayed-mint/10" 
+                : "text-gray-300 hover:text-unplayed-mint hover:bg-unplayed-mint/5"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Leaderboard
+          </Link>
+
+          <a
+            href="https://discord.gg/f6nA55Sg4G"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-purple-400 transition-colors"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <DiscordIcon className="h-4 w-4 mr-1 inline" />
+            Discord
+          </a>
+
+          <div className="px-3 py-2">
+            <FullScreenModeToggle />
+          </div>
+          
+          {/* Auth section */}
+          <div className="mt-4">
+            {user ? (
+              <button
+                onClick={() => signOut()}
+                className="block w-full text-left px-4 py-2 text-base font-medium text-white bg-unplayed-red hover:bg-unplayed-red/80 transition-colors rounded"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="block w-full text-left px-4 py-2 text-base font-medium text-black bg-unplayed-mint hover:bg-unplayed-mint/80 transition-colors rounded"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sign In / Sign Up
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
   );
 };
-
-const NavLink = ({ href, label }: { href: string; label: string }) => (
-  <Link 
-    to={href} 
-    className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200"
-  >
-    {label}
-  </Link>
-);
 
 export default Header;
