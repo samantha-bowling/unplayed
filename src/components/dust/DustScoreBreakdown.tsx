@@ -86,7 +86,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -161,17 +161,17 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
             </div>
           </div>
           
-          <div className="bg-black/30 rounded-lg p-4 space-y-4">
+          <div className="bg-black/30 rounded-lg p-4">
             <div>
               <h3 className="text-lg font-medium mb-2">Your Dust Tier</h3>
-              <div className="flex items-center">
+              <div className="flex items-center mb-2">
                 <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: dustTier.color }}></div>
                 <span className="font-medium" style={{ color: dustTier.color }}>{dustTier.name}</span>
               </div>
-              <p className="text-sm text-gray-400 mt-1">{dustTier.description}</p>
+              <p className="text-sm text-gray-400 mb-4">{dustTier.description}</p>
             </div>
 
-            <div>
+            <div className="mb-4">
               <h3 className="text-lg font-medium mb-2">What It Means</h3>
               <div className="space-y-3 text-sm">
                 <p>
@@ -185,17 +185,17 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 </p>
               </div>
             </div>
-
-            <div>
-              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-                <li>Play the games with the highest dust scores first</li>
-                <li>Focus on games you've owned for a long time</li>
-                <li>Play newer game purchases before they accumulate dust</li>
-                <li>Set aside regular time to tackle your backlog</li>
-              </ul>
-            </div>
           </div>
+        </div>
+
+        <div className="bg-black/20 rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-2">How to Improve</h3>
+          <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+            <li>Play the games with the highest dust scores first</li>
+            <li>Focus on games you've owned for a long time</li>
+            <li>Play newer game purchases before they accumulate dust</li>
+            <li>Set aside regular time to tackle your backlog</li>
+          </ul>
         </div>
       </CardContent>
     </Card>
