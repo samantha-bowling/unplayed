@@ -1,3 +1,4 @@
+
 import { UnplayedDataType, GameListItem, CleanScoreBreakdown, CleanScoreTier, GenreData } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
 import { getBestGameImage } from './image-utils';
@@ -217,7 +218,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     const otherCount = Array.from(genreCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(5)
-      .reduce((sum, [count]) => sum + count, 0);
+      .reduce((sum, [, count]) => sum + count, 0);
     
     genres.push({
       name: 'Other',
