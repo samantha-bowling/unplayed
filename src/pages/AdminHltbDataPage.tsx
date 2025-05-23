@@ -20,6 +20,16 @@ interface HltbStats {
   percentCoverage: number;
 }
 
+// Response type for the HLTB processing function
+interface HltbProcessResponse {
+  processedCount: number;
+  successCount: number;
+  errorCount: number;
+  lastProcessedId: number;
+  complete: boolean;
+  results: any[];
+}
+
 const AdminHltbDataPage = () => {
   const [batchSize, setBatchSize] = useState(5);
   const [processLimit, setProcessLimit] = useState(50);
@@ -56,7 +66,7 @@ const AdminHltbDataPage = () => {
 
   const { stats, isLoading, fetchStats } = useAdminStats<HltbStats>(fetchHltbStats);
   
-  const hltbProcessor = useBatchProcessor({
+  const hltbProcessor = useBatchProcessor<HltbProcessResponse>({
     processingFunction: async (options) => {
       return supabase.functions.invoke("backfill-hltb-estimates", {
         body: options

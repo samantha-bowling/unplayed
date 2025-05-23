@@ -2,7 +2,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
-interface BatchProcessorOptions<T> {
+// Define an interface for the expected response from the processing function
+interface BatchProcessResponse {
+  lastProcessedId?: number;
+  complete?: boolean;
+  processedCount?: number;
+  successCount?: number;
+  errorCount?: number;
+  [key: string]: any; // Allow for additional properties
+}
+
+interface BatchProcessorOptions<T extends BatchProcessResponse> {
   processingFunction: (options: any) => Promise<T>;
   onSuccess?: (data: T) => void;
   onError?: (error: any) => void;
@@ -20,7 +30,7 @@ interface BatchProcessorState {
   processLimit?: number;
 }
 
-export function useBatchProcessor<T>({
+export function useBatchProcessor<T extends BatchProcessResponse>({
   processingFunction,
   onSuccess,
   onError,
