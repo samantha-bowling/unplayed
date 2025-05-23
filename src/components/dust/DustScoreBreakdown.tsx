@@ -87,17 +87,9 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               Your total Dust Score of {totalScore.toLocaleString()} is calculated from these factors
             </CardDescription>
           </div>
-          <div className="bg-black/30 rounded-lg p-3 min-w-56">
-            <h3 className="text-lg font-medium mb-1">Your Dust Tier</h3>
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: dustTier.color }}></div>
-              <span className="font-medium" style={{ color: dustTier.color }}>{dustTier.name}</span>
-            </div>
-            <p className="text-sm text-gray-400">{dustTier.description}</p>
-          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
@@ -184,6 +176,19 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           </div>
           
           <div className="space-y-4">
+            <div className="bg-black/30 rounded-lg p-3">
+              <h3 className="text-lg font-medium mb-1">Your Dust Tier</h3>
+              <div className="flex items-center mb-1">
+                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: dustTier.color }}></div>
+                <span className="font-medium" style={{ color: dustTier.color }}>
+                  {dustTier.name}
+                </span>
+              </div>
+              <p className="text-sm text-gray-300">
+                {dustTier.description}
+              </p>
+            </div>
+
             <div className="bg-black/30 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-2">What It Means</h3>
               <div className="space-y-3 text-sm">
