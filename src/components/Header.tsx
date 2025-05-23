@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { DiscordIcon } from 'lucide-react';
+import DiscordIcon from './icons/DiscordIcon';
 import FullScreenModeToggle from './FullScreenModeToggle';
 
 const Header = () => {

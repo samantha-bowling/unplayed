@@ -64,37 +64,37 @@ const LibraryPreviewEnhanced = ({
   const [iconCount, setIconCount] = useState(0);
 
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
-  const displayGames = propGames || unplayedData.library;
+  const displayGames = propGames || unplayedData.library || [];
 
   // Sort games based on selected option
   const sortedGames = useMemo(() => {
-    if (!displayGames) return [];
+    if (!displayGames || displayGames.length === 0) return [];
     
     const gamesCopy = [...displayGames];
     
     switch (sortOption) {
       case 'name-asc':
         return gamesCopy.sort((a, b) => {
-          const nameA = 'name' in a ? a.name : a.title;
-          const nameB = 'name' in b ? b.name : b.title;
+          const nameA = a.name || '';
+          const nameB = b.name || '';
           return nameA.localeCompare(nameB);
         });
       case 'name-desc':
         return gamesCopy.sort((a, b) => {
-          const nameA = 'name' in a ? a.name : a.title;
-          const nameB = 'name' in b ? b.name : b.title;
+          const nameA = a.name || '';
+          const nameB = b.name || '';
           return nameB.localeCompare(nameA);
         });
       case 'release-asc':
         return gamesCopy.sort((a, b) => {
-          const dateA = 'release_date' in a ? new Date(a.release_date || '1970-01-01') : new Date('1970-01-01');
-          const dateB = 'release_date' in b ? new Date(b.release_date || '1970-01-01') : new Date('1970-01-01');
+          const dateA = new Date(a.release_date || '1970-01-01');
+          const dateB = new Date(b.release_date || '1970-01-01');
           return dateA.getTime() - dateB.getTime();
         });
       case 'release-desc':
         return gamesCopy.sort((a, b) => {
-          const dateA = 'release_date' in a ? new Date(a.release_date || '1970-01-01') : new Date('1970-01-01');
-          const dateB = 'release_date' in b ? new Date(b.release_date || '1970-01-01') : new Date('1970-01-01');
+          const dateA = new Date(a.release_date || '1970-01-01');
+          const dateB = new Date(b.release_date || '1970-01-01');
           return dateB.getTime() - dateA.getTime();
         });
       case 'random':
@@ -231,11 +231,9 @@ const LibraryPreviewEnhanced = ({
       {viewMode === 'grid' ? (
         <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4 ${showFullScreenMode ? 'p-8 pt-0' : ''}`}>
           {currentGames.map(game => {
-            const gameId = 'id' in game ? game.id : game.gameId;
-            const title = 'name' in game ? game.name : game.title;
-            const imageUrl = 'image_url' in game ? game.image_url : null;
-            const headerImage = 'header_image' in game ? game.header_image : null;
-            const image = 'image' in game ? game.image : getBestGameImage(headerImage, imageUrl);
+            const gameId = game.id;
+            const title = game.name;
+            const image = getBestGameImage(game.header_image, game.image_url);
             
             return (
               <TooltipProvider key={gameId}>
@@ -272,8 +270,8 @@ const LibraryPreviewEnhanced = ({
           )}
           
           {currentGames.map((game, index) => {
-            const gameId = 'id' in game ? game.id : game.gameId;
-            const title = 'name' in game ? game.name : game.title;
+            const gameId = game.id;
+            const title = game.name;
             
             if (!zenPositions[index]) return null;
             
@@ -333,7 +331,7 @@ const LibraryPreviewEnhanced = ({
       {!showFullScreenMode && !propGames && (
         <div className="text-center mt-6 flex flex-col items-center">
           <p className="text-gray-400">
-            Showing {currentGames.length} of {unplayedData.totalGames} unplayed games
+            Showing {currentGames.length} of {unplayedData.totalGames || 0} unplayed games
           </p>
           
           {isDemo ? (
