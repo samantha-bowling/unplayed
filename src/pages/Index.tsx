@@ -335,7 +335,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Picker - Now comes before Library */}
+        {/* Picker - Moved before Library */}
         <section id="picker" className="w-full py-8 px-4">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
@@ -346,7 +346,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Library - Now comes after Picker */}
+        {/* Library - Moved after Picker */}
         <section id="library" className="w-full py-8 px-4 bg-black/30">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">

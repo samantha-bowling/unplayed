@@ -1,80 +1,82 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { DiscordIcon } from 'lucide-react';
-import AboutDialog from './AboutDialog';
-import PrivacyDialog from './PrivacyDialog';
-import TermsDialog from './TermsDialog';
-import HallOfThanks from './HallOfThanks';
+
+import { useState, useCallback } from "react";
+import { useFullScreenMode } from "@/context/FullScreenModeContext";
+import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
+import TermsOfServiceDialog from "./TermsOfServiceDialog";
+import AboutDialog from "./AboutDialog";
+import { Link } from "react-router-dom";
+import DiscordIcon from "./icons/DiscordIcon";
 
 const Footer = () => {
-  const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
-  const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
-  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+  const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const { isFullScreenMode } = useFullScreenMode();
+  
+  // Use useCallback to prevent unnecessary re-renders
+  const openPrivacyPolicy = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setPrivacyPolicyOpen(true);
+  }, []);
+  
+  const openTermsOfService = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setTermsOfServiceOpen(true);
+  }, []);
+  
+  const openAbout = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setAboutOpen(true);
+  }, []);
 
+  // Hide footer in full screen mode
+  if (isFullScreenMode) {
+    return null;
+  }
+  
   return (
-    <footer className="bg-black/95 border-t border-unplayed-mint/20 py-8 px-4">
+    <footer className="w-full p-6 mt-16 relative z-10">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
-            <div className="w-8 h-8 bg-unplayed-mint rounded mr-3 flex items-center justify-center">
-              <span className="text-black font-bold text-sm">U</span>
-            </div>
-            <span className="text-white font-bold text-lg">unplayed</span>
+          <div className="mb-4 md:mb-0">
+            <Link to="/" className="text-xl font-space font-bold">
+              <span className="text-unplayed-mint">unplayed</span>
+              <span className="text-unplayed-pink">.wtf</span>
+            </Link>
+            <p className="text-gray-400 text-sm mt-1">Your Steam library backlog tamer</p>
           </div>
           
-          <div className="flex items-center space-x-6 text-sm">
-            <button
-              onClick={() => setAboutDialogOpen(true)}
-              className="text-gray-400 hover:text-unplayed-mint transition-colors"
-            >
+          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openPrivacyPolicy}>
+              Privacy Policy
+            </a>
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openTermsOfService}>
+              Terms of Service
+            </a>
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openAbout}>
               About
-            </button>
-            
-            <Link
-              to="/support"
-              className="text-gray-400 hover:text-unplayed-mint transition-colors"
-            >
-              Support
-            </Link>
-            
-            <a
-              href="https://discord.gg/f6nA55Sg4G"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-purple-400 transition-colors flex items-center"
-            >
-              <DiscordIcon className="h-4 w-4 mr-1" />
+            </a>
+            <a href="https://discord.gg/TvcNPryU8N" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm flex items-center gap-1">
+              <DiscordIcon size={16} className="opacity-80" />
               Discord
             </a>
-            
-            <button
-              onClick={() => setPrivacyDialogOpen(true)}
-              className="text-gray-400 hover:text-unplayed-mint transition-colors"
-            >
-              Privacy
-            </button>
-            
-            <button
-              onClick={() => setTermsDialogOpen(true)}
-              className="text-gray-400 hover:text-unplayed-mint transition-colors"
-            >
-              Terms
-            </button>
           </div>
         </div>
         
-        <div className="mt-6 pt-6 border-t border-gray-800 text-center">
-          <p className="text-gray-500 text-sm">
-            © 2024 unplayed. Made with ❤️ for gamers with too many games.
+        <div className="border-t border-gray-800 mt-6 pt-6 text-center text-gray-500 text-sm">
+          <p>
+            Not affiliated with Valve Corporation or Steam. All game images are property of their respective owners.
           </p>
-          
-          <HallOfThanks />
+          <p className="mt-2">
+            © {new Date().getFullYear()} unplayed - All rights reserved
+          </p>
         </div>
       </div>
-      
-      <AboutDialog open={aboutDialogOpen} onOpenChange={setAboutDialogOpen} />
-      <PrivacyDialog open={privacyDialogOpen} onOpenChange={setPrivacyDialogOpen} />
-      <TermsDialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen} />
+
+      {/* Dialog components with React.memo to prevent unnecessary re-renders */}
+      {privacyPolicyOpen && <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />}
+      {termsOfServiceOpen && <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />}
+      {aboutOpen && <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />}
     </footer>
   );
 };
