@@ -206,8 +206,8 @@ const QueueManagerPage = () => {
           </p>
         </div>
 
-        {/* Smart Prioritization - New top section */}
-        <div className="mb-6">
+        {/* Smart Prioritization - Featured at the top */}
+        <div className="mb-8">
           <SmartPrioritizationCard />
         </div>
 

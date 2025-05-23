@@ -79,7 +79,7 @@ serve(async (req) => {
           id,
           name,
           release_date,
-          price,
+          price_cents,
           metacritic_score,
           genres,
           developer,
@@ -157,14 +157,15 @@ serve(async (req) => {
       }
 
       // Price range bonus (commercial games are often higher quality)
-      if (game.price && game.price > 0) {
+      if (game.price_cents && game.price_cents > 0) {
+        const price = game.price_cents / 100; // Convert to dollars
         // Sweet spot around $20-60 gets highest bonus
         let priceBonus = 0;
-        if (game.price >= 5 && game.price <= 60) {
+        if (price >= 5 && price <= 60) {
           priceBonus = weights.priceRange;
-        } else if (game.price > 60) {
+        } else if (price > 60) {
           priceBonus = weights.priceRange * 0.7; // Premium games still valuable
-        } else if (game.price > 0) {
+        } else if (price > 0) {
           priceBonus = weights.priceRange * 0.3; // Cheap games lower priority
         }
         score += priceBonus;
@@ -193,7 +194,7 @@ serve(async (req) => {
         userOwned: userOwnedSet.has(game.id),
         metacriticScore: game.metacritic_score,
         releaseDate: game.release_date,
-        price: game.price,
+        price: game.price_cents ? game.price_cents / 100 : null,
         hasEstimate: game.game_estimates && game.game_estimates.length > 0
       };
     });
