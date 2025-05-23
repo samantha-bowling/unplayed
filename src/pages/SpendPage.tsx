@@ -6,16 +6,19 @@ import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, DollarSign, TrendingDown, BarChart3 } from "lucide-react";
 import useSpendingData from "@/hooks/use-spending-data";
+import useDustScoreData from "@/hooks/use-dust-score-data";
 import { DemoModeIndicator } from '@/components/DemoModeIndicator';
 import CurrencyAmount from '@/components/ui/currency-amount';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { getBestGameImage } from '@/utils/image-utils';
 
 const SpendPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const { user } = useAuth();
   const { data, isLoading, refreshPrices, isRefreshing } = useSpendingData();
+  const { data: dustData } = useDustScoreData();
 
   // Format the date for better display
   const formatRefreshDate = (dateString: string | null) => {
@@ -84,7 +87,7 @@ const SpendPage = () => {
                             Spending Summary
                           </CardTitle>
                           <CardDescription>
-                            The total value of your unplayed games
+                            The total value of your Steam library
                           </CardDescription>
                         </div>
                         <Button 
@@ -100,21 +103,33 @@ const SpendPage = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="flex flex-col items-center p-8 bg-black/20 rounded-lg">
-                          <span className="text-xs uppercase text-gray-400 mb-2">Total Value</span>
-                          <span className="text-5xl font-bold mb-4">
-                            <CurrencyAmount amount={data.totalSpent} currency={data.currency} />
-                          </span>
-                          <span className="text-sm text-gray-400 mt-2">
-                            Last updated: {formatRefreshDate(data.refreshedAt)}
-                          </span>
+                        <div className="space-y-6">
+                          <div className="flex flex-col items-center p-8 bg-black/20 rounded-lg">
+                            <span className="text-xs uppercase text-gray-400 mb-2">Total Library Value</span>
+                            <span className="text-4xl font-bold mb-2">
+                              <CurrencyAmount amount={data.totalSpent} currency={data.currency} />
+                            </span>
+                            <span className="text-sm text-gray-400">
+                              Last updated: {formatRefreshDate(data.refreshedAt)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col items-center p-6 bg-black/20 rounded-lg">
+                            <span className="text-xs uppercase text-gray-400 mb-2">Total Unplayed Value</span>
+                            <span className="text-3xl font-bold mb-2">
+                              <CurrencyAmount amount={dustData.totalSpent || 0} currency={data.currency} />
+                            </span>
+                            <span className="text-sm text-gray-400">
+                              {data.topSpendingGames.length} unplayed games
+                            </span>
+                          </div>
                         </div>
                         
                         <div className="space-y-6">
                           <div className="p-4 bg-black/20 rounded-lg">
-                            <h3 className="text-sm uppercase text-gray-400 mb-1">Unplayed Games</h3>
+                            <h3 className="text-sm uppercase text-gray-400 mb-1">Total Games</h3>
                             <p className="text-2xl font-bold">
-                              {data.topSpendingGames.length}
+                              {dustData.totalGames || 0}
                             </p>
                           </div>
                           
@@ -181,13 +196,11 @@ const SpendPage = () => {
                               <tr key={game.id} className="border-b border-gray-800 hover:bg-gray-900/20">
                                 <td className="px-4 py-3">
                                   <div className="flex items-center">
-                                    {game.imageUrl && (
-                                      <img 
-                                        src={game.imageUrl} 
-                                        alt={game.title}
-                                        className="w-10 h-10 mr-3 rounded"
-                                      />
-                                    )}
+                                    <img 
+                                      src={getBestGameImage(game.imageUrl, null)} 
+                                      alt={game.title}
+                                      className="w-10 h-10 mr-3 rounded object-cover"
+                                    />
                                     <span className="font-medium truncate max-w-[200px]">{game.title}</span>
                                   </div>
                                 </td>
