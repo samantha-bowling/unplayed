@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Shield, Bug, Database, UserMinus, ActivitySquare, Clock } from 'lucide-react';
+import { Shield, Bug, Clock, UserMinus, ActivitySquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthPermission } from '@/hooks/use-auth-permission';
@@ -28,12 +28,13 @@ const AdminDashboardPage = () => {
       borderColor: 'border-unplayed-pink/30',
     },
     {
-      title: 'Steam Data Management',
-      description: 'View and manage Steam app data and processing.',
-      icon: <Database className="h-8 w-8 text-unplayed-amber" />,
-      path: '/admin/steam-data',
-      color: 'bg-gradient-to-br from-amber-900/40 to-amber-700/20',
-      borderColor: 'border-unplayed-amber/30',
+      title: 'HLTB Data Manager',
+      description: 'Manage HowLongToBeat data integration for game completion estimates.',
+      icon: <Clock className="h-8 w-8 text-purple-400" />,
+      path: '/admin/hltb-data',
+      color: 'bg-gradient-to-br from-purple-900/40 to-purple-700/20',
+      borderColor: 'border-purple-400/30',
+      highlight: true,
     },
     {
       title: 'Account Deletions',
@@ -50,15 +51,6 @@ const AdminDashboardPage = () => {
       path: '/admin/queue-manager',
       color: 'bg-gradient-to-br from-blue-900/40 to-blue-700/20',
       borderColor: 'border-blue-400/30',
-    },
-    {
-      title: 'HLTB Data Manager',
-      description: 'Manage HowLongToBeat data integration for game completion estimates.',
-      icon: <Clock className="h-8 w-8 text-purple-400" />,
-      path: '/admin/hltb-data',
-      color: 'bg-gradient-to-br from-purple-900/40 to-purple-700/20',
-      borderColor: 'border-purple-400/30',
-      highlight: true,
     },
   ];
 

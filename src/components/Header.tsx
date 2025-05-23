@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, LogIn, ChevronDown, Settings, Shield, Database, Bug, UserMinus, ActivitySquare } from 'lucide-react';
+import { Menu, LogIn, ChevronDown, Settings, Shield, Bug, UserMinus, ActivitySquare, Clock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -170,10 +170,10 @@ const Header = () => {
                       
                       <DropdownMenuItem 
                         className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => navigate('/admin/steam-data')}
+                        onClick={() => navigate('/admin/hltb-data')}
                       >
-                        <Database className="mr-2 h-4 w-4 text-unplayed-amber" />
-                        <span>Steam Data</span>
+                        <Clock className="mr-2 h-4 w-4 text-purple-400" />
+                        <span>HLTB Data</span>
                       </DropdownMenuItem>
                       
                       <DropdownMenuItem 
@@ -322,6 +322,7 @@ const Header = () => {
                       <NavLink href="/admin/support" label="Admin Support" />
                       <NavLink href="/admin/queue-manager" label="Queue Manager" />
                       <NavLink href="/admin/account-deletions" label="Account Deletions" />
+                      <NavLink href="/admin/hltb-data" label="HLTB Data" />
                     </>
                   )}
                 </>

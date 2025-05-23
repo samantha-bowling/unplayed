@@ -110,12 +110,12 @@ export const routes: Record<string, RouteConfig> = {
   ADMIN_STEAM_DATA: {
     path: "/admin/steam-data",
     requiresAuth: true,
-    redirectPath: "/admin/queue-manager"
+    redirectPath: "/admin/hltb-data"
   },
   AUTH_STEAM_DATA: {
     path: "/auth/steam-data",
     requiresAuth: true,
-    redirectPath: "/admin/queue-manager"
+    redirectPath: "/admin/hltb-data"
   }
 };
 
