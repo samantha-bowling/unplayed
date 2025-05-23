@@ -1,12 +1,15 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import DiscordIcon from './icons/DiscordIcon';
+import { DiscordIcon } from 'lucide-react';
 import AboutDialog from './AboutDialog';
+import PrivacyDialog from './PrivacyDialog';
+import TermsDialog from './TermsDialog';
 import HallOfThanks from './HallOfThanks';
 
 const Footer = () => {
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
+  const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
 
   return (
     <footer className="bg-black/95 border-t border-unplayed-mint/20 py-8 px-4">
@@ -43,6 +46,20 @@ const Footer = () => {
               <DiscordIcon className="h-4 w-4 mr-1" />
               Discord
             </a>
+            
+            <button
+              onClick={() => setPrivacyDialogOpen(true)}
+              className="text-gray-400 hover:text-unplayed-mint transition-colors"
+            >
+              Privacy
+            </button>
+            
+            <button
+              onClick={() => setTermsDialogOpen(true)}
+              className="text-gray-400 hover:text-unplayed-mint transition-colors"
+            >
+              Terms
+            </button>
           </div>
         </div>
         
@@ -56,6 +73,8 @@ const Footer = () => {
       </div>
       
       <AboutDialog open={aboutDialogOpen} onOpenChange={setAboutDialogOpen} />
+      <PrivacyDialog open={privacyDialogOpen} onOpenChange={setPrivacyDialogOpen} />
+      <TermsDialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen} />
     </footer>
   );
 };
