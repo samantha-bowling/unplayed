@@ -1,3 +1,4 @@
+
 /**
  * Core game data structure used throughout the app
  */
@@ -12,8 +13,6 @@ export interface GameListItem {
   categories?: string[];
   addedDate?: string;
   dustScore?: number;
-  header_image?: string | null;
-  image_url?: string | null;
 }
 
 /**
