@@ -1,11 +1,17 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+import { useState, useCallback } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RefreshCw, Database, BarChart } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Database, BarChart } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import AdminLayout from '@/layouts/AdminLayout';
+import ProcessingFooter from "@/components/admin/ProcessingFooter";
+import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
+import AdminStatsCard from "@/components/admin/AdminStatsCard";
+import { useBatchProcessor } from "@/hooks/use-batch-processor";
+import { useAdminStats } from "@/hooks/use-admin-stats";
+import { StatItem } from "@/components/admin/AdminStatsCard";
 
 // Define TypeScript interfaces for better type safety
 interface QueueStats {
@@ -24,37 +30,34 @@ interface SyncData {
   status: string;
 }
 
+// Response type for the Steam processing function
+interface SteamProcessResponse {
+  processedCount?: number;
+  success?: boolean;
+  message?: string;
+  lastProcessedId?: number;
+  complete?: boolean;
+}
+
 const AdminSteamDataPage = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [queueStats, setQueueStats] = useState<QueueStats>({
-    pending: 0,
-    processing: 0,
-    completed: 0,
-    failed: 0,
-    total: 0
-  });
+  const [batchSize, setBatchSize] = useState<number>(10);
   const [lastSync, setLastSync] = useState<SyncData | null>(null);
-  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   // Fetch queue statistics
-  useEffect(() => {
-    fetchQueueStats();
-  }, []);
-
-  const fetchQueueStats = async () => {
+  const fetchQueueStats = useCallback(async (): Promise<QueueStats> => {
     try {
-      // Call the Edge Function directly instead of using RPC
+      // First try to use edge function
       const { data: statusCounts, error: functionError } = await supabase.functions.invoke(
         'get-queue-stats-by-status'
       );
       
       if (functionError) {
         console.error("Edge function error:", functionError);
-        // Fallback to direct count if the Edge function fails
-        await fetchQueueStatsDirectly();
-        return;
+        // Fallback to direct counts
+        return await fetchQueueStatsDirectly();
       }
-
+      
       // Get total count
       const { count: totalCount, error: countError } = await supabase
         .from("steam_app_queue")
@@ -62,8 +65,7 @@ const AdminSteamDataPage = () => {
 
       if (countError) {
         console.error("Error fetching total count:", countError);
-        toast.error("Failed to load queue statistics");
-        return;
+        throw countError;
       }
 
       // Get the most recent sync record
@@ -77,11 +79,13 @@ const AdminSteamDataPage = () => {
       if (syncError && syncError.code !== 'PGRST116') {
         // PGRST116 is the "No rows returned" error - this is fine for first run
         console.error("Error fetching sync data:", syncError);
+      } else if (syncData) {
+        setLastSync(syncData);
       }
-
+      
       // Process the statistics from the Edge function
       // Initialize with zeros
-      const stats: QueueStats = {
+      const stats = {
         pending: 0,
         processing: 0,
         completed: 0,
@@ -98,20 +102,17 @@ const AdminSteamDataPage = () => {
         });
       }
 
-      setQueueStats(stats);
-      if (syncData) {
-        setLastSync(syncData);
-      }
+      return stats;
     } catch (error) {
       console.error("Error in fetchQueueStats:", error);
       toast.error("Failed to load queue statistics");
       // Attempt direct counting as fallback
-      await fetchQueueStatsDirectly();
+      return await fetchQueueStatsDirectly();
     }
-  };
+  }, []);
 
   // Fallback method that counts each status individually
-  const fetchQueueStatsDirectly = async () => {
+  const fetchQueueStatsDirectly = async (): Promise<QueueStats> => {
     try {
       console.log("Using fallback direct counting method");
       
@@ -144,8 +145,6 @@ const AdminSteamDataPage = () => {
         }
       }
       
-      setQueueStats(stats);
-      
       // Get the most recent sync record
       const { data: syncData, error: syncError } = await supabase
         .from("steam_app_sync")
@@ -158,11 +157,37 @@ const AdminSteamDataPage = () => {
         setLastSync(syncData);
       }
       
+      return stats;
     } catch (error) {
       console.error("Error in direct count fallback:", error);
       toast.error("Failed to load queue statistics using fallback method");
+      return {
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+        total: 0
+      };
     }
   };
+
+  // Use our shared hooks for stats and batch processing
+  const { stats, isLoading: statsLoading, fetchStats } = useAdminStats<QueueStats>(fetchQueueStats);
+  
+  const appProcessor = useBatchProcessor<SteamProcessResponse>({
+    processingFunction: async (options) => {
+      return supabase.functions.invoke("fetch-steam-app-details", {
+        body: { processBatch: true, batchSize: options.batchSize || batchSize }
+      }).then(({ data, error }) => {
+        if (error) throw error;
+        return data;
+      });
+    },
+    onSuccess: () => {
+      fetchStats();
+    },
+    continuousInterval: 2000 // 2 second delay between batches in continuous mode
+  });
 
   // Fetch the Steam app list
   const fetchSteamAppList = async () => {
@@ -184,7 +209,7 @@ const AdminSteamDataPage = () => {
       
       // Reload stats after a short delay
       setTimeout(() => {
-        fetchQueueStats();
+        fetchStats();
         setIsLoading(false);
       }, 2000);
     } catch (err) {
@@ -194,36 +219,17 @@ const AdminSteamDataPage = () => {
     }
   };
 
-  // Process a batch of app details
-  const processBatch = async () => {
-    try {
-      setIsFetchingDetails(true);
-      toast.info("Processing batch of Steam app details...");
-      
-      const { data, error } = await supabase.functions.invoke("fetch-steam-app-details", {
-        body: { processBatch: true, batchSize: 10 }
-      });
-      
-      if (error) {
-        console.error("Error processing app details:", error);
-        toast.error("Failed to process app details");
-        setIsFetchingDetails(false);
-        return;
-      }
-      
-      toast.success("Processing batch initiated successfully!");
-      console.log("Batch processing response:", data);
-      
-      // Reload stats after a short delay
-      setTimeout(() => {
-        fetchQueueStats();
-        setIsFetchingDetails(false);
-      }, 2000);
-    } catch (err) {
-      console.error("Error calling batch processing:", err);
-      toast.error("Error occurred while processing batch");
-      setIsFetchingDetails(false);
-    }
+  // Convert our stats object to the format expected by AdminStatsCard
+  const getStatItems = (): StatItem[] => {
+    if (!stats) return [];
+    
+    return [
+      { key: "pending", label: "Pending", value: stats.pending },
+      { key: "processing", label: "Processing", value: stats.processing },
+      { key: "completed", label: "Completed", value: stats.completed },
+      { key: "failed", label: "Failed", value: stats.failed },
+      { key: "total", label: "Total", value: stats.total },
+    ];
   };
 
   return (
@@ -262,81 +268,33 @@ const AdminSteamDataPage = () => {
               )}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              onClick={fetchSteamAppList} 
-              disabled={isLoading}
-              className="w-full"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? 'Fetching...' : 'Fetch Steam App List'}
-            </Button>
-          </CardFooter>
+          <CardHeader className="pt-0">
+            <ProcessingFooter
+              isProcessing={isLoading}
+              onProcess={fetchSteamAppList}
+              processText="Fetch Steam App List"
+              processingText="Fetching..."
+            />
+          </CardHeader>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BarChart className="mr-2 h-5 w-5" />
-              Queue Statistics
-            </CardTitle>
-            <CardDescription>
-              Current status of the Steam app processing queue
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Count</TableHead>
-                    <TableHead>Percentage</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>Pending</TableCell>
-                    <TableCell>{queueStats.pending}</TableCell>
-                    <TableCell>{queueStats.total > 0 ? `${(queueStats.pending / queueStats.total * 100).toFixed(1)}%` : '0%'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Processing</TableCell>
-                    <TableCell>{queueStats.processing}</TableCell>
-                    <TableCell>{queueStats.total > 0 ? `${(queueStats.processing / queueStats.total * 100).toFixed(1)}%` : '0%'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Completed</TableCell>
-                    <TableCell>{queueStats.completed}</TableCell>
-                    <TableCell>{queueStats.total > 0 ? `${(queueStats.completed / queueStats.total * 100).toFixed(1)}%` : '0%'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Failed</TableCell>
-                    <TableCell>{queueStats.failed}</TableCell>
-                    <TableCell>{queueStats.total > 0 ? `${(queueStats.failed / queueStats.total * 100).toFixed(1)}%` : '0%'}</TableCell>
-                  </TableRow>
-                  <TableRow className="font-medium">
-                    <TableCell>Total</TableCell>
-                    <TableCell>{queueStats.total}</TableCell>
-                    <TableCell>100%</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              onClick={processBatch} 
-              disabled={isFetchingDetails || queueStats.pending === 0}
-              className="w-full"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isFetchingDetails ? 'animate-spin' : ''}`} />
-              {isFetchingDetails ? 'Processing...' : 'Process Next Batch'}
-            </Button>
-          </CardFooter>
-        </Card>
+        <AdminStatsCard
+          title="Queue Statistics"
+          description="Current status of the Steam app processing queue"
+          icon={<BarChart className="h-5 w-5" />}
+          stats={getStatItems()}
+          onRefresh={fetchStats}
+          isLoading={statsLoading}
+          footerContent={
+            <ProcessingFooter
+              isProcessing={appProcessor.isProcessing}
+              onProcess={() => appProcessor.processBatch({ batchSize })}
+              processText={`Process Next Batch (${batchSize})`}
+              processingText="Processing..."
+              disabled={!stats || stats.pending === 0}
+            />
+          }
+        />
       </div>
 
       <Card>
@@ -346,14 +304,35 @@ const AdminSteamDataPage = () => {
             Manage the Steam data processing workflow
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex gap-4">
-          <Button 
-            onClick={fetchQueueStats} 
-            variant="outline"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh Stats
-          </Button>
+        <CardContent className="space-y-6">
+          <BatchProcessingControls
+            batchSize={batchSize}
+            onBatchSizeChange={setBatchSize}
+            batchSizeMin={5}
+            batchSizeMax={50}
+            batchSizeStep={5}
+            showWarningThreshold={30}
+            warningMessage="Higher risk of rate limiting"
+            continuousMode={appProcessor.continuousMode}
+            processedCount={appProcessor.processedCount}
+            lastProcessedId={appProcessor.lastProcessedId}
+            processComplete={appProcessor.processComplete}
+          />
+          
+          <ProcessingFooter
+            isProcessing={appProcessor.isProcessing}
+            onProcess={() => appProcessor.processBatch({ batchSize })}
+            processText={`Process Batch (${batchSize} Games)`}
+            processingText="Processing..."
+            disabled={appProcessor.processComplete || !stats || stats.pending === 0}
+            continuousMode={appProcessor.continuousMode}
+            onToggleContinuous={appProcessor.toggleContinuousMode}
+            continuousText="Enable Continuous Processing"
+            stopContinuousText="Pause Continuous Processing"
+            continuousDisabled={appProcessor.processComplete || !stats || stats.pending === 0}
+            onReset={appProcessor.resetProcessor}
+            resetDisabled={appProcessor.isProcessing || (appProcessor.lastProcessedId === 0 && appProcessor.processedCount === 0)}
+          />
         </CardContent>
       </Card>
     </div>
