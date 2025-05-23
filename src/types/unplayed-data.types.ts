@@ -86,13 +86,16 @@ export interface ShelfLifeItem {
 }
 
 /**
- * Item in the library preview
+ * Item in the library preview - updated to match database structure
  */
 export interface LibraryItem {
   id: number;
   name: string;
   image: string;
   playtime: number;
+  release_date?: string | null;
+  header_image?: string | null;
+  image_url?: string | null;
 }
 
 /**
