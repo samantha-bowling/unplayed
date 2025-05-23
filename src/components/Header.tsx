@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Menu, LogIn, ChevronDown, Settings, Shield, Bug, UserMinus, ActivitySquare, Clock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -75,8 +76,8 @@ const Header = () => {
           <NavLink href="/" label="Dashboard" />
           {stableRenderState.isAuthenticated && (
             <>
+              <NavLink href="/picker" label="Picker" />
               <NavLink href="/library" label="Library" />
-              <NavLink href="/picker" label="Random Picker" />
               {/* Hide admin links from main navigation when we have the dropdown */}
               {isAdmin && !stableRenderState.hasProfile && (
                 <>
@@ -88,7 +89,6 @@ const Header = () => {
             </>
           )}
           <NavLink href="/leaderboard" label="Leaderboard" />
-          <NavLink href="/support" label="Support" />
           
           {/* Discord Link with Button styling to match FullScreenModeToggle */}
           <TooltipProvider>
@@ -313,8 +313,8 @@ const Header = () => {
               <NavLink href="/" label="Dashboard" />
               {user && (
                 <>
+                  <NavLink href="/picker" label="Picker" />
                   <NavLink href="/library" label="Library" />
-                  <NavLink href="/picker" label="Random Picker" />
                   {/* Display admin links in the mobile menu */}
                   {isAdmin && (
                     <>
@@ -328,7 +328,6 @@ const Header = () => {
                 </>
               )}
               <NavLink href="/leaderboard" label="Leaderboard" />
-              <NavLink href="/support" label="Support" />
               
               {isLoading ? (
                 <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>

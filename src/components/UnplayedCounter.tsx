@@ -137,10 +137,20 @@ const UnplayedCounter = ({
           </TooltipProvider>
         </div>
 
+        {/* Add percentage display in the white space */}
+        <div className="mt-auto pt-6 text-center">
+          <div className="text-2xl font-bold text-unplayed-amber mb-1">
+            {unplayedPercentage}%
+          </div>
+          <p className="text-sm text-gray-400">
+            of your {totalGames} game library is unplayed
+          </p>
+        </div>
+
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-auto pt-4 text-center flex justify-center">
+          <div className="mt-4 text-center flex justify-center">
             <p className="text-sm text-unplayed-mint">
-              You’re in Demo Mode. Sign in to track your unplayed Games.
+              You're in Demo Mode. Sign in to track your unplayed Games.
             </p>
           </div>
         )}

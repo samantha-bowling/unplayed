@@ -39,7 +39,23 @@ const SpendingEstimate = ({
   return (
     <div className="terminal-container equal-height-container">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="terminal-header text-2xl">Spending Estimate</h3>
+        <div>
+          <h3 className="terminal-header text-2xl">Spending Estimate</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="text-sm text-gray-400 cursor-help underline decoration-dotted">
+                  All prices shown in USD
+                </p>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>
+                  Prices are converted to USD for consistency. Original Steam store prices may vary by region.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         {showRefresh && (
           <TooltipProvider>
             <Tooltip>

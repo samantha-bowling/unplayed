@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -42,6 +43,7 @@ export interface SpendingData {
 
 /**
  * Custom hook to fetch and calculate spending data for the user's unplayed games
+ * Now simplified to USD-only for consistency
  */
 export const useSpendingData = () => {
   const { user } = useAuth();
@@ -127,10 +129,9 @@ export const useSpendingData = () => {
     const priceMap = new Map<number, GamePriceData>();
     gamePrices.forEach(price => priceMap.set(price.app_id, price));
     
-    // Calculate total spent on unplayed games
+    // Calculate total spent on unplayed games - fixed currency conversion
     let totalSpent = 0;
     let totalOriginalPrice = 0;
-    const currency = gamePrices.length > 0 ? gamePrices[0].currency : 'USD';
     
     // Track the latest refresh date
     let latestRefresh: Date | null = null;
@@ -149,10 +150,10 @@ export const useSpendingData = () => {
           }
         }
         
-        // Calculate price in dollars (not cents)
+        // Calculate price in dollars (cents to dollars conversion)
         const price = priceData?.final_price_cents 
           ? priceData.final_price_cents / 100
-          : (game.price ? game.price / 100 : 0);
+          : 0; // Remove fallback to game.price as it was causing double conversion
           
         const originalPrice = priceData?.initial_price_cents
           ? priceData.initial_price_cents / 100
@@ -169,7 +170,7 @@ export const useSpendingData = () => {
           originalPrice,
           discount: priceData?.discount_percent || null,
           imageUrl: game.image,
-          currency: priceData?.currency || 'USD',
+          currency: 'USD', // Simplified to USD only
         };
       })
       // Sort by price (highest first)
@@ -219,7 +220,7 @@ export const useSpendingData = () => {
       totalSaved,
       topSpendingGames,
       priceDistribution,
-      currency,
+      currency: 'USD', // Simplified to USD only
       refreshedAt: latestRefresh ? latestRefresh.toISOString() : null,
     };
   }, [isDemo, demoData, unplayedData?.gamesList, gamePrices]);

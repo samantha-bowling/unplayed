@@ -335,25 +335,25 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Library */}
-        <section id="library" className="w-full py-8 px-4">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold font-space mb-6 text-center">
-              <span className="text-unplayed-pink">Library</span>
-              <span className="text-white">.exe</span>
-            </h2>
-            <LibraryPreview />
-          </div>
-        </section>
-
-        {/* Picker */}
-        <section id="picker" className="w-full py-8 px-4 bg-black/30">
+        {/* Picker - Moved before Library */}
+        <section id="picker" className="w-full py-8 px-4">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-amber">Picker</span>
               <span className="text-white">.exe</span>
             </h2>
             <RandomPicker />
+          </div>
+        </section>
+
+        {/* Library - Moved after Picker */}
+        <section id="library" className="w-full py-8 px-4 bg-black/30">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold font-space mb-6 text-center">
+              <span className="text-unplayed-pink">Library</span>
+              <span className="text-white">.exe</span>
+            </h2>
+            <LibraryPreview />
           </div>
         </section>
 
