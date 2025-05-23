@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, DollarSign, TrendingDown, BarChart3 } from "lucide-react";
 import useSpendingData from "@/hooks/use-spending-data";
+import useTotalLibrarySpending from "@/hooks/use-total-library-spending";
 import useDustScoreData from "@/hooks/use-dust-score-data";
 import { DemoModeIndicator } from '@/components/DemoModeIndicator';
 import CurrencyAmount from '@/components/ui/currency-amount';
@@ -17,8 +18,11 @@ import { getBestGameImage } from '@/utils/image-utils';
 const SpendPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const { user } = useAuth();
-  const { data, isLoading, refreshPrices, isRefreshing } = useSpendingData();
+  const { data: unplayedSpendingData, isLoading: isUnplayedLoading, refreshPrices, isRefreshing } = useSpendingData();
+  const { data: totalLibraryData, isLoading: isTotalLibraryLoading } = useTotalLibrarySpending();
   const { data: dustData } = useDustScoreData();
+
+  const isLoading = isUnplayedLoading || isTotalLibraryLoading;
 
   // Format the date for better display
   const formatRefreshDate = (dateString: string | null) => {
@@ -107,20 +111,20 @@ const SpendPage = () => {
                           <div className="flex flex-col items-center p-8 bg-black/20 rounded-lg">
                             <span className="text-xs uppercase text-gray-400 mb-2">Total Library Value</span>
                             <span className="text-4xl font-bold mb-2">
-                              <CurrencyAmount amount={data.totalSpent} currency={data.currency} />
+                              <CurrencyAmount amount={totalLibraryData.totalLibraryValue} currency={totalLibraryData.currency} />
                             </span>
                             <span className="text-sm text-gray-400">
-                              Last updated: {formatRefreshDate(data.refreshedAt)}
+                              Last updated: {formatRefreshDate(totalLibraryData.refreshedAt)}
                             </span>
                           </div>
                           
                           <div className="flex flex-col items-center p-6 bg-black/20 rounded-lg">
                             <span className="text-xs uppercase text-gray-400 mb-2">Total Unplayed Value</span>
                             <span className="text-3xl font-bold mb-2">
-                              <CurrencyAmount amount={dustData.totalSpent || 0} currency={data.currency} />
+                              <CurrencyAmount amount={unplayedSpendingData.totalSpent} currency={unplayedSpendingData.currency} />
                             </span>
                             <span className="text-sm text-gray-400">
-                              {data.topSpendingGames.length} unplayed games
+                              {unplayedSpendingData.topSpendingGames.length} unplayed games
                             </span>
                           </div>
                         </div>
@@ -129,15 +133,15 @@ const SpendPage = () => {
                           <div className="p-4 bg-black/20 rounded-lg">
                             <h3 className="text-sm uppercase text-gray-400 mb-1">Total Games</h3>
                             <p className="text-2xl font-bold">
-                              {dustData.totalGames || 0}
+                              {totalLibraryData.totalGames}
                             </p>
                           </div>
                           
-                          {data.totalSaved && data.totalSaved > 0 && (
+                          {totalLibraryData.totalSaved && totalLibraryData.totalSaved > 0 && (
                             <div className="p-4 bg-black/20 rounded-lg">
                               <h3 className="text-sm uppercase text-gray-400 mb-1">Money Saved From Sales</h3>
                               <p className="text-2xl font-bold text-unplayed-mint">
-                                <CurrencyAmount amount={data.totalSaved} currency={data.currency} />
+                                <CurrencyAmount amount={totalLibraryData.totalSaved} currency={totalLibraryData.currency} />
                               </p>
                             </div>
                           )}
@@ -146,11 +150,11 @@ const SpendPage = () => {
                             <h3 className="text-sm uppercase text-gray-400 mb-1">Average Price Per Game</h3>
                             <p className="text-2xl font-bold">
                               <CurrencyAmount 
-                                amount={data.topSpendingGames.length > 0 ? 
-                                  data.totalSpent / data.topSpendingGames.length : 
+                                amount={totalLibraryData.totalGames > 0 ? 
+                                  totalLibraryData.totalLibraryValue / totalLibraryData.totalGames : 
                                   0
                                 } 
-                                currency={data.currency} 
+                                currency={totalLibraryData.currency} 
                               />
                             </p>
                           </div>
@@ -192,7 +196,7 @@ const SpendPage = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {data.topSpendingGames.slice(0, 20).map((game) => (
+                            {unplayedSpendingData.topSpendingGames.slice(0, 20).map((game) => (
                               <tr key={game.id} className="border-b border-gray-800 hover:bg-gray-900/20">
                                 <td className="px-4 py-3">
                                   <div className="flex items-center">
@@ -224,7 +228,7 @@ const SpendPage = () => {
                           </tbody>
                         </table>
                         
-                        {data.topSpendingGames.length === 0 && (
+                        {unplayedSpendingData.topSpendingGames.length === 0 && (
                           <div className="text-center py-12 text-gray-400">
                             <p>No unplayed games found in your library.</p>
                           </div>
