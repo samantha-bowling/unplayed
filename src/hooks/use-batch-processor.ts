@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 /**
@@ -75,6 +75,20 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
     processLimit: undefined,
   });
 
+  // Use refs to avoid circular dependencies in useEffect
+  const processingFunctionRef = useRef(processingFunction);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  const onCompleteRef = useRef(onComplete);
+
+  // Update refs when props change
+  useEffect(() => {
+    processingFunctionRef.current = processingFunction;
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+    onCompleteRef.current = onComplete;
+  }, [processingFunction, onSuccess, onError, onComplete]);
+
   /**
    * Set the batch size
    * @param size New batch size
@@ -124,9 +138,13 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
    * @param customOptions Additional options to pass to the processing function
    */
   const processBatch = useCallback(async (customOptions?: Record<string, any>) => {
-    if (state.isProcessing || state.processComplete) return;
+    if (state.isProcessing || state.processComplete) {
+      console.log('[useBatchProcessor] Skipping processBatch - already processing or complete');
+      return;
+    }
 
     try {
+      console.log('[useBatchProcessor] Starting batch processing');
       setState(prev => ({ ...prev, isProcessing: true }));
       
       const options = {
@@ -136,7 +154,9 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
         ...customOptions,
       };
 
-      const result = await processingFunction(options);
+      console.log('[useBatchProcessor] Processing with options:', options);
+      const result = await processingFunctionRef.current(options);
+      console.log('[useBatchProcessor] Processing result:', result);
       
       if (result) {
         // Update state based on result
@@ -147,53 +167,43 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
           processedCount: prev.processedCount + (result.processedCount || 0),
         }));
 
-        if (onSuccess) onSuccess(result);
+        if (onSuccessRef.current) onSuccessRef.current(result);
         
         if (result.complete) {
+          console.log('[useBatchProcessor] Processing complete');
           toast.success("Processing complete! No more items to process.");
-          if (onComplete) onComplete();
+          if (onCompleteRef.current) onCompleteRef.current();
           setState(prev => ({ ...prev, continuousMode: false }));
         }
       }
     } catch (err) {
-      console.error("Error processing batch:", err);
-      toast.error("Error occurred while processing batch");
-      if (onError) onError(err);
+      console.error("[useBatchProcessor] Error processing batch:", err);
+      toast.error(`Error occurred while processing batch: ${err.message || 'Unknown error'}`);
+      if (onErrorRef.current) onErrorRef.current(err);
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [
-    state.isProcessing, 
-    state.processComplete, 
-    state.batchSize,
-    state.processLimit,
-    state.lastProcessedId,
-    processingFunction,
-    onSuccess,
-    onError,
-    onComplete
-  ]);
+  }, [state.isProcessing, state.processComplete, state.batchSize, state.processLimit, state.lastProcessedId]);
 
   // Effect for continuous mode
   useEffect(() => {
     let intervalId: number | undefined;
 
     if (state.continuousMode && !state.isProcessing && !state.processComplete) {
+      console.log('[useBatchProcessor] Setting up continuous processing interval');
       intervalId = window.setInterval(async () => {
+        console.log('[useBatchProcessor] Continuous processing tick');
         await processBatch();
       }, continuousInterval);
     }
 
     return () => {
-      if (intervalId) window.clearInterval(intervalId);
+      if (intervalId) {
+        console.log('[useBatchProcessor] Cleaning up continuous processing interval');
+        window.clearInterval(intervalId);
+      }
     };
-  }, [
-    state.continuousMode, 
-    state.isProcessing, 
-    state.processComplete,
-    processBatch,
-    continuousInterval
-  ]);
+  }, [state.continuousMode, state.isProcessing, state.processComplete, processBatch, continuousInterval]);
 
   return {
     processBatch,

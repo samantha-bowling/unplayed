@@ -27,6 +27,7 @@ serve(async (req) => {
     // Verify admin role (for production) - can be bypassed in development
     const authorization = req.headers.get('Authorization');
     if (!authorization) {
+      console.error('[backfill-hltb-estimates] No authorization header provided');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -35,36 +36,30 @@ serve(async (req) => {
     
     // Get request parameters
     const { limit = 10, batchSize = 5, startAfter = 0 } = await req.json();
+    console.log(`[backfill-hltb-estimates] Parameters - limit: ${limit}, batchSize: ${batchSize}, startAfter: ${startAfter}`);
     
-    // Find games without estimates - FIXED: Using a different query approach
-    console.log(`[backfill-hltb-estimates] Finding games without estimates, startAfter=${startAfter}, limit=${limit}`);
+    // OPTIMIZED: Use LEFT JOIN to find games without estimates more efficiently
+    console.log(`[backfill-hltb-estimates] Finding games without estimates using LEFT JOIN`);
     
-    // First get game IDs that already have estimates
-    const { data: existingEstimates, error: estimatesError } = await supabase
-      .from('game_estimates')
-      .select('game_id');
-    
-    if (estimatesError) {
-      throw new Error(`Error fetching existing estimates: ${estimatesError.message}`);
-    }
-    
-    // Extract game IDs into an array
-    const gameIdsWithEstimates = existingEstimates?.map(record => record.game_id) || [];
-    
-    // Now fetch games that don't have estimates
     const { data: games, error } = await supabase
       .from('games')
-      .select('id, name')
+      .select(`
+        id, 
+        name,
+        game_estimates!left(game_id)
+      `)
       .gt('id', startAfter)
-      .not('id', 'in', gameIdsWithEstimates.length > 0 ? gameIdsWithEstimates : [0])
+      .is('game_estimates.game_id', null)
       .order('id', { ascending: true })
       .limit(limit);
     
     if (error) {
+      console.error(`[backfill-hltb-estimates] Error fetching games: ${error.message}`);
       throw new Error(`Error fetching games: ${error.message}`);
     }
     
     if (!games || games.length === 0) {
+      console.log('[backfill-hltb-estimates] No games found that need estimates');
       return new Response(JSON.stringify({ 
         message: 'No games found that need estimates',
         processedCount: 0,
@@ -91,27 +86,29 @@ serve(async (req) => {
       
       const batchPromises = batch.map(async (game) => {
         try {
-          // Call the fetch-hltb-estimate function
-          const response = await fetch(
-            `https://gwmygthanyycveyqqspr.functions.supabase.co/fetch-hltb-estimate`, 
+          // FIXED: Use supabase.functions.invoke instead of raw fetch for proper auth
+          console.log(`[backfill-hltb-estimates] Calling fetch-hltb-estimate for game ${game.id}: ${game.name}`);
+          
+          const { data: result, error: functionError } = await supabase.functions.invoke(
+            'fetch-hltb-estimate',
             {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': authorization,
-              },
-              body: JSON.stringify({
+              body: {
                 game_id: game.id,
                 title: game.name,
-              }),
+              },
             }
           );
           
-          const result = await response.json();
+          if (functionError) {
+            console.error(`[backfill-hltb-estimates] Function error for game ${game.id}: ${functionError.message}`);
+            throw functionError;
+          }
+          
+          console.log(`[backfill-hltb-estimates] Successfully processed game ${game.id}: ${game.name}`);
           return { 
             game_id: game.id, 
             name: game.name, 
-            success: response.ok, 
+            success: true, 
             data: result 
           };
         } catch (err) {
@@ -139,11 +136,16 @@ serve(async (req) => {
     const lastProcessedId = games[games.length - 1]?.id || startAfter;
     const complete = games.length < limit;
     
+    const successCount = results.filter(r => r.success).length;
+    const errorCount = results.filter(r => !r.success).length;
+    
+    console.log(`[backfill-hltb-estimates] Batch complete - processed: ${results.length}, success: ${successCount}, errors: ${errorCount}`);
+    
     return new Response(JSON.stringify({
       message: `Processed ${results.length} games`,
       processedCount: results.length,
-      successCount: results.filter(r => r.success).length,
-      errorCount: results.filter(r => !r.success).length,
+      successCount,
+      errorCount,
       lastProcessedId,
       complete,
       results
@@ -152,7 +154,7 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error(`[backfill-hltb-estimates] Error: ${error.message}`);
+    console.error(`[backfill-hltb-estimates] Fatal error: ${error.message}`);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
