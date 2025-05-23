@@ -5,6 +5,7 @@ import { Clock, ExternalLink } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import GameReviewCard from './GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
+import { getBestGameImage } from '@/utils/image-utils';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -14,6 +15,8 @@ interface SelectedGameProps {
 
 const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAgain }) => {
   const [showReview, setShowReview] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
   const { 
     review, 
     isLoading, 
@@ -25,13 +28,47 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
     setShowReview(true);
   };
 
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageLoading(false);
+    setImageError(true);
+  };
+
+  // Use getBestGameImage utility for robust image fallback
+  const gameImage = getBestGameImage(game.image, null);
+
   return (
     <div className="pixel-card animate-fade-in">
-      <img 
-        src={game.image || ''} 
-        alt={game.name} 
-        className="w-full h-48 object-cover rounded-md mb-4" 
-      />
+      <div className="relative w-full h-48 mb-4 rounded-md overflow-hidden bg-gray-800">
+        {imageLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <div className="animate-pulse bg-gray-700 w-full h-full rounded-md"></div>
+          </div>
+        )}
+        
+        <img 
+          src={gameImage} 
+          alt={game.name} 
+          className={`w-full h-full object-cover transition-opacity duration-200 ${
+            imageLoading ? 'opacity-0' : 'opacity-100'
+          }`}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+        
+        {imageError && !imageLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-400">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🎮</div>
+              <div className="text-sm">No image available</div>
+            </div>
+          </div>
+        )}
+      </div>
       
       <h3 className="text-xl font-bold text-white mb-2">{game.name}</h3>
       
