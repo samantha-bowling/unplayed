@@ -11,6 +11,7 @@ import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
 import ProcessingFooter from "@/components/admin/ProcessingFooter";
+import SmartPrioritizationCard from "@/components/admin/SmartPrioritizationCard";
 import { useBatchProcessor } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
 
@@ -203,6 +204,11 @@ const QueueManagerPage = () => {
           <p className="text-gray-400">
             Advanced tools for managing the Steam game processing queue.
           </p>
+        </div>
+
+        {/* Smart Prioritization - New top section */}
+        <div className="mb-6">
+          <SmartPrioritizationCard />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

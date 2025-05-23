@@ -37,3 +37,6 @@ port = 54325
 
 [functions.prioritize-hltb-games]
 verify_jwt = true
+
+[functions.prioritize-smart-queue]
+verify_jwt = true
