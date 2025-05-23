@@ -1,8 +1,15 @@
 
 # Ensure API redirects are handled before catch-all rewrites
 [[redirects]]
-from = "/api/auth/steam/*"
-to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/:splat"
+from = "/api/auth/steam"
+to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth"
+status = 200
+force = true
+headers = { "X-Steam-Auth-Source" = "netlify" }
+
+[[redirects]]
+from = "/api/auth/steam/callback"
+to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/callback"
 status = 200
 force = true
 headers = { "X-Steam-Auth-Source" = "netlify" }
