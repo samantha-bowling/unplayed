@@ -1,7 +1,6 @@
 
 import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Clock, BarChart, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import BatchProcessingControls from "@/components/admin/BatchProcessingControls"
 import ProcessingFooter from "@/components/admin/ProcessingFooter";
 import { useBatchProcessor } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
+import { Progress } from "@/components/ui/progress";
 
 // Define TypeScript interfaces for better type safety
 interface HltbStats {

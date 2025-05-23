@@ -2,8 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
-// Define an interface for the expected response from the processing function
-interface BatchProcessResponse {
+/**
+ * Interface for the expected response from batch processing functions
+ * Any function used with useBatchProcessor should return an object conforming to this interface
+ */
+export interface BatchProcessResponse {
   lastProcessedId?: number;
   complete?: boolean;
   processedCount?: number;
@@ -12,24 +15,49 @@ interface BatchProcessResponse {
   [key: string]: any; // Allow for additional properties
 }
 
-interface BatchProcessorOptions<T extends BatchProcessResponse> {
+/**
+ * Configuration options for the batch processor hook
+ * @template T Type of the response from the processing function (must extend BatchProcessResponse)
+ */
+export interface BatchProcessorOptions<T extends BatchProcessResponse> {
+  /** Function that performs the batch processing and returns a promise */
   processingFunction: (options: any) => Promise<T>;
+  /** Callback fired when processing is successful */
   onSuccess?: (data: T) => void;
+  /** Callback fired when processing encounters an error */
   onError?: (error: any) => void;
+  /** Callback fired when processing is complete */
   onComplete?: () => void;
+  /** Interval in milliseconds between continuous processing batches (default: 5000) */
   continuousInterval?: number;
 }
 
-interface BatchProcessorState {
+/**
+ * State maintained by the batch processor
+ */
+export interface BatchProcessorState {
+  /** Whether a batch is currently being processed */
   isProcessing: boolean;
+  /** Whether continuous processing mode is active */
   continuousMode: boolean;
+  /** Total number of items processed so far */
   processedCount: number;
+  /** ID of the last item processed */
   lastProcessedId: number;
+  /** Whether processing is complete (no more items to process) */
   processComplete: boolean;
+  /** Default batch size */
   batchSize: number;
+  /** Optional limit on the total number of items to process */
   processLimit?: number;
 }
 
+/**
+ * Custom hook for managing batch processing operations
+ * @template T Type of the response from the processing function
+ * @param options Configuration options for the batch processor
+ * @returns Object containing batch processor state and control functions
+ */
 export function useBatchProcessor<T extends BatchProcessResponse>({
   processingFunction,
   onSuccess,
@@ -47,14 +75,25 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
     processLimit: undefined,
   });
 
+  /**
+   * Set the batch size
+   * @param size New batch size
+   */
   const setBatchSize = useCallback((size: number) => {
     setState(prev => ({ ...prev, batchSize: size }));
   }, []);
 
+  /**
+   * Set the process limit (max number of items to process)
+   * @param limit New process limit
+   */
   const setProcessLimit = useCallback((limit: number) => {
     setState(prev => ({ ...prev, processLimit: limit }));
   }, []);
 
+  /**
+   * Reset the processor state to start over
+   */
   const resetProcessor = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -65,6 +104,9 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
     toast.info("Processor reset. Will start from the beginning.");
   }, []);
 
+  /**
+   * Toggle continuous processing mode
+   */
   const toggleContinuousMode = useCallback(() => {
     setState(prev => {
       const newContinuousMode = !prev.continuousMode;
@@ -77,6 +119,10 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
     });
   }, []);
 
+  /**
+   * Process a single batch
+   * @param customOptions Additional options to pass to the processing function
+   */
   const processBatch = useCallback(async (customOptions?: Record<string, any>) => {
     if (state.isProcessing || state.processComplete) return;
 

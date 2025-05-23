@@ -2,13 +2,41 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 
+/**
+ * Options for configuring the useAdminStats hook
+ */
 export interface FetchStatsOptions {
+  /** Whether to fetch stats when the component mounts (default: true) */
   fetchOnMount?: boolean;
+  /** Interval in milliseconds to automatically refetch stats (null means no auto-refresh) */
   refetchInterval?: number | null;
+  /** Callback fired when stats are successfully fetched */
   onSuccess?: (data: any) => void;
+  /** Callback fired when an error occurs while fetching stats */
   onError?: (error: any) => void;
 }
 
+/**
+ * Custom hook for fetching and managing admin statistics
+ * 
+ * @template T Type of the statistics data
+ * @param fetchFunction Async function that fetches statistics
+ * @param options Configuration options for the hook
+ * @returns Object containing stats, loading state, and fetch function
+ * 
+ * @example
+ * ```tsx
+ * // Simple usage
+ * const { stats, isLoading, fetchStats } = useAdminStats(fetchHltbStats);
+ * 
+ * // With options
+ * const { stats, isLoading } = useAdminStats(fetchUserStats, {
+ *   fetchOnMount: true,
+ *   refetchInterval: 60000, // Refresh every minute
+ *   onSuccess: (data) => console.log('Stats loaded:', data)
+ * });
+ * ```
+ */
 export function useAdminStats<T>(
   fetchFunction: () => Promise<T>,
   options: FetchStatsOptions = {}
@@ -24,6 +52,10 @@ export function useAdminStats<T>(
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
+  /**
+   * Fetch the latest statistics data
+   * @returns The fetched data or null if an error occurred
+   */
   const fetchStats = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -44,14 +76,14 @@ export function useAdminStats<T>(
     }
   }, [fetchFunction, onSuccess, onError]);
 
-  // Initial fetch
+  // Initial fetch on mount if enabled
   useEffect(() => {
     if (fetchOnMount) {
       fetchStats();
     }
   }, [fetchOnMount, fetchStats]);
 
-  // Set up refetch interval if specified
+  // Set up automatic refetch interval if specified
   useEffect(() => {
     if (!refetchInterval) return;
     

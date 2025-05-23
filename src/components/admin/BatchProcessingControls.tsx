@@ -4,29 +4,58 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
+/**
+ * Props for the BatchProcessingControls component
+ */
 interface BatchProcessingControlsProps {
+  /** Current batch size value */
   batchSize: number;
+  /** Handler for batch size changes */
   onBatchSizeChange: (value: number) => void;
+  /** Minimum allowed batch size */
   batchSizeMin?: number;
+  /** Maximum allowed batch size */
   batchSizeMax?: number;
+  /** Step value for batch size slider */
   batchSizeStep?: number;
+  /** Label for the batch size control */
   batchSizeLabel?: string;
   
+  /** Current process limit value (max items to process) */
   processLimit?: number;
+  /** Handler for process limit changes */
   onProcessLimitChange?: (value: number) => void;
+  /** Minimum allowed process limit */
   processLimitMin?: number;
+  /** Maximum allowed process limit */
   processLimitMax?: number;
+  /** Step value for process limit slider */
   processLimitStep?: number;
+  /** Label for the process limit control */
   processLimitLabel?: string;
   
+  /** Whether continuous mode is active */
   continuousMode?: boolean;
+  /** Count of items processed so far */
   processedCount?: number;
+  /** ID of the last processed item */
   lastProcessedId?: number;
+  /** Whether processing is complete (no more items to process) */
   processComplete?: boolean;
+  /** Threshold at which to show warnings about batch size */
   showWarningThreshold?: number;
+  /** Warning message to show when batch size exceeds the threshold */
   warningMessage?: string;
 }
 
+/**
+ * Reusable component for batch processing controls
+ * 
+ * Provides UI controls for configuring batch processing including:
+ * - Batch size slider with optional warnings
+ * - Optional process limit slider
+ * - Status indicators for continuous mode and processing progress
+ */
 const BatchProcessingControls: React.FC<BatchProcessingControlsProps> = ({
   batchSize,
   onBatchSizeChange,
