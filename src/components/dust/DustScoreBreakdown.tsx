@@ -76,7 +76,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   
   return (
     <Card className="terminal-container">
-      <CardHeader className="pb-1">
+      <CardHeader className="pb-4">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -97,8 +97,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 pt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -171,10 +171,20 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 Playtime reduces your dust score by {(100 - playtimeFactorPercent)}%
               </p>
             </div>
+
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
+              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+                <li>Play the games with the highest dust scores first</li>
+                <li>Focus on games you've owned for a long time</li>
+                <li>Play newer game purchases before they accumulate dust</li>
+                <li>Set aside regular time to tackle your backlog</li>
+              </ul>
+            </div>
           </div>
           
-          <div>
-            <div className="bg-black/30 rounded-lg p-4 mb-4">
+          <div className="space-y-4">
+            <div className="bg-black/30 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-2">What It Means</h3>
               <div className="space-y-3 text-sm">
                 <p>
@@ -188,15 +198,39 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 </p>
               </div>
             </div>
-            
+
             <div className="bg-black/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-                <li>Play the games with the highest dust scores first</li>
-                <li>Focus on games you've owned for a long time</li>
-                <li>Play newer game purchases before they accumulate dust</li>
-                <li>Set aside regular time to tackle your backlog</li>
-              </ul>
+              <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#A3F7BF]"></div>
+                    <span className="font-medium text-[#A3F7BF]">Freshly Polished</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">0-999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF9F39]"></div>
+                    <span className="font-medium text-[#FF9F39]">Dust Storm Brewing</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">1,000-4,999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#F6AD55]"></div>
+                    <span className="font-medium text-[#F6AD55]">Duststorm Warning</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">5,000-9,999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF3C38]"></div>
+                    <span className="font-medium text-[#FF3C38]">Hoarder's Horizon</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">10,000+</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
