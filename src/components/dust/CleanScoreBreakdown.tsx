@@ -96,7 +96,7 @@ const CleanScoreBreakdown = ({
   
   return (
     <Card className="terminal-container">
-      <CardHeader className="pb-1">
+      <CardHeader className="pb-4">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -121,8 +121,8 @@ const CleanScoreBreakdown = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 pt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -195,6 +195,15 @@ const CleanScoreBreakdown = ({
                 30% weight in your total score
               </p>
             </div>
+
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
+              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+                {tierInfo.tips.map((tip, index) => (
+                  <li key={index}>{tip}</li>
+                ))}
+              </ul>
+            </div>
           </div>
           
           <div className="space-y-4">
@@ -214,12 +223,44 @@ const CleanScoreBreakdown = ({
             </div>
             
             <div className="bg-black/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-                {tierInfo.tips.map((tip, index) => (
-                  <li key={index}>{tip}</li>
-                ))}
-              </ul>
+              <h3 className="text-lg font-medium mb-3">Clean Score Tiers</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#4ade80]"></div>
+                    <span className="font-medium text-[#4ade80]">Pristine Collection</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">90-100</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#22d3ee]"></div>
+                    <span className="font-medium text-[#22d3ee]">Dust-Free Shelf</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">75-89</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#60a5fa]"></div>
+                    <span className="font-medium text-[#60a5fa]">Reasonably Clean</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">50-74</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#f59e0b]"></div>
+                    <span className="font-medium text-[#f59e0b]">Needs a Wipe</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">25-49</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#f87171]"></div>
+                    <span className="font-medium text-[#f87171]">Filthy Casual</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">0-24</span>
+                </div>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -256,47 +297,6 @@ const CleanScoreBreakdown = ({
                 </div>
                 <p className="text-xs text-gray-400">Games played in the last 30 days</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-black/20 rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Clean Score Tiers</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-            <div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2 bg-[#4ade80]"></div>
-                <span className="font-medium text-[#4ade80]">Pristine</span>
-              </div>
-              <span className="text-xs text-gray-400 pl-5">90-100</span>
-            </div>
-            <div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2 bg-[#22d3ee]"></div>
-                <span className="font-medium text-[#22d3ee]">Dust-Free</span>
-              </div>
-              <span className="text-xs text-gray-400 pl-5">75-89</span>
-            </div>
-            <div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2 bg-[#60a5fa]"></div>
-                <span className="font-medium text-[#60a5fa]">Clean</span>
-              </div>
-              <span className="text-xs text-gray-400 pl-5">50-74</span>
-            </div>
-            <div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2 bg-[#f59e0b]"></div>
-                <span className="font-medium text-[#f59e0b]">Needs Wipe</span>
-              </div>
-              <span className="text-xs text-gray-400 pl-5">25-49</span>
-            </div>
-            <div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2 bg-[#f87171]"></div>
-                <span className="font-medium text-[#f87171]">Filthy</span>
-              </div>
-              <span className="text-xs text-gray-400 pl-5">0-24</span>
             </div>
           </div>
         </div>
