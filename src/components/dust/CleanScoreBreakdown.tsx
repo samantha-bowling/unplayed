@@ -37,6 +37,62 @@ const CleanScoreBreakdown = ({
       </Card>
     );
   }
+
+  // Define comprehensive tier information
+  const getTierInfo = () => {
+    if (cleanScore >= 90) return {
+      name: "Pristine Collection",
+      color: "#4ade80",
+      description: "Your library management is exemplary. You play most of your games and engage deeply with them.",
+      tips: [
+        "Maintain your excellent habits",
+        "Consider streaming or sharing your library management techniques",
+        "You're in the top percentile of Steam library managers!"
+      ]
+    };
+    if (cleanScore >= 75) return {
+      name: "Dust-Free Shelf",
+      color: "#22d3ee",
+      description: "Your library is very well maintained with thoughtful curation and regular play sessions.",
+      tips: [
+        "Keep your momentum going",
+        "Try to play a wider variety of your games",
+        "You're close to reaching pristine status!"
+      ]
+    };
+    if (cleanScore >= 50) return {
+      name: "Reasonably Clean",
+      color: "#60a5fa",
+      description: "You're doing better than most gamers at maintaining your library, but there's room for improvement.",
+      tips: [
+        "Try to increase your play frequency",
+        "Set aside time each week to try new games in your library",
+        "Focus on games you've owned longest"
+      ]
+    };
+    if (cleanScore >= 25) return {
+      name: "Needs a Wipe",
+      color: "#f59e0b",
+      description: "Your library is showing signs of neglect with many unplayed titles accumulating dust.",
+      tips: [
+        "Create a schedule to play your backlog",
+        "Consider using the random game picker regularly",
+        "Try the '2-hour rule': give each unplayed game at least 2 hours"
+      ]
+    };
+    return {
+      name: "Filthy Casual",
+      color: "#f87171",
+      description: "Your library is severely neglected. You have many unplayed or barely touched games collecting dust.",
+      tips: [
+        "Focus on playing games you already own before buying new ones",
+        "Consider hiding games you know you'll never play",
+        "Try playing one new game from your library each week"
+      ]
+    };
+  };
+  
+  const tierInfo = getTierInfo();
   
   return (
     <Card className="terminal-container">
@@ -125,9 +181,58 @@ const CleanScoreBreakdown = ({
             </div>
           </div>
           
-          <div className="bg-black/30 rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-3">Gaming Activity</h3>
-            <div className="space-y-4 text-sm">
+          <div className="space-y-5">
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tierInfo.color }}></div>
+                <h3 className="text-lg font-medium" style={{ color: tierInfo.color }}>
+                  {tierInfo.name}
+                </h3>
+              </div>
+              <p className="text-sm text-gray-300 mb-3">
+                {tierInfo.description}
+              </p>
+              
+              <h4 className="text-sm font-medium text-gray-400 mb-1">How to improve:</h4>
+              <ul className="list-disc pl-5 text-xs text-gray-400">
+                {tierInfo.tips.map((tip, index) => (
+                  <li key={index}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">Clean Score Tiers</h3>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2 bg-[#4ade80]"></div>
+                  <span className="text-sm font-medium text-[#4ade80] mr-1">Pristine Collection</span>
+                  <span className="text-xs text-gray-400">(90-100)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2 bg-[#22d3ee]"></div>
+                  <span className="text-sm font-medium text-[#22d3ee] mr-1">Dust-Free Shelf</span>
+                  <span className="text-xs text-gray-400">(75-89)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2 bg-[#60a5fa]"></div>
+                  <span className="text-sm font-medium text-[#60a5fa] mr-1">Reasonably Clean</span>
+                  <span className="text-xs text-gray-400">(50-74)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2 bg-[#f59e0b]"></div>
+                  <span className="text-sm font-medium text-[#f59e0b] mr-1">Needs a Wipe</span>
+                  <span className="text-xs text-gray-400">(25-49)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2 bg-[#f87171]"></div>
+                  <span className="text-sm font-medium text-[#f87171] mr-1">Filthy Casual</span>
+                  <span className="text-xs text-gray-400">(0-24)</span>
+                </div>
+              </div>
+            </div>
+          
+            <div className="flex flex-col space-y-4">
               <div className="flex flex-col">
                 <div className="flex items-center">
                   <Medal className="h-4 w-4 mr-2 text-amber-400" />
@@ -151,29 +256,6 @@ const CleanScoreBreakdown = ({
                 </div>
                 <p className="text-xs text-gray-400 mt-1 pl-6">Games played in the last 30 days</p>
               </div>
-              
-              {breakdown.completionRate > 0 && (
-                <div className="flex flex-col">
-                  <div className="flex items-center">
-                    <span className="w-4 h-4 mr-2 text-center text-cyan-400">🧹</span>
-                    <span className="text-gray-300">Backlog Cleaned</span>
-                    <span className="ml-auto text-cyan-400 font-bold">{breakdown.completionRate}%</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1 pl-6">
-                    {breakdown.completionRate < 25 
-                      ? "Still lots of untouched games" 
-                      : breakdown.completionRate < 50 
-                      ? "Making progress on your backlog" 
-                      : breakdown.completionRate < 75 
-                      ? "Good job tackling your library" 
-                      : "Amazing library management!"}
-                  </p>
-                </div>
-              )}
-              
-              <p className="pt-2 text-gray-400 italic">
-                The final formula: (Completion × 0.4) + (Engagement × 0.3) + (Recency × 0.3) = Clean Score
-              </p>
             </div>
           </div>
         </div>

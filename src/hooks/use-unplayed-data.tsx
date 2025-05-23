@@ -62,10 +62,11 @@ export const useUnplayedData = () => {
 
       console.log(`Found ${userGamesData?.length || 0} games for user ${user.id}`);
       
-      // Log a sample dust score to help debug
+      // Log total dust score to help debug
       if (userGamesData && userGamesData.length > 0) {
+        const totalDustScore = userGamesData.reduce((sum, g) => sum + (g.dust_score || 0), 0);
+        console.log('Total dust score:', totalDustScore);
         console.log('Sample dust scores:', userGamesData.slice(0, 3).map(g => g.dust_score));
-        console.log('Max dust score:', Math.max(...userGamesData.map(g => g.dust_score || 0)));
       }
       
       return userGamesData;
@@ -133,6 +134,7 @@ export const useUnplayedData = () => {
   // Log transformed data for debugging
   console.log('Transformed data gamesList sample:', 
     data.gamesList?.length ? data.gamesList.slice(0, 3) : 'No games in list');
+  console.log('Transformed data total dust score:', data.dustScore);
 
   // Calculate lastRefreshed timestamp from profile's last_sync
   const lastRefreshed = profile?.last_sync ? new Date(profile.last_sync) : null;

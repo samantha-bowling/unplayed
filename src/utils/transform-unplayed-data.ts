@@ -1,4 +1,3 @@
-
 import { UnplayedDataType, GameListItem, CleanScoreBreakdown, CleanScoreTier, GenreData } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
 import { getBestGameImage } from './image-utils';
@@ -156,9 +155,9 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     return sum + (priceCents / 100);
   }, 0);
 
-  // Extract dust score (use highest if multiple)
-  const dustScore = data.reduce((highest, item) => 
-    Math.max(highest, item.dust_score || 0), 0);
+  // Calculate total dust score (sum of all individual dust scores)
+  const dustScore = data.reduce((sum, item) => 
+    sum + (item.dust_score || 0), 0);
   
   // Calculate total potential gameplay hours using HLTB data with fallback
   const potentialGameplayHours = data
@@ -218,7 +217,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     const otherCount = Array.from(genreCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(5)
-      .reduce((sum, [_, count]) => sum + count, 0);
+      .reduce((sum, [count]) => sum + count, 0);
     
     genres.push({
       name: 'Other',

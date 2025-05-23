@@ -48,6 +48,32 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   const ownershipScorePercent = Math.round((ownershipScore / (rawTotal || 1)) * 100);
   const playtimeFactorPercent = Math.round(playtimeFactor * 100);
   
+  // Define dust score tiers based on total score
+  const getDustTier = () => {
+    if (totalScore < 1000) return {
+      name: "Freshly Polished",
+      color: "#A3F7BF",
+      description: "Your library is well-maintained with minimal dust. Keep up the good work!"
+    };
+    if (totalScore < 5000) return {
+      name: "Dust Storm Brewing",
+      color: "#FF9F39",
+      description: "You're starting to accumulate some dust. Consider playing a few neglected games."
+    };
+    if (totalScore < 10000) return {
+      name: "Duststorm Warning",
+      color: "#F6AD55",
+      description: "Your backlog is becoming concerning. Time to make a dent in those unplayed games."
+    };
+    return {
+      name: "Hoarder's Horizon",
+      color: "#FF3C38",
+      description: "Your library has reached critical dust levels. Serious intervention needed!"
+    };
+  };
+  
+  const dustTier = getDustTier();
+  
   return (
     <Card className="terminal-container">
       <CardHeader>
@@ -56,7 +82,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           Dust Score Breakdown
         </CardTitle>
         <CardDescription>
-          Your total Dust Score of {totalScore} is calculated from these factors
+          Your total Dust Score of {totalScore.toLocaleString()} is calculated from these factors
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -135,21 +161,39 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
             </div>
           </div>
           
-          <div className="bg-black/30 rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-3">How It's Calculated</h3>
-            <div className="space-y-3 text-sm">
-              <p>
-                <span className="text-unplayed-amber font-bold">Age Score:</span> Based on how old the games in your library are. Older games get higher scores.
-              </p>
-              <p>
-                <span className="text-unplayed-mint font-bold">Ownership Score:</span> Based on how long you've owned each game. Games owned for years accumulate more dust.
-              </p>
-              <p>
-                <span className="text-unplayed-pink font-bold">Playtime Factor:</span> A multiplier that reduces your score for games you've played. Unplayed games get the full factor of 1.0x.
-              </p>
-              <p className="pt-2 text-gray-400 italic">
-                The final formula: (Age Score + Ownership Score) × Playtime Factor = Dust Score
-              </p>
+          <div className="bg-black/30 rounded-lg p-4 space-y-4">
+            <div>
+              <h3 className="text-lg font-medium mb-2">Your Dust Tier</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: dustTier.color }}></div>
+                <span className="font-medium" style={{ color: dustTier.color }}>{dustTier.name}</span>
+              </div>
+              <p className="text-sm text-gray-400 mt-1">{dustTier.description}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium mb-2">What It Means</h3>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <span className="text-unplayed-amber font-bold">Age Score:</span> Based on how old the games in your library are. Older games get higher scores.
+                </p>
+                <p>
+                  <span className="text-unplayed-mint font-bold">Ownership Score:</span> Based on how long you've owned each game. Games owned for years accumulate more dust.
+                </p>
+                <p>
+                  <span className="text-unplayed-pink font-bold">Playtime Factor:</span> A multiplier that reduces your score for games you've played. Unplayed games get the full factor of 1.0x.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
+              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+                <li>Play the games with the highest dust scores first</li>
+                <li>Focus on games you've owned for a long time</li>
+                <li>Play newer game purchases before they accumulate dust</li>
+                <li>Set aside regular time to tackle your backlog</li>
+              </ul>
             </div>
           </div>
         </div>

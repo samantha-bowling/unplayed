@@ -122,10 +122,10 @@ const DustPage = () => {
                 className="space-y-6"
               >
                 <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
-                  <TabsTrigger value="breakdown">Dust Breakdown</TabsTrigger>
+                  <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
                   <TabsTrigger value="clean">Clean Score</TabsTrigger>
                   <TabsTrigger value="contributors">Top Dust</TabsTrigger>
-                  <TabsTrigger value="pergame">Per Game</TabsTrigger>
+                  <TabsTrigger value="analysis">Analysis</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="breakdown" className="space-y-4">
@@ -150,7 +150,7 @@ const DustPage = () => {
                   />
                 </TabsContent>
                 
-                <TabsContent value="pergame" className="space-y-4">
+                <TabsContent value="analysis" className="space-y-4">
                   <DustScorePerGame 
                     avgDustScore={data.avgDustScore || 0}
                     totalGames={data.totalGames}
@@ -158,11 +158,6 @@ const DustPage = () => {
                   />
                 </TabsContent>
               </Tabs>
-              
-              <div className="mt-12 text-center text-sm text-gray-500">
-                <p>Note: Dust scores are calculated based on game age, ownership time, and playtime.</p>
-                <p>The algorithm is completely arbitrary but feels right.</p>
-              </div>
             </>
           )}
         </div>

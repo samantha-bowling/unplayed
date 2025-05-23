@@ -54,21 +54,27 @@ const DustScoreMeter = ({
     return () => clearInterval(timer);
   }, [actualScore]);
 
+  // Updated severity thresholds for total dust scores
   const getSeverityColor = () => {
-    if (actualScore < 200) return 'text-green-400';
-    if (actualScore < 500) return 'text-orange-400';
-    if (actualScore < 1000) return 'text-amber-600';
+    if (actualScore < 1000) return 'text-green-400';
+    if (actualScore < 5000) return 'text-orange-400';
+    if (actualScore < 10000) return 'text-amber-600';
     return 'text-unplayed-red';
   };
 
   const getSeverityText = () => {
-    if (actualScore < 200) return 'Freshly Polished ✨';
-    if (actualScore < 500) return 'Dust Storm Brewing 🌬️';
-    if (actualScore < 1000) return 'Duststorm Warning 🌪️';
+    if (actualScore < 1000) return 'Freshly Polished ✨';
+    if (actualScore < 5000) return 'Dust Storm Brewing 🌬️';
+    if (actualScore < 10000) return 'Duststorm Warning 🌪️';
     return "Hoarder's Horizon 🤍";
   };
 
   const showCleanScore = data.cleanScore !== undefined && user;
+
+  // Format large numbers with commas
+  const formatNumber = (num: number) => {
+    return num.toLocaleString();
+  };
 
   if (isLoading) {
     return (
@@ -84,6 +90,18 @@ const DustScoreMeter = ({
     );
   }
 
+  // Calculate circle scale factor for large numbers to fit in circle
+  const getScaleFactor = () => {
+    if (actualScore < 1000) return 1;
+    if (actualScore < 10000) return 10;
+    if (actualScore < 100000) return 100;
+    return 1000;
+  };
+  
+  const scaleFactor = getScaleFactor();
+  const scaledScore = actualScore / scaleFactor;
+  const maxDisplayScore = 1500; // Maximum value for the circle
+
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <div className="mb-4 flex items-center">
@@ -97,8 +115,8 @@ const DustScoreMeter = ({
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p>
-                Dust Score calculates how much your games are "gathering dust" based on ownership time and lack of playtime.
-                Higher scores indicate more neglected games.
+                Dust Score shows your total accumulated dust across all games.
+                Higher scores indicate more neglected games in your library.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -115,9 +133,9 @@ const DustScoreMeter = ({
               cy="50"
               r="45"
               fill="none"
-              stroke={actualScore < 200 ? '#A3F7BF' : actualScore < 500 ? '#FF9F39' : actualScore < 1000 ? '#F6AD55' : '#FF3C38'}
+              stroke={actualScore < 1000 ? '#A3F7BF' : actualScore < 5000 ? '#FF9F39' : actualScore < 10000 ? '#F6AD55' : '#FF3C38'}
               strokeWidth="8"
-              strokeDasharray={`${Math.min(animatedScore / 1500, 1) * 283} 283`}
+              strokeDasharray={`${Math.min(scaledScore / maxDisplayScore, 1) * 283} 283`}
               className="transition-all duration-300"
             />
           </svg>
@@ -126,14 +144,14 @@ const DustScoreMeter = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-                  <span className={`${getSeverityColor()} text-4xl font-bold font-vt`}>
-                    {animatedScore}
+                  <span className={`${getSeverityColor()} text-4xl font-bold font-vt ${actualScore >= 10000 ? 'text-3xl' : ''}`}>
+                    {formatNumber(animatedScore)}
                   </span>
                   <span className="text-gray-400 text-xs mt-1">DUST UNITS</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-center">
-                <p className="text-sm">unplayed time × days since added</p>
+                <p className="text-sm">Total dust accumulated across all your games</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -142,11 +160,11 @@ const DustScoreMeter = ({
         <div className="text-center mt-2">
           <p className={`${getSeverityColor()} text-xl font-medium`}>{getSeverityText()}</p>
           <p className="text-sm text-gray-400 mt-2">
-            {actualScore < 200
+            {actualScore < 1000
               ? "Your library is in good shape! Keep it up."
-              : actualScore < 500
+              : actualScore < 5000
               ? "Some games could use your attention soon."
-              : actualScore < 1000
+              : actualScore < 10000
               ? "Warning: Your backlog is getting out of control."
               : "Critical: Your library has reached dust apocalypse levels."}
           </p>
