@@ -8,7 +8,6 @@ import FullScreenModeToggle from './FullScreenModeToggle';
 import { Maximize, LayoutGrid, List, Loader2, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LibraryGame } from '@/hooks/use-library-data';
-import { LibraryItem } from '@/types/unplayed-data.types';
 import FloatingIcons from '@/components/FloatingIcons';
 import { getBestGameImage } from '@/utils/image-utils';
 import { Link } from 'react-router-dom';
@@ -67,19 +66,6 @@ const LibraryPreviewEnhanced = ({
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
   const displayGames = propGames || unplayedData.library || [];
 
-  // Helper function to get release date from either game type
-  const getGameReleaseDate = (game: LibraryGame | LibraryItem): string | null => {
-    if ('release_date' in game) {
-      return game.release_date || null;
-    }
-    return null;
-  };
-
-  // Helper function to get game name from either game type
-  const getGameName = (game: LibraryGame | LibraryItem): string => {
-    return game.name || '';
-  };
-
   // Sort games based on selected option
   const sortedGames = useMemo(() => {
     if (!displayGames || displayGames.length === 0) return [];
@@ -89,26 +75,26 @@ const LibraryPreviewEnhanced = ({
     switch (sortOption) {
       case 'name-asc':
         return gamesCopy.sort((a, b) => {
-          const nameA = getGameName(a);
-          const nameB = getGameName(b);
+          const nameA = a.name || '';
+          const nameB = b.name || '';
           return nameA.localeCompare(nameB);
         });
       case 'name-desc':
         return gamesCopy.sort((a, b) => {
-          const nameA = getGameName(a);
-          const nameB = getGameName(b);
+          const nameA = a.name || '';
+          const nameB = b.name || '';
           return nameB.localeCompare(nameA);
         });
       case 'release-asc':
         return gamesCopy.sort((a, b) => {
-          const dateA = new Date(getGameReleaseDate(a) || '1970-01-01');
-          const dateB = new Date(getGameReleaseDate(b) || '1970-01-01');
+          const dateA = new Date(a.release_date || '1970-01-01');
+          const dateB = new Date(b.release_date || '1970-01-01');
           return dateA.getTime() - dateB.getTime();
         });
       case 'release-desc':
         return gamesCopy.sort((a, b) => {
-          const dateA = new Date(getGameReleaseDate(a) || '1970-01-01');
-          const dateB = new Date(getGameReleaseDate(b) || '1970-01-01');
+          const dateA = new Date(a.release_date || '1970-01-01');
+          const dateB = new Date(b.release_date || '1970-01-01');
           return dateB.getTime() - dateA.getTime();
         });
       case 'random':
@@ -247,16 +233,7 @@ const LibraryPreviewEnhanced = ({
           {currentGames.map(game => {
             const gameId = game.id;
             const title = game.name;
-            
-            // Enhanced image handling using getBestGameImage utility
-            let image: string;
-            if ('header_image' in game) {
-              // LibraryGame type
-              image = getBestGameImage(game.header_image, game.image_url);
-            } else {
-              // LibraryItem type - use existing image or header_image/image_url if available
-              image = game.image || getBestGameImage(game.header_image, game.image_url);
-            }
+            const image = getBestGameImage(game.header_image, game.image_url);
             
             return (
               <TooltipProvider key={gameId}>
