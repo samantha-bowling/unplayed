@@ -35,10 +35,10 @@ interface LibraryPreviewProps extends WithDemoProps {
   isLoading?: boolean;
 }
 
-// Helper function to generate positions based on grid with enhanced animations
+// Helper function to generate positions based on grid with stable animations
 const generateZenPositions = (count: number, isFullScreen: boolean) => {
   const positions = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 2)); // Create a grid with enough cells
+  const gridSize = Math.ceil(Math.sqrt(count * 1.5)); // Create a grid with enough cells
   const cellWidth = 100 / gridSize;
   const cellHeight = 100 / gridSize;
 
@@ -59,29 +59,30 @@ const generateZenPositions = (count: number, isFullScreen: boolean) => {
   // Take the positions we need
   for (let i = 0; i < count; i++) {
     if (i < shuffledGrid.length) {
-      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.5 - cellWidth * 0.25);
-      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.5 - cellHeight * 0.25);
+      // Use more predictable positions with smaller random variations
+      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.3 - cellWidth * 0.15);
+      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.3 - cellHeight * 0.15);
       
-      // Create more varied animation patterns
+      // Create more stable animation patterns
       const animationDirectionX = Math.random() > 0.5 ? 1 : -1;
       const animationDirectionY = Math.random() > 0.5 ? 1 : -1;
-      const animationDistance = 2 + Math.random() * 3; // 2-5% movement range
+      const animationDistance = 1 + Math.random() * 1.5; // Reduced movement range (1-2.5%)
       
       positions.push({
         left: `${randX}%`,
         top: `${randY}%`,
-        delay: i * 1.5,
-        // Stagger the animations
-        duration: 3 + Math.random() * 2,
-        // Random duration between 3-5s
-        fontSize: isFullScreen ? `${1 + Math.random() * 0.5}rem` :
-          // Larger font in fullscreen: 1-1.5rem
-          `${0.75 + Math.random() * 0.25}rem`, // Normal size: 0.75-1rem
+        delay: i * 0.5, // Reduced delay for smoother appearance
+        // Stagger the animations with more predictable durations
+        duration: 4 + Math.random() * 2, // 4-6s duration for smoother motion
+        // Font size adjustments based on screen mode
+        fontSize: isFullScreen ? `${0.9 + Math.random() * 0.4}rem` : // Fullscreen: 0.9-1.3rem
+          `${0.7 + Math.random() * 0.3}rem`, // Normal size: 0.7-1rem
         animDirectionX: animationDirectionX,
         animDirectionY: animationDirectionY,
         animDistance: animationDistance,
-        initialRotation: Math.random() * 6 - 3, // Slight rotation between -3 and 3 degrees
-        hoverColor: Math.random() > 0.5 ? 'hover:text-unplayed-pink' : 'hover:text-unplayed-amber'
+        initialRotation: Math.random() * 4 - 2, // Reduced rotation between -2 and 2 degrees
+        hoverColor: Math.random() > 0.5 ? 'hover:text-unplayed-pink' : 'hover:text-unplayed-amber',
+        uniqueId: `zen-${i}-${Math.random().toString(36).substring(2, 9)}` // Add unique ID for stability
       });
     }
   }
@@ -122,6 +123,8 @@ const LibraryPreview = ({
 
   // Ref to track if positions have been generated
   const positionsGeneratedRef = useRef(false);
+  // Ref to track animation frame for cleanup
+  const animationFrameRef = useRef<number | null>(null);
 
   // Determine if we should show in full screen mode
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
@@ -151,23 +154,32 @@ const LibraryPreview = ({
     }
   }, [viewMode, focusedComponent, updateComponentSettings, onViewModeChange]);
 
-  // Generate new positions when switching to zen mode or when full screen changes
+  // Generate new positions when:
+  // 1. Switching to zen mode
+  // 2. Full screen state changes
+  // 3. Display count changes
+  // 4. Current games length changes (pagination)
   useEffect(() => {
-    if (viewMode === 'zen' || positionsGeneratedRef.current === false) {
+    if (viewMode === 'zen') {
       const newPositions = generateZenPositions(currentGames.length, isFullScreenMode);
       setZenPositions(newPositions);
       positionsGeneratedRef.current = true;
-    }
-    
-    // Set icon count for FloatingIcons - about 30% of game count in zen mode
-    if (viewMode === 'zen') {
+      
+      // Set icon count - about 20% of game count in zen mode, with reasonable limits
       const gameCount = currentGames.length;
-      const newIconCount = Math.min(25, Math.max(5, Math.floor(gameCount * 0.3)));
+      const newIconCount = Math.min(15, Math.max(5, Math.floor(gameCount * 0.2)));
       setIconCount(newIconCount);
     } else {
-      setIconCount(0);
+      setIconCount(0); // No icons in grid mode
     }
-  }, [viewMode, isFullScreenMode, currentGames.length]);
+    
+    // Clean up any animation frames on component unmount or when dependencies change
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [viewMode, isFullScreenMode, currentGames.length, displayCount]);
 
   // When entering full screen, make sure the context has the current view mode
   const handleEnterFullScreen = () => {
@@ -198,7 +210,7 @@ const LibraryPreview = ({
       
       // Set icon count for FloatingIcons when switching to zen mode
       const gameCount = currentGames.length;
-      const newIconCount = Math.min(25, Math.max(5, Math.floor(gameCount * 0.3)));
+      const newIconCount = Math.min(15, Math.max(5, Math.floor(gameCount * 0.2)));
       setIconCount(newIconCount);
     } else {
       setIconCount(0); // No icons in grid mode
@@ -321,11 +333,11 @@ const LibraryPreview = ({
           })}
         </div>
       ) : (
-        // Enhanced Zen view mode
+        // Enhanced Zen view mode with more stable animations
         <div className={`${showFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
           {/* Add floating icons in zen mode */}
           {viewMode === 'zen' && iconCount > 0 && (
-            <div className="absolute inset-0 pointer-events-none opacity-70">
+            <div className="absolute inset-0 pointer-events-none opacity-40">
               <FloatingIcons count={iconCount} />
             </div>
           )}
@@ -335,55 +347,45 @@ const LibraryPreview = ({
             const gameId = 'id' in game ? game.id : game.gameId;
             const title = 'name' in game ? game.name : game.title;
             
+            // Only render if we have position data for this index
+            if (!zenPositions[index]) return null;
+            
+            const position = zenPositions[index];
+            
             return (
               <div 
-                key={gameId}
+                key={`${gameId}-${position.uniqueId}`}
                 className="absolute transition-all zen-game-item"
                 style={{
-                  top: zenPositions[index]?.top || '50%',
-                  left: zenPositions[index]?.left || '50%',
-                  transform: `translate(-50%, -50%) rotate(${zenPositions[index]?.initialRotation || 0}deg)`,
-                  animationDelay: `${zenPositions[index]?.delay || index}s`,
-                  zIndex: Math.floor(Math.random() * 10),
-                  opacity: 0,
+                  top: position.top || '50%',
+                  left: position.left || '50%',
+                  transform: `translate(-50%, -50%) rotate(${position.initialRotation || 0}deg)`,
+                  opacity: 0.8,
                   animation: `
-                    zen-float-complex ${zenPositions[index]?.duration || 4}s ease-in-out infinite alternate, 
-                    zen-fade-in 2s ease-out forwards
+                    zen-float-stable ${position.duration || 4}s ease-in-out infinite alternate, 
+                    zen-fade-in 1.5s ease-out forwards
                   `,
                   // Define custom animation properties in style
-                  '--anim-x': `${zenPositions[index]?.animDirectionX * zenPositions[index]?.animDistance || 2}%`,
-                  '--anim-y': `${zenPositions[index]?.animDirectionY * zenPositions[index]?.animDistance || 2}%`,
+                  '--anim-x': `${position.animDirectionX * position.animDistance || 1}%`,
+                  '--anim-y': `${position.animDirectionY * position.animDistance || 1}%`,
+                  fontSize: position.fontSize || '1rem',
+                  zIndex: 5,
+                  transition: 'transform 0.3s ease, text-shadow 0.3s ease, color 0.3s ease',
                 } as React.CSSProperties}
               >
                 <p 
-                  className={`text-unplayed-mint whitespace-nowrap text-glow transition-colors duration-300 ${zenPositions[index]?.hoverColor || ''}`}
-                  style={{
-                    fontSize: zenPositions[index]?.fontSize || '1rem'
-                  }}
+                  className={`text-unplayed-mint whitespace-nowrap text-glow transition-colors duration-300 ${position.hoverColor || ''}`}
                 >
                   {title}
                 </p>
               </div>
             );
           })}
-          
-          <style>
-            {`
-            @keyframes zen-float-complex {
-              0% {
-                transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
-              }
-              100% {
-                transform: translate(calc(-50% + var(--anim-x, 2%)), calc(-50% + var(--anim-y, 2%))) rotate(var(--rotation, 0deg));
-              }
-            }
-            `}
-          </style>
         </div>
       )}
       
       {/* Pagination controls - display if we have more than one page */}
-      {totalPages > 1 && viewMode === 'grid' && (
+      {totalPages > 1 && (
         <div className="mt-6 mb-6">
           <Pagination>
             <PaginationContent>

@@ -59,7 +59,7 @@ const GameCard: React.FC<GameCardProps> = ({
       className={cn(
         "group relative overflow-hidden rounded-lg border transition-all duration-300",
         isHidden ? "opacity-60" : "",
-        isHovered ? "scale-105 shadow-lg z-10" : ""
+        isHovered ? "scale-[1.03] shadow-lg z-10" : "" // Reduced scale for more subtle effect
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
