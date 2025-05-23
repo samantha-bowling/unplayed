@@ -67,25 +67,14 @@ serve(async (req) => {
     console.log(`[smart-prioritization] Weights:`, weights);
     console.log(`[smart-prioritization] Dry run: ${dryRun}`);
 
-    // Step 1: Get all pending games from the queue with basic game data
+    // Step 1: Get all pending games from the queue
     console.log(`[smart-prioritization] Fetching pending games from queue...`);
     const { data: pendingGames, error: queueError } = await supabase
       .from('steam_app_queue')
       .select(`
         app_id,
         name,
-        priority,
-        games!inner(
-          id,
-          name,
-          release_date,
-          price_cents,
-          metacritic_score,
-          genres,
-          developer,
-          publisher,
-          game_estimates(game_id)
-        )
+        priority
       `)
       .eq('status', 'pending')
       .order('app_id');
@@ -110,8 +99,57 @@ serve(async (req) => {
     }
 
     console.log(`[smart-prioritization] Found ${pendingGames.length} pending games`);
+    
+    // Step 2: Get game details for all app_ids in the queue
+    const appIds = pendingGames.map(game => game.app_id);
+    console.log(`[smart-prioritization] Fetching game details for ${appIds.length} games...`);
+    
+    // Batch the requests to avoid overloading the database
+    const GAME_QUERY_BATCH_SIZE = 1000;
+    let allGameDetails: any[] = [];
+    
+    for (let i = 0; i < appIds.length; i += GAME_QUERY_BATCH_SIZE) {
+      const batchAppIds = appIds.slice(i, i + GAME_QUERY_BATCH_SIZE);
+      
+      const { data: gameDetails, error: gameError } = await supabase
+        .from('games')
+        .select(`
+          id,
+          name,
+          release_date,
+          price_cents,
+          metacritic_score,
+          genres,
+          developer,
+          publisher
+        `)
+        .in('id', batchAppIds);
+      
+      if (gameError) {
+        console.error(`[smart-prioritization] Error fetching game details batch ${i}: ${gameError.message}`);
+        continue;
+      }
+      
+      if (gameDetails && gameDetails.length > 0) {
+        allGameDetails = [...allGameDetails, ...gameDetails];
+      }
+    }
+    
+    console.log(`[smart-prioritization] Found ${allGameDetails.length} game details`);
+    
+    // Step 3: Get game estimates to check if games already have HLTB data
+    const { data: gameEstimates, error: estimatesError } = await supabase
+      .from('game_estimates')
+      .select('game_id');
+    
+    if (estimatesError) {
+      console.error(`[smart-prioritization] Error fetching game estimates: ${estimatesError.message}`);
+    }
+    
+    const gamesWithEstimates = new Set(gameEstimates?.map(est => est.game_id) || []);
+    console.log(`[smart-prioritization] Found ${gamesWithEstimates.size} games with estimates`);
 
-    // Step 2: Get user-owned games for maximum priority
+    // Step 3: Get user-owned games for maximum priority
     const { data: userOwnedGames, error: userGamesError } = await supabase
       .from('user_games')
       .select('game_id')
@@ -130,9 +168,29 @@ serve(async (req) => {
     const userOwnedSet = userOwnedGames?.data || new Set();
     console.log(`[smart-prioritization] Found ${userOwnedSet.size} user-owned games`);
 
-    // Step 3: Calculate smart scores for each game
+    // Step 4: Create a mapping of app_id to game details
+    const gameDetailsMap = new Map();
+    allGameDetails.forEach(game => {
+      gameDetailsMap.set(game.id, game);
+    });
+
+    // Step 5: Calculate smart scores for each game
     const scoredGames = pendingGames.map(queueItem => {
-      const game = queueItem.games;
+      const game = gameDetailsMap.get(queueItem.app_id);
+      if (!game) {
+        // If we don't have game details, return with minimal score
+        return {
+          app_id: queueItem.app_id,
+          name: queueItem.name || `Unknown Game ${queueItem.app_id}`,
+          score: 1, // Minimal score
+          userOwned: false,
+          metacriticScore: null,
+          releaseDate: null,
+          price: null,
+          hasEstimate: false
+        };
+      }
+      
       let score = 0;
 
       // User-owned games get maximum priority
@@ -183,23 +241,23 @@ serve(async (req) => {
       }
 
       // Penalize games that already have estimates
-      if (game.game_estimates && game.game_estimates.length > 0) {
+      if (gamesWithEstimates.has(game.id)) {
         score += weights.hasEstimate; // This is negative
       }
 
       return {
         app_id: queueItem.app_id,
-        name: queueItem.name,
+        name: game.name || queueItem.name || `Unknown Game ${queueItem.app_id}`,
         score,
         userOwned: userOwnedSet.has(game.id),
         metacriticScore: game.metacritic_score,
         releaseDate: game.release_date,
         price: game.price_cents ? game.price_cents / 100 : null,
-        hasEstimate: game.game_estimates && game.game_estimates.length > 0
+        hasEstimate: gamesWithEstimates.has(game.id)
       };
     });
 
-    // Step 4: Sort by score and take top games
+    // Step 6: Sort by score and take top games
     scoredGames.sort((a, b) => b.score - a.score);
     const topGames = scoredGames.slice(0, targetCount);
 
@@ -212,7 +270,7 @@ serve(async (req) => {
       }))
     );
 
-    // Step 5: If not a dry run, update priorities in the queue
+    // Step 7: If not a dry run, update priorities in the queue
     let updatedCount = 0;
     if (!dryRun) {
       console.log(`[smart-prioritization] Updating priorities for ${topGames.length} games...`);
@@ -263,7 +321,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 6: Prepare response statistics
+    // Step 8: Prepare response statistics
     const userOwnedCount = topGames.filter(g => g.userOwned).length;
     const hasEstimateCount = topGames.filter(g => g.hasEstimate).length;
     const averageScore = topGames.reduce((sum, g) => sum + g.score, 0) / topGames.length;
