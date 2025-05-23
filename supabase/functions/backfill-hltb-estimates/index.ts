@@ -36,13 +36,27 @@ serve(async (req) => {
     // Get request parameters
     const { limit = 10, batchSize = 5, startAfter = 0 } = await req.json();
     
-    // Find games without estimates
+    // Find games without estimates - FIXED: Using a different query approach
     console.log(`[backfill-hltb-estimates] Finding games without estimates, startAfter=${startAfter}, limit=${limit}`);
+    
+    // First get game IDs that already have estimates
+    const { data: existingEstimates, error: estimatesError } = await supabase
+      .from('game_estimates')
+      .select('game_id');
+    
+    if (estimatesError) {
+      throw new Error(`Error fetching existing estimates: ${estimatesError.message}`);
+    }
+    
+    // Extract game IDs into an array
+    const gameIdsWithEstimates = existingEstimates?.map(record => record.game_id) || [];
+    
+    // Now fetch games that don't have estimates
     const { data: games, error } = await supabase
       .from('games')
       .select('id, name')
-      .not('id', 'in', (supabase.from('game_estimates').select('game_id')))
       .gt('id', startAfter)
+      .not('id', 'in', gameIdsWithEstimates.length > 0 ? gameIdsWithEstimates : [0])
       .order('id', { ascending: true })
       .limit(limit);
     
