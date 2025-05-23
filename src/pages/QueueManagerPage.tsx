@@ -1,60 +1,46 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Zap, Loader2 } from "lucide-react";
-import QueueStatsCard from "@/components/admin/QueueStatsCard";
+import { Zap, Loader2 } from "lucide-react";
 import AdminLayout from '@/layouts/AdminLayout';
+import QueueStatsCard from "@/components/admin/QueueStatsCard";
+import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
+import ProcessingFooter from "@/components/admin/ProcessingFooter";
+import { useBatchProcessor } from "@/hooks/use-batch-processor";
+import { useAdminStats } from "@/hooks/use-admin-stats";
+
+// Interface for queue statistics
+interface QueueStats {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  total: number;
+}
+
+// Response type for the Steam processing function
+interface SteamProcessResponse {
+  processedCount: number;
+  success: boolean;
+  message?: string;
+  lastProcessedId?: number;
+  complete?: boolean;
+}
 
 const QueueManagerPage = () => {
   const [batchSize, setBatchSize] = useState<number>(25);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [isPrioritizing, setIsPrioritizing] = useState<boolean>(false);
   const [userId, setUserId] = useState<string>("");
   const [priorityLevel, setPriorityLevel] = useState<number>(10);
-  const [continuousMode, setContinuousMode] = useState<boolean>(false);
-  const [processedCount, setProcessedCount] = useState<number>(0);
-  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
-  const [stats, setStats] = useState({
-    pending: 0,
-    processing: 0,
-    completed: 0,
-    failed: 0,
-    total: 0
-  });
-
-  // Fetch queue statistics on load
-  useEffect(() => {
-    fetchQueueStats();
-  }, []);
-
-  // Handle continuous processing mode
-  useEffect(() => {
-    let intervalId: number | undefined;
-
-    if (continuousMode && !isProcessing) {
-      // Start processing with a delay to prevent overwhelming the system
-      intervalId = window.setInterval(async () => {
-        await processBatch();
-        // Refresh stats after processing
-        await fetchQueueStats();
-      }, 3000); // 3 second delay between batches
-    }
-
-    return () => {
-      if (intervalId) window.clearInterval(intervalId);
-    };
-  }, [continuousMode, isProcessing]);
-
-  const fetchQueueStats = async () => {
+  const [isPrioritizing, setIsPrioritizing] = useState<boolean>(false);
+  
+  // Fetch queue statistics
+  const fetchQueueStats = useCallback(async (): Promise<QueueStats> => {
     try {
-      setIsLoadingStats(true);
-      // Get total counts for different statuses
       // First try to use edge function
       const { data: statusCounts, error: functionError } = await supabase.functions.invoke(
         'get-queue-stats-by-status'
@@ -63,8 +49,7 @@ const QueueManagerPage = () => {
       if (functionError) {
         console.error("Edge function error:", functionError);
         // Fallback to direct counts
-        await fetchQueueStatsDirectly();
-        return;
+        return await fetchQueueStatsDirectly();
       }
       
       // Process the statistics from the Edge function
@@ -94,19 +79,17 @@ const QueueManagerPage = () => {
                          newStats.completed + newStats.failed;
       }
 
-      setStats(newStats);
+      return newStats;
     } catch (error) {
       console.error("Error in fetchQueueStats:", error);
       toast.error("Failed to load queue statistics");
       // Attempt direct counting as fallback
-      await fetchQueueStatsDirectly();
-    } finally {
-      setIsLoadingStats(false);
+      return await fetchQueueStatsDirectly();
     }
-  };
+  }, []);
 
   // Fallback method that counts each status individually
-  const fetchQueueStatsDirectly = async () => {
+  const fetchQueueStatsDirectly = async (): Promise<QueueStats> => {
     try {
       console.log("Using fallback direct counting method");
       
@@ -139,45 +122,41 @@ const QueueManagerPage = () => {
         }
       }
       
-      setStats(newStats);
+      return newStats;
     } catch (error) {
       console.error("Error in direct count fallback:", error);
       toast.error("Failed to load queue statistics using fallback method");
-    } finally {
-      setIsLoadingStats(false);
+      return {
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+        total: 0
+      };
     }
   };
 
-  const processBatch = async () => {
-    if (isProcessing) return;
-    
-    try {
-      setIsProcessing(true);
-      toast.info(`Processing batch of ${batchSize} Steam app details...`);
-      
-      const { data, error } = await supabase.functions.invoke("fetch-steam-app-details", {
-        body: { processBatch: true, batchSize: batchSize }
+  // Use our hooks for stats and batch processing
+  const { stats, isLoading, fetchStats } = useAdminStats<QueueStats>(fetchQueueStats);
+  
+  const queueProcessor = useBatchProcessor<SteamProcessResponse>({
+    processingFunction: async (options) => {
+      return supabase.functions.invoke("fetch-steam-app-details", {
+        body: { processBatch: true, batchSize: options.batchSize }
+      }).then(({ data, error }) => {
+        if (error) throw error;
+        return data;
       });
-      
-      if (error) {
-        console.error("Error processing app details:", error);
-        toast.error("Failed to process app details");
-        return;
-      }
-      
+    },
+    onSuccess: (data) => {
       toast.success("Processing batch initiated successfully!");
       console.log("Batch processing response:", data);
       
-      // Increment processed count for tracking
-      setProcessedCount(prev => prev + batchSize);
-      
-    } catch (err) {
-      console.error("Error calling batch processing:", err);
-      toast.error("Error occurred while processing batch");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+      // Refresh queue stats after processing
+      fetchStats();
+    },
+    continuousInterval: 3000 // 3 second delay between batches in continuous mode
+  });
 
   const prioritizeUserGames = async () => {
     if (!userId) {
@@ -206,7 +185,7 @@ const QueueManagerPage = () => {
       console.log("Prioritization response:", data);
       
       // Refresh queue stats after prioritization
-      await fetchQueueStats();
+      await fetchStats();
       
     } catch (err) {
       console.error("Error prioritizing games:", err);
@@ -214,15 +193,6 @@ const QueueManagerPage = () => {
     } finally {
       setIsPrioritizing(false);
     }
-  };
-
-  const toggleContinuousMode = () => {
-    if (!continuousMode && stats.pending > 0) {
-      toast.info("Continuous processing enabled. This will automatically process batches until paused.");
-    } else if (continuousMode) {
-      toast.info("Continuous processing paused.");
-    }
-    setContinuousMode(!continuousMode);
   };
 
   return (
@@ -238,10 +208,16 @@ const QueueManagerPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Queue Statistics Card */}
           <QueueStatsCard 
-            stats={stats}
-            onRefresh={fetchQueueStats}
-            isLoading={isLoadingStats}
-            processedCount={processedCount}
+            stats={stats || {
+              pending: 0,
+              processing: 0,
+              completed: 0,
+              failed: 0,
+              total: 0
+            }}
+            onRefresh={fetchStats}
+            isLoading={isLoading}
+            processedCount={queueProcessor.processedCount}
           />
 
           {/* Batch Processing Card */}
@@ -253,67 +229,37 @@ const QueueManagerPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label htmlFor="batch-size">Batch Size: {batchSize} games</Label>
-                  {batchSize > 30 && (
-                    <div className="flex items-center text-amber-500 text-xs">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Higher risk of rate limiting
-                    </div>
-                  )}
-                </div>
-                <Slider
-                  id="batch-size"
-                  min={5}
-                  max={50}
-                  step={5}
-                  value={[batchSize]}
-                  onValueChange={(value) => setBatchSize(value[0])}
-                  className="py-4"
-                />
-                <p className="text-xs text-gray-400">
-                  Adjust batch size based on your needs. Larger batches process more games but might hit rate limits.
-                </p>
-              </div>
-              
-              {continuousMode && (
-                <div className="rounded-md bg-blue-950/50 p-3 border border-blue-800">
-                  <div className="flex items-center text-blue-400 mb-2">
-                    <Zap className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Continuous Mode Active</span>
-                  </div>
-                  <p className="text-xs text-gray-400">
-                    Automatically processing batches of {batchSize} games with 3-second intervals between batches.
-                  </p>
-                </div>
-              )}
+              <BatchProcessingControls
+                batchSize={batchSize}
+                onBatchSizeChange={setBatchSize}
+                batchSizeMin={5}
+                batchSizeMax={50}
+                batchSizeStep={5}
+                batchSizeLabel="Batch Size"
+                showWarningThreshold={30}
+                warningMessage="Higher risk of rate limiting"
+                continuousMode={queueProcessor.continuousMode}
+                processedCount={queueProcessor.processedCount}
+                lastProcessedId={queueProcessor.lastProcessedId}
+                processComplete={queueProcessor.processComplete}
+              />
             </CardContent>
-            <CardFooter className="flex flex-col space-y-3">
-              <Button 
-                onClick={processBatch} 
-                disabled={isProcessing || stats.pending === 0}
-                className="w-full"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  `Process Batch (${batchSize} Games)`
-                )}
-              </Button>
-              
-              <Button 
-                variant={continuousMode ? "destructive" : "outline"}
-                onClick={toggleContinuousMode}
-                disabled={stats.pending === 0}
-                className="w-full"
-              >
-                {continuousMode ? "Pause Continuous Processing" : "Enable Continuous Processing"}
-              </Button>
-            </CardFooter>
+            <CardHeader className="pt-0">
+              <ProcessingFooter
+                isProcessing={queueProcessor.isProcessing}
+                onProcess={() => queueProcessor.processBatch({ batchSize: batchSize })}
+                processText={`Process Batch (${batchSize} Games)`}
+                processingText="Processing..."
+                disabled={queueProcessor.processComplete || !stats || stats.pending === 0}
+                continuousMode={queueProcessor.continuousMode}
+                onToggleContinuous={queueProcessor.toggleContinuousMode}
+                continuousText="Enable Continuous Processing"
+                stopContinuousText="Pause Continuous Processing"
+                continuousDisabled={queueProcessor.processComplete || !stats || stats.pending === 0}
+                onReset={queueProcessor.resetProcessor}
+                resetDisabled={queueProcessor.isProcessing || (queueProcessor.lastProcessedId === 0 && queueProcessor.processedCount === 0)}
+              />
+            </CardHeader>
           </Card>
         </div>
 
@@ -355,22 +301,24 @@ const QueueManagerPage = () => {
               </p>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button 
-              onClick={prioritizeUserGames}
-              disabled={!userId || isPrioritizing}
-              className="w-full"
-            >
-              {isPrioritizing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Prioritizing...
-                </>
-              ) : (
-                "Prioritize User's Games"
-              )}
-            </Button>
-          </CardFooter>
+          <CardHeader className="pt-0">
+            <div className="w-full">
+              <button
+                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                onClick={prioritizeUserGames}
+                disabled={!userId || isPrioritizing}
+              >
+                {isPrioritizing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Prioritizing...
+                  </>
+                ) : (
+                  "Prioritize User's Games"
+                )}
+              </button>
+            </div>
+          </CardHeader>
         </Card>
       </div>
     </AdminLayout>
