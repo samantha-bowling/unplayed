@@ -20,8 +20,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
   const { 
     review, 
     isLoading, 
+    isError,
+    error,
     hasReviews,
-    cycleNextReview 
+    cycleNextReview,
+    retryFetch,
+    reviewScore
   } = useSteamReviews(showReview ? game.id : null);
 
   const handleGetReason = () => {
@@ -39,7 +43,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
   };
 
   // Use getBestGameImage utility for robust image fallback
-  const gameImage = getBestGameImage(game.image, null);
+  const gameImage = getBestGameImage(game.header_image || game.image, game.image_url);
 
   return (
     <div className="pixel-card animate-fade-in">
@@ -116,8 +120,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
         <GameReviewCard 
           review={review} 
           isLoading={isLoading}
+          isError={isError}
+          error={error}
           onGetAnotherReview={cycleNextReview}
+          onRetryFetch={retryFetch}
           gameId={game.id}
+          reviewScore={reviewScore}
         />
       )}
     </div>
