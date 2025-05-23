@@ -24,19 +24,53 @@ serve(async (req) => {
   }
 
   try {
-    // Verify admin role (for production) - can be bypassed in development
+    console.log('[backfill-hltb-estimates] Request received');
+    
+    // Verify admin role and get authorization header
     const authorization = req.headers.get('Authorization');
+    console.log('[backfill-hltb-estimates] Authorization header present:', !!authorization);
+    
     if (!authorization) {
       console.error('[backfill-hltb-estimates] No authorization header provided');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized - No authorization header' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     
     // Get request parameters
-    const { limit = 10, batchSize = 5, startAfter = 0 } = await req.json();
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log('[backfill-hltb-estimates] Request body:', bodyText);
+      requestBody = bodyText ? JSON.parse(bodyText) : {};
+    } catch (parseError) {
+      console.error('[backfill-hltb-estimates] Failed to parse request body:', parseError);
+      requestBody = {};
+    }
+    
+    const { limit = 10, batchSize = 5, startAfter = 0 } = requestBody;
     console.log(`[backfill-hltb-estimates] Parameters - limit: ${limit}, batchSize: ${batchSize}, startAfter: ${startAfter}`);
+    
+    // Test database connection first
+    console.log('[backfill-hltb-estimates] Testing database connection...');
+    const { data: testData, error: testError } = await supabase
+      .from('games')
+      .select('count(*)')
+      .limit(1);
+    
+    if (testError) {
+      console.error('[backfill-hltb-estimates] Database connection test failed:', testError);
+      return new Response(JSON.stringify({ 
+        error: 'Database connection failed',
+        details: testError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    console.log('[backfill-hltb-estimates] Database connection successful');
     
     // OPTIMIZED: Use LEFT JOIN to find games without estimates more efficiently
     console.log(`[backfill-hltb-estimates] Finding games without estimates using LEFT JOIN`);
@@ -55,7 +89,14 @@ serve(async (req) => {
     
     if (error) {
       console.error(`[backfill-hltb-estimates] Error fetching games: ${error.message}`);
-      throw new Error(`Error fetching games: ${error.message}`);
+      return new Response(JSON.stringify({ 
+        error: `Error fetching games: ${error.message}`,
+        code: error.code,
+        details: error.details
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     
     if (!games || games.length === 0) {
@@ -80,16 +121,28 @@ serve(async (req) => {
       batches.push(games.slice(i, i + batchSize));
     }
     
+    console.log(`[backfill-hltb-estimates] Processing ${batches.length} batches`);
+    
     // Process each batch with a delay between
-    for (const batch of batches) {
-      console.log(`[backfill-hltb-estimates] Processing batch of ${batch.length} games`);
+    for (const [batchIndex, batch] of batches.entries()) {
+      console.log(`[backfill-hltb-estimates] Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} games`);
       
-      const batchPromises = batch.map(async (game) => {
+      const batchPromises = batch.map(async (game, gameIndex) => {
         try {
-          // FIXED: Use supabase.functions.invoke instead of raw fetch for proper auth
+          console.log(`[backfill-hltb-estimates] Processing game ${gameIndex + 1}/${batch.length} in batch ${batchIndex + 1}: ${game.id} - ${game.name}`);
+          
+          // Create a new supabase client with the authorization header for the function call
+          const authClient = createClient(supabaseUrl, supabaseKey, {
+            global: {
+              headers: {
+                Authorization: authorization,
+              },
+            },
+          });
+          
           console.log(`[backfill-hltb-estimates] Calling fetch-hltb-estimate for game ${game.id}: ${game.name}`);
           
-          const { data: result, error: functionError } = await supabase.functions.invoke(
+          const { data: result, error: functionError } = await authClient.functions.invoke(
             'fetch-hltb-estimate',
             {
               body: {
@@ -101,10 +154,15 @@ serve(async (req) => {
           
           if (functionError) {
             console.error(`[backfill-hltb-estimates] Function error for game ${game.id}: ${functionError.message}`);
-            throw functionError;
+            return { 
+              game_id: game.id, 
+              name: game.name, 
+              success: false, 
+              error: functionError.message 
+            };
           }
           
-          console.log(`[backfill-hltb-estimates] Successfully processed game ${game.id}: ${game.name}`);
+          console.log(`[backfill-hltb-estimates] Successfully processed game ${game.id}: ${game.name}`, result);
           return { 
             game_id: game.id, 
             name: game.name, 
@@ -126,7 +184,7 @@ serve(async (req) => {
       results.push(...batchResults);
       
       // Wait between batches to avoid rate limiting
-      if (batches.indexOf(batch) < batches.length - 1) {
+      if (batchIndex < batches.length - 1) {
         console.log('[backfill-hltb-estimates] Waiting between batches...');
         await sleep(2000); // 2 second delay between batches
       }
@@ -148,14 +206,24 @@ serve(async (req) => {
       errorCount,
       lastProcessedId,
       complete,
-      results
+      results,
+      debug: {
+        foundGames: games.length,
+        batchesProcessed: batches.length,
+        authPresent: !!authorization
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
     
   } catch (error) {
     console.error(`[backfill-hltb-estimates] Fatal error: ${error.message}`);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('[backfill-hltb-estimates] Error stack:', error.stack);
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      stack: error.stack,
+      type: 'fatal_error'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

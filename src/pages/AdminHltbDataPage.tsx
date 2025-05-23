@@ -29,12 +29,18 @@ interface HltbProcessResponse {
   lastProcessedId: number;
   complete: boolean;
   results: any[];
+  debug?: {
+    foundGames: number;
+    batchesProcessed: number;
+    authPresent: boolean;
+  };
 }
 
 const AdminHltbDataPage = () => {
   const [batchSize, setBatchSize] = useState(5);
   const [processLimit, setProcessLimit] = useState(50);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Fetch HLTB statistics
   const fetchHltbStats = useCallback(async (): Promise<HltbStats> => {
@@ -87,20 +93,35 @@ const AdminHltbDataPage = () => {
     processingFunction: async (options) => {
       console.log('[AdminHltbDataPage] Processing function called with options:', options);
       setLastError(null); // Clear previous errors
+      setDebugInfo(null); // Clear previous debug info
       
       try {
+        console.log('[AdminHltbDataPage] Making request to backfill-hltb-estimates...');
+        
         const { data, error } = await supabase.functions.invoke("backfill-hltb-estimates", {
           body: options
         });
         
+        console.log('[AdminHltbDataPage] Function response received:', { data, error });
+        
         if (error) {
           console.error('[AdminHltbDataPage] Supabase function error:', error);
-          throw new Error(`Function error: ${error.message || 'Unknown error'}`);
+          const errorMessage = `Function error: ${error.message || 'Unknown error'}`;
+          setLastError(errorMessage);
+          throw new Error(errorMessage);
         }
         
         if (!data) {
           console.error('[AdminHltbDataPage] No data returned from function');
-          throw new Error('No data returned from processing function');
+          const errorMessage = 'No data returned from processing function';
+          setLastError(errorMessage);
+          throw new Error(errorMessage);
+        }
+        
+        // Store debug information
+        if (data.debug) {
+          setDebugInfo(data.debug);
+          console.log('[AdminHltbDataPage] Debug info:', data.debug);
         }
         
         console.log('[AdminHltbDataPage] Processing function completed successfully:', data);
@@ -114,7 +135,16 @@ const AdminHltbDataPage = () => {
     },
     onSuccess: (data) => {
       console.log('[AdminHltbDataPage] Processing successful:', data);
-      toast.success(`Processed ${data.processedCount} games (${data.successCount} successes, ${data.errorCount} errors)`);
+      
+      const message = data.successCount > 0 
+        ? `Processed ${data.processedCount} games (${data.successCount} successes, ${data.errorCount} errors)`
+        : `Processed ${data.processedCount} games - no successful HLTB matches found`;
+      
+      if (data.successCount > 0) {
+        toast.success(message);
+      } else {
+        toast.info(message);
+      }
       
       // If complete, refresh stats
       if (data.complete) {
@@ -141,6 +171,7 @@ const AdminHltbDataPage = () => {
   const handleProcessBatch = useCallback(() => {
     console.log('[AdminHltbDataPage] Process batch button clicked');
     setLastError(null); // Clear previous errors
+    setDebugInfo(null); // Clear previous debug info
     
     hltbProcessor.processBatch({
       batchSize: batchSize,
@@ -165,6 +196,18 @@ const AdminHltbDataPage = () => {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <strong>Processing Error:</strong> {lastError}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Debug Information */}
+        {debugInfo && (
+          <div className="mb-6">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Debug Info:</strong> Found {debugInfo.foundGames} games, processed {debugInfo.batchesProcessed} batches, auth present: {debugInfo.authPresent ? 'Yes' : 'No'}
               </AlertDescription>
             </Alert>
           </div>
@@ -275,6 +318,11 @@ const AdminHltbDataPage = () => {
                   <div>Total Processed: {hltbProcessor.processedCount}</div>
                   <div>Complete: {hltbProcessor.processComplete ? 'Yes' : 'No'}</div>
                   {lastError && <div className="text-red-400">Last Error: {lastError}</div>}
+                  {debugInfo && (
+                    <div className="text-blue-400">
+                      Last Run: Found {debugInfo.foundGames} games, {debugInfo.batchesProcessed} batches, Auth: {debugInfo.authPresent ? 'Present' : 'Missing'}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

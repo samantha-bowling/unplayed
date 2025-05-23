@@ -75,11 +75,12 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
     processLimit: undefined,
   });
 
-  // Use refs to avoid circular dependencies in useEffect
+  // Use refs for stable references that don't cause re-renders
   const processingFunctionRef = useRef(processingFunction);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
   const onCompleteRef = useRef(onComplete);
+  const continuousIntervalRef = useRef<number | undefined>();
 
   // Update refs when props change
   useEffect(() => {
@@ -119,38 +120,32 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
   }, []);
 
   /**
-   * Toggle continuous processing mode
-   */
-  const toggleContinuousMode = useCallback(() => {
-    setState(prev => {
-      const newContinuousMode = !prev.continuousMode;
-      if (newContinuousMode && !prev.processComplete) {
-        toast.info("Continuous processing enabled. This will automatically process batches until complete or paused.");
-      } else if (!newContinuousMode) {
-        toast.info("Continuous processing paused.");
-      }
-      return { ...prev, continuousMode: newContinuousMode };
-    });
-  }, []);
-
-  /**
    * Process a single batch
    * @param customOptions Additional options to pass to the processing function
    */
   const processBatch = useCallback(async (customOptions?: Record<string, any>) => {
-    if (state.isProcessing || state.processComplete) {
-      console.log('[useBatchProcessor] Skipping processBatch - already processing or complete');
-      return;
-    }
+    setState(prevState => {
+      if (prevState.isProcessing || prevState.processComplete) {
+        console.log('[useBatchProcessor] Skipping processBatch - already processing or complete');
+        return prevState;
+      }
+
+      console.log('[useBatchProcessor] Starting batch processing');
+      return { ...prevState, isProcessing: true };
+    });
 
     try {
-      console.log('[useBatchProcessor] Starting batch processing');
-      setState(prev => ({ ...prev, isProcessing: true }));
-      
+      const currentState = await new Promise<BatchProcessorState>((resolve) => {
+        setState(prev => {
+          resolve(prev);
+          return prev;
+        });
+      });
+
       const options = {
-        batchSize: state.batchSize,
-        ...(state.processLimit !== undefined && { limit: state.processLimit }),
-        ...(state.lastProcessedId > 0 && { startAfter: state.lastProcessedId }),
+        batchSize: currentState.batchSize,
+        ...(currentState.processLimit !== undefined && { limit: currentState.processLimit }),
+        ...(currentState.lastProcessedId > 0 && { startAfter: currentState.lastProcessedId }),
         ...customOptions,
       };
 
@@ -183,27 +178,47 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [state.isProcessing, state.processComplete, state.batchSize, state.processLimit, state.lastProcessedId]);
+  }, []);
+
+  /**
+   * Toggle continuous processing mode
+   */
+  const toggleContinuousMode = useCallback(() => {
+    setState(prev => {
+      const newContinuousMode = !prev.continuousMode;
+      if (newContinuousMode && !prev.processComplete) {
+        toast.info("Continuous processing enabled. This will automatically process batches until complete or paused.");
+      } else if (!newContinuousMode) {
+        toast.info("Continuous processing paused.");
+      }
+      return { ...prev, continuousMode: newContinuousMode };
+    });
+  }, []);
 
   // Effect for continuous mode
   useEffect(() => {
-    let intervalId: number | undefined;
-
     if (state.continuousMode && !state.isProcessing && !state.processComplete) {
       console.log('[useBatchProcessor] Setting up continuous processing interval');
-      intervalId = window.setInterval(async () => {
+      
+      continuousIntervalRef.current = window.setInterval(() => {
         console.log('[useBatchProcessor] Continuous processing tick');
-        await processBatch();
+        processBatch();
       }, continuousInterval);
+    } else {
+      if (continuousIntervalRef.current) {
+        console.log('[useBatchProcessor] Cleaning up continuous processing interval');
+        window.clearInterval(continuousIntervalRef.current);
+        continuousIntervalRef.current = undefined;
+      }
     }
 
     return () => {
-      if (intervalId) {
-        console.log('[useBatchProcessor] Cleaning up continuous processing interval');
-        window.clearInterval(intervalId);
+      if (continuousIntervalRef.current) {
+        console.log('[useBatchProcessor] Cleaning up continuous processing interval on unmount');
+        window.clearInterval(continuousIntervalRef.current);
       }
     };
-  }, [state.continuousMode, state.isProcessing, state.processComplete, processBatch, continuousInterval]);
+  }, [state.continuousMode, state.isProcessing, state.processComplete, continuousInterval, processBatch]);
 
   return {
     processBatch,
