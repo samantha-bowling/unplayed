@@ -250,10 +250,10 @@ const SpendPage = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {data.priceDistribution.some(range => range.count > 0) ? (
+                      {unplayedSpendingData.priceDistribution.some(range => range.count > 0) ? (
                         <div className="h-[350px]">
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data.priceDistribution}>
+                            <BarChart data={unplayedSpendingData.priceDistribution}>
                               <XAxis dataKey="range" tick={{ fill: '#9ca3af' }} />
                               <YAxis tick={{ fill: '#9ca3af' }} />
                               <Tooltip 
@@ -275,7 +275,7 @@ const SpendPage = () => {
                                 fill="#22c55e" 
                                 radius={[4, 4, 0, 0]}
                               >
-                                {data.priceDistribution.map((entry, index) => (
+                                {unplayedSpendingData.priceDistribution.map((entry, index) => (
                                   <Cell 
                                     key={`cell-${index}`} 
                                     fill={
