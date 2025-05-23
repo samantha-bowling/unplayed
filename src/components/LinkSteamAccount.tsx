@@ -47,7 +47,7 @@ export default function LinkSteamAccount({ onSkip, showSkip = false }: LinkSteam
           <li>
             Go to <a href="https://steamcommunity.com/my/edit/settings" className="underline">Steam Profile Privacy Settings</a>
           </li>
-          <li>Set <strong>Game details</strong> to <code>Public</code></li>
+          <li>Set <strong>Game details</strong> and <strong>Inventory</strong> to <code>Public</code></li>
           <li>Uncheck <em>"Always keep my total playtime private"</em></li>
           <li>Save settings and return here to continue</li>
         </ul>
