@@ -98,6 +98,13 @@ export const routes: Record<string, RouteConfig> = {
     requiresAuth: true,
     requiredRole: UserRole.ADMIN
   },
+  ADMIN_HLTB_DATA: {
+    path: "/admin/hltb-data",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN,
+    title: "HLTB Data Manager - Unplayed",
+    description: "Manage and monitor HowLongToBeat data integration."
+  },
   
   // Redirects
   ADMIN_STEAM_DATA: {

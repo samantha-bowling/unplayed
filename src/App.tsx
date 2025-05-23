@@ -15,6 +15,7 @@ import AdminSteamDataPage from "./pages/AdminSteamDataPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
 import QueueManagerPage from "./pages/QueueManagerPage";
+import AdminHltbDataPage from "./pages/AdminHltbDataPage"; // Add the new import
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
@@ -92,6 +93,15 @@ const App = () => {
           element={
             <ProtectedRoute requiredRole={routes.ADMIN_QUEUE_MANAGER.requiredRole}>
               <QueueManagerPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Add the new HLTB Data route */}
+        <Route
+          path={routes.ADMIN_HLTB_DATA.path}
+          element={
+            <ProtectedRoute requiredRole={routes.ADMIN_HLTB_DATA.requiredRole}>
+              <AdminHltbDataPage />
             </ProtectedRoute>
           }
         />
