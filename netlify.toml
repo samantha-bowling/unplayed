@@ -3,14 +3,14 @@
 [[redirects]]
 from = "/api/auth/steam"
 to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth"
-status = 200
+status = 302
 force = true
 headers = { "X-Steam-Auth-Source" = "netlify" }
 
 [[redirects]]
 from = "/api/auth/steam/callback"
 to = "https://gwmygthanyycveyqqspr.supabase.co/functions/v1/steam-auth/callback"
-status = 200
+status = 302
 force = true
 headers = { "X-Steam-Auth-Source" = "netlify" }
 

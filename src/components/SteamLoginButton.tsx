@@ -49,6 +49,14 @@ const SteamLoginButton = ({
     const redirectUrl = `${window.location.origin}/auth/steam-callback`;
     console.log('[Steam Auth] Using redirect URL:', redirectUrl);
     
+    // Add additional debug info before initiating Steam auth
+    console.log('[Steam Auth] Current user state:', { 
+      userId: user.id, 
+      userEmail: user.email, 
+      hasProfile: !!profile, 
+      hasSteamId: profile?.steam_id ? true : false
+    });
+    
     // Use the centralized signInWithProvider method with steam provider
     signInWithProvider('steam', { redirectTo: redirectUrl })
       .catch((error) => {

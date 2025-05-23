@@ -29,6 +29,13 @@ const SteamAuthHandler = () => {
   const steam_avatar = searchParams.get('steam_avatar');
   const uid = searchParams.get('uid');
 
+  // Log current URL and params for debugging
+  useEffect(() => {
+    console.log('[SteamAuth] SteamAuthHandler mounted');
+    console.log('[SteamAuth] Current URL:', window.location.href);
+    console.log('[SteamAuth] Search params:', Object.fromEntries(searchParams.entries()));
+  }, [searchParams]);
+
   useEffect(() => {
     const processSteamAuth = async () => {
       try {
@@ -39,6 +46,7 @@ const SteamAuthHandler = () => {
           steam_avatar,
           uid
         });
+        console.log('[SteamAuth] Current user:', user);
         
         // Validate required parameters
         if (!steam_id || !steam_name || !uid) {
@@ -48,7 +56,7 @@ const SteamAuthHandler = () => {
             uid
           });
           setErrorCode('missing_parameters');
-          setError('Missing required Steam account information');
+          setError('Missing required Steam account information. Please try linking your Steam account again.');
           setProcessing(false);
           return;
         }
@@ -72,22 +80,18 @@ const SteamAuthHandler = () => {
           const decodedSteamAvatar = steam_avatar ? decodeURIComponent(steam_avatar) : undefined;
           
           // Log the exact payload we're sending to upsert-user
-          console.log('[SteamAuth] Upsert user payload:', {
+          const updatePayload = {
             id: uid,
             steam_id,
             steam_name: decodedSteamName,
             steam_avatar: decodedSteamAvatar,
             onboarding_complete: true,
-          });
+          };
+          
+          console.log('[SteamAuth] Upsert user payload:', updatePayload);
           
           // Update user profile with Steam information
-          const result = await callUpsertUser({
-            id: uid,
-            steam_id,
-            steam_name: decodedSteamName,
-            steam_avatar: decodedSteamAvatar,
-            onboarding_complete: true,
-          });
+          const result = await callUpsertUser(updatePayload);
           
           console.log('[SteamAuth] Upsert successful, result:', result);
           
@@ -106,34 +110,52 @@ const SteamAuthHandler = () => {
             console.error(`[SteamAuth] HTTP Status: ${err.status}`);
           }
           
+          let errorMessage = err.message || 'Unknown error occurred while linking your Steam account';
+          let errorCode = 'linking_failed';
+          
           // Try to provide more meaningful error messages based on common issues
-          if (err.message?.includes('404')) {
-            setErrorCode('api_not_found');
-            setError('The API endpoint for linking your Steam account could not be found. This may be due to a deployment issue.');
-          } else if (err.message?.includes('500')) {
-            setErrorCode('server_error');
-            setError('The server encountered an error while linking your Steam account. Please try again later.');
-          } else if (err.message?.includes('timeout') || err.message?.includes('network')) {
-            setErrorCode('network_error');
-            setError('A network error occurred while linking your Steam account. Please check your connection and try again.');
-          } else {
-            setErrorCode('linking_failed');
-            setError(`Failed to link Steam account: ${err.message}`);
+          if (errorMessage.includes('404')) {
+            errorCode = 'api_not_found';
+            errorMessage = 'The API endpoint for linking your Steam account could not be found. This may be due to a deployment issue.';
+          } else if (errorMessage.includes('500')) {
+            errorCode = 'server_error';
+            errorMessage = 'The server encountered an error while linking your Steam account. Please try again later.';
+          } else if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
+            errorCode = 'network_error';
+            errorMessage = 'A network error occurred while linking your Steam account. Please check your connection and try again.';
           }
           
+          setErrorCode(errorCode);
+          setError(errorMessage);
           setProcessing(false);
         }
       } catch (err: any) {
         console.error('[SteamAuth] Error processing callback:', err);
         setErrorCode('processing_error');
-        setError(err.message);
+        setError(err.message || 'An unexpected error occurred while processing your Steam account information');
         setProcessing(false);
       } finally {
         setProcessing(false);
       }
     };
 
-    processSteamAuth();
+    // Only run the processing if we have a user
+    if (user) {
+      processSteamAuth();
+    } else {
+      console.log('[SteamAuth] No user detected, waiting...');
+      // Set a timeout to give auth context time to initialize
+      const timer = setTimeout(() => {
+        if (!user) {
+          console.error('[SteamAuth] No user available after timeout');
+          setErrorCode('auth_error');
+          setError('Your authentication session was not found. Please try logging in again.');
+          setProcessing(false);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
   }, [user, navigate, steam_id, steam_name, steam_avatar, uid, queryClient]);
 
   if (error) {

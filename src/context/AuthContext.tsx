@@ -1,4 +1,3 @@
-
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -73,9 +72,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const redirectTo = options?.redirectTo || `${window.location.origin}/auth/steam-callback`;
         
         // Use the API redirect path defined in netlify.toml instead of constructing Supabase URL directly
+        // Add user ID as a search param
         const steamAuthUrl = `/api/auth/steam?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
         
-        console.log(`[Auth] Initiating Steam linking for user ${uid}, redirecting to ${steamAuthUrl}`);
+        console.log(`[Auth] Initiating Steam linking for user ${uid}`);
+        console.log(`[Auth] Steam auth URL: ${steamAuthUrl}`);
+        console.log(`[Auth] Browser will navigate to: ${window.location.origin}${steamAuthUrl}`);
+        
+        // Log required data before redirect
+        console.log(`[Auth] Steam linking debug info:`, {
+          uid,
+          redirectTo,
+          fullUrl: `${window.location.origin}${steamAuthUrl}`,
+          timestamp: new Date().toISOString(),
+          sessionExists: !!session
+        });
+        
+        // Redirect to Steam auth
         window.location.href = steamAuthUrl;
         return;
       }
@@ -117,7 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [clearError, user?.id]);
+  }, [clearError, user?.id, session]);
 
   // Sign in with email (magic link)
   const signInWithEmail = useCallback(async (email: string) => {
