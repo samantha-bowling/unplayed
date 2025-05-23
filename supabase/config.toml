@@ -40,3 +40,6 @@ verify_jwt = true
 
 [functions.prioritize-smart-queue]
 verify_jwt = true
+
+[functions.steam-auth]
+verify_jwt = false
