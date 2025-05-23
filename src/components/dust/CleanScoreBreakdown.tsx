@@ -2,7 +2,7 @@
 import { CleanScoreBreakdown as CleanBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Medal, Calendar } from 'lucide-react';
+import { Clock, Medal, Calendar, HelpCircle } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -96,16 +96,32 @@ const CleanScoreBreakdown = ({
   
   return (
     <Card className="terminal-container">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Medal className="h-5 w-5 text-cyan-400" />
-          Clean Score Breakdown
-        </CardTitle>
-        <CardDescription>
-          Your Clean Score of {cleanScore} is calculated from these factors
-        </CardDescription>
+      <CardHeader className="pb-1">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Medal className="h-5 w-5 text-cyan-400" />
+              Clean Score Breakdown
+            </CardTitle>
+            <CardDescription>
+              Your Clean Score of {cleanScore} is calculated from these factors
+            </CardDescription>
+          </div>
+          <div className="bg-black/30 rounded-lg p-3 min-w-56">
+            <h3 className="text-lg font-medium mb-1">Your Clean Tier</h3>
+            <div className="flex items-center mb-1">
+              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tierInfo.color }}></div>
+              <span className="font-medium" style={{ color: tierInfo.color }}>
+                {tierInfo.name}
+              </span>
+            </div>
+            <p className="text-sm text-gray-300">
+              {tierInfo.description}
+            </p>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div>
@@ -181,84 +197,106 @@ const CleanScoreBreakdown = ({
             </div>
           </div>
           
-          <div className="bg-black/30 rounded-lg p-4">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Your Clean Tier</h3>
-              <div className="flex items-center mb-2">
-                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tierInfo.color }}></div>
-                <span className="font-medium" style={{ color: tierInfo.color }}>
-                  {tierInfo.name}
-                </span>
+          <div className="space-y-4">
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">What It Means</h3>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <span className="text-cyan-400 font-bold">Completion Rate:</span> Percentage of your library that you've played at least once.
+                </p>
+                <p>
+                  <span className="text-amber-400 font-bold">Engagement Factor:</span> How deeply you engage with the games you play compared to expected playtime.
+                </p>
+                <p>
+                  <span className="text-green-400 font-bold">Recency Factor:</span> How active you've been with your library in the past 30 days.
+                </p>
               </div>
-              <p className="text-sm text-gray-300 mb-4">
-                {tierInfo.description}
-              </p>
-              
-              <h4 className="text-sm font-medium text-gray-400 mb-2">How to improve:</h4>
-              <ul className="list-disc pl-5 text-xs text-gray-400 space-y-1">
+            </div>
+            
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
+              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
                 {tierInfo.tips.map((tip, index) => (
                   <li key={index}>{tip}</li>
                 ))}
               </ul>
             </div>
+            
+            <div className="space-y-2">
+              <div className="bg-black/20 rounded-lg p-3">
+                <div className="flex items-center mb-1">
+                  <Medal className="h-4 w-4 mr-2 text-amber-400" />
+                  <span className="text-gray-300 font-medium mr-1">Clean Streak</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>Clean Streak counts the consecutive days you've played your games. Playing at least one game each day maintains your streak.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="ml-auto text-amber-400 font-bold">{cleanStreak} days</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  {cleanStreak > 3 
+                    ? "Impressive consistency!" 
+                    : cleanStreak > 0 
+                    ? "Keep the momentum going!" 
+                    : "Start a streak by playing today!"}
+                </p>
+              </div>
+              
+              <div className="bg-black/20 rounded-lg p-3">
+                <div className="flex items-center mb-1">
+                  <Calendar className="h-4 w-4 mr-2 text-green-400" />
+                  <span className="text-gray-300 font-medium">Recently Played Games</span>
+                  <span className="ml-auto text-green-400 font-bold">{recentlyPlayedCount}</span>
+                </div>
+                <p className="text-xs text-gray-400">Games played in the last 30 days</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-black/20 rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-3">Clean Score Tiers</h3>
-            <div className="space-y-3">
+        <div className="bg-black/20 rounded-lg p-4">
+          <h3 className="text-lg font-medium mb-3">Clean Score Tiers</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+            <div>
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2 bg-[#4ade80]"></div>
-                <span className="text-sm font-medium text-[#4ade80] mr-1">Pristine Collection</span>
-                <span className="text-xs text-gray-400">(90-100)</span>
+                <span className="font-medium text-[#4ade80]">Pristine</span>
               </div>
+              <span className="text-xs text-gray-400 pl-5">90-100</span>
+            </div>
+            <div>
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2 bg-[#22d3ee]"></div>
-                <span className="text-sm font-medium text-[#22d3ee] mr-1">Dust-Free Shelf</span>
-                <span className="text-xs text-gray-400">(75-89)</span>
+                <span className="font-medium text-[#22d3ee]">Dust-Free</span>
               </div>
+              <span className="text-xs text-gray-400 pl-5">75-89</span>
+            </div>
+            <div>
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2 bg-[#60a5fa]"></div>
-                <span className="text-sm font-medium text-[#60a5fa] mr-1">Reasonably Clean</span>
-                <span className="text-xs text-gray-400">(50-74)</span>
+                <span className="font-medium text-[#60a5fa]">Clean</span>
               </div>
+              <span className="text-xs text-gray-400 pl-5">50-74</span>
+            </div>
+            <div>
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2 bg-[#f59e0b]"></div>
-                <span className="text-sm font-medium text-[#f59e0b] mr-1">Needs a Wipe</span>
-                <span className="text-xs text-gray-400">(25-49)</span>
+                <span className="font-medium text-[#f59e0b]">Needs Wipe</span>
               </div>
+              <span className="text-xs text-gray-400 pl-5">25-49</span>
+            </div>
+            <div>
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2 bg-[#f87171]"></div>
-                <span className="text-sm font-medium text-[#f87171] mr-1">Filthy Casual</span>
-                <span className="text-xs text-gray-400">(0-24)</span>
+                <span className="font-medium text-[#f87171]">Filthy</span>
               </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="bg-black/20 rounded-lg p-4">
-              <div className="flex items-center mb-2">
-                <Medal className="h-4 w-4 mr-2 text-amber-400" />
-                <span className="text-gray-300 font-medium">Clean Streak</span>
-                <span className="ml-auto text-amber-400 font-bold">{cleanStreak} days</span>
-              </div>
-              <p className="text-xs text-gray-400">
-                {cleanStreak > 3 
-                  ? "Impressive consistency!" 
-                  : cleanStreak > 0 
-                  ? "Keep the momentum going!" 
-                  : "Start a streak by playing today!"}
-              </p>
-            </div>
-            
-            <div className="bg-black/20 rounded-lg p-4">
-              <div className="flex items-center mb-2">
-                <Calendar className="h-4 w-4 mr-2 text-green-400" />
-                <span className="text-gray-300 font-medium">Recently Played Games</span>
-                <span className="ml-auto text-green-400 font-bold">{recentlyPlayedCount}</span>
-              </div>
-              <p className="text-xs text-gray-400">Games played in the last 30 days</p>
+              <span className="text-xs text-gray-400 pl-5">0-24</span>
             </div>
           </div>
         </div>
