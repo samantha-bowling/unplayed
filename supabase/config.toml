@@ -30,10 +30,14 @@ enabled = true
 enabled = true
 site_url = "https://lucid-lamarr-a4467f.lovable.dev"
 
-[functions]
-enabled = true
-serve_port = 54325
-port = 54325
+[functions.enabled]
+default = true
+
+[functions.port]
+default = 54325
+
+[functions.serve_port]
+default = 54325
 
 [functions.prioritize-hltb-games]
 verify_jwt = true
