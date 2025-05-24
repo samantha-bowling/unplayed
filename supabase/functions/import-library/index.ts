@@ -56,23 +56,35 @@ serve(async (req) => {
     if (body.steamId) {
       // Format from frontend: { steamId: "..." }
       steamId = body.steamId;
+
+      // DEBUG: Log the steamId received
+      console.log("Looking up user with steam_id:", steamId);
       
-      // Lookup user by steam_id
+      // Gracefully attempt to find the user
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("id")
         .eq("steam_id", steamId)
-        .single();
+        .maybeSingle(); // prevents hard crash if no match
       
-      if (userError || !userData) {
-        console.error("Error finding user by steam_id:", userError || "No user found");
+      if (userError) {
+        console.error("Database error when looking up steam_id:", userError);
         return new Response(
-          JSON.stringify({ error: "User not found with provided Steam ID" }), 
+          JSON.stringify({ error: "Database error while verifying user" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (!userData) {
+        console.warn("No user found with this steam_id:", steamId);
+        return new Response(
+          JSON.stringify({ error: "User not found with provided Steam ID" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
       userId = userData.id;
+      console.log(`✅ Found user ${userId} with Steam ID ${steamId}`);
       
       // Now fetch the Steam library
       console.log(`Fetching Steam library for user ${userId} with Steam ID ${steamId}`);
