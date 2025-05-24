@@ -101,16 +101,12 @@ const Index = () => {
     
     try {
       // Use the Netlify redirect path instead of direct Supabase function URL
+      import { callSupabaseFunction } from '@/utils/supabase-functions';
+      
       const data = await callSupabaseFunction('import-library', {
         steamId: profile.steam_id,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-      
-      const data = await response.json();
       console.log("Import response:", data);
       
       // If the server is processing in the background
