@@ -7,6 +7,7 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
+import { callSupabaseFunction } from '@/utils/supabase-functions';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -100,12 +101,10 @@ const Index = () => {
     
     try {
       // Use the Netlify redirect path instead of direct Supabase function URL
-      const response = await fetch("/api/import-library", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ steamId: profile.steam_id }),
+      const data = await callSupabaseFunction('import-library', {
+        steamId: profile.steam_id,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Server error: ${response.status}`);
