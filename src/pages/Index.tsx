@@ -101,8 +101,6 @@ const Index = () => {
     
     try {
       // Use the Netlify redirect path instead of direct Supabase function URL
-      import { callSupabaseFunction } from '@/utils/supabase-functions';
-      
       const data = await callSupabaseFunction('import-library', {
         steamId: profile.steam_id,
       });
