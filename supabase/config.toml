@@ -31,7 +31,6 @@ enabled = true
 site_url = "https://lucid-lamarr-a4467f.lovable.dev"
 
 [functions]
-enabled = true
 
 [functions.prioritize-hltb-games]
 verify_jwt = true
