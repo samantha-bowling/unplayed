@@ -28,7 +28,14 @@ serve(async (req) => {
 
   if (req.method !== "POST") {
 
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ code: 401, message: "Missing authorization header" }), {
+      headers: corsHeaders,
+      status: 401
+    });
+  }
+  const token = authHeader.replace("Bearer ", "");
   if (!token) {
     return new Response(JSON.stringify({ error: "Missing authorization header" }), {
       status: 401,
