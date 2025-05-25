@@ -18,6 +18,19 @@ const corsHeaders = {
 const BATCH_SIZE = 100; // Process games in batches of 100
 
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+      headers: corsHeaders,
+    });
+  }
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
