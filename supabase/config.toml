@@ -30,7 +30,7 @@ enabled = true
 enabled = true
 site_url = "https://lucid-lamarr-a4467f.lovable.dev"
 
-[functions]
+[functions.local]
 enabled = true
 port = 54325
 serve_port = 54325
