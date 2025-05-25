@@ -1,4 +1,3 @@
-
 // supabase/functions/import-library/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
@@ -22,6 +21,32 @@ serve(async (req)=>{
     });
   }
   if (req.method !== "POST") {
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return new Response(JSON.stringify({
+        error: "Missing authorization header"
+      }), {
+
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+      status: 401,
+      headers: corsHeaders
+    });
+  }
+
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser(token);
+
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized", details: authError?.message }), {
+      status: 401,
+      headers: corsHeaders
+    });
+  }
+
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
     if (!token) {
       return new Response(JSON.stringify({
