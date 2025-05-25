@@ -26,10 +26,10 @@ serve(async (req) => {
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: corsHeaders,
-    });
+    return new Response(
+      JSON.stringify({ error: "Method Not Allowed" }),
+      { status: 405, headers: corsHeaders }
+    );
   }
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -43,17 +43,23 @@ serve(async (req) => {
 
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   if (!authHeader) {
-    return new Response(JSON.stringify({ code: 401, message: "Missing authorization header" }), {
-      headers: corsHeaders,
-      status: 401
-    });
   }
   const token = authHeader.replace("Bearer ", "");
   if (!token) {
-    return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-      status: 401,
-      headers: corsHeaders,
-    });
+    return new Response(
+      JSON.stringify({ error: "Missing authorization token" }),
+      { status: 401, headers: corsHeaders }
+    );
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: corsHeaders }
+    );
+  }
+  if (!token) {
   }
   
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -64,10 +70,6 @@ serve(async (req) => {
     });
   }
 
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: corsHeaders,
-    });
   }
 
   try {
