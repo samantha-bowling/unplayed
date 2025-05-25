@@ -1,5 +1,5 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.20.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 // Set up the Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
