@@ -27,9 +27,26 @@ serve(async (req) => {
   }
 
   if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { 
+
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+      status: 401,
+      headers: corsHeaders,
+    });
+  }
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: corsHeaders,
+    });
+  }
+
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
       status: 405,
-      headers: corsHeaders 
+      headers: corsHeaders,
     });
   }
 
@@ -65,7 +82,8 @@ serve(async (req) => {
         .from("users")
         .select("id")
         .eq("steam_id", steamId)
-        .maybeSingle(); // prevents hard crash if no match
+        .eq("id", user.id)
+        .maybeSingle();
       
       if (userError) {
         console.error("Database error when looking up steam_id:", userError);
