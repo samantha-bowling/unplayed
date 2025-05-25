@@ -52,7 +52,8 @@ serve(async (req) => {
     );
   }
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  const { data, error: authError } = await supabase.auth.getUser(token);
+  const user = data?.user;
   if (authError || !user) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
@@ -62,7 +63,8 @@ serve(async (req) => {
   if (!token) {
   }
   
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  const { data, error: authError } = await supabase.auth.getUser(token);
+  const user = data?.user;
   if (authError || !user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
