@@ -23,8 +23,51 @@ let currentDelayMs = DEFAULT_DELAY_MS;
 let consecutiveSuccess = 0;
 let consecutiveErrors = 0;
 
+// Image utility functions (copied from frontend for consistency)
+function constructSteamImageUrl(appId, imageHash, imageType = 'icon') {
+  if (!appId || !imageHash) return null;
+  
+  // Remove any existing URL prefix if present
+  const cleanHash = imageHash.replace(/^https?:\/\/.*\//, '');
+  
+  // Construct the proper Steam CDN URL
+  const baseUrl = 'https://media.steampowered.com/steamcommunity/public/images/apps';
+  return `${baseUrl}/${appId}/${cleanHash}.jpg`;
+}
+
+function extractImageHashFromUrl(steamUrl) {
+  if (!steamUrl || steamUrl === '/placeholder.svg') return null;
+  
+  // Match pattern: https://media.steampowered.com/steamcommunity/public/images/apps/{appid}/{hash}.jpg
+  const match = steamUrl.match(/\/apps\/\d+\/([^\/]+)\.jpg$/);
+  return match ? match[1] : null;
+}
+
+function normalizeGameImageData(imageData, gameId) {
+  // For image_url: prefer extracting hash from header_image if available
+  let image_url = null;
+  if (imageData.header_image) {
+    // Extract hash from the full header_image URL
+    const hash = extractImageHashFromUrl(imageData.header_image);
+    if (hash) {
+      image_url = hash;
+    }
+  }
+  
+  // For header_image: use the full URL from Steam Store API
+  let header_image = null;
+  if (imageData.header_image) {
+    header_image = imageData.header_image;
+  }
+  
+  return {
+    image_url,
+    header_image
+  };
+}
+
 // Process app details from Steam's API response
-function processAppDetails(appId: number, details: any) {
+function processAppDetails(appId, details) {
   try {
     if (!details || !details.success) return null;
     
@@ -38,26 +81,31 @@ function processAppDetails(appId: number, details: any) {
       }
     }
     
+    // Use the new image normalization function
+    const normalizedImages = normalizeGameImageData({
+      header_image: details.data.header_image
+    }, appId);
+    
     return {
       id: appId,
       name: details.data.name,
       description: details.data.detailed_description || details.data.about_the_game || null,
-      image_url: details.data.header_image ? details.data.header_image.split('/').pop() : null,
-      header_image: details.data.header_image || null,
+      image_url: normalizedImages.image_url,
+      header_image: normalizedImages.header_image,
       price_cents: details.data.price_overview ? details.data.price_overview.initial : null,
       release_date: releaseDate,
       metacritic_score: details.data.metacritic ? details.data.metacritic.score : null,
       developer: Array.isArray(details.data.developers) ? details.data.developers : null,
       publisher: Array.isArray(details.data.publishers) ? details.data.publishers : null,
       genres: details.data.genres 
-        ? details.data.genres.map((genre: any) => genre.description) 
+        ? details.data.genres.map((genre) => genre.description) 
         : [],
       categories: details.data.categories 
-        ? details.data.categories.map((category: any) => category.description) 
+        ? details.data.categories.map((category) => category.description) 
         : [],
       platforms: determinePlatforms(details.data.platforms),
       screenshots: details.data.screenshots 
-        ? details.data.screenshots.map((screenshot: any) => screenshot.path_full) 
+        ? details.data.screenshots.map((screenshot) => screenshot.path_full) 
         : null,
     };
   } catch (error) {
