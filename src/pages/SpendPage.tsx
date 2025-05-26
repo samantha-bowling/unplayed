@@ -37,6 +37,12 @@ const SpendPage = () => {
     });
   };
 
+  // Handle image loading errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.src = '/placeholder.svg';
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -201,11 +207,23 @@ const SpendPage = () => {
                                 <td className="px-4 py-3">
                                   <div className="flex items-center">
                                     <img 
-                                      src={getBestGameImage(game.imageUrl, null)} 
+                                      src={getBestGameImage(game.imageUrl, null, game.id)} 
                                       alt={game.title}
-                                      className="w-10 h-10 mr-3 rounded object-cover"
+                                      className="w-12 h-12 mr-3 rounded object-cover flex-shrink-0"
+                                      onError={handleImageError}
                                     />
-                                    <span className="font-medium truncate max-w-[200px]">{game.title}</span>
+                                    <span 
+                                      className="font-medium max-w-[300px] md:max-w-[400px]"
+                                      title={game.title}
+                                      style={{
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                        display: 'block'
+                                      }}
+                                    >
+                                      {game.title.length > 45 ? `${game.title.substring(0, 45)}...` : game.title}
+                                    </span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 text-right">

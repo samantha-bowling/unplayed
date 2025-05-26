@@ -67,7 +67,7 @@ export function getBestGameImage(
   gameId?: number | string
 ): string {
   // First priority: header image (Steam Store API full resolution)
-  if (headerImage && headerImage.trim() !== '') {
+  if (headerImage && headerImage.trim() !== '' && headerImage !== '/placeholder.svg') {
     // If it's already a full URL, use it
     if (isSteamCdnUrl(headerImage) || headerImage.startsWith('http')) {
       return headerImage;
@@ -79,7 +79,7 @@ export function getBestGameImage(
   }
   
   // Second priority: image URL (could be capsule or icon)
-  if (imageUrl && imageUrl.trim() !== '') {
+  if (imageUrl && imageUrl.trim() !== '' && imageUrl !== '/placeholder.svg') {
     // If it's already a full URL, use it
     if (isSteamCdnUrl(imageUrl) || imageUrl.startsWith('http')) {
       return imageUrl;
