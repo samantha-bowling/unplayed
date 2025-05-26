@@ -20,6 +20,7 @@ interface GameCardProps {
   gameId: number;
   title: string;
   imageUrl: string | null;
+  headerImage?: string | null;
   dustScore: number | null;
   playtimeMinutes: number | null;
   isHidden: boolean | null;
@@ -34,6 +35,7 @@ const GameCard: React.FC<GameCardProps> = ({
   gameId,
   title,
   imageUrl,
+  headerImage,
   dustScore,
   playtimeMinutes,
   isHidden,
@@ -59,14 +61,14 @@ const GameCard: React.FC<GameCardProps> = ({
       className={cn(
         "group relative overflow-hidden rounded-lg border transition-all duration-300",
         isHidden ? "opacity-60" : "",
-        isHovered ? "scale-[1.03] shadow-lg z-10" : "" // Reduced scale for more subtle effect
+        isHovered ? "scale-[1.03] shadow-lg z-10" : ""
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="aspect-video w-full relative">
         <img 
-          src={getBestGameImage(null, imageUrl, gameId)}
+          src={getBestGameImage(headerImage, imageUrl, gameId)}
           alt={title}
           className="w-full h-full object-cover"
           loading="lazy"
@@ -181,5 +183,4 @@ const GameCard: React.FC<GameCardProps> = ({
   );
 };
 
-// Memoize the component to prevent unnecessary re-renders when props haven't changed
 export default React.memo(GameCard);
