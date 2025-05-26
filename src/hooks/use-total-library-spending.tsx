@@ -108,10 +108,10 @@ export const useTotalLibrarySpending = () => {
         }
       }
       
-      // Calculate price in dollars (not cents)
+      // Calculate price in dollars (from cents) - FIXED: removed double conversion
       const price = priceData?.final_price_cents 
         ? priceData.final_price_cents / 100
-        : (game.price ? game.price / 100 : 0);
+        : 0; // Default to 0 for free games or missing price data
         
       const originalPrice = priceData?.initial_price_cents
         ? priceData.initial_price_cents / 100
@@ -124,6 +124,8 @@ export const useTotalLibrarySpending = () => {
     
     // Calculate savings (if we have original price data)
     const totalSaved = totalOriginalPrice > 0 ? totalOriginalPrice - totalLibraryValue : null;
+    
+    console.log(`Total library calculation: ${unplayedData.gamesList.length} games, $${totalLibraryValue.toFixed(2)} total value`);
     
     return {
       totalLibraryValue,

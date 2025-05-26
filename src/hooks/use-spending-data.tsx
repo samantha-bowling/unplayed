@@ -129,7 +129,7 @@ export const useSpendingData = () => {
     const priceMap = new Map<number, GamePriceData>();
     gamePrices.forEach(price => priceMap.set(price.app_id, price));
     
-    // Calculate total spent on unplayed games - fixed currency conversion
+    // Calculate total spent on unplayed games - FIXED: consistent price handling
     let totalSpent = 0;
     let totalOriginalPrice = 0;
     
@@ -150,10 +150,10 @@ export const useSpendingData = () => {
           }
         }
         
-        // Calculate price in dollars (cents to dollars conversion)
+        // Calculate price in dollars (from cents) - FIXED: consistent with total library
         const price = priceData?.final_price_cents 
           ? priceData.final_price_cents / 100
-          : 0; // Remove fallback to game.price as it was causing double conversion
+          : 0; // Default to 0 for free games or missing price data
           
         const originalPrice = priceData?.initial_price_cents
           ? priceData.initial_price_cents / 100
@@ -178,6 +178,8 @@ export const useSpendingData = () => {
     
     // Calculate savings (if we have original price data)
     const totalSaved = totalOriginalPrice > 0 ? totalOriginalPrice - totalSpent : null;
+    
+    console.log(`Unplayed spending calculation: ${topSpendingGames.length} games, $${totalSpent.toFixed(2)} total spent`);
     
     // Build price distribution chart data
     const priceRanges: { [key: string]: PriceRange } = {
