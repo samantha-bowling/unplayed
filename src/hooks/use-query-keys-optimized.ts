@@ -1,6 +1,50 @@
 
+
+/**
+ * Flexible query key type that can accommodate all key structures
+ */
+type QueryKey = readonly [string, ...unknown[]];
+
+/**
+ * Runtime validation for query keys (development only)
+ */
+function assertValidQueryKey(key: QueryKey): void {
+  if (process.env.NODE_ENV !== 'production') {
+    if (!Array.isArray(key)) throw new Error('Query key must be an array');
+    if (typeof key[0] !== 'string') throw new Error('Query key must start with a string');
+  }
+}
+
 /**
  * Optimized query keys with more granular cache management
+ * 
+ * Query Key Shapes:
+ * - ['profile', userId]
+ * - ['profile', userId, 'steam']
+ * - ['profile', userId, 'settings']
+ * - ['library', userId]
+ * - ['library', userId, 'games', filters]
+ * - ['library', userId, 'paginated', page, filters]
+ * - ['library', userId, 'count', filters]
+ * - ['library', userId, 'metadata']
+ * - ['unplayed', userId]
+ * - ['unplayed', userId, 'data', profileSteamId]
+ * - ['unplayed', userId, 'detailed', gameCount]
+ * - ['estimates', userId]
+ * - ['estimates', 'games', gameIds]
+ * - ['estimates', 'game', gameId]
+ * - ['games']
+ * - ['games', 'details', gameId]
+ * - ['games', 'batch', gameIds]
+ * - ['picker', userId]
+ * - ['picker', userId, 'games', filters]
+ * - ['picker', userId, 'previous', limit]
+ * - ['spending', userId]
+ * - ['spending', userId, 'total']
+ * - ['spending', userId, 'breakdown']
+ * - ['leaderboard']
+ * - ['leaderboard', 'rankings', type]
+ * - ['leaderboard', 'user', userId]
  */
 export const optimizedQueryKeys = {
   // User data with granular keys
@@ -33,7 +77,7 @@ export const optimizedQueryKeys = {
   // Game estimates with game-specific keys
   estimates: {
     all: (userId?: string) => ['estimates', userId] as const,
-    byGameIds: (gameIds: number[]) => ['estimates', 'games', gameIds.sort()] as const,
+    byGameIds: (gameIds: number[]) => ['estimates', 'games', [...gameIds].sort()] as const,
     single: (gameId: number) => ['estimates', 'game', gameId] as const,
   },
   
@@ -41,7 +85,7 @@ export const optimizedQueryKeys = {
   games: {
     all: () => ['games'] as const,
     details: (gameId: number) => ['games', 'details', gameId] as const,
-    batch: (gameIds: number[]) => ['games', 'batch', gameIds.sort()] as const,
+    batch: (gameIds: number[]) => ['games', 'batch', [...gameIds].sort()] as const,
   },
   
   // Picker data with filter-specific caching
@@ -69,28 +113,52 @@ export const optimizedQueryKeys = {
   // Helper functions for cache management
   helpers: {
     // Get all user-related keys for bulk invalidation
-    allUserData: (userId?: string) => [
-      optimizedQueryKeys.profile.base(userId),
-      optimizedQueryKeys.library.all(userId),
-      optimizedQueryKeys.unplayed.base(userId),
-      optimizedQueryKeys.estimates.all(userId),
-      optimizedQueryKeys.picker.base(userId),
-      optimizedQueryKeys.spending.base(userId),
-    ],
+    allUserData: (userId?: string): QueryKey[] => {
+      const keys: QueryKey[] = [
+        optimizedQueryKeys.profile.base(userId),
+        optimizedQueryKeys.library.all(userId),
+        optimizedQueryKeys.unplayed.base(userId),
+        optimizedQueryKeys.estimates.all(userId),
+        optimizedQueryKeys.picker.base(userId),
+        optimizedQueryKeys.spending.base(userId),
+      ];
+      
+      if (process.env.NODE_ENV !== 'production') {
+        keys.forEach(assertValidQueryKey);
+      }
+      
+      return keys;
+    },
     
-    // Get library-specific keys for targeted invalidation - use flexible typing
-    libraryData: (userId?: string) => [
-      optimizedQueryKeys.library.all(userId),
-      optimizedQueryKeys.library.games(userId),
-      optimizedQueryKeys.library.count(userId),
-      optimizedQueryKeys.library.metadata(userId),
-    ],
+    // Get library-specific keys for targeted invalidation
+    libraryData: (userId?: string): QueryKey[] => {
+      const keys: QueryKey[] = [
+        optimizedQueryKeys.library.all(userId),
+        optimizedQueryKeys.library.games(userId),
+        optimizedQueryKeys.library.count(userId),
+        optimizedQueryKeys.library.metadata(userId),
+      ];
+      
+      if (process.env.NODE_ENV !== 'production') {
+        keys.forEach(assertValidQueryKey);
+      }
+      
+      return keys;
+    },
     
     // Get unplayed-specific keys
-    unplayedData: (userId?: string) => [
-      optimizedQueryKeys.unplayed.data(userId),
-      optimizedQueryKeys.unplayed.detailed(userId),
-    ],
+    unplayedData: (userId?: string): QueryKey[] => {
+      const keys: QueryKey[] = [
+        optimizedQueryKeys.unplayed.data(userId),
+        optimizedQueryKeys.unplayed.detailed(userId),
+      ];
+      
+      if (process.env.NODE_ENV !== 'production') {
+        keys.forEach(assertValidQueryKey);
+      }
+      
+      return keys;
+    },
   }
 };
 
@@ -104,34 +172,64 @@ export const useOptimizedCacheManagement = () => {
     // Utility functions for common cache operations
     utils: {
       // Invalidate only user profile data
-      invalidateProfile: (userId?: string) => [
-        optimizedQueryKeys.profile.base(userId),
-        optimizedQueryKeys.profile.steam(userId),
-        optimizedQueryKeys.profile.settings(userId),
-      ],
+      invalidateProfile: (userId?: string): QueryKey[] => {
+        const keys: QueryKey[] = [
+          optimizedQueryKeys.profile.base(userId),
+          optimizedQueryKeys.profile.steam(userId),
+          optimizedQueryKeys.profile.settings(userId),
+        ];
+        
+        if (process.env.NODE_ENV !== 'production') {
+          keys.forEach(assertValidQueryKey);
+        }
+        
+        return keys;
+      },
       
       // Invalidate library data with specific filters
-      invalidateLibrary: (userId?: string, includeFilters = true) => {
-        const keys = [optimizedQueryKeys.library.all(userId)];
+      invalidateLibrary: (userId?: string, includeFilters = true): QueryKey[] => {
+        const keys: QueryKey[] = [optimizedQueryKeys.library.all(userId)];
         if (includeFilters) {
           keys.push(optimizedQueryKeys.library.metadata(userId));
         }
+        
+        if (process.env.NODE_ENV !== 'production') {
+          keys.forEach(assertValidQueryKey);
+        }
+        
         return keys;
       },
       
       // Invalidate unplayed data and dependencies
-      invalidateUnplayed: (userId?: string) => [
-        ...optimizedQueryKeys.helpers.unplayedData(userId),
-        optimizedQueryKeys.estimates.all(userId),
-      ],
+      invalidateUnplayed: (userId?: string): QueryKey[] => {
+        const keys: QueryKey[] = [
+          ...optimizedQueryKeys.helpers.unplayedData(userId),
+          optimizedQueryKeys.estimates.all(userId),
+        ];
+        
+        if (process.env.NODE_ENV !== 'production') {
+          keys.forEach(assertValidQueryKey);
+        }
+        
+        return keys;
+      },
       
       // Targeted game data invalidation
-      invalidateGameData: (gameIds: number[]) => [
-        optimizedQueryKeys.estimates.byGameIds(gameIds),
-        ...gameIds.map(id => optimizedQueryKeys.games.details(id)),
-      ],
+      invalidateGameData: (gameIds: number[]): QueryKey[] => {
+        const keys: QueryKey[] = [
+          optimizedQueryKeys.estimates.byGameIds(gameIds),
+          ...gameIds.map(id => optimizedQueryKeys.games.details(id)),
+        ];
+        
+        if (process.env.NODE_ENV !== 'production') {
+          keys.forEach(assertValidQueryKey);
+        }
+        
+        return keys;
+      },
     }
   };
 };
 
 export default useOptimizedCacheManagement;
+
