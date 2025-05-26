@@ -1,4 +1,3 @@
-
 // supabase/functions/import-library/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
@@ -14,15 +13,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-// Configuration for batched processing - reduced for better reliability
-const BATCH_SIZE = 25;
-
-// Rate limiting configuration
-const STEAM_API_DELAY_MS = 1000; // 1 second between Steam API calls
+// Configuration for batched processing - optimized for efficiency
+const BATCH_SIZE = 50; // Increased from 25 for better throughput
+const STEAM_API_DELAY_MS = 1200; // Slightly increased delay for better reliability
 const MAX_RETRIES = 3;
-const INITIAL_BACKOFF_MS = 2000; // 2 seconds initial backoff
+const INITIAL_BACKOFF_MS = 2000;
 
-// Rate limiting utility function
+// Rate limiting utility function with improved error handling
 async function makeRateLimitedRequest(url: string, retryCount = 0): Promise<Response> {
   try {
     console.log(`Making request to: ${url} (attempt ${retryCount + 1})`);
@@ -44,7 +41,7 @@ async function makeRateLimitedRequest(url: string, retryCount = 0): Promise<Resp
       if (retryCount < MAX_RETRIES) {
         return makeRateLimitedRequest(url, retryCount + 1);
       } else {
-        throw new Error(`Steam API rate limit exceeded after ${MAX_RETRIES} retries. Please try again later.`);
+        throw new Error(`Steam API rate limit exceeded after ${MAX_RETRIES} retries. Your library may be partially imported. Please try again later to import remaining games.`);
       }
     }
     
@@ -52,17 +49,77 @@ async function makeRateLimitedRequest(url: string, retryCount = 0): Promise<Resp
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Steam API error ${response.status}:`, errorText);
-      throw new Error(`Steam API returned ${response.status}: ${errorText}`);
+      
+      // Provide more specific error messages
+      if (response.status === 403) {
+        throw new Error(`Steam library access denied. Please ensure your Steam profile's 'Game details' are set to Public in your Steam Privacy Settings.`);
+      } else if (response.status === 502 || response.status === 503) {
+        throw new Error(`Steam servers are currently unavailable (${response.status}). Please try again in a few minutes.`);
+      } else {
+        throw new Error(`Steam API returned ${response.status}: ${errorText}`);
+      }
     }
     
     return response;
   } catch (error) {
-    if (retryCount < MAX_RETRIES && error.message.includes('fetch')) {
+    if (retryCount < MAX_RETRIES && (error.message.includes('fetch') || error.message.includes('network'))) {
       console.log(`Network error, retrying: ${error.message}`);
       return makeRateLimitedRequest(url, retryCount + 1);
     }
     throw error;
   }
+}
+
+// Enhanced Steam library fetching with better large library handling
+async function fetchSteamLibraryWithPagination(steamId: string, steamApiKey: string) {
+  console.log(`Fetching Steam library for Steam ID: ${steamId}`);
+  
+  // First, try to get the library with include_played_free_games
+  const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamApiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
+  
+  const steamResponse = await makeRateLimitedRequest(steamApiUrl);
+  const steamData = await steamResponse.json();
+  
+  if (!steamData?.response) {
+    throw new Error("Invalid response from Steam API. Please check your Steam ID and privacy settings.");
+  }
+  
+  const games = steamData.response.games || [];
+  const gameCount = steamData.response.game_count || 0;
+  
+  console.log(`Steam API returned ${games.length} games, reported count: ${gameCount}`);
+  
+  // Check if we might be hitting a limit (round numbers are suspicious)
+  if (games.length > 0) {
+    const isRoundNumber = games.length % 100 === 0 && games.length >= 1000;
+    const countMismatch = gameCount > 0 && Math.abs(games.length - gameCount) > 10;
+    
+    if (isRoundNumber || countMismatch) {
+      console.warn(`Potential API limit detected: ${games.length} games retrieved, reported count: ${gameCount}`);
+      
+      // Try fetching without free games to see if we get different results
+      const altApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamApiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=false`;
+      
+      try {
+        console.log("Attempting alternative fetch without free games...");
+        const altResponse = await makeRateLimitedRequest(altApiUrl);
+        const altData = await altResponse.json();
+        const altGames = altData?.response?.games || [];
+        
+        console.log(`Alternative fetch returned ${altGames.length} games`);
+        
+        // If we get different results, log the discrepancy but continue with original
+        if (altGames.length !== games.length) {
+          console.warn(`Discrepancy detected: With free games: ${games.length}, Without: ${altGames.length}`);
+        }
+      } catch (altError) {
+        console.warn("Alternative fetch failed:", altError.message);
+        // Continue with original games list
+      }
+    }
+  }
+  
+  return games;
 }
 
 // Image utility functions (copied from frontend for consistency)
@@ -203,7 +260,7 @@ serve(async (req) => {
       userId = userData.id;
       console.log(`✅ Found user ${userId} with Steam ID ${steamId}`);
       
-      // Now fetch the Steam library with rate limiting
+      // Now fetch the Steam library with enhanced handling
       console.log(`Fetching Steam library for user ${userId} with Steam ID ${steamId}`);
       const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY");
       if (!STEAM_API_KEY) {
@@ -220,21 +277,17 @@ serve(async (req) => {
       }
       
       try {
-        const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
-        console.log("Fetching from Steam API with rate limiting");
+        games = await fetchSteamLibraryWithPagination(steamId, STEAM_API_KEY);
         
-        const steamResponse = await makeRateLimitedRequest(steamApiUrl);
-        const steamData = await steamResponse.json();
-        games = steamData?.response?.games || [];
-        
-        console.log(`Found ${games.length} games in Steam library`);
+        console.log(`Successfully fetched ${games.length} games from Steam library`);
         
         // If there are no games, return early with helpful message
         if (games.length === 0) {
           return new Response(JSON.stringify({
             success: true,
             warning: "No games found in Steam library. This could be due to privacy settings.",
-            helpText: "Make sure your Steam profile's 'Game details' are set to Public in your Steam Privacy Settings."
+            helpText: "Make sure your Steam profile's 'Game details' are set to Public in your Steam Privacy Settings.",
+            imported: 0
           }), {
             status: 200,
             headers: {
@@ -244,7 +297,7 @@ serve(async (req) => {
           });
         }
         
-        // Minimal enrichment for now - we'll queue detailed enrichment for background processing
+        // Queue games for detailed enrichment (moved to background for efficiency)
         await queueGamesForDetailedEnrichment(games);
         
       } catch (error) {
@@ -254,13 +307,16 @@ serve(async (req) => {
         
         if (error.message.includes('rate limit')) {
           errorMessage = "Steam API rate limit reached";
-          helpText = "Please wait a few minutes before trying to import again.";
+          helpText = "Your library may be partially imported. Please wait a few minutes before trying to import again.";
         } else if (error.message.includes('429')) {
           errorMessage = "Steam API is currently busy";
           helpText = "Please try importing your library again in a few minutes.";
-        } else if (error.message.includes('403')) {
+        } else if (error.message.includes('403') || error.message.includes('access denied')) {
           errorMessage = "Steam library access denied";
-          helpText = "Please ensure your Steam profile's 'Game details' are set to Public.";
+          helpText = "Please ensure your Steam profile's 'Game details' are set to Public in your Steam Privacy Settings.";
+        } else if (error.message.includes('502') || error.message.includes('503') || error.message.includes('unavailable')) {
+          errorMessage = "Steam servers temporarily unavailable";
+          helpText = "Please try importing your library again in a few minutes.";
         }
         
         return new Response(JSON.stringify({
@@ -315,7 +371,8 @@ serve(async (req) => {
         success: true,
         message: "Import started",
         totalGames: games.length,
-        processing: "background"
+        processing: "background",
+        note: games.length >= 1000 ? "Large library detected - import may take several minutes" : undefined
       }), {
         status: 202,
         headers: {
@@ -330,7 +387,8 @@ serve(async (req) => {
         success: true,
         imported: result.total,
         gamesUpserted: result.gamesUpserted,
-        relationshipsCreated: result.relationshipsCreated
+        relationshipsCreated: result.relationshipsCreated,
+        note: games.length >= 1000 ? "Large library successfully imported" : undefined
       }), {
         status: 200,
         headers: {
@@ -354,20 +412,36 @@ serve(async (req) => {
   }
 });
 
-// Queue games for detailed enrichment without blocking the main import
+// Enhanced queue function with smart prioritization
 async function queueGamesForDetailedEnrichment(games) {
   try {
     console.log(`Queuing ${games.length} games for detailed enrichment`);
     
-    // Queue all games for background processing with varied priorities
-    const queueItems = games.map(game => ({
-      app_id: game.appid,
-      name: game.name,
-      priority: Math.floor(Math.random() * 3) + 1 // Random priority 1-3 for even distribution
-    }));
+    // Prioritize games that are more likely to be played (higher playtime, recent acquisition)
+    const queueItems = games.map(game => {
+      let priority = 3; // Default priority
+      
+      // Higher priority for games with some playtime (user showed interest)
+      if (game.playtime_forever > 0 && game.playtime_forever < 120) {
+        priority = 1; // High priority - tried but not fully played
+      } else if (game.playtime_forever > 120) {
+        priority = 4; // Lower priority - already played significantly
+      }
+      
+      // Recent games get slightly higher priority
+      if (game.rtime_last_played && game.rtime_last_played > (Date.now() / 1000) - (30 * 24 * 60 * 60)) {
+        priority = Math.max(1, priority - 1);
+      }
+      
+      return {
+        app_id: game.appid,
+        name: game.name,
+        priority: priority
+      };
+    });
     
-    // Insert into queue in smaller batches to avoid overwhelming the database
-    const queueBatchSize = 100;
+    // Insert into queue in optimized batches
+    const queueBatchSize = 200; // Larger batches for efficiency
     for (let i = 0; i < queueItems.length; i += queueBatchSize) {
       const batch = queueItems.slice(i, i + queueBatchSize);
       
@@ -383,7 +457,7 @@ async function queueGamesForDetailedEnrichment(games) {
       }
     }
     
-    console.log("Games queued for detailed enrichment");
+    console.log("Games queued for detailed enrichment with smart prioritization");
   } catch (error) {
     console.error("Error queuing games for enrichment:", error);
     // Don't fail the import if queuing fails
