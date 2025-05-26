@@ -60,10 +60,7 @@ serve(async (req) => {
       { status: 401, headers: corsHeaders }
     );
   }
-  if (!token) {
-  }
   
-  const { data, error: authError } = await supabase.auth.getUser(token);
   const user = data?.user;
   if (authError || !user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -248,12 +245,15 @@ async function enrichGamesWithSteamDetails(games, apiKey) {
       
       // Fetch app details from Steam API
       const detailsUrl = `https://store.steampowered.com/api/appdetails?appids=${game.appid}`;
-      const response = await fetch(detailsUrl);
+      try {
+        const response = await fetch(detailsUrl);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data[game.appid] && data[game.appid].success) {
+            const details = data[game.appid].data;
       
       if (response.ok) {
-        const data = await response.json();
         if (data && data[game.appid] && data[game.appid].success) {
-          const details = data[game.appid].data;
           
           // Add genres if available
           if (details.genres) {
