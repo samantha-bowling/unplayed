@@ -1,6 +1,15 @@
+
 // supabase/functions/import-library/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { 
+  fetchSteamLibrary, 
+  SteamGame 
+} from '../shared/steam-api-utils.ts';
+import { 
+  processGamesInBatches, 
+  queueGamesForDetailedEnrichment 
+} from '../shared/database-utils.ts';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -12,148 +21,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
-
-// Configuration for batched processing - optimized for efficiency
-const BATCH_SIZE = 50; // Increased from 25 for better throughput
-const STEAM_API_DELAY_MS = 1200; // Slightly increased delay for better reliability
-const MAX_RETRIES = 3;
-const INITIAL_BACKOFF_MS = 2000;
-
-// Rate limiting utility function with improved error handling
-async function makeRateLimitedRequest(url: string, retryCount = 0): Promise<Response> {
-  try {
-    console.log(`Making request to: ${url} (attempt ${retryCount + 1})`);
-    
-    // Add delay before each request to respect rate limits
-    if (retryCount > 0) {
-      const backoffMs = INITIAL_BACKOFF_MS * Math.pow(2, retryCount - 1);
-      console.log(`Rate limit backoff: waiting ${backoffMs}ms`);
-      await new Promise(resolve => setTimeout(resolve, backoffMs));
-    } else {
-      await new Promise(resolve => setTimeout(resolve, STEAM_API_DELAY_MS));
-    }
-    
-    const response = await fetch(url);
-    
-    // Handle rate limiting specifically
-    if (response.status === 429) {
-      console.log(`Rate limited (429), retry ${retryCount + 1}/${MAX_RETRIES}`);
-      if (retryCount < MAX_RETRIES) {
-        return makeRateLimitedRequest(url, retryCount + 1);
-      } else {
-        throw new Error(`Steam API rate limit exceeded after ${MAX_RETRIES} retries. Your library may be partially imported. Please try again later to import remaining games.`);
-      }
-    }
-    
-    // Handle other HTTP errors
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Steam API error ${response.status}:`, errorText);
-      
-      // Provide more specific error messages
-      if (response.status === 403) {
-        throw new Error(`Steam library access denied. Please ensure your Steam profile's 'Game details' are set to Public in your Steam Privacy Settings.`);
-      } else if (response.status === 502 || response.status === 503) {
-        throw new Error(`Steam servers are currently unavailable (${response.status}). Please try again in a few minutes.`);
-      } else {
-        throw new Error(`Steam API returned ${response.status}: ${errorText}`);
-      }
-    }
-    
-    return response;
-  } catch (error) {
-    if (retryCount < MAX_RETRIES && (error.message.includes('fetch') || error.message.includes('network'))) {
-      console.log(`Network error, retrying: ${error.message}`);
-      return makeRateLimitedRequest(url, retryCount + 1);
-    }
-    throw error;
-  }
-}
-
-// Enhanced Steam library fetching with better large library handling
-async function fetchSteamLibraryWithPagination(steamId: string, steamApiKey: string) {
-  console.log(`Fetching Steam library for Steam ID: ${steamId}`);
-  
-  // First, try to get the library with include_played_free_games
-  const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamApiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
-  
-  const steamResponse = await makeRateLimitedRequest(steamApiUrl);
-  const steamData = await steamResponse.json();
-  
-  if (!steamData?.response) {
-    throw new Error("Invalid response from Steam API. Please check your Steam ID and privacy settings.");
-  }
-  
-  const games = steamData.response.games || [];
-  const gameCount = steamData.response.game_count || 0;
-  
-  console.log(`Steam API returned ${games.length} games, reported count: ${gameCount}`);
-  
-  // Check if we might be hitting a limit (round numbers are suspicious)
-  if (games.length > 0) {
-    const isRoundNumber = games.length % 100 === 0 && games.length >= 1000;
-    const countMismatch = gameCount > 0 && Math.abs(games.length - gameCount) > 10;
-    
-    if (isRoundNumber || countMismatch) {
-      console.warn(`Potential API limit detected: ${games.length} games retrieved, reported count: ${gameCount}`);
-      
-      // Try fetching without free games to see if we get different results
-      const altApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamApiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=false`;
-      
-      try {
-        console.log("Attempting alternative fetch without free games...");
-        const altResponse = await makeRateLimitedRequest(altApiUrl);
-        const altData = await altResponse.json();
-        const altGames = altData?.response?.games || [];
-        
-        console.log(`Alternative fetch returned ${altGames.length} games`);
-        
-        // If we get different results, log the discrepancy but continue with original
-        if (altGames.length !== games.length) {
-          console.warn(`Discrepancy detected: With free games: ${games.length}, Without: ${altGames.length}`);
-        }
-      } catch (altError) {
-        console.warn("Alternative fetch failed:", altError.message);
-        // Continue with original games list
-      }
-    }
-  }
-  
-  return games;
-}
-
-// Image utility functions (copied from frontend for consistency)
-function constructSteamImageUrl(appId, imageHash, imageType = 'icon') {
-  if (!appId || !imageHash) return null;
-  
-  // Remove any existing URL prefix if present
-  const cleanHash = imageHash.replace(/^https?:\/\/.*\//, '');
-  
-  // Construct the proper Steam CDN URL
-  const baseUrl = 'https://media.steampowered.com/steamcommunity/public/images/apps';
-  return `${baseUrl}/${appId}/${cleanHash}.jpg`;
-}
-
-function normalizeGameImageData(imageData, gameId) {
-  // For image_url: prefer img_icon_url (filename only from Steam library API)
-  let image_url = null;
-  if (imageData.img_icon_url) {
-    // Store just the filename/hash for consistency
-    image_url = imageData.img_icon_url;
-  }
-  
-  // For header_image: prefer full URLs from Steam Store API
-  let header_image = null;
-  if (imageData.img_logo_url) {
-    // Construct the full URL from img_logo_url
-    header_image = constructSteamImageUrl(gameId, imageData.img_logo_url, 'logo');
-  }
-  
-  return {
-    image_url,
-    header_image
-  };
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -172,6 +39,7 @@ serve(async (req) => {
     });
   }
 
+  // Validate authorization
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   if (!authHeader) {
     return new Response(JSON.stringify({
@@ -224,15 +92,21 @@ serve(async (req) => {
       });
     }
 
-    // Support flexible payloads - either steamId format or id/steam_id/games format
-    let userId, steamId, games;
+    // Handle different payload formats
+    let userId: string, steamId: string, games: SteamGame[];
 
     if (body.steamId) {
       // Format from frontend: { steamId: "..." }
       steamId = body.steamId;
       console.log("Looking up user with steam_id:", steamId);
       
-      const { data: userData, error: userError } = await supabase.from("users").select("id").eq("steam_id", steamId).eq("id", user.id).maybeSingle();
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("steam_id", steamId)
+        .eq("id", user.id)
+        .maybeSingle();
+        
       if (userError) {
         console.error("Database error when looking up steam_id:", userError);
         return new Response(JSON.stringify({
@@ -245,6 +119,7 @@ serve(async (req) => {
           }
         });
       }
+      
       if (!userData) {
         console.warn("No user found with this steam_id:", steamId);
         return new Response(JSON.stringify({
@@ -257,11 +132,11 @@ serve(async (req) => {
           }
         });
       }
+      
       userId = userData.id;
       console.log(`✅ Found user ${userId} with Steam ID ${steamId}`);
       
-      // Now fetch the Steam library with enhanced handling
-      console.log(`Fetching Steam library for user ${userId} with Steam ID ${steamId}`);
+      // Fetch Steam library using utility function
       const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY");
       if (!STEAM_API_KEY) {
         console.error("STEAM_API_KEY environment variable not set");
@@ -277,11 +152,11 @@ serve(async (req) => {
       }
       
       try {
-        games = await fetchSteamLibraryWithPagination(steamId, STEAM_API_KEY);
+        games = await fetchSteamLibrary(steamId, STEAM_API_KEY);
         
         console.log(`Successfully fetched ${games.length} games from Steam library`);
         
-        // If there are no games, return early with helpful message
+        // Handle empty library
         if (games.length === 0) {
           return new Response(JSON.stringify({
             success: true,
@@ -415,186 +290,3 @@ serve(async (req) => {
     });
   }
 });
-
-// Enhanced queue function prioritizing UNPLAYED games for enrichment
-async function queueGamesForDetailedEnrichment(games) {
-  try {
-    console.log(`Queuing ${games.length} games for detailed enrichment (prioritizing unplayed games)`);
-    
-    // Prioritize UNPLAYED games - games with zero playtime get highest priority
-    const queueItems = games.map(game => {
-      let priority = 3; // Default priority
-      
-      // HIGHEST priority for unplayed games (zero playtime)
-      if (!game.playtime_forever || game.playtime_forever === 0) {
-        priority = 1; // Highest priority - unplayed games are most important
-      } 
-      // Lower priority for games with minimal playtime (tried but abandoned)
-      else if (game.playtime_forever > 0 && game.playtime_forever < 60) {
-        priority = 2; // High priority - might be worth revisiting
-      }
-      // Lowest priority for games with significant playtime
-      else if (game.playtime_forever >= 60) {
-        priority = 4; // Lower priority - already played significantly
-      }
-      
-      // Recent games get slightly higher priority regardless of playtime
-      if (game.rtime_last_played && game.rtime_last_played > (Date.now() / 1000) - (30 * 24 * 60 * 60)) {
-        priority = Math.max(1, priority - 1);
-      }
-      
-      return {
-        app_id: game.appid,
-        name: game.name,
-        priority: priority
-      };
-    });
-    
-    // Sort to show prioritization in logs
-    queueItems.sort((a, b) => a.priority - b.priority);
-    console.log(`Priority distribution: P1(unplayed)=${queueItems.filter(g => g.priority === 1).length}, P2(minimal)=${queueItems.filter(g => g.priority === 2).length}, P3(default)=${queueItems.filter(g => g.priority === 3).length}, P4(played)=${queueItems.filter(g => g.priority === 4).length}`);
-    
-    // Insert into queue in optimized batches
-    const queueBatchSize = 200; // Larger batches for efficiency
-    for (let i = 0; i < queueItems.length; i += queueBatchSize) {
-      const batch = queueItems.slice(i, i + queueBatchSize);
-      
-      const { error: queueError } = await supabase
-        .from("steam_app_queue")
-        .upsert(batch, {
-          onConflict: "app_id",
-          ignoreDuplicates: true,
-        });
-      
-      if (queueError) {
-        console.error(`Error queuing batch ${Math.floor(i / queueBatchSize) + 1}:`, queueError);
-      }
-    }
-    
-    console.log("Games queued for detailed enrichment with unplayed games prioritized");
-  } catch (error) {
-    console.error("Error queuing games for enrichment:", error);
-    // Don't fail the import if queuing fails
-  }
-}
-
-// Process games in batches to avoid timeout issues
-async function processGamesInBatches(userId, steamId, games) {
-  console.log(`Processing ${games.length} games in batches of ${BATCH_SIZE}`);
-  let totalGamesUpserted = 0;
-  let totalRelationshipsCreated = 0;
-
-  const batches = [];
-  for (let i = 0; i < games.length; i += BATCH_SIZE) {
-    batches.push(games.slice(i, i + BATCH_SIZE));
-  }
-
-  console.log(`Created ${batches.length} batches`);
-
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} games`);
-
-    // Prepare game upserts for this batch
-    const gameUpserts = batch.map((game) => {
-      if (!game.appid || !game.name || typeof game.appid !== "number") {
-        console.warn("Skipping invalid game:", game);
-        return null;
-      }
-      
-      // Use the new image normalization function
-      const normalizedImages = normalizeGameImageData({
-        img_icon_url: game.img_icon_url,
-        img_logo_url: game.img_logo_url
-      }, game.appid);
-      
-      const gameData = {
-        id: game.appid,
-        name: game.name,
-        image_url: normalizedImages.image_url,
-        header_image: normalizedImages.header_image
-      };
-      
-      if (game.genres && Array.isArray(game.genres)) {
-        gameData.genres = game.genres;
-      }
-      if (game.categories && Array.isArray(game.categories)) {
-        gameData.categories = game.categories;
-      }
-      if (game.developers && Array.isArray(game.developers)) {
-        gameData.developer = game.developers;
-      }
-      if (game.publishers && Array.isArray(game.publishers)) {
-        gameData.publisher = game.publishers;
-      }
-      return gameData;
-    }).filter(Boolean);
-
-    if (gameUpserts.length > 0) {
-      const { error: gamesError } = await supabase.from("games").upsert(gameUpserts, {
-        onConflict: "id",
-        ignoreDuplicates: false
-      });
-      if (gamesError) {
-        console.error(`Error upserting games in batch ${batchIndex + 1}:`, gamesError);
-        throw gamesError;
-      }
-      totalGamesUpserted += gameUpserts.length;
-      console.log(`Upserted ${gameUpserts.length} games in batch ${batchIndex + 1}`);
-    }
-
-    const now = new Date().toISOString();
-
-    const userGamesUpserts = batch.map((game) => {
-      if (!game.appid || typeof game.appid !== "number") {
-        return null;
-      }
-      const randomDaysAgo = Math.floor(Math.random() * 1095);
-      const acquisitionDate = new Date();
-      acquisitionDate.setDate(acquisitionDate.getDate() - randomDaysAgo);
-      return {
-        user_id: userId,
-        game_id: game.appid,
-        playtime_minutes: game.playtime_forever || 0,
-        acquisition_date: acquisitionDate.toISOString(),
-        last_played_date: game.rtime_last_played ? new Date(game.rtime_last_played * 1000).toISOString() : game.playtime_forever > 0 ? now : null
-      };
-    }).filter(Boolean);
-
-    if (userGamesUpserts.length > 0) {
-      const { error: userGamesError } = await supabase.from("user_games").upsert(userGamesUpserts, {
-        onConflict: "user_id,game_id",
-        ignoreDuplicates: false
-      });
-      if (userGamesError) {
-        console.error(`Error upserting user_games in batch ${batchIndex + 1}:`, userGamesError);
-        throw userGamesError;
-      }
-      totalRelationshipsCreated += userGamesUpserts.length;
-      console.log(`Created ${userGamesUpserts.length} user-game relationships in batch ${batchIndex + 1}`);
-    }
-
-    // Add delay between batches to be gentle on the database
-    if (batchIndex < batches.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-  }
-
-  console.log("Updating last_sync timestamp");
-  const { error: updateError } = await supabase.from("users").update({
-    last_sync: new Date().toISOString()
-  }).eq("id", userId);
-
-  if (updateError) {
-    console.error("Last sync update error:", updateError);
-    throw updateError;
-  }
-
-  console.log(`Import completed: ${totalGamesUpserted} games upserted, ${totalRelationshipsCreated} relationships created`);
-
-  return {
-    total: totalRelationshipsCreated,
-    gamesUpserted: totalGamesUpserted,
-    relationshipsCreated: totalRelationshipsCreated
-  };
-}
