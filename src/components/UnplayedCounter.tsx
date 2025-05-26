@@ -101,16 +101,16 @@ const UnplayedCounter = ({
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
       <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
 
-      <div className="terminal-content flex flex-col items-center py-6">
-        <div className="text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-2">
+      <div className="terminal-content flex flex-col py-6">
+        <div className="text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-2 text-center">
           {animatedCount}
         </div>
 
-        <p className="text-gray-300 text-center text-lg">
+        <p className="text-gray-300 text-center text-lg mb-4">
           You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed.wtf files
         </p>
 
-        <div className="mt-4 text-sm text-gray-400 text-center flex items-center justify-center">
+        <div className="text-sm text-gray-400 text-center flex items-center justify-center mb-4">
           <span>
             That's approximately{' '}
             <span className="text-unplayed-pink">
@@ -137,8 +137,8 @@ const UnplayedCounter = ({
           </TooltipProvider>
         </div>
 
-        {/* Add percentage display in the white space */}
-        <div className="mt-auto pt-6 text-center">
+        {/* Moved percentage display up and reduced spacing */}
+        <div className="text-center">
           <div className="text-2xl font-bold text-unplayed-amber mb-1">
             {unplayedPercentage}%
           </div>
