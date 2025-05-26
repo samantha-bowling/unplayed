@@ -110,7 +110,7 @@ const UnplayedCounter = ({
           You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed.wtf files
         </p>
 
-        <div className="text-sm text-gray-400 text-center flex items-center justify-center mb-4">
+        <div className="text-sm text-gray-400 text-center flex items-center justify-center mb-3">
           <span>
             That's approximately{' '}
             <span className="text-unplayed-pink">
@@ -137,7 +137,7 @@ const UnplayedCounter = ({
           </TooltipProvider>
         </div>
 
-        {/* Moved percentage display up and reduced spacing */}
+        {/* Reduced spacing between percentage display and moved it closer to the hours */}
         <div className="text-center">
           <div className="text-2xl font-bold text-unplayed-amber mb-1">
             {unplayedPercentage}%
