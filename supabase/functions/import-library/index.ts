@@ -14,8 +14,56 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-// Configuration for batched processing - reduced from 100 to 25 for better reliability
-const BATCH_SIZE = 25; // Reduced batch size to prevent timeouts
+// Configuration for batched processing - reduced for better reliability
+const BATCH_SIZE = 25;
+
+// Rate limiting configuration
+const STEAM_API_DELAY_MS = 1000; // 1 second between Steam API calls
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 2000; // 2 seconds initial backoff
+
+// Rate limiting utility function
+async function makeRateLimitedRequest(url: string, retryCount = 0): Promise<Response> {
+  try {
+    console.log(`Making request to: ${url} (attempt ${retryCount + 1})`);
+    
+    // Add delay before each request to respect rate limits
+    if (retryCount > 0) {
+      const backoffMs = INITIAL_BACKOFF_MS * Math.pow(2, retryCount - 1);
+      console.log(`Rate limit backoff: waiting ${backoffMs}ms`);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
+    } else {
+      await new Promise(resolve => setTimeout(resolve, STEAM_API_DELAY_MS));
+    }
+    
+    const response = await fetch(url);
+    
+    // Handle rate limiting specifically
+    if (response.status === 429) {
+      console.log(`Rate limited (429), retry ${retryCount + 1}/${MAX_RETRIES}`);
+      if (retryCount < MAX_RETRIES) {
+        return makeRateLimitedRequest(url, retryCount + 1);
+      } else {
+        throw new Error(`Steam API rate limit exceeded after ${MAX_RETRIES} retries. Please try again later.`);
+      }
+    }
+    
+    // Handle other HTTP errors
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Steam API error ${response.status}:`, errorText);
+      throw new Error(`Steam API returned ${response.status}: ${errorText}`);
+    }
+    
+    return response;
+  } catch (error) {
+    if (retryCount < MAX_RETRIES && error.message.includes('fetch')) {
+      console.log(`Network error, retrying: ${error.message}`);
+      return makeRateLimitedRequest(url, retryCount + 1);
+    }
+    throw error;
+  }
+}
 
 // Image utility functions (copied from frontend for consistency)
 function constructSteamImageUrl(appId, imageHash, imageType = 'icon') {
@@ -125,9 +173,8 @@ serve(async (req) => {
     if (body.steamId) {
       // Format from frontend: { steamId: "..." }
       steamId = body.steamId;
-      // DEBUG: Log the steamId received
       console.log("Looking up user with steam_id:", steamId);
-      // Gracefully attempt to find the user
+      
       const { data: userData, error: userError } = await supabase.from("users").select("id").eq("steam_id", steamId).eq("id", user.id).maybeSingle();
       if (userError) {
         console.error("Database error when looking up steam_id:", userError);
@@ -155,14 +202,14 @@ serve(async (req) => {
       }
       userId = userData.id;
       console.log(`✅ Found user ${userId} with Steam ID ${steamId}`);
-      // Now fetch the Steam library
+      
+      // Now fetch the Steam library with rate limiting
       console.log(`Fetching Steam library for user ${userId} with Steam ID ${steamId}`);
-      // Use Steam Web API to fetch user's games
       const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY");
       if (!STEAM_API_KEY) {
         console.error("STEAM_API_KEY environment variable not set");
         return new Response(JSON.stringify({
-          error: "Server configuration error"
+          error: "Server configuration error - Steam API key not configured"
         }), {
           status: 500,
           headers: {
@@ -171,13 +218,55 @@ serve(async (req) => {
           }
         });
       }
-      const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
-      console.log("Fetching from Steam API");
-      const steamResponse = await fetch(steamApiUrl);
-      if (!steamResponse.ok) {
-        console.error("Steam API error:", steamResponse.status, await steamResponse.text());
+      
+      try {
+        const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
+        console.log("Fetching from Steam API with rate limiting");
+        
+        const steamResponse = await makeRateLimitedRequest(steamApiUrl);
+        const steamData = await steamResponse.json();
+        games = steamData?.response?.games || [];
+        
+        console.log(`Found ${games.length} games in Steam library`);
+        
+        // If there are no games, return early with helpful message
+        if (games.length === 0) {
+          return new Response(JSON.stringify({
+            success: true,
+            warning: "No games found in Steam library. This could be due to privacy settings.",
+            helpText: "Make sure your Steam profile's 'Game details' are set to Public in your Steam Privacy Settings."
+          }), {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json"
+            }
+          });
+        }
+        
+        // Minimal enrichment for now - we'll queue detailed enrichment for background processing
+        await queueGamesForDetailedEnrichment(games);
+        
+      } catch (error) {
+        console.error("Steam API error:", error);
+        let errorMessage = "Failed to fetch Steam library";
+        let helpText = "";
+        
+        if (error.message.includes('rate limit')) {
+          errorMessage = "Steam API rate limit reached";
+          helpText = "Please wait a few minutes before trying to import again.";
+        } else if (error.message.includes('429')) {
+          errorMessage = "Steam API is currently busy";
+          helpText = "Please try importing your library again in a few minutes.";
+        } else if (error.message.includes('403')) {
+          errorMessage = "Steam library access denied";
+          helpText = "Please ensure your Steam profile's 'Game details' are set to Public.";
+        }
+        
         return new Response(JSON.stringify({
-          error: "Error fetching Steam library"
+          error: errorMessage,
+          helpText: helpText,
+          details: error.message
         }), {
           status: 502,
           headers: {
@@ -186,25 +275,6 @@ serve(async (req) => {
           }
         });
       }
-      const steamData = await steamResponse.json();
-      games = steamData?.response?.games || [];
-      console.log(`Found ${games.length} games in Steam library`);
-      // If there are no games, return early
-      if (games.length === 0) {
-        return new Response(JSON.stringify({
-          success: true,
-          warning: "No games to import"
-        }), {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json"
-          }
-        });
-      }
-      // Get additional game details for genres and categories
-      // (Note: This would ideally be done in batches or asynchronously for large libraries)
-      await enrichGamesWithSteamDetails(games, STEAM_API_KEY);
     } else {
       // Format from direct API call: { id: "...", steam_id: "...", games: [...] }
       const { id, steam_id, gamesData } = body;
@@ -231,6 +301,7 @@ serve(async (req) => {
 
     // Use background processing for large libraries via EdgeRuntime.waitUntil
     const importPromise = processGamesInBatches(userId, steamId, games);
+    
     // For Edge Functions supporting waitUntil, we can continue processing after response
     if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
       // Send immediate response while continuing processing in background
@@ -239,6 +310,7 @@ serve(async (req) => {
       }).catch((err) => {
         console.error("Background import failed:", err);
       }));
+      
       return new Response(JSON.stringify({
         success: true,
         message: "Import started",
@@ -282,66 +354,43 @@ serve(async (req) => {
   }
 });
 
-// Function to enrich games with additional details from Steam API
-async function enrichGamesWithSteamDetails(games, apiKey) {
+// Queue games for detailed enrichment without blocking the main import
+async function queueGamesForDetailedEnrichment(games) {
   try {
-    // This would ideally be done in batches for large libraries
-    // For now, we'll enrich a subset (first 20 games) as an example
-    const samplesToEnrich = Math.min(20, games.length);
-    console.log(`Enriching ${samplesToEnrich} sample games with additional Steam details`);
-    for (let i = 0; i < samplesToEnrich; i++) {
-      const game = games[i];
-      if (!game.appid) continue;
-      // Fetch app details from Steam API
-      const detailsUrl = `https://store.steampowered.com/api/appdetails?appids=${game.appid}`;
-      try {
-        const response = await fetch(detailsUrl);
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data[game.appid] && data[game.appid].success) {
-            const details = data[game.appid].data;
-            // Add genres if available
-            if (details.genres) {
-              game.genres = details.genres.map((g) => g.description);
-            }
-            // Add categories if available
-            if (details.categories) {
-              game.categories = details.categories.map((c) => c.description);
-            }
-            // Add additional fields we might want to capture
-            if (details.developers) {
-              game.developers = details.developers;
-            }
-            if (details.publishers) {
-              game.publishers = details.publishers;
-            }
-            // Also queue this app for full enrichment in the background
-            await supabase.from("steam_app_queue").upsert({
-              app_id: game.appid,
-              name: game.name,
-              priority: 5,
-              status: "pending"
-            }, {
-              onConflict: "app_id",
-              ignoreDuplicates: true
-            });
-          }
-        }
-        // Add a small delay to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      } catch (error) {
-        console.error("Error enriching games with details:", error);
-      // Continue with import even if enrichment fails
+    console.log(`Queuing ${games.length} games for detailed enrichment`);
+    
+    // Queue all games for background processing with varied priorities
+    const queueItems = games.map(game => ({
+      app_id: game.appid,
+      name: game.name,
+      priority: Math.floor(Math.random() * 3) + 1 // Random priority 1-3 for even distribution
+    }));
+    
+    // Insert into queue in smaller batches to avoid overwhelming the database
+    const queueBatchSize = 100;
+    for (let i = 0; i < queueItems.length; i += queueBatchSize) {
+      const batch = queueItems.slice(i, i + queueBatchSize);
+      
+      const { error: queueError } = await supabase
+        .from("steam_app_queue")
+        .upsert(batch, {
+          onConflict: "app_id",
+          ignoreDuplicates: true,
+        });
+      
+      if (queueError) {
+        console.error(`Error queuing batch ${Math.floor(i / queueBatchSize) + 1}:`, queueError);
       }
     }
-    console.log("Game enrichment completed");
+    
+    console.log("Games queued for detailed enrichment");
   } catch (error) {
-    console.error("Error enriching games with details:", error);
-  // Continue with import even if enrichment fails
+    console.error("Error queuing games for enrichment:", error);
+    // Don't fail the import if queuing fails
   }
 }
 
-// Process games in batches to avoid timeout issues - now using smaller batch size
+// Process games in batches to avoid timeout issues
 async function processGamesInBatches(userId, steamId, games) {
   console.log(`Processing ${games.length} games in batches of ${BATCH_SIZE}`);
   let totalGamesUpserted = 0;
@@ -404,17 +453,6 @@ async function processGamesInBatches(userId, steamId, games) {
       }
       totalGamesUpserted += gameUpserts.length;
       console.log(`Upserted ${gameUpserts.length} games in batch ${batchIndex + 1}`);
-      for (const game of gameUpserts) {
-        await supabase.from("steam_app_queue").upsert({
-          app_id: game.id,
-          name: game.name,
-          priority: 5,
-          status: "pending"
-        }, {
-          onConflict: "app_id",
-          ignoreDuplicates: true
-        });
-      }
     }
 
     const now = new Date().toISOString();
@@ -448,9 +486,9 @@ async function processGamesInBatches(userId, steamId, games) {
       console.log(`Created ${userGamesUpserts.length} user-game relationships in batch ${batchIndex + 1}`);
     }
 
-    // Increased delay between batches for better reliability
+    // Add delay between batches to be gentle on the database
     if (batchIndex < batches.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 750)); // Increased from 500ms to 750ms
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
