@@ -66,7 +66,7 @@ const GameCard: React.FC<GameCardProps> = ({
     >
       <div className="aspect-video w-full relative">
         <img 
-          src={getBestGameImage(null, imageUrl)}
+          src={getBestGameImage(null, imageUrl, gameId)}
           alt={title}
           className="w-full h-full object-cover"
           loading="lazy"
