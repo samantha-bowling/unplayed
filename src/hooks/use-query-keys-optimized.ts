@@ -80,6 +80,7 @@ export const optimizedQueryKeys = {
     
     // Get library-specific keys for targeted invalidation
     libraryData: (userId?: string) => [
+      optimizedQueryKeys.library.all(userId),
       optimizedQueryKeys.library.games(userId),
       optimizedQueryKeys.library.count(userId),
       optimizedQueryKeys.library.metadata(userId),
