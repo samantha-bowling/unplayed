@@ -101,19 +101,19 @@ const ShelfLife = ({
         <h3 className="terminal-header text-2xl">Shelf Life</h3>
         <div className="flex items-center gap-3">
           <Select value={displayCount} onValueChange={setDisplayCount}>
-            <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectTrigger className="w-32 h-8 text-xs bg-gray-800 border-gray-600 text-white">
               <SelectValue placeholder="Top 10" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">Top 10</SelectItem>
-              <SelectItem value="20">Top 20</SelectItem>
-              <SelectItem value="50">Top 50</SelectItem>
+            <SelectContent className="bg-gray-800 border-gray-600">
+              <SelectItem value="10" className="text-white hover:bg-gray-700">Top 10</SelectItem>
+              <SelectItem value="20" className="text-white hover:bg-gray-700">Top 20</SelectItem>
+              <SelectItem value="50" className="text-white hover:bg-gray-700">Top 50</SelectItem>
             </SelectContent>
           </Select>
           <Button 
             variant="outline" 
             size="sm"
-            className="text-xs"
+            className="text-xs border-unplayed-mint/30 text-unplayed-mint hover:bg-unplayed-mint/10"
             onClick={handlePickFromOldest}
             disabled={oldestGames.length === 0}
           >
