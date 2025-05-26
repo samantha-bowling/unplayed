@@ -181,4 +181,5 @@ const GameCard: React.FC<GameCardProps> = ({
   );
 };
 
-export default GameCard;
+// Memoize the component to prevent unnecessary re-renders when props haven't changed
+export default React.memo(GameCard);
