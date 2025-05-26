@@ -171,7 +171,7 @@ const DustScoreMeter = ({
         </div>
 
         {showCleanScore && (
-          <div className="mt-6 pt-3 border-t border-gray-700 w-full">
+          <div className="mt-6 pt-3 border-t border-gray-700 w-full flex justify-center">
             <CleanScoreMeterSmall score={data.cleanScore || 0} tier={data.cleanTier} />
           </div>
         )}
