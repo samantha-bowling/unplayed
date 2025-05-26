@@ -462,4 +462,4 @@ async function processGamesInBatches(userId, steamId, games) {
     gamesUpserted: totalGamesUpserted,
     relationshipsCreated: totalRelationshipsCreated
   };
-}
+}});
