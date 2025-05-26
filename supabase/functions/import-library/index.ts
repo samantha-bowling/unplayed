@@ -1,3 +1,4 @@
+
 // supabase/functions/import-library/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
@@ -15,6 +16,39 @@ const corsHeaders = {
 
 // Configuration for batched processing - reduced from 100 to 25 for better reliability
 const BATCH_SIZE = 25; // Reduced batch size to prevent timeouts
+
+// Image utility functions (copied from frontend for consistency)
+function constructSteamImageUrl(appId, imageHash, imageType = 'icon') {
+  if (!appId || !imageHash) return null;
+  
+  // Remove any existing URL prefix if present
+  const cleanHash = imageHash.replace(/^https?:\/\/.*\//, '');
+  
+  // Construct the proper Steam CDN URL
+  const baseUrl = 'https://media.steampowered.com/steamcommunity/public/images/apps';
+  return `${baseUrl}/${appId}/${cleanHash}.jpg`;
+}
+
+function normalizeGameImageData(imageData, gameId) {
+  // For image_url: prefer img_icon_url (filename only from Steam library API)
+  let image_url = null;
+  if (imageData.img_icon_url) {
+    // Store just the filename/hash for consistency
+    image_url = imageData.img_icon_url;
+  }
+  
+  // For header_image: prefer full URLs from Steam Store API
+  let header_image = null;
+  if (imageData.img_logo_url) {
+    // Construct the full URL from img_logo_url
+    header_image = constructSteamImageUrl(gameId, imageData.img_logo_url, 'logo');
+  }
+  
+  return {
+    image_url,
+    header_image
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -330,12 +364,20 @@ async function processGamesInBatches(userId, steamId, games) {
         console.warn("Skipping invalid game:", game);
         return null;
       }
+      
+      // Use the new image normalization function
+      const normalizedImages = normalizeGameImageData({
+        img_icon_url: game.img_icon_url,
+        img_logo_url: game.img_logo_url
+      }, game.appid);
+      
       const gameData = {
         id: game.appid,
         name: game.name,
-        image_url: game.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg` : null,
-        header_image: game.img_logo_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_logo_url}.jpg` : null
+        image_url: normalizedImages.image_url,
+        header_image: normalizedImages.header_image
       };
+      
       if (game.genres && Array.isArray(game.genres)) {
         gameData.genres = game.genres;
       }
