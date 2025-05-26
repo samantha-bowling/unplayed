@@ -78,8 +78,8 @@ export const optimizedQueryKeys = {
       optimizedQueryKeys.spending.base(userId),
     ],
     
-    // Get library-specific keys for targeted invalidation - fixed typing
-    libraryData: (userId?: string): readonly (readonly string[])[] => [
+    // Get library-specific keys for targeted invalidation - use flexible typing
+    libraryData: (userId?: string) => [
       optimizedQueryKeys.library.all(userId),
       optimizedQueryKeys.library.games(userId),
       optimizedQueryKeys.library.count(userId),
