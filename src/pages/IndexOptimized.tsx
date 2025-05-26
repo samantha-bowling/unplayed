@@ -23,27 +23,31 @@ import Footer from "../components/Footer";
 import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
+import ImportProgressIndicator from "@/components/ImportProgressIndicator";
 import { Button } from "@/components/ui/button";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Import, AlertCircle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { RefreshCw, Import } from "lucide-react";
 
-// Consolidated import state interface
+// Enhanced import state interface
 interface ImportState {
   isImporting: boolean;
   progress: string;
   percentage: number;
+  status: 'preparing' | 'processing' | 'complete' | 'error';
+  totalGames?: number;
+  helpText?: string;
 }
 
 const IndexOptimized = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [importState, setImportState] = useState<ImportState>({
     isImporting: false,
-    progress: "Preparing to import...",
-    percentage: 0
+    progress: "Ready to import...",
+    percentage: 0,
+    status: 'preparing'
   });
   
   const isMounted = useIsMounted();
@@ -94,7 +98,7 @@ const IndexOptimized = () => {
     }, 1000);
   }, [user?.id, queryKeys, queryClient, refetch, refreshProfile]);
   
-  // Optimized import function
+  // Enhanced import function with improved UX
   const importSteamLibrary = useCallback(async () => {
     if (!profile?.steam_id) {
       toast.error("Steam account not linked");
@@ -103,12 +107,10 @@ const IndexOptimized = () => {
     
     updateImportState({
       isImporting: true,
-      progress: "Connecting to Steam...",
-      percentage: 10
-    });
-    
-    toast.loading("Importing your Steam library...", {
-      description: "This may take a few minutes for large libraries."
+      progress: "Connecting to Steam API...",
+      percentage: 10,
+      status: 'preparing',
+      helpText: "Fetching your game library from Steam..."
     });
     
     try {
@@ -118,73 +120,102 @@ const IndexOptimized = () => {
 
       console.log("Import response:", data);
       
-      if (data.processing === "background") {
+      if (data.success) {
         updateImportState({
-          progress: "Fetching game details...",
-          percentage: 30
+          progress: "Library fetch complete!",
+          percentage: 30,
+          status: 'processing',
+          totalGames: data.totalGames,
+          helpText: data.helpText || "Processing and enriching your game data..."
         });
-        
-        let progressCounter = 30;
-        const progressInterval = setInterval(() => {
-          progressCounter += 5;
-          if (progressCounter >= 90) {
-            clearInterval(progressInterval);
-          }
-          updateImportState({
-            percentage: progressCounter,
-            progress: `Processing games (${progressCounter}%)...`
+
+        if (data.processing === "background" || data.status === "processing") {
+          // Background processing mode
+          toast.success(`Found ${data.totalGames || 0} games in your library!`, {
+            description: "Processing in background - your dashboard will update automatically."
           });
-        }, 2000);
-        
-        setTimeout(() => {
-          clearInterval(progressInterval);
+          
+          // Simulate progress updates for background processing
+          let progressCounter = 30;
+          const progressInterval = setInterval(() => {
+            progressCounter += 8;
+            if (progressCounter >= 85) {
+              clearInterval(progressInterval);
+            }
+            updateImportState({
+              percentage: progressCounter,
+              progress: `Enriching game data (${progressCounter}%)...`,
+              helpText: "Prioritizing unplayed games for detailed information..."
+            });
+          }, 3000);
+          
+          // Complete after reasonable time
+          setTimeout(() => {
+            clearInterval(progressInterval);
+            updateImportState({
+              percentage: 100,
+              progress: "Import complete!",
+              status: 'complete',
+              helpText: "Your library has been imported and unplayed games prioritized."
+            });
+            
+            refreshAllData();
+            
+            setTimeout(() => {
+              updateImportState({
+                isImporting: false,
+                progress: "Ready to import...",
+                percentage: 0,
+                status: 'preparing'
+              });
+            }, 3000);
+          }, 25000);
+        } else {
+          // Synchronous completion
           updateImportState({
             percentage: 100,
-            progress: "Import complete!"
+            progress: "Import complete!",
+            status: 'complete',
+            helpText: `Successfully imported ${data.imported || data.gamesUpserted || 0} games.`
           });
           
-          toast.success(`Steam library import completed!`, {
-            description: "Your dashboard will update shortly."
-          });
-          
+          toast.success(`Successfully imported ${data.imported || data.gamesUpserted || 0} games!`);
           refreshAllData();
           
           setTimeout(() => {
             updateImportState({
               isImporting: false,
-              progress: "Preparing to import...",
-              percentage: 0
+              progress: "Ready to import...",
+              percentage: 0,
+              status: 'preparing'
             });
-          }, 1000);
-        }, 20000);
+          }, 2000);
+        }
       } else {
-        toast.success(`Successfully imported ${data.imported || 0} games!`, {
-          description: "Your dashboard will update shortly."
-        });
-        
-        updateImportState({
-          percentage: 100,
-          progress: "Import complete!"
-        });
-        
-        refreshAllData();
-        
-        setTimeout(() => {
-          updateImportState({
-            isImporting: false,
-            progress: "Preparing to import...",
-            percentage: 0
-          });
-        }, 1000);
+        throw new Error(data.error || "Import failed");
       }
     } catch (err) {
       console.error("Import failed", err);
-      toast.error(`Import failed: ${err.message}`);
+      
       updateImportState({
-        isImporting: false,
+        status: 'error',
         progress: "Import failed",
-        percentage: 0
+        percentage: 0,
+        helpText: err.helpText || "Please try again or check your Steam privacy settings."
       });
+      
+      toast.error(`Import failed: ${err.message}`, {
+        description: err.helpText || "Please check your Steam privacy settings and try again."
+      });
+      
+      setTimeout(() => {
+        updateImportState({
+          isImporting: false,
+          progress: "Ready to import...",
+          percentage: 0,
+          status: 'preparing'
+        });
+      }, 5000);
     }
   }, [profile?.steam_id, updateImportState, refreshAllData]);
 
@@ -254,7 +285,7 @@ const IndexOptimized = () => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Fetch your games from Steam and recalculate dust scores</p>
+                  <p>Fetch your games from Steam and prioritize unplayed games for enrichment</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -286,27 +317,14 @@ const IndexOptimized = () => {
             </p>
           )}
           
-          {importState.isImporting && (
-            <div className="mt-6 max-w-md mx-auto">
-              <div className="flex items-center justify-center mb-2">
-                <SteamLoader 
-                  message={importState.progress} 
-                  size="sm" 
-                  variant="secondary" 
-                />
-              </div>
-              <Progress value={importState.percentage} className="h-2" />
-              <p className="text-sm text-gray-400 mt-2">
-                This may take a few minutes for large libraries
-              </p>
-              <div className="mt-4 text-sm bg-unplayed-mint/10 p-3 rounded-md flex items-start">
-                <AlertCircle className="w-4 h-4 text-unplayed-mint mr-2 mt-0.5 flex-shrink-0" />
-                <p className="text-gray-300">
-                  You can leave this page during the import process. Your games will still be imported in the background.
-                </p>
-              </div>
-            </div>
-          )}
+          <ImportProgressIndicator
+            isImporting={importState.isImporting}
+            progress={importState.progress}
+            percentage={importState.percentage}
+            status={importState.status}
+            totalGames={importState.totalGames}
+            helpText={importState.helpText}
+          />
         </>
       );
     }

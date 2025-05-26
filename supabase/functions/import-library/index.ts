@@ -369,9 +369,11 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({
         success: true,
-        message: "Import started",
+        message: "Import started successfully",
         totalGames: games.length,
         processing: "background",
+        status: "processing",
+        helpText: "Your games are being imported. This may take a few minutes.",
         note: games.length >= 1000 ? "Large library detected - import may take several minutes" : undefined
       }), {
         status: 202,
@@ -388,6 +390,7 @@ serve(async (req) => {
         imported: result.total,
         gamesUpserted: result.gamesUpserted,
         relationshipsCreated: result.relationshipsCreated,
+        status: "complete",
         note: games.length >= 1000 ? "Large library successfully imported" : undefined
       }), {
         status: 200,
@@ -400,8 +403,9 @@ serve(async (req) => {
   } catch (err) {
     console.error("Unexpected error:", err);
     return new Response(JSON.stringify({
-      error: "Unexpected error",
-      details: err.message
+      error: "Unexpected error occurred",
+      details: err.message,
+      status: "error"
     }), {
       status: 500,
       headers: {
@@ -412,23 +416,29 @@ serve(async (req) => {
   }
 });
 
-// Enhanced queue function with smart prioritization
+// Enhanced queue function prioritizing UNPLAYED games for enrichment
 async function queueGamesForDetailedEnrichment(games) {
   try {
-    console.log(`Queuing ${games.length} games for detailed enrichment`);
+    console.log(`Queuing ${games.length} games for detailed enrichment (prioritizing unplayed games)`);
     
-    // Prioritize games that are more likely to be played (higher playtime, recent acquisition)
+    // Prioritize UNPLAYED games - games with zero playtime get highest priority
     const queueItems = games.map(game => {
       let priority = 3; // Default priority
       
-      // Higher priority for games with some playtime (user showed interest)
-      if (game.playtime_forever > 0 && game.playtime_forever < 120) {
-        priority = 1; // High priority - tried but not fully played
-      } else if (game.playtime_forever > 120) {
+      // HIGHEST priority for unplayed games (zero playtime)
+      if (!game.playtime_forever || game.playtime_forever === 0) {
+        priority = 1; // Highest priority - unplayed games are most important
+      } 
+      // Lower priority for games with minimal playtime (tried but abandoned)
+      else if (game.playtime_forever > 0 && game.playtime_forever < 60) {
+        priority = 2; // High priority - might be worth revisiting
+      }
+      // Lowest priority for games with significant playtime
+      else if (game.playtime_forever >= 60) {
         priority = 4; // Lower priority - already played significantly
       }
       
-      // Recent games get slightly higher priority
+      // Recent games get slightly higher priority regardless of playtime
       if (game.rtime_last_played && game.rtime_last_played > (Date.now() / 1000) - (30 * 24 * 60 * 60)) {
         priority = Math.max(1, priority - 1);
       }
@@ -439,6 +449,10 @@ async function queueGamesForDetailedEnrichment(games) {
         priority: priority
       };
     });
+    
+    // Sort to show prioritization in logs
+    queueItems.sort((a, b) => a.priority - b.priority);
+    console.log(`Priority distribution: P1(unplayed)=${queueItems.filter(g => g.priority === 1).length}, P2(minimal)=${queueItems.filter(g => g.priority === 2).length}, P3(default)=${queueItems.filter(g => g.priority === 3).length}, P4(played)=${queueItems.filter(g => g.priority === 4).length}`);
     
     // Insert into queue in optimized batches
     const queueBatchSize = 200; // Larger batches for efficiency
@@ -457,7 +471,7 @@ async function queueGamesForDetailedEnrichment(games) {
       }
     }
     
-    console.log("Games queued for detailed enrichment with smart prioritization");
+    console.log("Games queued for detailed enrichment with unplayed games prioritized");
   } catch (error) {
     console.error("Error queuing games for enrichment:", error);
     // Don't fail the import if queuing fails
