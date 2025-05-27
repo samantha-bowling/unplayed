@@ -1,3 +1,4 @@
+
 // src/context/AuthContext.tsx
 import React, {
   createContext,
@@ -29,7 +30,6 @@ type AuthContextType = {
   user: User | null;
   error: AuthError | null;
   signInWithProvider: (provider: Provider | 'steam', options?: { redirectTo?: string }) => Promise<void>;
-  signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
   isLoading: boolean;
@@ -131,35 +131,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(false);
     }
   }, [clearError, user?.id, session]);
-
-  // Sign in with email (magic link)
-  const signInWithEmail = useCallback(async (email: string) => {
-    try {
-      setIsLoading(true);
-      clearError();
-      setStatus(AuthStatus.LOADING);
-      
-      // Update auth state
-      AuthStorage.setAuthState(AuthState.LOADING);
-      
-      const { error: err } = await supabase.auth.signInWithOtp({ email });
-      
-      if (err) throw err;
-      
-      toast.success('Check your email for a magic link!');
-    } catch (err: any) {
-      toast.error(`Magic link login failed: ${err.message}`);
-      setError({
-        code: 'email_login_error',
-        message: err.message,
-      });
-      setStatus(AuthStatus.UNAUTHENTICATED);
-      // Update auth state in storage
-      AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [clearError]);
 
   // Sign out
   const signOut = useCallback(async () => {
@@ -265,7 +236,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     error,
     signInWithProvider,
-    signInWithEmail,
     signOut,
     clearError,
     isLoading,

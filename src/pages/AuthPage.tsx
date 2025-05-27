@@ -4,34 +4,24 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
 import DemoModeFallback from '@/components/DemoModeFallback';
-import { SteamIcon } from '@/components/icons/SteamIcon';
 import { AuthStorage } from '@/utils/auth-service';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
 
 const AuthPage = () => {
-  const [email, setEmail] = useState('');
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
-  const { signInWithProvider, signInWithEmail, isLoading, error, status, user, clearError } = useAuth();
+  const { signInWithProvider, isLoading, error, status, user, clearError } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-
-  const handleEmailLogin = async () => {
-    clearError();
-    await signInWithEmail(email);
-    setShowSuccessAnimation(true);
-  };
   
   const handleProviderSignIn = async (provider: 'discord' | 'twitch') => {
     // Clear any caches if user was previously logged in with a different account
@@ -72,13 +62,7 @@ const AuthPage = () => {
           </motion.div>
         )}
 
-        {showSuccessAnimation && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6">
-            <AuthSuccessAnimation />
-          </motion.div>
-        )}
-
-        {error && !isLoading && !showSuccessAnimation && (
+        {error && !isLoading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6 max-w-md">
             <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
               <h3 className="text-red-400 font-bold">Authentication Error</h3>
@@ -94,7 +78,7 @@ const AuthPage = () => {
         )}
       </AnimatePresence>
 
-      {!isLoading && !error && !showSuccessAnimation && (
+      {!isLoading && !error && (
         <div className="space-y-6 w-full max-w-sm">
           <h1 className="text-3xl font-bold">Sign in to unplayed</h1>
           <p className="text-muted-foreground text-sm">
@@ -108,33 +92,6 @@ const AuthPage = () => {
             <Button onClick={() => handleProviderSignIn('twitch')}>
               Sign in with Twitch
             </Button>
-            
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-700"></span>
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-black px-2 text-gray-400">OR</span>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Input
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-gray-900"
-              />
-              <Button 
-                className="w-full" 
-                onClick={handleEmailLogin} 
-                disabled={!email}
-                variant="secondary"
-              >
-                Send Magic Link
-              </Button>
-            </div>
             
             <div className="mt-8 text-xs text-gray-500 space-y-1">
               <p>
