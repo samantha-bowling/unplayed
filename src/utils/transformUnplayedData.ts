@@ -1,3 +1,4 @@
+
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
 import { calculateCleanScore, CLEAN_SCORE_TIERS } from './clean-score-utils';
@@ -39,6 +40,7 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
   let unplayedGames = 0;
   let totalPlaytime = 0;
   let totalSpent = 0;
+  let unplayedSpent = 0; // New field for unplayed games spending
   let dustScore = 0;
   let potentialGameplayHours = 0;
   let recentlyPlayedCount = 0;
@@ -51,6 +53,7 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
     
     // Handle both nested and direct price access
     const priceCents = item.games?.price_cents || item.price_cents || 0;
+    const gamePrice = priceCents * 0.01; // Convert to dollars
     
     // Count unplayed games and potential hours
     if (playtimeMinutes === 0) {
@@ -58,6 +61,9 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
       const estimate = estimatesMap[item.game_id];
       const gameHours = estimate?.main_hours || 12.5;
       potentialGameplayHours += gameHours;
+      
+      // Add to unplayed spending only for unplayed games
+      unplayedSpent += gamePrice;
       
       // Add to shelf life array with proper structure
       unplayedForShelfLife.push({
@@ -73,7 +79,7 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
     
     // Accumulate totals with minimal operations
     totalPlaytime += playtimeMinutes;
-    totalSpent += (priceCents * 0.01); // More efficient than division by 100
+    totalSpent += gamePrice; // Total spending includes all games
     dustScore += (item.dust_score || 0);
     
     // Check recently played with cached date comparison
@@ -86,6 +92,7 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
     unplayedGames,
     totalPlaytime: totalPlaytime / 60, // Convert to hours
     totalSpent,
+    unplayedSpent, // New field for dashboard spending estimate
     dustScore,
     potentialGameplayHours,
     recentlyPlayedCount,
@@ -208,6 +215,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
       dustScore: 0,
       totalPlaytime: 0,
       totalSpent: 0,
+      unplayedSpent: 0, // Add to fallback data
       potentialGameplayHours: 0,
       genres: [],
       shelfLife: [],
@@ -259,6 +267,8 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
   console.log('Transformation complete:', {
     totalGames: data.length,
     unplayedGames: aggregated.unplayedGames,
+    totalSpent: aggregated.totalSpent,
+    unplayedSpent: aggregated.unplayedSpent,
     shelfLifeCount: shelfLife.length,
     libraryCount: library.length,
     gamesListCount: gamesList.length
@@ -270,6 +280,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     dustScore: aggregated.dustScore,
     totalPlaytime: aggregated.totalPlaytime,
     totalSpent: aggregated.totalSpent,
+    unplayedSpent: aggregated.unplayedSpent, // Include new field in return
     potentialGameplayHours: aggregated.potentialGameplayHours,
     genres,
     shelfLife,

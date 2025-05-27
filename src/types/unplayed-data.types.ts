@@ -106,6 +106,7 @@ export interface UnplayedDataType {
   dustScore?: number;
   totalPlaytime: number;
   totalSpent: number;
+  unplayedSpent: number; // New field for spending on unplayed games only
   potentialGameplayHours: number;
   
   // Game collections

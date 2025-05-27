@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +18,7 @@ const createFallbackData = (): UnplayedDataType => ({
   dustScore: 0,
   totalPlaytime: 0,
   totalSpent: 0,
+  unplayedSpent: 0, // Add to fallback data
   potentialGameplayHours: 0,
   genres: [],
   shelfLife: [],
