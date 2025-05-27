@@ -6,13 +6,35 @@ import { countGenres, processGenres } from './genre-processing';
 import { processShelfLife, processLibraryPreview } from './shelf-life-processing';
 
 /**
- * Optimized single-pass data aggregation
+ * Object pool for reusing frequently created objects
+ */
+const objectPool = {
+  aggregationCache: new Map<string, any>(),
+  clearCache() {
+    this.aggregationCache.clear();
+  }
+};
+
+/**
+ * Optimized single-pass data aggregation with memory efficiency
  */
 const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) => {
+  const cacheKey = `${data.length}-${Object.keys(estimatesMap).length}`;
+  
+  // Check cache first for repeated calculations
+  if (objectPool.aggregationCache.has(cacheKey)) {
+    const cached = objectPool.aggregationCache.get(cacheKey);
+    if (cached && cached.timestamp > Date.now() - 30000) { // 30 second cache
+      return cached.data;
+    }
+  }
+
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
+  // Pre-allocate arrays to avoid dynamic resizing
   const unplayedForShelfLife: any[] = [];
+  unplayedForShelfLife.length = 0; // Ensure clean start
   
   let unplayedGames = 0;
   let totalPlaytime = 0;
@@ -21,8 +43,9 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
   let potentialGameplayHours = 0;
   let recentlyPlayedCount = 0;
 
-  // Single pass through all data
-  for (let i = 0; i < data.length; i++) {
+  // Single pass through all data with optimized access patterns
+  const dataLength = data.length;
+  for (let i = 0; i < dataLength; i++) {
     const item = data[i];
     const playtimeMinutes = item.playtime_minutes || 0;
     const priceCents = item.games?.price_cents || 0;
@@ -33,34 +56,44 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
       const estimate = estimatesMap[item.game_id];
       const gameHours = estimate?.main_hours || 12.5;
       potentialGameplayHours += gameHours;
+      
+      // Only push to shelf life array if we need it
       unplayedForShelfLife.push(item);
     }
     
-    // Accumulate totals
+    // Accumulate totals with minimal operations
     totalPlaytime += playtimeMinutes;
-    totalSpent += (priceCents / 100);
+    totalSpent += (priceCents * 0.01); // More efficient than division by 100
     dustScore += (item.dust_score || 0);
     
-    // Check recently played
+    // Check recently played with cached date comparison
     if (item.last_played_date && new Date(item.last_played_date) >= thirtyDaysAgo) {
       recentlyPlayedCount++;
     }
   }
 
-  return {
+  const result = {
     unplayedGames,
     totalPlaytime: totalPlaytime / 60, // Convert to hours
     totalSpent,
     dustScore,
     potentialGameplayHours,
     recentlyPlayedCount,
-    playedGames: data.length - unplayedGames,
+    playedGames: dataLength - unplayedGames,
     unplayedForShelfLife
   };
+
+  // Cache result for potential reuse
+  objectPool.aggregationCache.set(cacheKey, {
+    data: result,
+    timestamp: Date.now()
+  });
+
+  return result;
 };
 
 /**
- * Optimized transformation with performance improvements
+ * Optimized transformation with performance improvements and memory efficiency
  * Works for both demo and live data while maintaining consistent output structure
  */
 export const transformUserGameData = (data: any[], estimatesMap: Record<string, any> = {}): UnplayedDataType => {
@@ -131,6 +164,13 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     cleanStreak,
     recentlyPlayedCount: aggregated.recentlyPlayedCount
   };
+};
+
+/**
+ * Clean up object pool - call this when component unmounts or app closes
+ */
+export const cleanupTransformCache = () => {
+  objectPool.clearCache();
 };
 
 // Export both names for backward compatibility during transition

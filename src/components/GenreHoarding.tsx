@@ -1,8 +1,9 @@
 
+import React, { useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { createPickerNavigation } from '@/utils/navigation';
@@ -12,38 +13,60 @@ interface GenreHoardingProps extends WithDemoProps {
   activeGenre?: string | null;
 }
 
-const GenreHoarding = ({
+const GenreHoarding = React.memo<GenreHoardingProps>(({
   isDemo = false,
   onGenreSelect,
   activeGenre = null
 }: GenreHoardingProps) => {
   const { user } = useAuth();
-  const {
-    data: unplayedData
-  } = useUnplayedData();
+  const { data: dashboardData } = useDashboardData();
   const navigate = useNavigate();
 
-  const genreData = unplayedData.genres;
+  // Memoize genre data to prevent unnecessary recalculations
+  const genreData = useMemo(() => dashboardData.genres, [dashboardData.genres]);
 
-  const mostHoardedGenre = genreData.reduce((prev, current) => prev.value > current.value ? prev : current, {
-    name: 'None',
-    value: 0,
-    color: '#A3F7BF'
-  });
+  // Memoize most hoarded genre calculation
+  const mostHoardedGenre = useMemo(() => {
+    if (!genreData.length) {
+      return { name: 'None', value: 0, color: '#A3F7BF' };
+    }
+    return genreData.reduce((prev, current) => 
+      prev.value > current.value ? prev : current, 
+      { name: 'None', value: 0, color: '#A3F7BF' }
+    );
+  }, [genreData]);
 
-  const handleGenreClick = (data: any) => {
+  // Memoized callback for genre clicks
+  const handleGenreClick = useCallback((data: any) => {
     if (onGenreSelect && data && data.name) {
       onGenreSelect(data.name);
     }
-  };
+  }, [onGenreSelect]);
 
-  const handlePickFromGenre = (genre: string) => {
+  // Memoized callback for picker navigation
+  const handlePickFromGenre = useCallback((genre: string) => {
     navigate('/picker', createPickerNavigation({
       genre,
       source: 'genre',
       shouldAutoSpin: true
     }));
-  };
+  }, [navigate]);
+
+  // Memoized tooltip formatter
+  const tooltipFormatter = useCallback((value: any) => [`${value} games`, 'Count'], []);
+
+  // Memoized legend formatter
+  const legendFormatter = useCallback((value: string, entry: any) => {
+    const isActive = value === activeGenre;
+    return (
+      <span style={{ 
+        color: isActive ? '#FF6B6B' : 'white', 
+        fontWeight: isActive ? 'bold' : 'normal' 
+      }}>
+        {value}
+      </span>
+    );
+  }, [activeGenre]);
 
   return (
     <div className={`terminal-container w-full h-full ${isDemo ? 'relative' : ''}`}>
@@ -79,7 +102,7 @@ const GenreHoarding = ({
               ))}
             </Pie>
             <Tooltip 
-              formatter={(value) => [`${value} games`, 'Count']}
+              formatter={tooltipFormatter}
               contentStyle={{
                 backgroundColor: 'rgba(20, 20, 20, 0.9)',
                 borderColor: '#A3F7BF',
@@ -106,15 +129,8 @@ const GenreHoarding = ({
                 fontSize: '12px',
                 cursor: 'pointer'
               }}
-              onClick={(data) => handleGenreClick(data)}
-              formatter={(value, entry: any) => {
-                const isActive = value === activeGenre;
-                return (
-                  <span style={{ color: isActive ? '#FF6B6B' : 'white', fontWeight: isActive ? 'bold' : 'normal' }}>
-                    {value}
-                  </span>
-                );
-              }}
+              onClick={handleGenreClick}
+              formatter={legendFormatter}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -167,12 +183,21 @@ const GenreHoarding = ({
       {isDemo && !document.cookie.includes("demo_note_dismissed") && (
         <div className="mt-auto pt-4 text-center">
           <p className="text-sm text-unplayed-mint">
-            You’re in Demo Mode. Sign in to track your Genre breakdown.
+            You're in Demo Mode. Sign in to track your Genre breakdown.
           </p>
         </div>
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-rendering
+  return (
+    prevProps.isDemo === nextProps.isDemo &&
+    prevProps.activeGenre === nextProps.activeGenre &&
+    prevProps.onGenreSelect === nextProps.onGenreSelect
+  );
+});
+
+GenreHoarding.displayName = 'GenreHoarding';
 
 export default withDemoIndicator(GenreHoarding);
