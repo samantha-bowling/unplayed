@@ -51,6 +51,16 @@ const Index = () => {
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
 
+  // Safe data access with fallbacks
+  const safeData = {
+    unplayedGames: dashboardData?.unplayedGames || 0,
+    totalGames: dashboardData?.totalGames || 0,
+    dustScore: dashboardData?.dustScore || 0,
+    totalSpent: dashboardData?.totalSpent || 0,
+    cleanScore: dashboardData?.cleanScore || 0,
+    cleanTier: dashboardData?.cleanTier || null
+  };
+
   // Optimized function to update data after import using optimized cache management
   const refreshAllData = () => {
     // Set a slight delay to ensure backend processing completes
@@ -324,17 +334,27 @@ const Index = () => {
               <span className="text-unplayed-mint">Dashboard</span>
               <span className="text-white">.exe</span>
             </h2>
-            <div className="dashboard-grid">
-              <UnplayedCounter count={dashboardData.unplayedGames} />
-              <DustScoreMeter score={dashboardData.dustScore} />
-              <SpendingEstimate amount={dashboardData.totalSpent} />
-            </div>
-            <div className="mt-4">
-              <GenreHoarding />
-            </div>
-            <div className="mt-4">
-              <ShelfLife />
-            </div>
+            
+            {/* Show loading state if data is loading */}
+            {dataLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <SteamLoader message="Loading your dashboard..." size="md" variant="secondary" />
+              </div>
+            ) : (
+              <>
+                <div className="dashboard-grid">
+                  <UnplayedCounter count={safeData.unplayedGames} />
+                  <DustScoreMeter score={safeData.dustScore} />
+                  <SpendingEstimate amount={safeData.totalSpent} />
+                </div>
+                <div className="mt-4">
+                  <GenreHoarding />
+                </div>
+                <div className="mt-4">
+                  <ShelfLife />
+                </div>
+              </>
+            )}
           </div>
         </section>
 
