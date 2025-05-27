@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from '../withDemoIndicator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon, Sparkle } from 'lucide-react';
+import { useAnimatedCounter } from '@/hooks/use-animated-counter';
 
 interface CleanScoreMeterSmallProps extends WithDemoProps {
   score: number;
@@ -14,26 +15,12 @@ const CleanScoreMeterSmall = ({
   tier,
   isDemo = false
 }: CleanScoreMeterSmallProps) => {
-  const [animatedScore, setAnimatedScore] = useState(0);
-  
-  useEffect(() => {
-    const duration = 2000;
-    const start = 0;
-    const end = score;
-    const frameDuration = 1000 / 60;
-    const totalFrames = Math.round(duration / frameDuration);
-    const increment = (end - start) / totalFrames;
-    let currentFrame = 0;
-    const timer = setInterval(() => {
-      currentFrame++;
-      const currentValue = Math.round(start + increment * currentFrame);
-      setAnimatedScore(currentValue);
-      if (currentFrame === totalFrames) {
-        clearInterval(timer);
-      }
-    }, frameDuration);
-    return () => clearInterval(timer);
-  }, [score]);
+  // Use the shared animated counter hook with demo awareness
+  const animatedScore = useAnimatedCounter({
+    targetValue: score,
+    duration: 2000,
+    isDemo
+  });
 
   const tierColor = tier?.color || '#22d3ee';
   const tierName = tier?.name || 'Calculating...';
