@@ -129,8 +129,20 @@ const LibraryPreview = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
 
-  // Use games from props if available, otherwise use unplayedData
-  const displayGames = propGames || unplayedData.library;
+  // Filter to get ALL unplayed games instead of just the preview
+  const allUnplayedGames = propGames || unplayedData.gamesList?.filter(game => 
+    !game.playtimeMinutes || game.playtimeMinutes === 0
+  ) || [];
+
+  // Use filtered unplayed games for display
+  const displayGames = allUnplayedGames;
+  
+  console.log('LibraryPreview data:', {
+    totalGamesFromData: unplayedData.totalGames,
+    unplayedGamesFromData: unplayedData.unplayedGames,
+    allUnplayedGamesFiltered: allUnplayedGames.length,
+    displayGamesLength: displayGames.length
+  });
   
   // Calculate the total number of pages
   const totalPages = Math.ceil(displayGames.length / displayCount);
@@ -348,7 +360,7 @@ const LibraryPreview = ({
                 // Use the enhanced image utility for better image quality
                 const image = getBestGameImageFromDbData(game, gameId);
                 
-                console.log('Grid game image:', { gameId, title, image });
+                console.log('Grid game image:', { gameId, title, image, originalGame: game });
                 
                 return (
                   <div 
@@ -494,7 +506,7 @@ const LibraryPreview = ({
       {!showFullScreenMode && !propGames && (
         <div className="text-center mt-6 flex flex-col items-center">
           <p className="text-gray-400">
-            Showing {currentGames.length} of {unplayedData.totalGames} unplayed games
+            Showing {currentGames.length} of {displayGames.length} unplayed games
           </p>
           
           {isDemo ? (

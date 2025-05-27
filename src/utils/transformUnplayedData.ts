@@ -162,6 +162,7 @@ const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
 
 /**
  * Enhanced processLibraryPreview function for database data with proper image handling
+ * This creates a small preview for dashboard display, not for pagination
  */
 const processLibraryPreviewFromDatabase = (data: any[]) => {
   if (!data || data.length === 0) {
@@ -170,7 +171,7 @@ const processLibraryPreviewFromDatabase = (data: any[]) => {
 
   console.log('Processing library preview from database data, sample item:', data[0]);
 
-  // Take a sample of games for the library preview
+  // Take a small sample of games for the dashboard library preview only
   return data.slice(0, 12).map((item: any) => {
     const gameData = item.games || item;
     const gameId = item.game_id || item.id;
@@ -249,7 +250,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
   const shelfLife = processShelfLifeFromDatabase(aggregated.unplayedForShelfLife);
   const library = processLibraryPreviewFromDatabase(data);
 
-  // Step 5: Use enhanced buildGamesList for database data
+  // Step 5: Use enhanced buildGamesList for database data - this includes ALL games
   const gamesList = buildGamesListFromDatabase(data);
   
   // Step 6: Generate clean streak (simulated value)
@@ -273,7 +274,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     genres,
     shelfLife,
     library,
-    gamesList,
+    gamesList, // This now contains ALL games, not just a preview
     cleanScore,
     cleanScoreBreakdown,
     cleanTier,
