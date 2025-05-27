@@ -6,6 +6,7 @@ export interface GameListItem {
   id: number;
   name: string;
   image: string | null;
+  header_image?: string | null;
   playtimeMinutes: number;
   releaseDate?: string | null;
   price?: number;
