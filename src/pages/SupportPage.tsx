@@ -1,4 +1,3 @@
-
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -51,7 +50,11 @@ const TIERS: Tier[] = [
   },
 ];
 
-const SupportPage = () => {
+interface SupportPageProps {
+  totalGameCountProp?: number;
+}
+
+const SupportPage = ({ totalGameCountProp }: SupportPageProps) => {
   const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
   const [gameCount, setGameCount] = useState<number>(0);
   const [result, setResult] = useState<number | null>(null);
@@ -62,29 +65,33 @@ const SupportPage = () => {
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
   const [totalGameCount, setTotalGameCount] = useState<number>(19400000); // Default value before fetch
   
-  // Fetch total game count from Supabase
+  // Use prop if provided (from admin page), otherwise fetch from Supabase
   useEffect(() => {
-    const fetchTotalGameCount = async () => {
-      try {
-        const { data, error, count } = await supabase
-          .from('user_games')
-          .select('*', { count: 'exact', head: true });
+    if (totalGameCountProp) {
+      setTotalGameCount(totalGameCountProp);
+    } else {
+      const fetchTotalGameCount = async () => {
+        try {
+          const { count, error } = await supabase
+            .from('user_games')
+            .select('*', { count: 'exact', head: true });
+            
+          if (error) {
+            console.error('Error fetching total game count:', error);
+            return;
+          }
           
-        if (error) {
-          console.error('Error fetching total game count:', error);
-          return;
+          if (count !== null) {
+            setTotalGameCount(count);
+          }
+        } catch (err) {
+          console.error('Error in fetchTotalGameCount:', err);
         }
-        
-        if (count !== null) {
-          setTotalGameCount(count);
-        }
-      } catch (err) {
-        console.error('Error in fetchTotalGameCount:', err);
-      }
-    };
-    
-    fetchTotalGameCount();
-  }, []);
+      };
+      
+      fetchTotalGameCount();
+    }
+  }, [totalGameCountProp]);
   
   // Determine the user's tier based on game count
   useEffect(() => {

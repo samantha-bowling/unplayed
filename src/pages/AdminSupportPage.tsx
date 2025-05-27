@@ -10,6 +10,8 @@ import { useAuthPermission } from "@/hooks/use-auth-permission";
 
 const AdminSupportPage = () => {
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isRefreshingCount, setIsRefreshingCount] = useState(false);
+  const [totalGameCount, setTotalGameCount] = useState<number>(19400000);
   const location = useLocation();
   const { isAdmin } = useAuthPermission();
   
@@ -22,6 +24,37 @@ const AdminSupportPage = () => {
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
+
+  // Fetch total game count from Supabase
+  const fetchTotalGameCount = useCallback(async () => {
+    try {
+      setIsRefreshingCount(true);
+      const { count, error } = await supabase
+        .from('user_games')
+        .select('*', { count: 'exact', head: true });
+        
+      if (error) {
+        console.error('Error fetching total game count:', error);
+        toast.error('Failed to refresh game count');
+        return;
+      }
+      
+      if (count !== null) {
+        setTotalGameCount(count);
+        toast.success('Game count refreshed successfully');
+      }
+    } catch (err) {
+      console.error('Error in fetchTotalGameCount:', err);
+      toast.error('Error occurred while refreshing game count');
+    } finally {
+      setIsRefreshingCount(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchTotalGameCount();
+  }, [fetchTotalGameCount]);
 
   // Admin function to trigger tier calculation
   const calculateTiers = useCallback(async () => {
@@ -53,8 +86,8 @@ const AdminSupportPage = () => {
 
   return (
     <>
-      {/* First render the regular support page content */}
-      <SupportPage />
+      {/* First render the regular support page content with updated count */}
+      <SupportPage totalGameCountProp={totalGameCount} />
       
       {/* Then add the admin tools overlay */}
       <div className="max-w-7xl mx-auto px-4 -mt-4 pb-8">
@@ -67,14 +100,30 @@ const AdminSupportPage = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="border-gray-700 bg-black/50 hover:bg-black/70"
+                  className="border-gray-700 bg-black/50 hover:bg-black/70 mr-3"
                   onClick={calculateTiers}
                   disabled={isCalculating}
                 >
                   <RefreshCw className={`mr-2 h-3.5 w-3.5 ${isCalculating ? 'animate-spin' : ''}`} />
                   {isCalculating ? 'Calculating...' : 'Recalculate Donor Tiers'}
                 </Button>
-                <p className="ml-3 text-sm text-gray-400">Updates donor tier rankings based on donation amounts</p>
+                <p className="text-sm text-gray-400">Updates donor tier rankings based on donation amounts</p>
+              </div>
+              
+              <div className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-gray-700 bg-black/50 hover:bg-black/70 mr-3"
+                  onClick={fetchTotalGameCount}
+                  disabled={isRefreshingCount}
+                >
+                  <RefreshCw className={`mr-2 h-3.5 w-3.5 ${isRefreshingCount ? 'animate-spin' : ''}`} />
+                  {isRefreshingCount ? 'Refreshing...' : 'Refresh Game Count'}
+                </Button>
+                <p className="text-sm text-gray-400">
+                  Updates the total game count displayed on the page (currently: {totalGameCount.toLocaleString()})
+                </p>
               </div>
             </div>
           </div>
