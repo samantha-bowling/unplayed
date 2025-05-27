@@ -115,9 +115,6 @@ export const useUnplayedData = () => {
     staleTime: 30 * 60 * 1000, // 30 minutes for estimates (they change less frequently)
   });
 
-  const isLoading = isLoadingUserGames || isLoadingEstimates;
-  const error = userGamesError;
-
   // Memoize demo data processing to prevent unnecessary recalculations
   const normalizedDemoData = useMemo(() => {
     if (!isDemo) return null;
@@ -125,34 +122,18 @@ export const useUnplayedData = () => {
     return normalizeDemoGames(JSON.parse(JSON.stringify(demoData)));
   }, [isDemo, demoData]);
 
-  // For demo mode, return memoized normalized data
-  if (isDemo && normalizedDemoData) {
-    console.log('Normalized demo data gamesList:', normalizedDemoData.gamesList);
-    
-    return {
-      data: normalizedDemoData,
-      isLoading: false,
-      error: null,
-      lastRefreshed: null,
-      refetch: () => Promise.resolve()
-    };
-  }
-
   // Memoize the transformed data to prevent unnecessary recalculations
   const transformedData = useMemo(() => {
+    if (isDemo && normalizedDemoData) {
+      return normalizedDemoData;
+    }
+    
     if (!userGamesData) {
       return normalizeDemoGames(demoData);
     }
     
     return transformUserGameData(userGamesData, gameEstimatesData || {});
-  }, [userGamesData, gameEstimatesData, demoData]);
-  
-  // Log transformed data for debugging (only in development)
-  if (process.env.NODE_ENV === 'development' && userGamesData) {
-    console.log('Transformed data gamesList sample:', 
-      transformedData.gamesList?.length ? transformedData.gamesList.slice(0, 3) : 'No games in list');
-    console.log('Transformed data total dust score:', transformedData.dustScore);
-  }
+  }, [userGamesData, gameEstimatesData, demoData, isDemo, normalizedDemoData]);
 
   // Memoize last refreshed calculation
   const lastRefreshed = useMemo(() => 
@@ -160,12 +141,23 @@ export const useUnplayedData = () => {
     [profile?.last_sync]
   );
 
+  // Calculate loading state
+  const isLoading = isDemo ? false : (isLoadingUserGames || isLoadingEstimates);
+  const error = isDemo ? null : userGamesError;
+
+  // Log transformed data for debugging (only in development)
+  if (process.env.NODE_ENV === 'development' && userGamesData) {
+    console.log('Transformed data gamesList sample:', 
+      transformedData.gamesList?.length ? transformedData.gamesList.slice(0, 3) : 'No games in list');
+    console.log('Transformed data total dust score:', transformedData.dustScore);
+  }
+
   return {
     data: transformedData,
     isLoading,
     error,
     lastRefreshed,
-    refetch: refetchUserGames
+    refetch: isDemo ? () => Promise.resolve() : refetchUserGames
   };
 };
 
