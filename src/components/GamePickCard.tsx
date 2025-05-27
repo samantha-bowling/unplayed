@@ -4,6 +4,7 @@ import { GamePick } from '@/types/picks.types';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { Clock } from 'lucide-react';
 import { getBestGameImage } from '@/utils/image-utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 // Categories for the mood-based filtering with icons
 const moodIcons: Record<string, string> = {
@@ -71,12 +72,14 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
 
   return (
     <div className="pixel-card" onClick={onClick}>
-      <img 
-        src={gameImage} 
-        alt={game.name} 
-        className="w-full h-36 object-cover rounded-md mb-2" 
-        onError={handleImageError}
-      />
+      <AspectRatio ratio={16 / 9} className="mb-2">
+        <img 
+          src={gameImage} 
+          alt={game.name} 
+          className="w-full h-full object-cover rounded-md" 
+          onError={handleImageError}
+        />
+      </AspectRatio>
       
       <h4 className="text-lg font-medium text-white mb-1">{game.name}</h4>
       

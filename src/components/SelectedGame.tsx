@@ -6,6 +6,7 @@ import { GameListItem } from '@/types/unplayed-data.types';
 import GameReviewCard from './GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { getBestGameImage } from '@/utils/image-utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -40,12 +41,14 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
 
   return (
     <div className="pixel-card animate-fade-in">
-      <img 
-        src={gameImage} 
-        alt={game.name} 
-        className="w-full h-48 object-cover rounded-md mb-4" 
-        onError={handleImageError}
-      />
+      <AspectRatio ratio={16 / 9} className="mb-4">
+        <img 
+          src={gameImage} 
+          alt={game.name} 
+          className="w-full h-full object-cover rounded-md" 
+          onError={handleImageError}
+        />
+      </AspectRatio>
       
       <h3 className="text-xl font-bold text-white mb-2">{game.name}</h3>
       
