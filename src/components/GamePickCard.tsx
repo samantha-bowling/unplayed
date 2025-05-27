@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GamePick } from '@/types/picks.types';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { Clock } from 'lucide-react';
+import { getBestGameImage } from '@/utils/image-utils';
 
 // Categories for the mood-based filtering with icons
 const moodIcons: Record<string, string> = {
@@ -26,15 +27,33 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
   compact = false,
   onClick
 }) => {
+  const [imageError, setImageError] = useState(false);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  // Get the best available image with fallback
+  const gameImage = imageError ? '/placeholder.svg' : getBestGameImage(
+    game.header_image || null, 
+    game.image || null, 
+    game.id
+  );
+
   if (compact) {
     return (
       <div className="bg-black/30 rounded p-2 text-sm flex items-center">
-        <img src={game.image || ''} alt={game.name} className="w-8 h-8 object-cover rounded mr-2" />
+        <img 
+          src={gameImage} 
+          alt={game.name} 
+          className="w-8 h-8 object-cover rounded mr-2" 
+          onError={handleImageError}
+        />
         <div className="overflow-hidden">
           <span className="text-gray-300 truncate block">{game.name}</span>
           {pick && (
@@ -52,7 +71,12 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
 
   return (
     <div className="pixel-card" onClick={onClick}>
-      <img src={game.image || ''} alt={game.name} className="w-full h-36 object-cover rounded-md mb-2" />
+      <img 
+        src={gameImage} 
+        alt={game.name} 
+        className="w-full h-36 object-cover rounded-md mb-2" 
+        onError={handleImageError}
+      />
       
       <h4 className="text-lg font-medium text-white mb-1">{game.name}</h4>
       

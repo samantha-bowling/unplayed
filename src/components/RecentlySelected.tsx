@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick } from '@/types/picks.types';
 import GamePickCard from './GamePickCard';
+import { getBestGameImage } from '@/utils/image-utils';
 
 interface RecentlySelectedProps {
   recentPicks: GamePick[] | undefined;
@@ -10,6 +11,12 @@ interface RecentlySelectedProps {
 }
 
 const RecentlySelected: React.FC<RecentlySelectedProps> = ({ recentPicks, spinHistory }) => {
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  const handleImageError = (gameId: number) => {
+    setImageErrors(prev => new Set(prev).add(gameId));
+  };
+
   if (!recentPicks?.length && !spinHistory.length) return null;
   
   return (
@@ -21,17 +28,37 @@ const RecentlySelected: React.FC<RecentlySelectedProps> = ({ recentPicks, spinHi
           recentPicks.slice(0, 5).map((pick) => (
             <GamePickCard 
               key={pick.id} 
-              game={pick.game || { id: pick.game_id, name: `Game #${pick.game_id}`, playtimeMinutes: 0, image: null } as GameListItem} 
+              game={pick.game || { 
+                id: pick.game_id, 
+                name: `Game #${pick.game_id}`, 
+                playtimeMinutes: 0, 
+                image: null,
+                header_image: null
+              } as GameListItem} 
               pick={pick}
               compact={true}
             />
           ))
-        ) : spinHistory.map((game, index) => (
-          <div key={`history-${index}`} className="bg-black/30 rounded p-2 text-sm flex items-center">
-            <img src={game.image || ''} alt={game.name} className="w-8 h-8 object-cover rounded mr-2" />
-            <span className="text-gray-300 truncate">{game.name}</span>
-          </div>
-        ))}
+        ) : spinHistory.map((game, index) => {
+          const hasImageError = imageErrors.has(game.id);
+          const gameImage = hasImageError ? '/placeholder.svg' : getBestGameImage(
+            game.header_image || null, 
+            game.image || null, 
+            game.id
+          );
+
+          return (
+            <div key={`history-${index}`} className="bg-black/30 rounded p-2 text-sm flex items-center">
+              <img 
+                src={gameImage} 
+                alt={game.name} 
+                className="w-8 h-8 object-cover rounded mr-2" 
+                onError={() => handleImageError(game.id)}
+              />
+              <span className="text-gray-300 truncate">{game.name}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

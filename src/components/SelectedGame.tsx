@@ -5,6 +5,7 @@ import { Clock, ExternalLink } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import GameReviewCard from './GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
+import { getBestGameImage } from '@/utils/image-utils';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -14,6 +15,7 @@ interface SelectedGameProps {
 
 const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAgain }) => {
   const [showReview, setShowReview] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { 
     review, 
     isLoading, 
@@ -25,12 +27,24 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
     setShowReview(true);
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  // Get the best available image with fallback
+  const gameImage = imageError ? '/placeholder.svg' : getBestGameImage(
+    game.header_image || null, 
+    game.image || null, 
+    game.id
+  );
+
   return (
     <div className="pixel-card animate-fade-in">
       <img 
-        src={game.image || ''} 
+        src={gameImage} 
         alt={game.name} 
         className="w-full h-48 object-cover rounded-md mb-4" 
+        onError={handleImageError}
       />
       
       <h3 className="text-xl font-bold text-white mb-2">{game.name}</h3>
