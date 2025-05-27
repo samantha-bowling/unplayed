@@ -21,6 +21,11 @@ export function constructSteamImageUrl(
   // Remove any existing URL prefix if present
   const cleanHash = imageHash.replace(/^https?:\/\/.*\//, '');
   
+  // If it's already a full URL, return as-is
+  if (imageHash.startsWith('http')) {
+    return imageHash;
+  }
+  
   // Construct the proper Steam CDN URL
   const baseUrl = 'https://media.steampowered.com/steamcommunity/public/images/apps';
   return `${baseUrl}/${appId}/${cleanHash}.jpg`;
@@ -92,6 +97,25 @@ export function getBestGameImage(
   
   // Fallback placeholder
   return '/placeholder.svg';
+}
+
+/**
+ * Enhanced function specifically for database game data
+ * Handles the nested structure returned from Supabase queries
+ */
+export function getBestGameImageFromDbData(
+  gameData: any,
+  gameId?: number | string
+): string {
+  // Handle nested games structure from database
+  const actualGameData = gameData.games || gameData;
+  const actualGameId = gameId || gameData.game_id || gameData.id;
+  
+  // Get header_image and image_url from the correct location
+  const headerImage = actualGameData.header_image || gameData.header_image;
+  const imageUrl = actualGameData.image_url || gameData.image_url;
+  
+  return getBestGameImage(headerImage, imageUrl, actualGameId);
 }
 
 /**

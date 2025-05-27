@@ -25,20 +25,26 @@ const RecentlySelected: React.FC<RecentlySelectedProps> = ({ recentPicks, spinHi
       
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
         {recentPicks && recentPicks.length > 0 ? (
-          recentPicks.slice(0, 5).map((pick) => (
-            <GamePickCard 
-              key={pick.id} 
-              game={pick.game || { 
-                id: pick.game_id, 
-                name: `Game #${pick.game_id}`, 
-                playtimeMinutes: 0, 
-                image: null,
-                header_image: null
-              } as GameListItem} 
-              pick={pick}
-              compact={true}
-            />
-          ))
+          recentPicks.slice(0, 5).map((pick) => {
+            // Handle both nested and direct game data from database
+            const gameData = pick.game || pick.games || {};
+            const gameItem: GameListItem = {
+              id: pick.game_id,
+              name: gameData.name || `Game #${pick.game_id}`,
+              playtimeMinutes: 0,
+              image: gameData.image_url || null,
+              header_image: gameData.header_image || null
+            };
+            
+            return (
+              <GamePickCard 
+                key={pick.id} 
+                game={gameItem}
+                pick={pick}
+                compact={true}
+              />
+            );
+          })
         ) : spinHistory.map((game, index) => {
           const hasImageError = imageErrors.has(game.id);
           const gameImage = hasImageError ? '/placeholder.svg' : getBestGameImage(

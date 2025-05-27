@@ -48,7 +48,9 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
   for (let i = 0; i < dataLength; i++) {
     const item = data[i];
     const playtimeMinutes = item.playtime_minutes || 0;
-    const priceCents = item.games?.price_cents || 0;
+    
+    // Handle both nested and direct price access
+    const priceCents = item.games?.price_cents || item.price_cents || 0;
     
     // Count unplayed games and potential hours
     if (playtimeMinutes === 0) {
@@ -57,8 +59,16 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
       const gameHours = estimate?.main_hours || 12.5;
       potentialGameplayHours += gameHours;
       
-      // Add to shelf life array - no artificial limit here
-      unplayedForShelfLife.push(item);
+      // Add to shelf life array with proper structure
+      unplayedForShelfLife.push({
+        id: item.id,
+        game_id: item.game_id,
+        name: item.games?.name || item.name || 'Unknown Game',
+        addedDate: item.acquisition_date || new Date().toISOString(),
+        // Use getBestGameImage logic here
+        image: item.games?.header_image || item.games?.image_url || item.header_image || item.image_url,
+        header_image: item.games?.header_image || item.header_image,
+      });
     }
     
     // Accumulate totals with minimal operations
@@ -93,6 +103,83 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
 };
 
 /**
+ * Enhanced buildGamesList function that handles both demo and database data structures
+ */
+const buildGamesListFromDatabase = (data: any[]): GameListItem[] => {
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  console.log('Building games list from database data, sample item:', data[0]);
+
+  return data.map((item: any) => {
+    // Handle both nested and direct game data access
+    const gameData = item.games || item;
+    const gameId = item.game_id || item.id;
+    
+    return {
+      id: gameId,
+      name: gameData.name || 'Unknown Game',
+      image: gameData.image_url || gameData.img_icon_url || null,
+      header_image: gameData.header_image || gameData.img_logo_url || null,
+      playtimeMinutes: item.playtime_minutes || 0,
+      releaseDate: gameData.release_date || null,
+      price: gameData.price_cents ? gameData.price_cents / 100 : undefined,
+      genres: gameData.genres || [],
+      categories: gameData.categories || [],
+      addedDate: item.acquisition_date || undefined,
+      dustScore: item.dust_score || 0,
+    };
+  });
+};
+
+/**
+ * Enhanced processShelfLife function for database data
+ */
+const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
+  if (!unplayedForShelfLife || unplayedForShelfLife.length === 0) {
+    return [];
+  }
+
+  // Sort by acquisition date (oldest first) and take top items
+  const sortedGames = [...unplayedForShelfLife]
+    .sort((a, b) => {
+      const dateA = new Date(a.addedDate || '2000-01-01');
+      const dateB = new Date(b.addedDate || '2000-01-01');
+      return dateA.getTime() - dateB.getTime();
+    })
+    .slice(0, 50); // Limit to top 50 for performance
+
+  return sortedGames.map((game: any) => ({
+    id: game.game_id,
+    name: game.name,
+    addedDate: game.addedDate,
+    image: game.image,
+    header_image: game.header_image,
+  }));
+};
+
+/**
+ * Enhanced processLibraryPreview function for database data
+ */
+const processLibraryPreviewFromDatabase = (data: any[]) => {
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Take a sample of games for the library preview
+  return data.slice(0, 12).map((item: any) => {
+    const gameData = item.games || item;
+    return {
+      id: item.game_id || item.id,
+      name: gameData.name || 'Unknown Game',
+      image: gameData.header_image || gameData.image_url || '/placeholder.svg',
+      playtime: item.playtime_minutes || 0,
+    };
+  });
+};
+
+/**
  * Optimized transformation with performance improvements and memory efficiency
  * Works for both demo and live data while maintaining consistent output structure
  */
@@ -121,6 +208,8 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     };
   }
 
+  console.log('Transforming user game data, sample item:', data[0]);
+
   // Step 1: Aggregate all numeric data in single pass
   const aggregated = aggregateGameData(data, estimatesMap);
 
@@ -133,19 +222,30 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     aggregated.recentlyPlayedCount
   );
 
-  // Step 3: Process genres efficiently
-  const genreCounts = countGenres(data);
+  // Step 3: Process genres efficiently - handle nested structure
+  const genreCounts = countGenres(data.map(item => ({
+    ...item,
+    genres: item.games?.genres || item.genres || []
+  })));
   const genres = processGenres(genreCounts);
 
-  // Step 4: Process shelf life and library preview
-  const shelfLife = processShelfLife(aggregated.unplayedForShelfLife);
-  const library = processLibraryPreview(data);
+  // Step 4: Process shelf life and library preview using enhanced functions
+  const shelfLife = processShelfLifeFromDatabase(aggregated.unplayedForShelfLife);
+  const library = processLibraryPreviewFromDatabase(data);
 
-  // Step 5: Use existing buildGamesList for consistency
-  const gamesList = buildGamesList(data);
+  // Step 5: Use enhanced buildGamesList for database data
+  const gamesList = buildGamesListFromDatabase(data);
   
   // Step 6: Generate clean streak (simulated value)
   const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
+
+  console.log('Transformation complete:', {
+    totalGames: data.length,
+    unplayedGames: aggregated.unplayedGames,
+    shelfLifeCount: shelfLife.length,
+    libraryCount: library.length,
+    gamesListCount: gamesList.length
+  });
 
   return {
     unplayedGames: aggregated.unplayedGames,
