@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -207,7 +206,7 @@ const SpendPage = () => {
                                 <td className="px-4 py-3">
                                   <div className="flex items-center">
                                     <img 
-                                      src={getBestGameImage(game.imageUrl, null, game.id)} 
+                                      src={getBestGameImage(null, game.imageUrl, game.id)} 
                                       alt={game.title}
                                       className="w-12 h-12 mr-3 rounded object-cover flex-shrink-0"
                                       onError={handleImageError}
