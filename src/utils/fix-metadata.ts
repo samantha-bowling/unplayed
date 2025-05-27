@@ -1,4 +1,3 @@
-
 import { callSupabaseFunction } from './supabase-functions';
 
 export interface FixMetadataOptions {
@@ -9,6 +8,7 @@ export interface FixMetadataOptions {
 export interface FixMetadataResponse {
   success?: boolean;
   message: string;
+  dryRun?: boolean;
   inconsistentCount: number;
   userOwnedCount: number;
   otherGamesCount?: number;
