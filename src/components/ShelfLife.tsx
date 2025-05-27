@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
@@ -275,7 +274,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
         </div>
       )}
       
-      {allOldestGames.length > displayCountNum && (
+      {allOldestGames.length > parseInt(displayCount) && (
         <div className="text-center p-2 mt-2 border-t border-gray-800">
           <p className="text-gray-500 text-xs">
             Showing {oldestGames.length} of {allOldestGames.length} unplayed games
