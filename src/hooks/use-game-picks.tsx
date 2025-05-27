@@ -18,7 +18,7 @@ export const useGamePicks = () => {
   const queryClient = useQueryClient();
   const isAuthenticated = !!user;
 
-  // Query to fetch user's pick history
+  // Query to fetch user's pick history with game data
   const {
     data: picks,
     isLoading: isLoadingPicks,
@@ -34,13 +34,31 @@ export const useGamePicks = () => {
           id,
           game_id,
           picked_at,
-          filters
+          filters,
+          games (
+            id,
+            name,
+            image_url,
+            header_image,
+            release_date,
+            price_cents,
+            genres,
+            categories
+          )
         `)
         .order('picked_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
-      return pickData as GamePick[];
+
+      // Transform the data to match our GamePick interface
+      return pickData.map(pick => ({
+        id: pick.id,
+        game_id: pick.game_id,
+        picked_at: pick.picked_at,
+        filters: pick.filters as GamePickFilters,
+        game: pick.games
+      })) as GamePick[];
     },
     enabled: isAuthenticated,
   });

@@ -16,6 +16,20 @@ export interface GamePickFilters {
 }
 
 /**
+ * Database game structure as returned from Supabase queries
+ */
+export interface DatabaseGame {
+  id?: number;
+  name?: string;
+  image_url?: string | null;
+  header_image?: string | null;
+  release_date?: string | null;
+  price_cents?: number | null;
+  genres?: string[] | null;
+  categories?: string[] | null;
+}
+
+/**
  * Represents a user's game pick history item
  */
 export interface GamePick {
@@ -27,6 +41,6 @@ export interface GamePick {
   picked_at: string;
   /** Filters that were applied when the game was picked */
   filters: GamePickFilters;
-  /** Optional game data if joined with game information */
-  game?: GameListItem;
+  /** Optional game data if joined with game information from database */
+  game?: DatabaseGame;
 }
