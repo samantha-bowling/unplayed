@@ -140,6 +140,25 @@ const LibraryPreview = ({
   const endIndex = Math.min(startIndex + displayCount, displayGames.length);
   const currentGames = displayGames.slice(startIndex, endIndex);
 
+  // Calculate dynamic container height based on display count
+  const getContainerHeight = () => {
+    if (showFullScreenMode) {
+      return 'h-[calc(100vh-250px)]';
+    }
+    
+    // For grid view, calculate height based on number of items and grid layout
+    if (viewMode === 'grid') {
+      const cols = showFullScreenMode ? 8 : 5; // grid-cols-5 normally, more in fullscreen
+      const rows = Math.ceil(currentGames.length / cols);
+      const baseHeight = rows * 120; // Approximate height per row including gaps
+      const minHeight = Math.max(320, baseHeight + 40); // Add padding, minimum 320px
+      return `min-h-[${minHeight}px] max-h-[600px]`;
+    }
+    
+    // For zen view, use fixed height
+    return 'h-64';
+  };
+
   // Update the context whenever viewMode changes
   useEffect(() => {
     if (focusedComponent === 'library') {
@@ -316,10 +335,10 @@ const LibraryPreview = ({
       </div>
       
       {/* Dynamic container that adjusts height based on content */}
-      <div className={`${showFullScreenMode ? 'min-h-[calc(100vh-200px)]' : 'min-h-64'} relative w-full`}>
+      <div className={`${getContainerHeight()} relative w-full`}>
         {/* Grid view mode */}
         {viewMode === 'grid' ? (
-          <ScrollArea className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-80'} w-full`}>
+          <ScrollArea className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-full'} w-full`}>
             <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-2 ${showFullScreenMode ? 'lg:grid-cols-6 xl:grid-cols-8' : ''}`}>
               {currentGames.map(game => {
                 // Handle both LibraryGame and GameListItem types
@@ -328,6 +347,8 @@ const LibraryPreview = ({
                 
                 // Use the enhanced image utility for better image quality
                 const image = getBestGameImageFromDbData(game, gameId);
+                
+                console.log('Grid game image:', { gameId, title, image });
                 
                 return (
                   <div 

@@ -3,7 +3,7 @@ import { buildGamesList, createEmptyGamesList } from './normalize-games';
 import { calculateCleanScore, CLEAN_SCORE_TIERS } from './clean-score-utils';
 import { countGenres, processGenres } from './genre-processing';
 import { processShelfLife, processLibraryPreview } from './shelf-life-processing';
-import { getBestGameImage } from './image-utils';
+import { getBestGameImageFromDbData } from './image-utils';
 
 /**
  * Object pool for reusing frequently created objects
@@ -155,26 +155,41 @@ const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
     name: game.name,
     addedDate: game.addedDate,
     // Use getBestGameImage to get the proper image URL with game ID for Steam CDN construction
-    image: getBestGameImage(game.header_image, game.image, game.game_id),
+    image: getBestGameImageFromDbData(game, game.game_id),
     header_image: game.header_image,
   }));
 };
 
 /**
- * Enhanced processLibraryPreview function for database data
+ * Enhanced processLibraryPreview function for database data with proper image handling
  */
 const processLibraryPreviewFromDatabase = (data: any[]) => {
   if (!data || data.length === 0) {
     return [];
   }
 
+  console.log('Processing library preview from database data, sample item:', data[0]);
+
   // Take a sample of games for the library preview
   return data.slice(0, 12).map((item: any) => {
     const gameData = item.games || item;
+    const gameId = item.game_id || item.id;
+    
+    // Use the enhanced image utility for proper image handling
+    const image = getBestGameImageFromDbData(item, gameId);
+    
+    console.log('Library preview item image processing:', {
+      gameId,
+      gameName: gameData.name,
+      originalHeaderImage: gameData.header_image,
+      originalImageUrl: gameData.image_url,
+      finalImage: image
+    });
+    
     return {
-      id: item.game_id || item.id,
+      id: gameId,
       name: gameData.name || 'Unknown Game',
-      image: gameData.header_image || gameData.image_url || '/placeholder.svg',
+      image: image,
       playtime: item.playtime_minutes || 0,
     };
   });
