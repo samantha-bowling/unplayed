@@ -102,8 +102,8 @@ export const routes: Record<string, RouteConfig> = {
     path: "/admin/hltb-data",
     requiresAuth: true,
     requiredRole: UserRole.ADMIN,
-    title: "HLTB Data Manager - Unplayed",
-    description: "Manage and monitor HowLongToBeat data integration."
+    title: "Data Manager - Unplayed",
+    description: "Manage and monitor HowLongToBeat data, and other metadata integrations for your game catalog."
   },
   
   // Redirects
