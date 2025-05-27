@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import useUnplayedData from '@/hooks/use-unplayed-data';
+import useUnplayedData from '@/hooks/useUnplayedData';
 import useGamePicks from '@/hooks/use-game-picks';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';

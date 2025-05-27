@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
-import useUnplayedData from '@/hooks/use-unplayed-data';
+import useUnplayedData from '@/hooks/useUnplayedData';
 import FullScreenModeToggle from './FullScreenModeToggle';
 import { Maximize, LayoutGrid, List, Loader2, ChevronRight } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';

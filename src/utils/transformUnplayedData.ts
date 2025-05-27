@@ -276,3 +276,4 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
 
 // Export both names for backward compatibility during transition
 export const transformUserGameDataOptimized = transformUserGameData;
+export const transformUnplayedData = transformUserGameData;

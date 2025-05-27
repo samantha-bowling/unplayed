@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -7,10 +8,12 @@ import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { queryKeys } from '@/hooks/use-query-keys';
 
-interface SpendingData {
-  totalSpent: number;
-  unplayedSpent: number;
-  playedSpent: number;
+interface TotalLibrarySpendingData {
+  totalLibraryValue: number;
+  totalSaved: number | null;
+  totalGames: number;
+  currency: string;
+  refreshedAt: string | null;
 }
 
 const useTotalLibrarySpending = () => {
@@ -21,13 +24,15 @@ const useTotalLibrarySpending = () => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.spendingData(user?.id),
-    queryFn: async (): Promise<SpendingData> => {
+    queryFn: async (): Promise<TotalLibrarySpendingData> => {
       if (!user || isDemo) {
         // In demo mode, return demo data
         return {
-          totalSpent: 799,
-          unplayedSpent: 549,
-          playedSpent: 250,
+          totalLibraryValue: 799,
+          totalSaved: null,
+          totalGames: 150,
+          currency: 'USD',
+          refreshedAt: new Date().toISOString(),
         };
       }
 
@@ -48,26 +53,21 @@ const useTotalLibrarySpending = () => {
         throw error;
       }
 
-      let totalSpent = 0;
-      let unplayedSpent = 0;
-      let playedSpent = 0;
+      let totalLibraryValue = 0;
+      const totalGames = userGames.length;
 
       userGames.forEach(game => {
         const priceCents = game.games?.price_cents || 0;
         const priceDollars = priceCents / 100;
-        totalSpent += priceDollars;
-
-        if (game.playtime_minutes === 0) {
-          unplayedSpent += priceDollars;
-        } else {
-          playedSpent += priceDollars;
-        }
+        totalLibraryValue += priceDollars;
       });
 
       return {
-        totalSpent: parseFloat(totalSpent.toFixed(2)),
-        unplayedSpent: parseFloat(unplayedSpent.toFixed(2)),
-        playedSpent: parseFloat(playedSpent.toFixed(2)),
+        totalLibraryValue: parseFloat(totalLibraryValue.toFixed(2)),
+        totalSaved: null, // We don't have saved data in this context
+        totalGames,
+        currency: 'USD',
+        refreshedAt: new Date().toISOString(),
       };
     },
     enabled: !!user && !!profile?.steam_id && !isDemo,
@@ -78,9 +78,11 @@ const useTotalLibrarySpending = () => {
   if (isDemo) {
     return {
       data: {
-        totalSpent: 799,
-        unplayedSpent: 549,
-        playedSpent: 250,
+        totalLibraryValue: 799,
+        totalSaved: null,
+        totalGames: 150,
+        currency: 'USD',
+        refreshedAt: new Date().toISOString(),
       },
       isLoading: false,
       error: null,

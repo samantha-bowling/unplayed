@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { UnplayedDataType } from '@/types/unplayed-data.types';
-import { transformUserGameDataOptimized } from '@/utils/transform-unplayed-data-optimized';
+import { transformUserGameData } from '@/utils/transformUnplayedData';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { useProfile } from '@/hooks/use-profile';
 import { optimizedQueryKeys } from './use-query-keys-optimized';
@@ -144,7 +144,7 @@ export const useUnplayedData = () => {
       return normalizeDemoGames(demoData);
     }
     
-    return transformUserGameDataOptimized(userGamesData, gameEstimatesData || {});
+    return transformUserGameData(userGamesData, gameEstimatesData || {});
   }, [userGamesData, gameEstimatesData, demoData]);
   
   // Log transformed data for debugging (only in development)
