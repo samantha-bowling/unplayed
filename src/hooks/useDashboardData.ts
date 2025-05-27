@@ -11,6 +11,35 @@ import { optimizedQueryKeys } from './use-query-keys-optimized';
 import { useMemo } from 'react';
 
 /**
+ * Creates a safe fallback data structure to ensure components never receive undefined
+ */
+const createFallbackData = (): UnplayedDataType => ({
+  unplayedGames: 0,
+  totalGames: 0,
+  dustScore: 0,
+  totalPlaytime: 0,
+  totalSpent: 0,
+  potentialGameplayHours: 0,
+  genres: [],
+  shelfLife: [],
+  library: [],
+  gamesList: [],
+  cleanScore: 0,
+  cleanScoreBreakdown: {
+    completionRate: 0,
+    engagementFactor: 0,
+    recencyFactor: 0
+  },
+  cleanTier: {
+    name: 'Clean Slate',
+    color: '#4ade80',
+    range: [0, 100]
+  },
+  cleanStreak: 0,
+  recentlyPlayedCount: 0
+});
+
+/**
  * Unified hook that provides all dashboard data in a single optimized query
  * Replaces individual hooks for better performance and reduced API calls
  */
@@ -72,7 +101,7 @@ export const useDashboardData = () => {
 
       console.log(`Found ${userGamesData?.length || 0} games for dashboard`);
       
-      return userGamesData;
+      return userGamesData || [];
     },
     enabled: isQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -114,21 +143,46 @@ export const useDashboardData = () => {
   const normalizedDemoData = useMemo(() => {
     if (!isDemo) return null;
     console.log('Using unified demo data for dashboard');
-    return normalizeDemoGames(JSON.parse(JSON.stringify(demoData)));
+    try {
+      return normalizeDemoGames(JSON.parse(JSON.stringify(demoData)));
+    } catch (error) {
+      console.error('Error normalizing demo data:', error);
+      return createFallbackData();
+    }
   }, [isDemo, demoData]);
 
-  // Memoize the transformed dashboard data
+  // Memoize the transformed dashboard data with enhanced error handling
   const transformedData = useMemo(() => {
-    if (isDemo && normalizedDemoData) {
-      return normalizedDemoData;
+    try {
+      if (isDemo) {
+        return normalizedDemoData || createFallbackData();
+      }
+      
+      if (!dashboardData) {
+        // Return fallback data while loading or if no data
+        return createFallbackData();
+      }
+      
+      const result = transformUserGameData(dashboardData, gameEstimatesData || {});
+      
+      // Ensure all required properties exist with fallbacks
+      return {
+        ...createFallbackData(),
+        ...result,
+        // Ensure arrays are never undefined
+        genres: result.genres || [],
+        shelfLife: result.shelfLife || [],
+        library: result.library || [],
+        gamesList: result.gamesList || [],
+        // Ensure objects are never undefined
+        cleanScoreBreakdown: result.cleanScoreBreakdown || createFallbackData().cleanScoreBreakdown,
+        cleanTier: result.cleanTier || createFallbackData().cleanTier
+      };
+    } catch (error) {
+      console.error('Error transforming dashboard data:', error);
+      return createFallbackData();
     }
-    
-    if (!dashboardData) {
-      return normalizeDemoGames(demoData);
-    }
-    
-    return transformUserGameData(dashboardData, gameEstimatesData || {});
-  }, [dashboardData, gameEstimatesData, demoData, isDemo, normalizedDemoData]);
+  }, [dashboardData, gameEstimatesData, isDemo, normalizedDemoData]);
 
   // Memoize last refreshed calculation
   const lastRefreshed = useMemo(() => 
@@ -136,7 +190,7 @@ export const useDashboardData = () => {
     [profile?.last_sync]
   );
 
-  // Calculate loading state
+  // Calculate loading state - only show loading for live data
   const isLoading = isDemo ? false : (isLoadingDashboard || isLoadingEstimates);
   const error = isDemo ? null : dashboardError;
 
