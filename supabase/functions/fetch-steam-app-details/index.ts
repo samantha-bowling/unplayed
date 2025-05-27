@@ -1,4 +1,3 @@
-
 // supabase/functions/fetch-steam-app-details/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
@@ -23,7 +22,7 @@ let currentDelayMs = DEFAULT_DELAY_MS;
 let consecutiveSuccess = 0;
 let consecutiveErrors = 0;
 
-// Image utility functions (copied from frontend for consistency)
+// Image utility functions (updated for consistent Steam Store API usage)
 function constructSteamImageUrl(appId, imageHash, imageType = 'icon') {
   if (!appId || !imageHash) return null;
   
@@ -43,21 +42,34 @@ function extractImageHashFromUrl(steamUrl) {
   return match ? match[1] : null;
 }
 
+/**
+ * Updated image normalization for consistent Steam Store API usage
+ * Always prioritizes header_image from Steam Store API and extracts hash for image_url
+ */
 function normalizeGameImageData(imageData, gameId) {
-  // For image_url: prefer extracting hash from header_image if available
+  // Priority 1: Use header_image from Steam Store API (full URL)
+  let header_image = null;
   let image_url = null;
+  
   if (imageData.header_image) {
-    // Extract hash from the full header_image URL
-    const hash = extractImageHashFromUrl(imageData.header_image);
-    if (hash) {
-      image_url = hash;
+    // Store the full header_image URL from Steam Store API
+    header_image = imageData.header_image;
+    
+    // Extract hash from header_image for image_url consistency
+    const extractedHash = extractImageHashFromUrl(imageData.header_image);
+    if (extractedHash) {
+      image_url = extractedHash;
     }
   }
   
-  // For header_image: use the full URL from Steam Store API
-  let header_image = null;
-  if (imageData.header_image) {
-    header_image = imageData.header_image;
+  // Fallback: If no header_image but we have other image data
+  if (!header_image && imageData.img_logo_url) {
+    header_image = constructSteamImageUrl(gameId, imageData.img_logo_url, 'logo');
+    image_url = imageData.img_logo_url;
+  } else if (!header_image && imageData.img_icon_url) {
+    // Last resort: use icon as header if nothing else available
+    header_image = constructSteamImageUrl(gameId, imageData.img_icon_url, 'icon');
+    image_url = imageData.img_icon_url;
   }
   
   return {
@@ -81,7 +93,7 @@ function processAppDetails(appId, details) {
       }
     }
     
-    // Use the new image normalization function
+    // Use the updated image normalization function for consistent Steam Store API format
     const normalizedImages = normalizeGameImageData({
       header_image: details.data.header_image
     }, appId);
@@ -178,7 +190,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Starting fetch-steam-app-details function");
+    console.log("Starting fetch-steam-app-details function with updated image processing");
     
     // Parse request for appId or batch processing parameter
     let appId: number | null = null;
@@ -261,6 +273,11 @@ serve(async (req) => {
         );
       }
       
+      console.log(`Processed app ${appId} with images:`, {
+        header_image: processedDetails.header_image,
+        image_url: processedDetails.image_url
+      });
+      
       // Upsert the game details to our database
       const { error: upsertError } = await supabase
         .from("games")
@@ -302,7 +319,7 @@ serve(async (req) => {
     }
     // Process a batch of apps from the queue
     else if (processBatch) {
-      console.log(`Processing batch of up to ${batchSize} apps`);
+      console.log(`Processing batch of up to ${batchSize} apps with updated image processing`);
       
       // Get next batch of apps from the queue, with priority sorting
       const { data: queueItems, error: queueError } = await supabase
@@ -339,7 +356,8 @@ serve(async (req) => {
           failed: 0,
           skipped: 0,
           details: {} as Record<number, any>,
-          currentDelay: currentDelayMs
+          currentDelay: currentDelayMs,
+          updatedImages: 0
         };
         
         for (const item of queueItems) {
@@ -432,7 +450,14 @@ serve(async (req) => {
             results.details[appId] = {
               name: processedDetails.name,
               release_date: processedDetails.release_date,
+              header_image: processedDetails.header_image,
+              image_url: processedDetails.image_url,
             };
+            
+            // Track if this is an image metadata update
+            if (processedDetails.header_image) {
+              results.updatedImages++;
+            }
             
             // Upsert the game details to our database
             const { error: upsertError } = await supabase
@@ -469,6 +494,7 @@ serve(async (req) => {
               .eq("app_id", appId);
             
             results.success++;
+            console.log(`Successfully updated app ${appId} with consistent image metadata`);
           } catch (error) {
             console.error(`Error processing app ${appId}:`, error);
             results.failed++;
@@ -485,6 +511,7 @@ serve(async (req) => {
           }
         }
         
+        console.log(`Batch processing complete: ${results.success} successful, ${results.failed} failed, ${results.updatedImages} images updated`);
         return results;
       };
       
@@ -498,7 +525,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: "Batch processing started",
+            message: "Batch processing started with updated image handling",
             batchSize,
             itemsInBatch: queueItems.length,
             processing: "background",
