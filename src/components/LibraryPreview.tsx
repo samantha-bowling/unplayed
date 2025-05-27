@@ -8,7 +8,7 @@ import { Maximize, LayoutGrid, List, Loader2, ChevronRight } from 'lucide-react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { LibraryGame } from '@/hooks/use-library-data';
 import FloatingIcons from '@/components/FloatingIcons';
-import { getBestGameImage } from '@/utils/image-utils';
+import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import { Link } from 'react-router-dom';
 import { 
   Select,
@@ -25,6 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface LibraryPreviewProps extends WithDemoProps {
   zenModeFullScreen?: boolean;
@@ -221,16 +222,38 @@ const LibraryPreview = ({
     }
   };
 
-  // Handle display count change
+  // Handle display count change - reset to page 1 when changing count
   const handleDisplayCountChange = (value: string) => {
     const newDisplayCount = parseInt(value);
     setDisplayCount(newDisplayCount);
     setCurrentPage(1); // Reset to first page when changing display count
+    
+    // Regenerate zen positions if in zen mode
+    if (viewMode === 'zen') {
+      // Use the new display count to calculate how many games will be shown
+      const newTotalPages = Math.ceil(displayGames.length / newDisplayCount);
+      const newCurrentGames = displayGames.slice(0, newDisplayCount); // Show first page
+      const newPositions = generateZenPositions(newCurrentGames.length, isFullScreenMode);
+      setZenPositions(newPositions);
+      
+      // Update icon count
+      const newIconCount = Math.min(15, Math.max(5, Math.floor(newCurrentGames.length * 0.2)));
+      setIconCount(newIconCount);
+    }
   };
 
   // Handle page change
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
+    
+    // Regenerate zen positions when changing pages in zen mode
+    if (viewMode === 'zen') {
+      const newStartIndex = (pageNumber - 1) * displayCount;
+      const newEndIndex = Math.min(newStartIndex + displayCount, displayGames.length);
+      const newCurrentGames = displayGames.slice(newStartIndex, newEndIndex);
+      const newPositions = generateZenPositions(newCurrentGames.length, isFullScreenMode);
+      setZenPositions(newPositions);
+    }
   };
 
   // Loading state
@@ -292,96 +315,102 @@ const LibraryPreview = ({
         </div>
       </div>
       
-      {/* Grid view mode */}
-      {viewMode === 'grid' ? (
-        <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4 ${showFullScreenMode ? 'p-8 pt-0' : ''}`}>
-          {currentGames.map(game => {
-            // Handle both LibraryGame and GameListItem types
-            const gameId = 'id' in game ? game.id : game.gameId;
-            const title = 'name' in game ? game.name : game.title;
-            
-            // Enhanced image handling using our new utility
-            const imageUrl = 'image_url' in game ? game.image_url : null;
-            const headerImage = 'header_image' in game ? game.header_image : null;
-            const image = 'image' in game ? game.image : getBestGameImage(headerImage, imageUrl);
-            
-            return (
-              <div 
-                key={gameId}
-                className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${showFullScreenMode ? 'library-game-fullscreen' : ''}`}
-                onMouseEnter={() => setHoveredGame(gameId)}
-                onMouseLeave={() => setHoveredGame(null)}
-              >
-                <img 
-                  src={image || '/placeholder.svg'} 
-                  alt={title} 
-                  className="w-full h-auto object-cover" 
-                />
+      {/* Dynamic container that adjusts height based on content */}
+      <div className={`${showFullScreenMode ? 'min-h-[calc(100vh-200px)]' : 'min-h-64'} relative w-full`}>
+        {/* Grid view mode */}
+        {viewMode === 'grid' ? (
+          <ScrollArea className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-80'} w-full`}>
+            <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-2 ${showFullScreenMode ? 'lg:grid-cols-6 xl:grid-cols-8' : ''}`}>
+              {currentGames.map(game => {
+                // Handle both LibraryGame and GameListItem types
+                const gameId = 'id' in game ? game.id : game.gameId;
+                const title = 'name' in game ? game.name : game.title;
                 
-                <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === gameId || showFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
-                  <p className="text-white text-xs font-medium truncate">{title}</p>
-                  <p className="text-unplayed-mint text-xs">Never played</p>
-                </div>
+                // Use the enhanced image utility for better image quality
+                const image = getBestGameImageFromDbData(game, gameId);
                 
-                <div 
-                  className="absolute top-1 right-1 bg-unplayed-red/80 rounded-full w-3 h-3" 
-                  title="Unplayed"
-                ></div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        // Enhanced Zen view mode with more stable animations
-        <div className={`${showFullScreenMode ? 'h-[calc(100vh-100px)]' : 'h-64'} overflow-hidden relative w-full`}>
-          {/* Add floating icons in zen mode */}
-          {viewMode === 'zen' && iconCount > 0 && (
-            <div className="absolute inset-0 pointer-events-none opacity-40">
-              <FloatingIcons count={iconCount} />
+                return (
+                  <div 
+                    key={gameId}
+                    className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${showFullScreenMode ? 'library-game-fullscreen' : ''}`}
+                    onMouseEnter={() => setHoveredGame(gameId)}
+                    onMouseLeave={() => setHoveredGame(null)}
+                  >
+                    <div className="aspect-[460/215] w-full">
+                      <img 
+                        src={image || '/placeholder.svg'} 
+                        alt={title} 
+                        className="w-full h-full object-cover" 
+                        loading="lazy"
+                      />
+                    </div>
+                    
+                    <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === gameId || showFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
+                      <p className="text-white text-xs font-medium truncate">{title}</p>
+                      <p className="text-unplayed-mint text-xs">Never played</p>
+                    </div>
+                    
+                    <div 
+                      className="absolute top-1 right-1 bg-unplayed-red/80 rounded-full w-3 h-3" 
+                      title="Unplayed"
+                    ></div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-          
-          {currentGames.map((game, index) => {
-            // Handle both LibraryGame and GameListItem types
-            const gameId = 'id' in game ? game.id : game.gameId;
-            const title = 'name' in game ? game.name : game.title;
-            
-            // Only render if we have position data for this index
-            if (!zenPositions[index]) return null;
-            
-            const position = zenPositions[index];
-            
-            return (
-              <div 
-                key={`${gameId}-${position.uniqueId}`}
-                className="absolute transition-all zen-game-item"
-                style={{
-                  top: position.top || '50%',
-                  left: position.left || '50%',
-                  transform: `translate(-50%, -50%) rotate(${position.initialRotation || 0}deg)`,
-                  opacity: 0.8,
-                  animation: `
-                    zen-float-stable ${position.duration || 4}s ease-in-out infinite alternate, 
-                    zen-fade-in 1.5s ease-out forwards
-                  `,
-                  // Define custom animation properties in style
-                  '--anim-x': `${position.animDirectionX * position.animDistance || 1}%`,
-                  '--anim-y': `${position.animDirectionY * position.animDistance || 1}%`,
-                  fontSize: position.fontSize || '1rem',
-                  zIndex: 5,
-                  transition: 'transform 0.3s ease, text-shadow 0.3s ease, color 0.3s ease',
-                } as React.CSSProperties}
-              >
-                <p 
-                  className={`text-unplayed-mint whitespace-nowrap text-glow transition-colors duration-300 ${position.hoverColor || ''}`}
-                >
-                  {title}
-                </p>
+          </ScrollArea>
+        ) : (
+          // Enhanced Zen view mode with more stable animations
+          <div className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-64'} overflow-hidden relative w-full`}>
+            {/* Add floating icons in zen mode */}
+            {viewMode === 'zen' && iconCount > 0 && (
+              <div className="absolute inset-0 pointer-events-none opacity-40">
+                <FloatingIcons count={iconCount} />
               </div>
-            );
-          })}
-        </div>
-      )}
+            )}
+            
+            {currentGames.map((game, index) => {
+              // Handle both LibraryGame and GameListItem types
+              const gameId = 'id' in game ? game.id : game.gameId;
+              const title = 'name' in game ? game.name : game.title;
+              
+              // Only render if we have position data for this index
+              if (!zenPositions[index]) return null;
+              
+              const position = zenPositions[index];
+              
+              return (
+                <div 
+                  key={`${gameId}-${position.uniqueId}`}
+                  className="absolute transition-all zen-game-item"
+                  style={{
+                    top: position.top || '50%',
+                    left: position.left || '50%',
+                    transform: `translate(-50%, -50%) rotate(${position.initialRotation || 0}deg)`,
+                    opacity: 0.8,
+                    animation: `
+                      zen-float-stable ${position.duration || 4}s ease-in-out infinite alternate, 
+                      zen-fade-in 1.5s ease-out forwards
+                    `,
+                    // Define custom animation properties in style
+                    '--anim-x': `${position.animDirectionX * position.animDistance || 1}%`,
+                    '--anim-y': `${position.animDirectionY * position.animDistance || 1}%`,
+                    fontSize: position.fontSize || '1rem',
+                    zIndex: 5,
+                    transition: 'transform 0.3s ease, text-shadow 0.3s ease, color 0.3s ease',
+                  } as React.CSSProperties}
+                >
+                  <p 
+                    className={`text-unplayed-mint whitespace-nowrap text-glow transition-colors duration-300 ${position.hoverColor || ''}`}
+                  >
+                    {title}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
       
       {/* Pagination controls - display if we have more than one page */}
       {totalPages > 1 && (
