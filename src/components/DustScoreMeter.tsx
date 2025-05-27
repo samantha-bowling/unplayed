@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+
+import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import useDustScoreData from '@/hooks/use-dust-score-data';
+import { useAnimatedCounter } from '@/hooks/use-animated-counter';
+import { calculateDustScoreDisplay, formatDustScore } from '@/utils/dust-score-display';
 import {
   Tooltip,
   TooltipContent,
@@ -16,64 +20,49 @@ interface DustScoreProps extends WithDemoProps {
   score?: number;
 }
 
-const DustScoreMeter = ({
+const DustScoreMeter = React.memo<DustScoreProps>(({
   score,
   isDemo = false
 }: DustScoreProps) => {
   const { data, isLoading } = useDustScoreData();
-  const actualScore = score ?? data.dustScore;
-  const [animatedScore, setAnimatedScore] = useState(0);
   const { user } = useAuth();
+  const { isDemo: contextIsDemo } = useDemoMode();
+  
+  const actualScore = score ?? data.dustScore;
+  const isDemoMode = isDemo || contextIsDemo;
+  
+  // Memoized display calculations
+  const displayData = useMemo(() => 
+    actualScore !== undefined ? calculateDustScoreDisplay(actualScore) : null,
+    [actualScore]
+  );
+  
+  // Animated counter with demo-aware speed
+  const animatedScore = useAnimatedCounter({
+    targetValue: actualScore || 0,
+    duration: 2000,
+    isDemo: isDemoMode
+  });
 
-  // Debug logging to help trace the issue
-  useEffect(() => {
-    console.log("DustScoreMeter received score:", score);
-    console.log("DustScoreMeter using actualScore:", actualScore);
-    console.log("Full dust data:", data);
-  }, [score, actualScore, data]);
-
-  useEffect(() => {
-    if (actualScore === undefined || actualScore === null) return;
+  // Memoized SVG calculations
+  const svgData = useMemo(() => {
+    if (!displayData || !actualScore) return null;
     
-    const duration = 2000;
-    const start = 0;
-    const end = actualScore;
-    const frameDuration = 1000 / 60;
-    const totalFrames = Math.round(duration / frameDuration);
-    const increment = (end - start) / totalFrames;
-    let currentFrame = 0;
-    const timer = setInterval(() => {
-      currentFrame++;
-      const currentValue = Math.round(start + increment * currentFrame);
-      setAnimatedScore(currentValue);
-      if (currentFrame === totalFrames) {
-        clearInterval(timer);
-      }
-    }, frameDuration);
-    return () => clearInterval(timer);
-  }, [actualScore]);
+    const scaledScore = actualScore / displayData.scaleFactor;
+    const strokeDashArray = `${Math.min(scaledScore / displayData.maxDisplayScore, 1) * 283} 283`;
+    const strokeColor = actualScore < 1000 ? '#A3F7BF' 
+      : actualScore < 5000 ? '#FF9F39' 
+      : actualScore < 10000 ? '#F6AD55' 
+      : '#FF3C38';
+    
+    return { strokeDashArray, strokeColor };
+  }, [displayData, actualScore]);
 
-  // Updated severity thresholds for total dust scores
-  const getSeverityColor = () => {
-    if (actualScore < 1000) return 'text-green-400';
-    if (actualScore < 5000) return 'text-orange-400';
-    if (actualScore < 10000) return 'text-amber-600';
-    return 'text-unplayed-red';
-  };
-
-  const getSeverityText = () => {
-    if (actualScore < 1000) return 'Freshly Polished ✨';
-    if (actualScore < 5000) return 'Dust Storm Brewing 🌬️';
-    if (actualScore < 10000) return 'Duststorm Warning 🌪️';
-    return "Hoarder's Horizon 🤍";
-  };
-
-  const showCleanScore = data.cleanScore !== undefined && user;
-
-  // Format large numbers with commas
-  const formatNumber = (num: number) => {
-    return num.toLocaleString();
-  };
+  // Memoized clean score display
+  const showCleanScore = useMemo(() => 
+    data.cleanScore !== undefined && user,
+    [data.cleanScore, user]
+  );
 
   if (isLoading) {
     return (
@@ -89,20 +78,12 @@ const DustScoreMeter = ({
     );
   }
 
-  // Calculate circle scale factor for large numbers to fit in circle
-  const getScaleFactor = () => {
-    if (actualScore < 1000) return 1;
-    if (actualScore < 10000) return 10;
-    if (actualScore < 100000) return 100;
-    return 1000;
-  };
-  
-  const scaleFactor = getScaleFactor();
-  const scaledScore = actualScore / scaleFactor;
-  const maxDisplayScore = 1500; // Maximum value for the circle
+  if (!displayData || actualScore === undefined) {
+    return null;
+  }
 
   return (
-    <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
+    <div className={`terminal-container ${isDemoMode ? 'relative' : ''} equal-height-container`}>
       <div className="mb-4 flex items-center">
         <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
         <TooltipProvider>
@@ -125,26 +106,28 @@ const DustScoreMeter = ({
       <div className="terminal-content flex flex-col items-center">
         <div className="relative w-48 h-48 mb-4">
           <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="none"
-              stroke={actualScore < 1000 ? '#A3F7BF' : actualScore < 5000 ? '#FF9F39' : actualScore < 10000 ? '#F6AD55' : '#FF3C38'}
-              strokeWidth="8"
-              strokeDasharray={`${Math.min(scaledScore / maxDisplayScore, 1) * 283} 283`}
-              className="transition-all duration-300"
-            />
-          </svg>
+          {svgData && (
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="#333" strokeWidth="8" />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke={svgData.strokeColor}
+                strokeWidth="8"
+                strokeDasharray={svgData.strokeDashArray}
+                className="transition-all duration-300"
+              />
+            </svg>
+          )}
 
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="absolute inset-0 flex flex-col items-center justify-center cursor-help">
-                  <span className={`${getSeverityColor()} text-4xl font-bold font-vt ${actualScore >= 10000 ? 'text-3xl' : ''}`}>
-                    {formatNumber(animatedScore)}
+                  <span className={`${displayData.severityColor} text-4xl font-bold font-vt ${actualScore >= 10000 ? 'text-3xl' : ''}`}>
+                    {formatDustScore(animatedScore)}
                   </span>
                   <span className="text-gray-400 text-xs mt-1">DUST UNITS</span>
                 </div>
@@ -157,25 +140,25 @@ const DustScoreMeter = ({
         </div>
 
         <div className="text-center mt-2">
-          <p className={`${getSeverityColor()} text-xl font-medium`}>{getSeverityText()}</p>
+          <p className={`${displayData.severityColor} text-xl font-medium`}>
+            {displayData.severityText}
+          </p>
           <p className="text-sm text-gray-400 mt-2">
-            {actualScore < 1000
-              ? "Your library is in good shape! Keep it up."
-              : actualScore < 5000
-              ? "Some games could use your attention soon."
-              : actualScore < 10000
-              ? "Warning: Your backlog is getting out of control."
-              : "Critical: Your library has reached dust apocalypse levels."}
+            {displayData.description}
           </p>
         </div>
 
         {showCleanScore && (
           <div className="mt-6 pt-3 border-t border-gray-700 w-full flex justify-center">
-            <CleanScoreMeterSmall score={data.cleanScore || 0} tier={data.cleanTier} />
+            <CleanScoreMeterSmall 
+              score={data.cleanScore || 0} 
+              tier={data.cleanTier}
+              isDemo={isDemoMode} 
+            />
           </div>
         )}
 
-        {user && !isDemo && (
+        {user && !isDemoMode && (
           <div className="mt-4 pt-2">
             <Link
               to="/dust"
@@ -186,7 +169,7 @@ const DustScoreMeter = ({
           </div>
         )}
 
-        {isDemo && !document.cookie.includes("demo_note_dismissed") && (
+        {isDemoMode && !document.cookie.includes("demo_note_dismissed") && (
           <div className="mt-auto pt-4 text-center flex justify-center">
             <p className="text-sm text-unplayed-mint">
               You're in Demo Mode. Sign in to track your Dust Score.
@@ -196,6 +179,14 @@ const DustScoreMeter = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-rendering
+  return (
+    prevProps.score === nextProps.score &&
+    prevProps.isDemo === nextProps.isDemo
+  );
+});
+
+DustScoreMeter.displayName = 'DustScoreMeter';
 
 export default withDemoIndicator(DustScoreMeter);
