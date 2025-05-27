@@ -1,4 +1,3 @@
-
 import { getBestGameImage } from './image-utils';
 
 /**
@@ -12,12 +11,12 @@ export const processShelfLife = (unplayedItems: any[]): any[] => {
       timestamp: new Date(item.acquisition_date || '').getTime()
     }))
     .sort((a, b) => a.timestamp - b.timestamp)
-    .slice(0, 5)
     .map(({ item }) => ({
       id: item.game_id,
       name: item.games?.name || 'Unknown Game',
       addedDate: item.acquisition_date || new Date().toISOString(),
-      image: getBestGameImage(item.games?.header_image, item.games?.image_url)
+      header_image: item.games?.header_image,
+      image: item.games?.image_url
     }));
 };
 

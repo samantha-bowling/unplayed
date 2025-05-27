@@ -57,7 +57,7 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
       const gameHours = estimate?.main_hours || 12.5;
       potentialGameplayHours += gameHours;
       
-      // Only push to shelf life array if we need it
+      // Add to shelf life array - no artificial limit here
       unplayedForShelfLife.push(item);
     }
     

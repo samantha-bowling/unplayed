@@ -82,7 +82,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   const { data: dashboardData } = useDashboardData();
   const navigate = useNavigate();
 
-  // Memoize the shelf life data and slicing
+  // Memoize the shelf life data and slicing - now respects the selected display count
   const { allOldestGames, oldestGames } = useMemo(() => {
     const allGames = dashboardData.shelfLife || [];
     const displayCountNum = parseInt(displayCount);
