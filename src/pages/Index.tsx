@@ -8,6 +8,7 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
+import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -23,7 +24,7 @@ import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
 import { Button } from "@/components/ui/button";
-import { useUnplayedData } from "@/hooks/useUnplayedData";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,14 +43,15 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
+  const { data: dashboardData, isLoading: dataLoading, lastRefreshed, refetch } = useDashboardData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
+  const { queryKeys, utils } = useOptimizedCacheManagement();
 
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
 
-  // Function to update all data after import
+  // Optimized function to update data after import using optimized cache management
   const refreshAllData = () => {
     // Set a slight delay to ensure backend processing completes
     setTimeout(() => {
@@ -58,17 +60,25 @@ const Index = () => {
         description: "This may take a moment to update all your stats."
       });
       
-      // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['unplayedData'] });
-      queryClient.invalidateQueries({ queryKey: ['detailedDustData'] });
-      queryClient.invalidateQueries({ queryKey: ['gameEstimates'] });
-      queryClient.invalidateQueries({ queryKey: ['libraryGames'] });
-      queryClient.invalidateQueries({ queryKey: ['paginatedLibraryGames'] });
-      queryClient.invalidateQueries({ queryKey: ['libraryGamesCount'] });
-      queryClient.invalidateQueries({ queryKey: ['pickerGames'] });
-      queryClient.invalidateQueries({ queryKey: ['spendingData'] });
+      // Use optimized cache invalidation
+      const keysToInvalidate = [
+        ...utils.invalidateUnplayed(user?.id),
+        ...utils.invalidateProfile(user?.id),
+        // Invalidate specific dashboard-related queries
+        ['detailedDustData', user?.id],
+        ['libraryGames', user?.id],
+        ['paginatedLibraryGames', user?.id],
+        ['libraryGamesCount', user?.id],
+        ['pickerGames', user?.id],
+        ['spendingData', user?.id]
+      ];
       
-      // Explicit refetch of unplayed data
+      // Efficiently invalidate only necessary queries
+      keysToInvalidate.forEach(queryKey => {
+        queryClient.invalidateQueries({ queryKey });
+      });
+      
+      // Explicit refetch of dashboard data
       refetch?.();
       
       // Refresh profile as well
@@ -315,9 +325,9 @@ const Index = () => {
               <span className="text-white">.exe</span>
             </h2>
             <div className="dashboard-grid">
-              <UnplayedCounter count={unplayedData.unplayedGames} />
-              <DustScoreMeter score={unplayedData.dustScore} />
-              <SpendingEstimate amount={unplayedData.totalSpent} />
+              <UnplayedCounter count={dashboardData.unplayedGames} />
+              <DustScoreMeter score={dashboardData.dustScore} />
+              <SpendingEstimate amount={dashboardData.totalSpent} />
             </div>
             <div className="mt-4">
               <GenreHoarding />
