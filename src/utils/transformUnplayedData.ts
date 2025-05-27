@@ -1,9 +1,9 @@
-
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { buildGamesList, createEmptyGamesList } from './normalize-games';
 import { calculateCleanScore, CLEAN_SCORE_TIERS } from './clean-score-utils';
 import { countGenres, processGenres } from './genre-processing';
 import { processShelfLife, processLibraryPreview } from './shelf-life-processing';
+import { getBestGameImage } from './image-utils';
 
 /**
  * Object pool for reusing frequently created objects
@@ -134,7 +134,7 @@ const buildGamesListFromDatabase = (data: any[]): GameListItem[] => {
 };
 
 /**
- * Enhanced processShelfLife function for database data
+ * Enhanced processShelfLife function for database data with proper image handling
  */
 const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
   if (!unplayedForShelfLife || unplayedForShelfLife.length === 0) {
@@ -154,7 +154,8 @@ const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
     id: game.game_id,
     name: game.name,
     addedDate: game.addedDate,
-    image: game.image,
+    // Use getBestGameImage to get the proper image URL with game ID for Steam CDN construction
+    image: getBestGameImage(game.header_image, game.image, game.game_id),
     header_image: game.header_image,
   }));
 };

@@ -8,23 +8,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Check, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPickerNavigation } from '@/utils/navigation';
-import { getBestGameImage } from '@/utils/image-utils';
 
 interface ShelfLifeProps {
   onJumpToGame?: (gameId: number) => void;
   onMarkAsPlayed?: (gameId: number) => void;
-}
-
-// Type for the actual shelf life data we receive
-interface ShelfLifeGameData {
-  id: number;
-  game_id: number;
-  acquisition_date: string;
-  games?: {
-    name: string;
-    header_image?: string;
-    image_url?: string;
-  } | null;
 }
 
 // Memoized date calculation functions
@@ -130,9 +117,10 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   // Memoized game items to prevent recreation
   const gameItems = useMemo(() => 
     oldestGames.map((game: any, index) => {
+      // Use the image URL that was already processed by getBestGameImage in the transformation
       const imageUrl = imageErrors.has(game.id) 
         ? '/placeholder.svg' 
-        : getBestGameImage(game.header_image, game.image, game.id);
+        : (game.image || '/placeholder.svg');
 
       return (
         <div 
