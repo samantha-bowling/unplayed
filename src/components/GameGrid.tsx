@@ -1,10 +1,12 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, memo } from 'react';
 import GameCard from './GameCard';
 import GameCardSkeleton from './GameCardSkeleton';
 import { LibraryGame } from '@/hooks/use-library-data';
 import { Loader2 } from 'lucide-react';
-import { getBestGameImage } from '@/utils/image-utils';
+import { useProgressiveLoading } from '@/hooks/use-progressive-loading';
+import { preprocessGameData, areGamesEqual, ProcessedGameData } from '@/utils/game-grid-utils';
+import { useDemoMode } from '@/context/DemoModeContext';
 
 interface GameGridProps {
   games: LibraryGame[];
@@ -15,7 +17,7 @@ interface GameGridProps {
   focusedGameId?: number | null;
 }
 
-const GameGrid: React.FC<GameGridProps> = ({
+const GameGrid: React.FC<GameGridProps> = memo(({
   games,
   isLoading,
   onMarkAsPlayed,
@@ -23,41 +25,34 @@ const GameGrid: React.FC<GameGridProps> = ({
   onSaveNote,
   focusedGameId = null
 }) => {
-  // State for progressive loading effect
-  const [visibleGames, setVisibleGames] = useState<number>(0);
-  const gamesPerBatch = 8; // Number of games to load at once
-  const totalGames = games.length;
+  const { isDemo } = useDemoMode();
   
-  // Reset visible games when games array changes
-  useEffect(() => {
-    if (!isLoading && games.length > 0) {
-      // Initially show first batch, then gradually add more
-      const timer = setTimeout(() => {
-        setVisibleGames(Math.min(gamesPerBatch, totalGames));
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [games, isLoading, totalGames]);
+  // Pre-process game data to avoid repeated calculations
+  const processedGames = useMemo(() => preprocessGameData(games), [games]);
   
-  // Add more games as user scrolls
-  useEffect(() => {
-    if (visibleGames < totalGames) {
-      const handleScroll = () => {
-        const scrolledToBottom = 
-          window.innerHeight + window.pageYOffset >= document.body.offsetHeight - 500;
-        
-        if (scrolledToBottom) {
-          // Add next batch of games
-          setVisibleGames(prev => Math.min(prev + gamesPerBatch, totalGames));
-        }
-      };
-      
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
-    }
-    return undefined;
-  }, [visibleGames, totalGames]);
+  // Use progressive loading hook
+  const { visibleItems, hasMore, loadMore, isProgressive } = useProgressiveLoading({
+    totalItems: processedGames.length,
+    isLoading,
+    batchSize: 8,
+    isDemo
+  });
+
+  // Memoize the displayed games to avoid re-slicing on every render
+  const displayedGames = useMemo(() => 
+    processedGames.slice(0, visibleItems), 
+    [processedGames, visibleItems]
+  );
+
+  // Memoize the skeleton cards to avoid recreating on every render
+  const skeletonCards = useMemo(() => 
+    Array.from({ length: 8 }).map((_, index) => (
+      <div key={`skeleton-${index}`} className="animate-pulse opacity-70">
+        <GameCardSkeleton />
+      </div>
+    )), 
+    []
+  );
 
   // If initially loading, show skeleton cards
   if (isLoading) {
@@ -68,11 +63,7 @@ const GameGrid: React.FC<GameGridProps> = ({
           <p className="text-gray-400">Loading your game collection...</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={`skeleton-${index}`} className="animate-pulse opacity-70">
-              <GameCardSkeleton />
-            </div>
-          ))}
+          {skeletonCards}
         </div>
       </div>
     );
@@ -93,43 +84,39 @@ const GameGrid: React.FC<GameGridProps> = ({
     );
   }
 
-  // Only display the number of games that should be visible
-  const displayedGames = games.slice(0, visibleGames);
-
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {displayedGames.map((game) => {
-          // Get the best image using our utility
-          const imageUrl = getBestGameImage(game.header_image, game.image_url);
+          const isFocused = focusedGameId === game.gameId;
           
           return (
             <div 
-              key={game.userGame.id} 
-              id={`game-${game.id}`}
-              className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
+              key={game.userGameId} 
+              id={game.id}
+              className={`transition-all duration-300 ${isFocused ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
             >
               <GameCard
-                id={game.userGame.id}
-                gameId={game.id}
-                title={game.name}
-                imageUrl={imageUrl}
-                dustScore={game.userGame.dust_score}
-                playtimeMinutes={game.userGame.playtime_minutes}
-                isHidden={game.userGame.hidden}
-                notes={game.userGame.notes}
-                onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
-                onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
-                onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
+                id={game.userGameId}
+                gameId={game.gameId}
+                title={game.title}
+                imageUrl={game.imageUrl}
+                dustScore={game.dustScore}
+                playtimeMinutes={game.playtimeMinutes}
+                isHidden={game.isHidden}
+                notes={game.notes}
+                onMarkAsPlayed={() => onMarkAsPlayed(game.userGameId)}
+                onToggleHidden={() => onToggleHidden(game.userGameId, !(game.isHidden))}
+                onSaveNote={(note) => onSaveNote(game.userGameId, note)}
               />
             </div>
           );
         })}
         
-        {/* Show skeleton cards for the next batch that's loading */}
-        {visibleGames < totalGames && (
+        {/* Show skeleton cards for the next batch that's loading (only in progressive mode) */}
+        {isProgressive && hasMore && (
           <>
-            {Array.from({ length: Math.min(gamesPerBatch, totalGames - visibleGames) }).map((_, index) => (
+            {Array.from({ length: Math.min(8, processedGames.length - visibleItems) }).map((_, index) => (
               <div key={`loading-${index}`} className="animate-pulse opacity-70">
                 <GameCardSkeleton />
               </div>
@@ -138,20 +125,29 @@ const GameGrid: React.FC<GameGridProps> = ({
         )}
       </div>
       
-      {/* Load more button for larger collections */}
-      {visibleGames < totalGames && (
+      {/* Load more button for larger collections (only in progressive mode) */}
+      {isProgressive && hasMore && (
         <div className="flex justify-center mt-8">
           <button
             className="px-4 py-2 bg-unplayed-mint/20 hover:bg-unplayed-mint/30 transition-colors rounded-md text-unplayed-mint flex items-center"
-            onClick={() => setVisibleGames(prev => Math.min(prev + gamesPerBatch, totalGames))}
+            onClick={loadMore}
           >
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Loading {Math.min(gamesPerBatch, totalGames - visibleGames)} more games...
+            Loading {Math.min(8, processedGames.length - visibleItems)} more games...
           </button>
         </div>
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memoization
+  return (
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.focusedGameId === nextProps.focusedGameId &&
+    areGamesEqual(prevProps.games, nextProps.games)
+  );
+});
+
+GameGrid.displayName = 'GameGrid';
 
 export default GameGrid;
