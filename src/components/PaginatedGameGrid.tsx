@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import GameCard from './GameCard';
 import GameCardSkeleton from './GameCardSkeleton';
@@ -151,7 +152,7 @@ const PaginatedGameGrid: React.FC<PaginatedGameGridProps> = ({
 
   return (
     <div className="space-y-6">
-      <ScrollArea className="max-h-[70vh] w-full">
+      <ScrollArea className="max-h-[80vh] w-full">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
           {games.map((game) => (
             <div 
