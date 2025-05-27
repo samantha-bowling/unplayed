@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import GameCard from './GameCard';
 import GameCardSkeleton from './GameCardSkeleton';
@@ -21,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PaginatedGameGridProps {
   games: LibraryGame[];
@@ -151,29 +151,31 @@ const PaginatedGameGrid: React.FC<PaginatedGameGridProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {games.map((game) => (
-          <div 
-            key={game.userGame.id} 
-            id={`game-${game.id}`}
-            className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
-          >
-            <GameCard
-              id={game.userGame.id}
-              gameId={game.id}
-              title={game.name}
-              imageUrl={game.image_url || game.header_image}
-              dustScore={game.userGame.dust_score}
-              playtimeMinutes={game.userGame.playtime_minutes}
-              isHidden={game.userGame.hidden}
-              notes={game.userGame.notes}
-              onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
-              onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
-              onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
-            />
-          </div>
-        ))}
-      </div>
+      <ScrollArea className="max-h-[70vh] w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
+          {games.map((game) => (
+            <div 
+              key={game.userGame.id} 
+              id={`game-${game.id}`}
+              className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
+            >
+              <GameCard
+                id={game.userGame.id}
+                gameId={game.id}
+                title={game.name}
+                imageUrl={game.image_url || game.header_image}
+                dustScore={game.userGame.dust_score}
+                playtimeMinutes={game.userGame.playtime_minutes}
+                isHidden={game.userGame.hidden}
+                notes={game.userGame.notes}
+                onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
+                onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
+                onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
+              />
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
       
       {/* Pagination controls */}
       {pagination.totalPages > 1 && (
