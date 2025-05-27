@@ -10,6 +10,7 @@ import { LibraryGame } from '@/hooks/use-library-data';
 import FloatingIcons from '@/components/FloatingIcons';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import { Link } from 'react-router-dom';
+import { useDemoMode } from '@/context/DemoModeContext';
 import { 
   Select,
   SelectContent,
@@ -103,6 +104,7 @@ const LibraryPreview = ({
   const {
     data: unplayedData
   } = useUnplayedData();
+  const { isDemo: contextIsDemo } = useDemoMode();
   const {
     isFullScreenMode,
     enterFullScreenMode,
@@ -129,19 +131,31 @@ const LibraryPreview = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
 
-  // Filter to get ALL unplayed games instead of just the preview
-  const allUnplayedGames = propGames || unplayedData.gamesList?.filter(game => 
-    !game.playtimeMinutes || game.playtimeMinutes === 0
-  ) || [];
-
-  // Use filtered unplayed games for display
-  const displayGames = allUnplayedGames;
+  // Handle data source based on demo mode or prop games
+  const displayGames = (() => {
+    // If games are passed as props, use those (for library page)
+    if (propGames) {
+      return propGames;
+    }
+    
+    // If in demo mode, use the demo library data
+    if (isDemo || contextIsDemo) {
+      return unplayedData.library || [];
+    }
+    
+    // For live mode, filter all games to get unplayed ones
+    return unplayedData.gamesList?.filter(game => 
+      !game.playtimeMinutes || game.playtimeMinutes === 0
+    ) || [];
+  })();
   
   console.log('LibraryPreview data:', {
+    isDemo: isDemo || contextIsDemo,
+    propGames: !!propGames,
     totalGamesFromData: unplayedData.totalGames,
     unplayedGamesFromData: unplayedData.unplayedGames,
-    allUnplayedGamesFiltered: allUnplayedGames.length,
-    displayGamesLength: displayGames.length
+    displayGamesLength: displayGames.length,
+    usingDemoLibrary: isDemo || contextIsDemo ? 'Yes' : 'No'
   });
   
   // Calculate the total number of pages
@@ -287,6 +301,17 @@ const LibraryPreview = ({
     }
   };
 
+  // Get the appropriate game count for messaging
+  const totalUnplayedCount = (() => {
+    if (propGames) {
+      return propGames.length;
+    }
+    if (isDemo || contextIsDemo) {
+      return unplayedData.library?.length || 0;
+    }
+    return displayGames.length;
+  })();
+
   // Loading state
   if (isLoading) {
     return (
@@ -353,14 +378,26 @@ const LibraryPreview = ({
           <ScrollArea className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-full'} w-full`}>
             <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-2 ${showFullScreenMode ? 'lg:grid-cols-6 xl:grid-cols-8' : ''}`}>
               {currentGames.map(game => {
-                // Handle both LibraryGame and GameListItem types
-                const gameId = 'id' in game ? game.id : game.gameId;
-                const title = 'name' in game ? game.name : game.title;
+                // Handle both LibraryGame and GameListItem types, plus demo data
+                const gameId = 'id' in game ? game.id : ('gameId' in game ? game.gameId : game.id);
+                const title = 'name' in game ? game.name : ('title' in game ? game.title : game.name);
                 
-                // Use the enhanced image utility for better image quality
-                const image = getBestGameImageFromDbData(game, gameId);
+                // For demo mode, use the image directly from demo data
+                let image;
+                if (isDemo || contextIsDemo) {
+                  image = game.image || '/placeholder.svg';
+                } else {
+                  // For live data, use the enhanced image utility
+                  image = getBestGameImageFromDbData(game, gameId);
+                }
                 
-                console.log('Grid game image:', { gameId, title, image, originalGame: game });
+                console.log('Grid game image:', { 
+                  gameId, 
+                  title, 
+                  image, 
+                  isDemo: isDemo || contextIsDemo,
+                  originalGame: game 
+                });
                 
                 return (
                   <div 
@@ -403,9 +440,9 @@ const LibraryPreview = ({
             )}
             
             {currentGames.map((game, index) => {
-              // Handle both LibraryGame and GameListItem types
-              const gameId = 'id' in game ? game.id : game.gameId;
-              const title = 'name' in game ? game.name : game.title;
+              // Handle both LibraryGame and GameListItem types, plus demo data
+              const gameId = 'id' in game ? game.id : ('gameId' in game ? game.gameId : game.id);
+              const title = 'name' in game ? game.name : ('title' in game ? game.title : game.name);
               
               // Only render if we have position data for this index
               if (!zenPositions[index]) return null;
@@ -506,7 +543,7 @@ const LibraryPreview = ({
       {!showFullScreenMode && !propGames && (
         <div className="text-center mt-6 flex flex-col items-center">
           <p className="text-gray-400">
-            Showing {currentGames.length} of {displayGames.length} unplayed games
+            Showing {currentGames.length} of {totalUnplayedCount} unplayed games
           </p>
           
           {isDemo ? (
