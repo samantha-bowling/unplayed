@@ -28,13 +28,13 @@ const RecentlySelected: React.FC<RecentlySelectedProps> = ({ recentPicks, spinHi
           recentPicks.slice(0, 5).map((pick) => {
             // Handle both nested and direct game data from database
             // Check if pick.game has actual data or is an empty object
-            const gameData = pick.game && Object.keys(pick.game).length > 0 ? pick.game : {};
+            const gameData = pick.game && Object.keys(pick.game).length > 0 ? pick.game : null;
             const gameItem: GameListItem = {
               id: pick.game_id,
-              name: gameData.name || `Game #${pick.game_id}`,
+              name: gameData?.name || `Game #${pick.game_id}`,
               playtimeMinutes: 0,
-              image: gameData.image_url || null,
-              header_image: gameData.header_image || null
+              image: gameData?.image_url || null,
+              header_image: gameData?.header_image || null
             };
             
             return (
