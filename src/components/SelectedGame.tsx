@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Clock, ExternalLink } from 'lucide-react';
@@ -41,14 +40,16 @@ const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAga
 
   return (
     <div className="pixel-card animate-fade-in">
-      <AspectRatio ratio={16 / 9} className="mb-4">
-        <img 
-          src={gameImage} 
-          alt={game.name} 
-          className="w-full h-full object-cover rounded-md" 
-          onError={handleImageError}
-        />
-      </AspectRatio>
+      <div className="max-w-md mx-auto mb-4">
+        <AspectRatio ratio={16 / 9}>
+          <img 
+            src={gameImage} 
+            alt={game.name} 
+            className="w-full h-full object-cover rounded-md" 
+            onError={handleImageError}
+          />
+        </AspectRatio>
+      </div>
       
       <h3 className="text-xl font-bold text-white mb-2">{game.name}</h3>
       
