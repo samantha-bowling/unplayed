@@ -31,6 +31,7 @@ export const getUnplayedDataService = {
       dustScore: 0,
       totalPlaytime: 0,
       totalSpent: 0,
+      unplayedSpent: 0,
       potentialGameplayHours: 0,
       genres: [],
       shelfLife: [],

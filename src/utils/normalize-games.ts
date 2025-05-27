@@ -40,6 +40,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       dustScore: 0,
       totalPlaytime: 0,
       totalSpent: 0,
+      unplayedSpent: 0,
       potentialGameplayHours: 0,
       genres: [],
       shelfLife: [],
@@ -98,6 +99,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       dustScore: games.dustScore || 0,
       totalPlaytime: games.totalPlaytime || 0,
       totalSpent: games.totalSpent || 0,
+      unplayedSpent: games.unplayedSpent || 0,
       potentialGameplayHours: games.potentialGameplayHours || 0,
       genres: games.genres || [],
       shelfLife: games.shelfLife?.map((item: any) => ({
@@ -130,6 +132,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
     dustScore: 0,
     totalPlaytime: 0,
     totalSpent: 0,
+    unplayedSpent: 0,
     potentialGameplayHours: 0,
     genres: [],
     shelfLife: [],
