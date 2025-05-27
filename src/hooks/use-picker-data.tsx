@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from 'react';
 import useUnplayedData from '@/hooks/use-unplayed-data';
 import useGamePicks from '@/hooks/use-game-picks';
@@ -6,6 +5,9 @@ import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 type PickerScope = 'unplayed' | 'all';
 

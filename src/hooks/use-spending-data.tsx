@@ -1,11 +1,12 @@
-
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnplayedData } from '@/hooks/use-unplayed-data';
+import { useProfile } from '@/hooks/use-profile';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 export interface GamePriceData {
   app_id: number;

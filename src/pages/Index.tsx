@@ -23,7 +23,7 @@ import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
 import { Button } from "@/components/ui/button";
-import useUnplayedData from "@/hooks/use-unplayed-data";
+import { useUnplayedData } from "@/hooks/useUnplayedData";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";

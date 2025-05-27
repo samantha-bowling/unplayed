@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import useUnplayedData from '@/hooks/use-unplayed-data';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
 import useDustScoreData from '@/hooks/use-dust-score-data';
 import {
   Tooltip,
