@@ -6,7 +6,7 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
 import DataErrorBoundary from '@/components/DataErrorBoundary';
 
@@ -55,7 +55,7 @@ const IndexOptimized = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
+  const { data: dashboardData, isLoading: dataLoading, lastRefreshed, refetch } = useDashboardData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
@@ -83,7 +83,7 @@ const IndexOptimized = () => {
         });
       }
       
-      // Explicit refetch of unplayed data
+      // Explicit refetch of dashboard data
       refetch?.();
       
       // Refresh profile
@@ -97,7 +97,7 @@ const IndexOptimized = () => {
       }, 2000);
     }, 1000);
   }, [user?.id, queryKeys, queryClient, refetch, refreshProfile]);
-  
+
   // Enhanced import function with improved UX
   const importSteamLibrary = useCallback(async () => {
     if (!profile?.steam_id) {
@@ -352,9 +352,9 @@ const IndexOptimized = () => {
             </h2>
             <DataErrorBoundary component="Dashboard">
               <div className="dashboard-grid">
-                <UnplayedCounter count={unplayedData.unplayedGames} />
-                <DustScoreMeter score={unplayedData.dustScore} />
-                <SpendingEstimate amount={unplayedData.totalSpent} />
+                <UnplayedCounter count={dashboardData.unplayedGames} />
+                <DustScoreMeter score={dashboardData.dustScore} />
+                <SpendingEstimate amount={dashboardData.totalSpent} />
               </div>
               <div className="mt-4">
                 <GenreHoarding />

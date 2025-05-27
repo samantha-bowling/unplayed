@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAnimatedCounter } from '@/hooks/use-animated-counter';
 import {
   Tooltip,
@@ -23,16 +23,16 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   compact = false,
   isDemo = false
 }: UnplayedCounterProps) => {
-  const { data: unplayedData } = useUnplayedData();
+  const { data: dashboardData } = useDashboardData();
   const { isDemo: contextIsDemo } = useDemoMode();
   const { user } = useAuth();
 
   // Memoized base calculations
   const calculatedData = useMemo(() => {
-    const actualCount = count ?? unplayedData.unplayedGames;
-    const totalGames = unplayedData.totalGames;
+    const actualCount = count ?? dashboardData.unplayedGames;
+    const totalGames = dashboardData.totalGames;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
-    const potentialHours = unplayedData.potentialGameplayHours ?? actualCount * 12.5;
+    const potentialHours = dashboardData.potentialGameplayHours ?? actualCount * 12.5;
     const isDemoMode = isDemo || contextIsDemo;
     
     return {
@@ -42,7 +42,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       potentialHours,
       isDemoMode
     };
-  }, [count, unplayedData.unplayedGames, unplayedData.totalGames, unplayedData.potentialGameplayHours, isDemo, contextIsDemo]);
+  }, [count, dashboardData.unplayedGames, dashboardData.totalGames, dashboardData.potentialGameplayHours, isDemo, contextIsDemo]);
 
   // Animated counters with demo-aware speed
   const animatedCount = useAnimatedCounter({

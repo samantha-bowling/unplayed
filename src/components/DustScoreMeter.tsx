@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import useDustScoreData from '@/hooks/use-dust-score-data';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAnimatedCounter } from '@/hooks/use-animated-counter';
 import { calculateDustScoreDisplay, formatDustScore } from '@/utils/dust-score-display';
 import {
@@ -23,11 +23,11 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
   score,
   isDemo = false
 }: DustScoreProps) => {
-  const { data, isLoading } = useDustScoreData();
+  const { data: dashboardData, isLoading } = useDashboardData();
   const { user } = useAuth();
   const { isDemo: contextIsDemo } = useDemoMode();
   
-  const actualScore = score ?? data.dustScore;
+  const actualScore = score ?? dashboardData.dustScore;
   const isDemoMode = isDemo || contextIsDemo;
   
   // Memoized display calculations
@@ -59,8 +59,8 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
 
   // Memoized clean score display
   const showCleanScore = useMemo(() => 
-    data.cleanScore !== undefined && user,
-    [data.cleanScore, user]
+    dashboardData.cleanScore !== undefined && user,
+    [dashboardData.cleanScore, user]
   );
 
   if (isLoading) {
@@ -150,8 +150,8 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
         {showCleanScore && (
           <div className="mt-6 pt-3 border-t border-gray-700 w-full flex justify-center">
             <CleanScoreMeterSmall 
-              score={data.cleanScore || 0} 
-              tier={data.cleanTier}
+              score={dashboardData.cleanScore || 0} 
+              tier={dashboardData.cleanTier}
             />
           </div>
         )}

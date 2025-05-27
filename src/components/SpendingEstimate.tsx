@@ -1,9 +1,9 @@
 
 import { useState } from 'react';
-import useSpendingData from '@/hooks/use-spending-data';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
@@ -17,19 +17,22 @@ const SpendingEstimate = ({
   amount, 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useSpendingData();
+  const { data: dashboardData, isLoading: dataLoading, refetch } = useDashboardData();
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Use amount from props if provided, otherwise use spending data
+  // Use amount from props if provided, otherwise use dashboard data
   const spendingAmount = amount !== undefined 
     ? amount 
-    : (spendingData?.totalSpent || 0);
+    : (dashboardData?.totalSpent || 0);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (!isRefreshing) {
-      refreshPrices();
+      setIsRefreshing(true);
+      await refetch();
+      setTimeout(() => setIsRefreshing(false), 1000);
     }
   };
 
@@ -85,11 +88,11 @@ const SpendingEstimate = ({
         {isVisible ? (
           <SpendingMeter
             amount={spendingAmount}
-            currency={spendingData?.currency || 'USD'}
+            currency={'USD'}
             isLoading={dataLoading || authLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
-            totalSaved={spendingData?.totalSaved}
+            totalSaved={undefined}
             isDemo={isDemo}
             hasUser={!!user}
           />
