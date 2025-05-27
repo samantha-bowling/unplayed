@@ -15,6 +15,18 @@ interface ShelfLifeProps {
   onMarkAsPlayed?: (gameId: number) => void;
 }
 
+// Type for the actual shelf life data we receive
+interface ShelfLifeGameData {
+  id: number;
+  game_id: number;
+  acquisition_date: string;
+  games?: {
+    name: string;
+    header_image?: string;
+    image_url?: string;
+  } | null;
+}
+
 // Memoized date calculation functions
 const calculateAge = (dateString: string) => {
   const addedDate = new Date(dateString);
@@ -117,10 +129,10 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
 
   // Memoized game items to prevent recreation
   const gameItems = useMemo(() => 
-    oldestGames.map((game, index) => {
+    oldestGames.map((game: any, index) => {
       const imageUrl = imageErrors.has(game.id) 
         ? '/placeholder.svg' 
-        : getBestGameImage(game.games?.header_image, game.games?.image_url, game.game_id);
+        : getBestGameImage(game.header_image, game.image, game.id);
 
       return (
         <div 
@@ -137,7 +149,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
           <div className="flex-shrink-0 w-16 h-12 overflow-hidden rounded">
             <img 
               src={imageUrl}
-              alt={game.games?.name || 'Game'} 
+              alt={game.name || 'Game'} 
               className="w-full h-full object-cover" 
               loading="lazy"
               onError={() => handleImageError(game.id)}
@@ -145,18 +157,18 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
           </div>
           
           <div className="ml-4 flex-grow">
-            <h4 className="text-white font-medium truncate">{game.games?.name || 'Unknown Game'}</h4>
+            <h4 className="text-white font-medium truncate">{game.name || 'Unknown Game'}</h4>
             
             <div className="flex items-center text-xs text-gray-400">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button className="text-left truncate">
-                      Added on {new Date(game.acquisition_date || game.addedDate).toLocaleDateString()}
+                      Added on {new Date(game.addedDate).toLocaleDateString()}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p>Owned since: {formatDate(game.acquisition_date || game.addedDate)}</p>
+                    <p>Owned since: {formatDate(game.addedDate)}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -169,7 +181,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
               index === 1 ? 'text-unplayed-amber' : 
               index === 2 ? 'text-unplayed-mint' : 'text-gray-300'
             }`}>
-              {calculateAge(game.acquisition_date || game.addedDate)}
+              {calculateAge(game.addedDate)}
             </span>
 
             <div className={`flex-shrink-0 transition-opacity duration-200 ${
