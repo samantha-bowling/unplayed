@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick } from '@/types/picks.types';
@@ -33,6 +32,7 @@ const RecentlySelected: React.FC<RecentlySelectedProps> = ({ recentPicks, spinHi
               id: pick.game_id,
               name: gameData?.name || `Game #${pick.game_id}`,
               playtimeMinutes: 0,
+              // Map database properties to GameListItem properties
               image: gameData?.image_url || null,
               header_image: gameData?.header_image || null
             };
