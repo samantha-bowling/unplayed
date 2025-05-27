@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -153,7 +152,6 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
             <CleanScoreMeterSmall 
               score={data.cleanScore || 0} 
               tier={data.cleanTier}
-              isDemo={isDemoMode} 
             />
           </div>
         )}
