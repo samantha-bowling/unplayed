@@ -27,12 +27,12 @@ const RecentlySelected: React.FC<RecentlySelectedProps> = ({ recentPicks, spinHi
         {recentPicks && recentPicks.length > 0 ? (
           recentPicks.slice(0, 5).map((pick) => {
             // Handle both nested and direct game data from database
-            const gameData = pick.game || pick.games || {};
+            const gameData = pick.game || {};
             const gameItem: GameListItem = {
               id: pick.game_id,
               name: gameData.name || `Game #${pick.game_id}`,
               playtimeMinutes: 0,
-              image: gameData.image_url || null,
+              image: gameData.image || null,
               header_image: gameData.header_image || null
             };
             
