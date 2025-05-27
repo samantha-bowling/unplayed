@@ -1,8 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useAnimatedCounter } from '@/hooks/use-animated-counter';
 import {
   Tooltip,
   TooltipContent,
@@ -16,49 +18,68 @@ interface UnplayedCounterProps extends WithDemoProps {
   compact?: boolean;
 }
 
-const UnplayedCounter = ({
+const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   count,
   compact = false,
   isDemo = false
 }: UnplayedCounterProps) => {
-  const {
-    data: unplayedData
-  } = useUnplayedData();
-
-  const actualCount = count ?? unplayedData.unplayedGames;
-  const totalGames = unplayedData.totalGames;
-  const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
-  const [animatedCount, setAnimatedCount] = useState(0);
-
-  const potentialHours = unplayedData.potentialGameplayHours ?? actualCount * 12.5;
-  const [animatedHours, setAnimatedHours] = useState(0);
-
+  const { data: unplayedData } = useUnplayedData();
+  const { isDemo: contextIsDemo } = useDemoMode();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const duration = 1500;
-    const frameDuration = 1000 / 60;
-    const totalFrames = Math.round(duration / frameDuration);
-    const countIncrement = actualCount / totalFrames;
-    const hoursIncrement = potentialHours / totalFrames;
+  // Memoized base calculations
+  const calculatedData = useMemo(() => {
+    const actualCount = count ?? unplayedData.unplayedGames;
+    const totalGames = unplayedData.totalGames;
+    const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
+    const potentialHours = unplayedData.potentialGameplayHours ?? actualCount * 12.5;
+    const isDemoMode = isDemo || contextIsDemo;
+    
+    return {
+      actualCount,
+      totalGames,
+      unplayedPercentage,
+      potentialHours,
+      isDemoMode
+    };
+  }, [count, unplayedData.unplayedGames, unplayedData.totalGames, unplayedData.potentialGameplayHours, isDemo, contextIsDemo]);
 
-    let currentFrame = 0;
-    const timer = setInterval(() => {
-      currentFrame++;
-      const countValue = Math.min(Math.round(countIncrement * currentFrame), actualCount);
-      const hoursValue = Math.min(Math.round(hoursIncrement * currentFrame), Math.round(potentialHours));
+  // Animated counters with demo-aware speed
+  const animatedCount = useAnimatedCounter({
+    targetValue: calculatedData.actualCount,
+    duration: 1500,
+    isDemo: calculatedData.isDemoMode
+  });
 
-      setAnimatedCount(countValue);
-      setAnimatedHours(hoursValue);
+  const animatedHours = useAnimatedCounter({
+    targetValue: Math.round(calculatedData.potentialHours),
+    duration: 1500,
+    isDemo: calculatedData.isDemoMode
+  });
 
-      if (currentFrame === totalFrames) {
-        clearInterval(timer);
-      }
-    }, frameDuration);
+  // Memoized tooltip content to prevent recreation
+  const tooltipContent = useMemo(() => ({
+    unplayed: "Includes games with 0 recorded minutes of playtime",
+    hours: calculatedData.isDemoMode
+      ? "Based on an average of 12.5 hours per game in Demo Mode"
+      : "Based on HowLongToBeat.com data where available, otherwise estimated at 12.5 hours per game"
+  }), [calculatedData.isDemoMode]);
 
-    return () => clearInterval(timer);
-  }, [actualCount, potentialHours]);
+  // Memoized demo note content
+  const demoNote = useMemo(() => {
+    if (!calculatedData.isDemoMode || document.cookie.includes("demo_note_dismissed")) {
+      return null;
+    }
+    return (
+      <div className="mt-4 text-center flex justify-center">
+        <p className="text-sm text-unplayed-mint">
+          You're in Demo Mode. Sign in to track your unplayed Games.
+        </p>
+      </div>
+    );
+  }, [calculatedData.isDemoMode]);
 
+  // Render compact version
   if (compact) {
     return (
       <div className="flex items-center justify-between gap-4 px-4 py-2 rounded-md bg-black/40 border border-unplayed-mint/30 min-w-[250px]">
@@ -76,9 +97,7 @@ const UnplayedCounter = ({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p>
-                    Includes games with 0 recorded minutes of playtime
-                  </p>
+                  <p>{tooltipContent.unplayed}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -87,7 +106,7 @@ const UnplayedCounter = ({
 
         <div className="text-right">
           <div className="text-lg font-medium text-unplayed-amber">
-            {unplayedPercentage}%
+            {calculatedData.unplayedPercentage}%
           </div>
           <div className="text-xs text-gray-400">
             of library
@@ -97,8 +116,9 @@ const UnplayedCounter = ({
     );
   }
 
+  // Render full version
   return (
-    <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
+    <div className={`terminal-container ${calculatedData.isDemoMode ? 'relative' : ''} equal-height-container`}>
       <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
 
       <div className="terminal-content flex flex-col py-6">
@@ -127,36 +147,34 @@ const UnplayedCounter = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                <p>
-                  {isDemo
-                    ? "Based on an average of 12.5 hours per game in Demo Mode"
-                    : "Based on HowLongToBeat.com data where available, otherwise estimated at 12.5 hours per game"}
-                </p>
+                <p>{tooltipContent.hours}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
 
-        {/* Reduced spacing between percentage display and moved it closer to the hours */}
         <div className="text-center">
           <div className="text-2xl font-bold text-unplayed-amber mb-1">
-            {unplayedPercentage}%
+            {calculatedData.unplayedPercentage}%
           </div>
           <p className="text-sm text-gray-400">
-            of your {totalGames} game library is unplayed
+            of your {calculatedData.totalGames} game library is unplayed
           </p>
         </div>
 
-        {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-4 text-center flex justify-center">
-            <p className="text-sm text-unplayed-mint">
-              You're in Demo Mode. Sign in to track your unplayed Games.
-            </p>
-          </div>
-        )}
+        {demoNote}
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-rendering
+  return (
+    prevProps.count === nextProps.count &&
+    prevProps.compact === nextProps.compact &&
+    prevProps.isDemo === nextProps.isDemo
+  );
+});
+
+UnplayedCounter.displayName = 'UnplayedCounter';
 
 export default withDemoIndicator(UnplayedCounter);
