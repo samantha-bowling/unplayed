@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SteamReview {
   review: string;
@@ -20,8 +21,8 @@ interface SteamReview {
   language: string;
 }
 
-interface SteamReviewsResponse {
-  success: number;
+interface SteamReviewsData {
+  reviews: SteamReview[];
   query_summary: {
     num_reviews: number;
     review_score: number;
@@ -30,7 +31,7 @@ interface SteamReviewsResponse {
     total_negative: number;
     total_reviews: number;
   };
-  reviews: SteamReview[];
+  fallbackLevel: number;
 }
 
 /**
@@ -40,67 +41,41 @@ const useSteamReviews = (gameId: number | null) => {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [fallbackLevel, setFallbackLevel] = useState(0);
 
-  // Function to build the review query URL with appropriate parameters
-  const buildReviewUrl = (id: number, fallbackLevel: number) => {
-    // Base URL for all queries
-    const baseUrl = `https://store.steampowered.com/appreviews/${id}?json=1`;
-
-    // Define query parameters based on fallback level
-    let params = '';
-    switch (fallbackLevel) {
-      case 0: // First attempt: recent positive reviews in user's language
-        params = '&filter=recent&review_type=positive&num_per_page=10&purchase_type=all';
-        break;
-      case 1: // Second attempt: any positive review in user's language
-        params = '&review_type=positive&purchase_type=all&num_per_page=10';
-        break;
-      case 2: // Final attempt: any positive review in English
-        params = '&review_type=positive&language=english&purchase_type=all&num_per_page=10';
-        break;
-      default:
-        params = '&review_type=positive&purchase_type=all';
-    }
-
-    // For now, we're not determining user language, so we don't add a language parameter
-    // In a future enhancement, this could be added based on user preferences
-
-    return `${baseUrl}${params}`;
-  };
-
-  // The main query to fetch reviews
+  // The main query to fetch reviews using the edge function
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['steamReviews', gameId, fallbackLevel],
     queryFn: async () => {
       if (!gameId) return null;
 
       try {
-        const url = buildReviewUrl(gameId, fallbackLevel);
-        const response = await fetch(url);
+        console.log(`Calling fetch-steam-reviews for game ${gameId}, fallback level: ${fallbackLevel}`);
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch reviews: ${response.statusText}`);
+        const { data: responseData, error } = await supabase.functions.invoke('fetch-steam-reviews', {
+          body: { gameId, fallbackLevel }
+        });
+
+        if (error) {
+          throw new Error(`Edge function error: ${error.message}`);
         }
 
-        const data: SteamReviewsResponse = await response.json();
-        
-        // If no reviews found and we can try another fallback
-        if (data.success === 1 && (!data.reviews || data.reviews.length === 0) && fallbackLevel < 2) {
-          throw new Error('No reviews found with current filters');
+        if (!responseData.success) {
+          if (responseData.needsFallback && fallbackLevel < 2) {
+            // Trigger next fallback level
+            setFallbackLevel(responseData.nextFallbackLevel);
+            return null;
+          }
+          throw new Error(responseData.message || 'Failed to fetch reviews');
         }
-        
-        return data;
+
+        return responseData.data as SteamReviewsData;
       } catch (err) {
-        if (fallbackLevel < 2 && err instanceof Error && err.message.includes('No reviews found')) {
-          // Try the next fallback level
-          setFallbackLevel(prev => prev + 1);
-          return null;
-        }
+        console.error('Steam reviews fetch error:', err);
         throw err;
       }
     },
     enabled: !!gameId,
-    retry: 2,
-    retryDelay: attempt => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff for retries
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Get the current review based on index
@@ -115,11 +90,11 @@ const useSteamReviews = (gameId: number | null) => {
     }
   };
 
-  // Function to try again with another fallback level
+  // Function to try another fallback level
   const tryAnotherFallback = () => {
     if (fallbackLevel < 2) {
       setFallbackLevel(prev => prev + 1);
-      refetch();
+      setCurrentReviewIndex(0); // Reset review index for new data
     } else {
       toast({
         title: "No reviews available",
