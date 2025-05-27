@@ -1,4 +1,3 @@
-
 import React, { useMemo, memo } from 'react';
 import GameCard from './GameCard';
 import GameCardSkeleton from './GameCardSkeleton';
@@ -7,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useProgressiveLoading } from '@/hooks/use-progressive-loading';
 import { preprocessGameData, areGamesEqual, ProcessedGameData } from '@/utils/game-grid-utils';
 import { useDemoMode } from '@/context/DemoModeContext';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface GameGridProps {
   games: LibraryGame[];
@@ -86,44 +86,46 @@ const GameGrid: React.FC<GameGridProps> = memo(({
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {displayedGames.map((game) => {
-          const isFocused = focusedGameId === game.gameId;
-          
-          return (
-            <div 
-              key={game.userGameId} 
-              id={game.id}
-              className={`transition-all duration-300 ${isFocused ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
-            >
-              <GameCard
-                id={game.userGameId}
-                gameId={game.gameId}
-                title={game.title}
-                imageUrl={game.imageUrl}
-                dustScore={game.dustScore}
-                playtimeMinutes={game.playtimeMinutes}
-                isHidden={game.isHidden}
-                notes={game.notes}
-                onMarkAsPlayed={() => onMarkAsPlayed(game.userGameId)}
-                onToggleHidden={() => onToggleHidden(game.userGameId, !(game.isHidden))}
-                onSaveNote={(note) => onSaveNote(game.userGameId, note)}
-              />
-            </div>
-          );
-        })}
-        
-        {/* Show skeleton cards for the next batch that's loading (only in progressive mode) */}
-        {isProgressive && hasMore && (
-          <>
-            {Array.from({ length: Math.min(8, processedGames.length - visibleItems) }).map((_, index) => (
-              <div key={`loading-${index}`} className="animate-pulse opacity-70">
-                <GameCardSkeleton />
+      <ScrollArea className="max-h-[70vh] w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
+          {displayedGames.map((game) => {
+            const isFocused = focusedGameId === game.gameId;
+            
+            return (
+              <div 
+                key={game.userGameId} 
+                id={game.id}
+                className={`transition-all duration-300 ${isFocused ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
+              >
+                <GameCard
+                  id={game.userGameId}
+                  gameId={game.gameId}
+                  title={game.title}
+                  imageUrl={game.imageUrl}
+                  dustScore={game.dustScore}
+                  playtimeMinutes={game.playtimeMinutes}
+                  isHidden={game.isHidden}
+                  notes={game.notes}
+                  onMarkAsPlayed={() => onMarkAsPlayed(game.userGameId)}
+                  onToggleHidden={() => onToggleHidden(game.userGameId, !(game.isHidden))}
+                  onSaveNote={(note) => onSaveNote(game.userGameId, note)}
+                />
               </div>
-            ))}
-          </>
-        )}
-      </div>
+            );
+          })}
+          
+          {/* Show skeleton cards for the next batch that's loading (only in progressive mode) */}
+          {isProgressive && hasMore && (
+            <>
+              {Array.from({ length: Math.min(8, processedGames.length - visibleItems) }).map((_, index) => (
+                <div key={`loading-${index}`} className="animate-pulse opacity-70">
+                  <GameCardSkeleton />
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </ScrollArea>
       
       {/* Load more button for larger collections (only in progressive mode) */}
       {isProgressive && hasMore && (
