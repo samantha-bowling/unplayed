@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -7,8 +6,9 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
-import { useUnplayedDataOptimized } from '@/hooks/use-unplayed-data-optimized';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
+import DataErrorBoundary from '@/components/DataErrorBoundary';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -55,7 +55,7 @@ const IndexOptimized = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedDataOptimized();
+  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
@@ -350,17 +350,19 @@ const IndexOptimized = () => {
               <span className="text-unplayed-mint">Dashboard</span>
               <span className="text-white">.exe</span>
             </h2>
-            <div className="dashboard-grid">
-              <UnplayedCounter count={unplayedData.unplayedGames} />
-              <DustScoreMeter score={unplayedData.dustScore} />
-              <SpendingEstimate amount={unplayedData.totalSpent} />
-            </div>
-            <div className="mt-4">
-              <GenreHoarding />
-            </div>
-            <div className="mt-4">
-              <ShelfLife />
-            </div>
+            <DataErrorBoundary component="Dashboard">
+              <div className="dashboard-grid">
+                <UnplayedCounter count={unplayedData.unplayedGames} />
+                <DustScoreMeter score={unplayedData.dustScore} />
+                <SpendingEstimate amount={unplayedData.totalSpent} />
+              </div>
+              <div className="mt-4">
+                <GenreHoarding />
+              </div>
+              <div className="mt-4">
+                <ShelfLife />
+              </div>
+            </DataErrorBoundary>
           </div>
         </section>
 
@@ -371,7 +373,9 @@ const IndexOptimized = () => {
               <span className="text-unplayed-amber">Picker</span>
               <span className="text-white">.exe</span>
             </h2>
-            <RandomPicker />
+            <DataErrorBoundary component="Picker">
+              <RandomPicker />
+            </DataErrorBoundary>
           </div>
         </section>
 
@@ -382,7 +386,9 @@ const IndexOptimized = () => {
               <span className="text-unplayed-pink">Library</span>
               <span className="text-white">.exe</span>
             </h2>
-            <LibraryPreview />
+            <DataErrorBoundary component="Library">
+              <LibraryPreview />
+            </DataErrorBoundary>
           </div>
         </section>
 

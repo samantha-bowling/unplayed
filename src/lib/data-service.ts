@@ -4,8 +4,8 @@ import { normalizeDemoGames } from '@/utils/normalize-games';
 import { DEMO_DATA } from './demo-data';
 
 /**
- * Central service for getting normalized game data
- * Maintains strict separation between demo and live data
+ * Enhanced central service for unified data operations
+ * Maintains strict separation between demo and live data with improved error handling
  */
 export const getUnplayedDataService = {
   /**
@@ -13,57 +13,84 @@ export const getUnplayedDataService = {
    * Always returns consistent, instant data for demo mode
    */
   getDemoData(): UnplayedDataType {
-    return normalizeDemoGames(DEMO_DATA);
+    try {
+      return normalizeDemoGames(DEMO_DATA);
+    } catch (error) {
+      console.warn('[DataService] Error normalizing demo data, using fallback', error);
+      return this.getFallbackData();
+    }
+  },
+  
+  /**
+   * Creates a fallback data structure when demo data fails
+   */
+  getFallbackData(): UnplayedDataType {
+    return {
+      unplayedGames: 0,
+      totalGames: 0,
+      dustScore: 0,
+      totalPlaytime: 0,
+      totalSpent: 0,
+      potentialGameplayHours: 0,
+      genres: [],
+      shelfLife: [],
+      library: [],
+      gamesList: [],
+      cleanScore: 0,
+      cleanScoreBreakdown: {
+        completionRate: 0,
+        engagementFactor: 0,
+        recencyFactor: 0
+      },
+      cleanTier: {
+        name: 'Clean Slate',
+        color: '#4ade80',
+        range: [0, 100]
+      },
+      cleanStreak: 0,
+      recentlyPlayedCount: 0
+    };
   },
   
   /**
    * Validates that a data structure conforms to UnplayedDataType requirements
-   * @returns true if valid, false if missing required fields
    */
   validateDataStructure(data: any): boolean {
-    // Check for required fields
     if (!data) return false;
     if (!data.gamesList || !Array.isArray(data.gamesList)) return false;
-    
-    // Check for required numeric fields
     if (typeof data.unplayedGames !== 'number') return false;
     if (typeof data.totalGames !== 'number') return false;
     if (typeof data.dustScore !== 'number') return false;
-    
-    // Basic structure is valid
     return true;
   },
   
   /**
-   * Logs inconsistencies in data structures
-   * Helps debug demo vs live data issues
+   * Enhanced error handling for data inconsistencies
    */
-  logDataInconsistency(data: any, component: string): void {
-    if (!this.validateDataStructure(data)) {
-      console.warn(`[DataService] Invalid UnplayedDataType structure detected in ${component}`, {
-        missingFields: {
-          gamesList: !data?.gamesList,
-          unplayedGames: typeof data?.unplayedGames !== 'number',
-          totalGames: typeof data?.totalGames !== 'number',
-          dustScore: typeof data?.dustScore !== 'number',
-        },
-        data
-      });
+  handleDataError(error: any, component: string, isDemo: boolean): UnplayedDataType {
+    console.error(`[DataService] Data error in ${component}:`, error);
+    
+    if (isDemo) {
+      // For demo mode, always provide working data
+      console.log('[DataService] Demo mode: providing fallback data');
+      return this.getFallbackData();
+    } else {
+      // For live mode, provide fallback but also surface the error
+      console.warn('[DataService] Live mode: data error occurred, using fallback');
+      return this.getFallbackData();
     }
   },
   
   /**
    * Ensures demo data never gets mixed with live API calls
-   * @param isDemo - Whether we're in demo mode
-   * @param data - The data to validate
    */
   ensureDataSourceSeparation(isDemo: boolean, data: any): boolean {
     if (isDemo) {
-      // In demo mode, data should come from DEMO_DATA transformations only
+      // In demo mode, data should never have live data markers
       return data && !data._isLiveData;
     } else {
-      // In live mode, data should come from API calls
-      return data && data._isLiveData !== false;
+      // In live mode, we accept any valid data structure
+      return this.validateDataStructure(data);
     }
   },
   
@@ -71,6 +98,20 @@ export const getUnplayedDataService = {
    * Creates a demo-safe copy of data to prevent mutations
    */
   createDemoSafeCopy(data: any): any {
-    return JSON.parse(JSON.stringify(data));
+    try {
+      return JSON.parse(JSON.stringify(data));
+    } catch (error) {
+      console.warn('[DataService] Failed to create safe copy, returning original data');
+      return data;
+    }
+  },
+  
+  /**
+   * Enhanced logging for debugging demo vs live data flow
+   */
+  logDataFlow(component: string, isDemo: boolean, dataSize: number): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DataService] ${component}: ${isDemo ? 'Demo' : 'Live'} data (${dataSize} items)`);
+    }
   }
 };
