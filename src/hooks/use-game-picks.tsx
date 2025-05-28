@@ -28,6 +28,8 @@ export const useGamePicks = () => {
     queryFn: async () => {
       if (!isAuthenticated) return null;
 
+      console.log('Fetching recent pick for user:', user.id);
+
       const { data: pickData, error } = await supabase
         .from('game_picks')
         .select(`
@@ -48,7 +50,7 @@ export const useGamePicks = () => {
             developer,
             publisher
           ),
-          user_games!inner (
+          user_games (
             acquisition_date,
             playtime_minutes
           )
@@ -58,7 +60,12 @@ export const useGamePicks = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching recent pick:', error);
+        throw error;
+      }
+
+      console.log('Recent pick data:', pickData);
 
       // Transform the data to match our GamePick interface if data exists
       if (!pickData) return null;
@@ -93,7 +100,7 @@ export const useGamePicks = () => {
         picked_at: new Date().toISOString()
       };
 
-      console.log('Attempting to save game pick:', { gameId, userId: user.id });
+      console.log('Attempting to save game pick:', { gameId, userId: user.id, filters });
 
       // Step 1: Try to update existing pick for this user
       const { data: updateData, error: updateError } = await supabase
@@ -122,6 +129,31 @@ export const useGamePicks = () => {
 
         if (insertError) {
           console.error('Error during insert attempt:', insertError);
+          
+          // Check if this is a unique constraint violation (expected behavior)
+          if (insertError.code === '23505' && insertError.message.includes('unique_user_pick')) {
+            console.log('Unique constraint violation - attempting update again');
+            
+            // Try the update one more time in case of race condition
+            const { data: retryUpdateData, error: retryUpdateError } = await supabase
+              .from('game_picks')
+              .update({
+                game_id: gameId,
+                filters: pickData.filters,
+                picked_at: pickData.picked_at
+              })
+              .eq('user_id', user.id)
+              .select();
+
+            if (retryUpdateError) {
+              console.error('Error during retry update:', retryUpdateError);
+              throw retryUpdateError;
+            }
+
+            console.log('Successfully updated pick on retry');
+            return retryUpdateData[0];
+          }
+          
           throw insertError;
         }
 
