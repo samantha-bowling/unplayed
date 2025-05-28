@@ -171,9 +171,9 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
     enabled: !!user,
   });
   
-  // Main data query
+  // Main data query - UPDATED to include dependencies for proper invalidation
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.paginatedLibraryGames(user?.id, pagination.page),
+    queryKey: queryKeys.paginatedLibraryGames(user?.id, pagination.page, pagination.pageSize, filters, sortBy, sortDirection),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -270,7 +270,8 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
         }
       }
       
-      // Add sorting
+      // Add sorting - IMPROVED logging
+      console.log(`Applying sort: ${sortBy} ${sortDirection}`);
       switch (sortBy) {
         case 'name':
           // For name, we need to sort by the joined games table
@@ -304,6 +305,8 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
         if (!userGames) {
           return [];
         }
+        
+        console.log(`Fetched ${userGames.length} games with sort: ${sortBy} ${sortDirection}`);
         
         // Transform the nested data into a flatter structure
         return userGames.map((item: any): LibraryGame => ({
@@ -392,17 +395,21 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
   
-  // Sort controls
+  // Sort controls - IMPROVED with logging
   const updateSort = useCallback((option: SortOption) => {
+    console.log(`Paginated: Updating sort from ${sortBy} ${sortDirection} to ${option}`);
     if (sortBy === option) {
       // Toggle direction if clicking the same sort option
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      setSortDirection(newDirection);
+      console.log(`Paginated: Toggled sort direction to: ${newDirection}`);
     } else {
       setSortBy(option);
       setSortDirection('asc');
+      console.log(`Paginated: Changed sort to: ${option} asc`);
     }
     setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on sort change
-  }, [sortBy]);
+  }, [sortBy, sortDirection]);
   
   // Action handlers (simplified, actual mutations would need proper implementation)
   const markAsPlayed = async (userGameId: string) => {

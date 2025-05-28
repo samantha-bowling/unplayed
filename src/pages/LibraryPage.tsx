@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -7,6 +6,7 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { ZenLayout } from '@/layouts';
 import LibraryPreview from '@/components/LibraryPreview';
 import LibraryFilters from '@/components/LibraryFilters';
+import LibraryStatsSection from '@/components/LibraryStatsSection';
 import GameGrid from '@/components/GameGrid';
 import PaginatedGameGrid from '@/components/PaginatedGameGrid';
 import UnplayedCounter from '@/components/UnplayedCounter';
@@ -61,6 +61,10 @@ const LibraryPage: React.FC = () => {
   
   // Also get view mode from legacy data
   const { viewMode, updateViewMode } = legacyData;
+
+  // Calculate unplayed stats
+  const totalGames = usePagination ? paginatedData.pagination.totalItems : games.length;
+  const unplayedGames = games.filter(g => !g.userGame.playtime_minutes || g.userGame.playtime_minutes === 0).length;
 
   // Get motivational message based on library size
   const getMotivationalMessage = () => {
@@ -315,7 +319,7 @@ const LibraryPage: React.FC = () => {
               </div>
             </div>
             
-            {/* Backlog Command Center Header - Unplayed Summary Widget */}
+            {/* Simplified Backlog Command Center Header */}
             <div className="bg-black/30 border border-unplayed-mint/20 rounded-lg p-4 mb-6 transform transition-all duration-300 hover:border-unplayed-mint/40">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex-grow">
@@ -340,10 +344,6 @@ const LibraryPage: React.FC = () => {
                 </div>
                 
                 <div className="w-full md:w-auto">
-                  <UnplayedCounter compact={true} />
-                </div>
-                
-                <div className="w-full md:w-auto">
                   <Link to="/spend">
                     <Button variant="outline" className="w-full md:w-auto">
                       <Archive className="mr-2 h-4 w-4" />
@@ -353,16 +353,22 @@ const LibraryPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* New Enhanced Stats Section */}
+            <LibraryStatsSection 
+              totalGames={totalGames}
+              unplayedGames={unplayedGames}
+            />
             
-            {/* Two-column layout for Genres and Shelf Life on desktop, stacked on mobile */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="transition-transform duration-300 hover:scale-[1.01]">
+            {/* Two-column layout for Genres and Shelf Life with improved alignment */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="transition-transform duration-300 hover:scale-[1.01] h-fit">
                 <GenreHoarding 
                   onGenreSelect={handleGenreSelect} 
                   activeGenre={filters.selectedGenre} 
                 />
               </div>
-              <div className="transition-transform duration-300 hover:scale-[1.01]">
+              <div className="transition-transform duration-300 hover:scale-[1.01] h-fit">
                 <ShelfLife 
                   onJumpToGame={handleJumpToGame} 
                   onMarkAsPlayed={handleMarkAsPlayedFromShelf} 

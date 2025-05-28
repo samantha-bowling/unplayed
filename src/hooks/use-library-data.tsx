@@ -193,34 +193,42 @@ export function useLibraryData() {
 
       switch (sortBy) {
         case 'name':
-          valueA = a.name;
-          valueB = b.name;
+          valueA = a.name.toLowerCase();
+          valueB = b.name.toLowerCase();
           break;
         case 'dust_score':
-          valueA = a.userGame.dust_score || 0;
-          valueB = b.userGame.dust_score || 0;
+          valueA = a.userGame.dust_score ?? 0;
+          valueB = b.userGame.dust_score ?? 0;
           break;
         case 'acquisition_date':
           valueA = a.userGame.acquisition_date ? new Date(a.userGame.acquisition_date).getTime() : 0;
           valueB = b.userGame.acquisition_date ? new Date(b.userGame.acquisition_date).getTime() : 0;
           break;
         case 'playtime_minutes':
-          valueA = a.userGame.playtime_minutes || 0;
-          valueB = b.userGame.playtime_minutes || 0;
+          valueA = a.userGame.playtime_minutes ?? 0;
+          valueB = b.userGame.playtime_minutes ?? 0;
           break;
         case 'last_played_date':
           valueA = a.userGame.last_played_date ? new Date(a.userGame.last_played_date).getTime() : 0;
           valueB = b.userGame.last_played_date ? new Date(b.userGame.last_played_date).getTime() : 0;
           break;
         default:
-          valueA = a.name;
-          valueB = b.name;
+          valueA = a.name.toLowerCase();
+          valueB = b.name.toLowerCase();
       }
 
-      const compareResult = valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      // Handle different data types properly
+      let compareResult = 0;
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        compareResult = valueA.localeCompare(valueB);
+      } else {
+        compareResult = valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      }
+      
       return sortDirection === 'asc' ? compareResult : -compareResult;
     });
 
+    console.log(`Applied sorting: ${sortBy} ${sortDirection}, result count: ${result.length}`);
     return result;
   }, [data, filters, sortBy, sortDirection]);
 
@@ -323,14 +331,18 @@ export function useLibraryData() {
 
   // Sorting updaters
   const updateSort = useCallback((option: SortOption) => {
+    console.log(`Updating sort from ${sortBy} ${sortDirection} to ${option}`);
     if (sortBy === option) {
       // Toggle direction if clicking the same sort option
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      setSortDirection(newDirection);
+      console.log(`Toggled sort direction to: ${newDirection}`);
     } else {
       setSortBy(option);
       setSortDirection('asc');
+      console.log(`Changed sort to: ${option} asc`);
     }
-  }, [sortBy]);
+  }, [sortBy, sortDirection]);
 
   // Find a game by id (for jumping to/highlighting games)
   const findGameById = useCallback((gameId: number) => {
