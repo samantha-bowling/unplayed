@@ -9,6 +9,7 @@ import GameSpinner from './GameSpinner';
 import MoodFilterDropdown from './MoodFilterDropdown';
 import SelectedGame from './SelectedGame';
 import RecentPick from './RecentPick';
+import DebugPanel from './DebugPanel';
 import { PickerNavigationState } from '@/utils/navigation';
 import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
 import { GameListItem } from '@/types/unplayed-data.types';
@@ -74,6 +75,7 @@ const RandomPicker = ({
     hasPickedInSession,
     resetSessionState,
     isSaving: isPickSaving,
+    user
   } = usePickerData();
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -103,8 +105,9 @@ const RandomPicker = ({
     console.log('Recent pick from DB:', recentPick?.game?.name || 'None');
     console.log('Has picked in session:', hasPickedInSession);
     console.log('Demo mode:', isDemo);
+    console.log('Is saving pick:', isPickSaving);
     console.log('================================');
-  }, [games, currentSessionPick, previousSessionPick, recentPick, hasPickedInSession, isDemo]);
+  }, [games, currentSessionPick, previousSessionPick, recentPick, hasPickedInSession, isDemo, isPickSaving]);
   
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
@@ -141,6 +144,8 @@ const RandomPicker = ({
     console.log('=== Starting Spin Process ===');
     console.log('Current filters:', { scope, activeMood, preventDuplicates });
     console.log('Available games:', games?.length || 0);
+    console.log('Is authenticated:', !!user);
+    console.log('Demo mode:', isDemo);
     
     // If we currently have a session pick, move it to previous before getting a new one
     if (currentSessionPick) {
@@ -174,6 +179,7 @@ const RandomPicker = ({
       setDestinyMessage(getRandomDestinyMessage());
       
       console.log('Successfully selected game:', newSelectedGame.name);
+      console.log('Game will be saved to database:', !isDemo);
       console.log('=== Spin Process Complete ===');
       setIsSpinning(false);
     }, 2000);
@@ -256,6 +262,9 @@ const RandomPicker = ({
   
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
+      {/* Debug Panel for development */}
+      <DebugPanel />
+      
       {/* Show the full screen mode toggle in the corner when in full screen mode */}
       {showFullScreenMode && (
         <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
@@ -302,13 +311,17 @@ const RandomPicker = ({
           {isSpinning ? 'Selecting...' : isPickSaving ? 'Saving...' : 'Select Game.exe'}
         </button>
         
+        {/* Enhanced debugging info for prevent duplicates */}
         {!showFullScreenMode && !currentSessionPick && (
           <div className="flex items-center ml-2 text-sm">
             <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={preventDuplicates}
-                onChange={() => setPreventDuplicates(!preventDuplicates)}
+                onChange={() => {
+                  console.log('Prevent duplicates toggled:', !preventDuplicates);
+                  setPreventDuplicates(!preventDuplicates);
+                }}
                 className="mr-1 h-4 w-4"
                 disabled={isOperationInProgress}
               />

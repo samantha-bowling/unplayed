@@ -6,17 +6,34 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick, GamePickFilters } from '@/types/picks.types';
+import { 
+  getAuthDebugInfo, 
+  testGamePicksRLS, 
+  logDatabaseError, 
+  debugSupabaseOperation 
+} from '@/utils/supabase-debug';
 
 // Type for Supabase-compatible JSON
 type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 /**
- * Custom hook for managing game picks
+ * Custom hook for managing game picks with enhanced debugging
  */
 export const useGamePicks = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAuthenticated = !!user;
+
+  // Debug authentication state when it changes
+  useEffect(() => {
+    if (user) {
+      console.log('🔐 useGamePicks - User authenticated:', user.id);
+      // Test RLS policies when user becomes authenticated
+      testGamePicksRLS();
+    } else {
+      console.log('🔐 useGamePicks - User not authenticated');
+    }
+  }, [user]);
 
   // Query to fetch user's most recent pick with full game data and user game data
   const {
@@ -26,65 +43,98 @@ export const useGamePicks = () => {
   } = useQuery({
     queryKey: ['gamePicks', user?.id],
     queryFn: async () => {
-      if (!isAuthenticated) return null;
-
-      console.log('Fetching recent pick for user:', user.id);
-
-      // First, get the most recent pick
-      const { data: pickData, error: pickError } = await supabase
-        .from('game_picks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('picked_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (pickError) {
-        console.error('Error fetching recent pick:', pickError);
-        // Don't throw for permission errors - just log them
-        if (pickError.code === '42501' || pickError.code === 'PGRST301') {
-          console.log('RLS permission issue fetching picks - user may not have access');
-          return null;
-        }
-        throw pickError;
-      }
-
-      if (!pickData) {
-        console.log('No recent pick found');
+      if (!isAuthenticated) {
+        console.log('🔍 Query skipped - user not authenticated');
         return null;
       }
 
-      console.log('Recent pick found:', pickData);
+      console.log('🔍 Fetching recent pick for user:', user.id);
 
-      // Get the game data for this pick
-      const { data: gameData, error: gameError } = await supabase
-        .from('games')
-        .select('*')
-        .eq('id', pickData.game_id)
-        .single();
+      // Enhanced debug info for the query
+      const authInfo = await getAuthDebugInfo();
+      console.log('🔍 Auth info during query:', authInfo);
 
-      if (gameError) {
-        console.error('Error fetching game data:', gameError);
-        // Don't throw here, we can still return the pick without full game data
+      // First, get the most recent pick with enhanced debugging
+      const pickResult = await debugSupabaseOperation(
+        () => supabase
+          .from('game_picks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('picked_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        {
+          operation: 'SELECT',
+          table: 'game_picks',
+          details: { userId: user.id, operation: 'get recent pick' }
+        }
+      );
+
+      if (pickResult.error) {
+        // Enhanced error handling with specific guidance
+        console.error('🔒 Error fetching recent pick:', pickResult.error);
+        
+        // Don't throw for permission errors in authenticated users - this indicates RLS issues
+        if (pickResult.error.code === '42501' || pickResult.error.code === 'PGRST301') {
+          console.error('🔒 RLS permission issue - this should not happen for authenticated users');
+          console.error('🔒 Recommended actions:');
+          console.error('   1. Check if game_picks table has RLS enabled');
+          console.error('   2. Verify RLS policies exist for SELECT operations');
+          console.error('   3. Ensure policies allow user to access their own picks');
+          return null;
+        }
+        throw pickResult.error;
       }
 
-      // Get the user's game data for this specific game
-      const { data: userGameData, error: userGameError } = await supabase
-        .from('user_games')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('game_id', pickData.game_id)
-        .maybeSingle();
-
-      if (userGameError) {
-        console.error('Error fetching user game data:', userGameError);
-        // Don't throw here, we can still return the pick without user game data
+      const pickData = pickResult.data;
+      if (!pickData) {
+        console.log('✅ No recent pick found for user');
+        return null;
       }
 
-      console.log('Complete pick data assembled:', {
+      console.log('✅ Recent pick found:', pickData);
+
+      // Get the game data for this pick with debugging
+      const gameResult = await debugSupabaseOperation(
+        () => supabase
+          .from('games')
+          .select('*')
+          .eq('id', pickData.game_id)
+          .single(),
+        {
+          operation: 'SELECT',
+          table: 'games',
+          details: { gameId: pickData.game_id }
+        }
+      );
+
+      if (gameResult.error) {
+        console.error('⚠️ Error fetching game data - continuing without it:', gameResult.error);
+      }
+
+      // Get the user's game data for this specific game with debugging
+      const userGameResult = await debugSupabaseOperation(
+        () => supabase
+          .from('user_games')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('game_id', pickData.game_id)
+          .maybeSingle(),
+        {
+          operation: 'SELECT',
+          table: 'user_games',
+          details: { userId: user.id, gameId: pickData.game_id }
+        }
+      );
+
+      if (userGameResult.error) {
+        console.error('⚠️ Error fetching user game data - continuing without it:', userGameResult.error);
+      }
+
+      console.log('✅ Complete pick data assembled:', {
         pick: pickData,
-        game: gameData,
-        userGame: userGameData
+        game: gameResult.data,
+        userGame: userGameResult.data
       });
 
       // Transform the data to match our GamePick interface
@@ -93,14 +143,14 @@ export const useGamePicks = () => {
         game_id: pickData.game_id,
         picked_at: pickData.picked_at,
         filters: pickData.filters as GamePickFilters,
-        game: gameData,
-        userGameData: userGameData
+        game: gameResult.data,
+        userGameData: userGameResult.data
       } as GamePick;
     },
     enabled: isAuthenticated,
   });
 
-  // Mutation for saving a new pick using PostgreSQL upsert
+  // Mutation for saving a new pick using PostgreSQL upsert with enhanced debugging
   const {
     mutate: savePick,
     isPending: isSaving,
@@ -111,41 +161,47 @@ export const useGamePicks = () => {
         throw new Error('User must be authenticated to save picks');
       }
 
-      console.log('Attempting to save game pick:', { gameId, userId: user.id, filters });
+      console.log('🔍 Attempting to save game pick:', { gameId, userId: user.id, filters });
+
+      // Debug authentication before attempting save
+      const authInfo = await getAuthDebugInfo();
+      console.log('🔍 Auth info during save:', authInfo);
 
       // Use PostgreSQL upsert (ON CONFLICT DO UPDATE) for better race condition handling
-      const { data, error } = await supabase
-        .from('game_picks')
-        .upsert(
-          {
-            user_id: user.id,
-            game_id: gameId,
-            filters: (filters as unknown as Json) || {},
-            picked_at: new Date().toISOString()
-          },
-          {
-            onConflict: 'user_id',
-            ignoreDuplicates: false
-          }
-        )
-        .select()
-        .single();
+      const saveResult = await debugSupabaseOperation(
+        () => supabase
+          .from('game_picks')
+          .upsert(
+            {
+              user_id: user.id,
+              game_id: gameId,
+              filters: (filters as unknown as Json) || {},
+              picked_at: new Date().toISOString()
+            },
+            {
+              onConflict: 'user_id',
+              ignoreDuplicates: false
+            }
+          )
+          .select()
+          .single(),
+        {
+          operation: 'UPSERT',
+          table: 'game_picks',
+          details: { userId: user.id, gameId, filters }
+        }
+      );
 
-      if (error) {
-        console.error('Error saving game pick:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        throw error;
+      if (saveResult.error) {
+        console.error('💥 Error saving game pick:', saveResult.error);
+        throw saveResult.error;
       }
 
-      console.log('Successfully saved game pick:', data);
-      return data;
+      console.log('✅ Successfully saved game pick:', saveResult.data);
+      return saveResult.data;
     },
     onSuccess: (data) => {
-      console.log('Game pick saved successfully:', data);
+      console.log('✅ Game pick saved successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['gamePicks', user?.id] });
       
       // Only show success toast for actual user-initiated saves
@@ -155,33 +211,31 @@ export const useGamePicks = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Error saving game pick:', {
-        message: error.message,
-        code: error.code,
-        fullError: error
-      });
+      console.error('💥 Error saving game pick:', error);
       
-      // Handle specific error types more gracefully
+      // Enhanced error handling with specific guidance
       if (error.code === '42501') {
-        // RLS permission error - log but don't show toast for authenticated users
-        console.error('RLS permission error - this should not happen for authenticated users');
-        console.error('User ID:', user?.id);
-        console.error('User auth status:', isAuthenticated);
+        console.error('🔒 RLS permission error during save');
+        console.error('🔒 This indicates a database policy issue, not a user authentication issue');
+        console.error('🔒 User ID:', user?.id);
+        console.error('🔒 User auth status:', isAuthenticated);
         
-        // Only show toast if user appears to be truly unauthenticated
+        // Only show authentication toast if user appears to be truly unauthenticated
         if (!user || !isAuthenticated) {
           toast({
             title: "Authentication required",
             description: "Please make sure you're logged in to save picks.",
             variant: "destructive",
           });
+        } else {
+          // For authenticated users, this is a configuration issue
+          console.error('🔒 Database configuration issue - RLS policies may be missing or incorrect');
         }
       } else if (error.code === 'PGRST301') {
-        // No matching RLS policy - similar to permission error
-        console.error('No matching RLS policy - check game_picks table policies');
+        console.error('🔒 No matching RLS policy - check game_picks table policies');
       } else if (error.message?.includes('duplicate key') || error.code === '23505') {
         // Unique constraint violation - this is expected with upserts, don't show error
-        console.log('Duplicate key during upsert - this is normal behavior');
+        console.log('ℹ️ Duplicate key during upsert - this is normal behavior');
       } else {
         // Show toast for genuine errors that users should know about
         toast({
