@@ -101,7 +101,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       
       // Handle genre filtering
       if (filters.selectedGenre && filters.selectedGenre.trim() !== '') {
-        // First get game ids that match the genre
         try {
           console.log('Fetching games with genre:', filters.selectedGenre);
           const { data: genreGames, error: genreError } = await supabase
@@ -115,7 +114,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           }
           
           if (genreGames && genreGames.length > 0) {
-            // Filter user_games by the game ids that match the genre
             query = query.in('game_id', genreGames.map(g => g.id));
           } else {
             console.log('No games found with genre:', filters.selectedGenre);
@@ -129,7 +127,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       
       // Apply search filter if provided
       if (filters.search && filters.search.trim() !== '') {
-        // We need to modify our strategy here - we'll get the game IDs first
         try {
           const { data: gameIds, error: searchError } = await supabase
             .from('games')
@@ -144,7 +141,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           if (gameIds && gameIds.length > 0) {
             query = query.in('game_id', gameIds.map(g => g.id));
           } else {
-            // No games match the search, return empty result
             console.log('No games found matching search:', filters.search);
             return { count: 0 };
           }
@@ -171,13 +167,19 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
     enabled: !!user,
   });
   
-  // Main data query - UPDATED to include dependencies for proper invalidation
+  // Main data query - FIXED query key parameters
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.paginatedLibraryGames(user?.id, pagination.page, pagination.pageSize, filters, sortBy, sortDirection),
+    queryKey: queryKeys.paginatedLibraryGames(
+      user?.id, 
+      pagination.page, 
+      pagination.pageSize, 
+      filters, 
+      sortBy, 
+      sortDirection
+    ),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
-      // Calculate pagination range
       const from = (pagination.page - 1) * pagination.pageSize;
       const to = from + pagination.pageSize - 1;
       
@@ -230,7 +232,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           }
           
           if (genreGames && genreGames.length > 0) {
-            // Filter user_games by the game ids that match the genre
             query = query.in('game_id', genreGames.map(g => g.id));
           } else {
             console.log('No games found with genre:', filters.selectedGenre);
@@ -245,8 +246,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       // Add search filter if provided
       if (filters.search && filters.search.trim() !== '') {
         try {
-          // We need a different strategy for text search
-          // First get the game IDs that match the search
           const { data: gameIds, error: searchError } = await supabase
             .from('games')
             .select('id')
@@ -260,7 +259,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           if (gameIds && gameIds.length > 0) {
             query = query.in('game_id', gameIds.map(g => g.id));
           } else {
-            // No games match the search, return empty array
             console.log('No games found matching search:', filters.search);
             return [];
           }
@@ -270,11 +268,10 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
         }
       }
       
-      // Add sorting - IMPROVED logging
+      // Add sorting
       console.log(`Applying sort: ${sortBy} ${sortDirection}`);
       switch (sortBy) {
         case 'name':
-          // For name, we need to sort by the joined games table
           query = query.order('games(name)', { ascending: sortDirection === 'asc' });
           break;
         case 'dust_score':
@@ -290,7 +287,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           query = query.order('last_played_date', { ascending: sortDirection === 'asc', nullsFirst: true });
           break;
         default:
-          // Default to sorting by name
           query = query.order('games(name)', { ascending: true });
       }
       
@@ -308,7 +304,6 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
         
         console.log(`Fetched ${userGames.length} games with sort: ${sortBy} ${sortDirection}`);
         
-        // Transform the nested data into a flatter structure
         return userGames.map((item: any): LibraryGame => ({
           ...item.games,
           userGame: {
@@ -359,7 +354,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
   
   const setPageSize = useCallback((size: number) => {
     setPagination({
-      page: 1, // Reset to first page when changing page size
+      page: 1,
       pageSize: size
     });
   }, []);
@@ -367,7 +362,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
   // Filter controls
   const updateSearchFilter = useCallback((search: string) => {
     setFilters(prev => ({ ...prev, search }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on filter change
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
   
   const toggleHideIgnored = useCallback(() => {
@@ -395,11 +390,10 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
   
-  // Sort controls - IMPROVED with logging
+  // Sort controls
   const updateSort = useCallback((option: SortOption) => {
     console.log(`Paginated: Updating sort from ${sortBy} ${sortDirection} to ${option}`);
     if (sortBy === option) {
-      // Toggle direction if clicking the same sort option
       const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
       setSortDirection(newDirection);
       console.log(`Paginated: Toggled sort direction to: ${newDirection}`);
@@ -408,10 +402,10 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       setSortDirection('asc');
       console.log(`Paginated: Changed sort to: ${option} asc`);
     }
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page on sort change
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, [sortBy, sortDirection]);
   
-  // Action handlers (simplified, actual mutations would need proper implementation)
+  // Action handlers
   const markAsPlayed = async (userGameId: string) => {
     if (!user) return;
     

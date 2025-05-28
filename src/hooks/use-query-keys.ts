@@ -3,15 +3,38 @@
  * Central location for all query keys used in the application
  * This helps ensure consistency in cache management and invalidation
  */
+
+// Type definitions for query key parameters
+type FilterOptions = {
+  search: string;
+  hideIgnored: boolean;
+  onlyUnplayed: boolean;
+  selectedGenre: string;
+};
+
 export const queryKeys = {
   // User data
   profile: (userId?: string) => ['profile', userId],
   
   // Library data
   libraryGames: (userId?: string) => ['libraryGames', userId],
-  paginatedLibraryGames: (userId?: string, page?: number) => 
-    ['paginatedLibraryGames', userId, page],
-  libraryGamesCount: (userId?: string, filters?: any) => 
+  paginatedLibraryGames: (
+    userId?: string, 
+    page?: number, 
+    pageSize?: number, 
+    filters?: FilterOptions, 
+    sortBy?: string, 
+    sortDirection?: string
+  ) => [
+    'paginatedLibraryGames', 
+    userId, 
+    page, 
+    pageSize, 
+    filters, 
+    sortBy, 
+    sortDirection
+  ],
+  libraryGamesCount: (userId?: string, filters?: FilterOptions) => 
     ['libraryGamesCount', userId, filters],
   
   // Unplayed data
