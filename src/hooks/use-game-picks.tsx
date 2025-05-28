@@ -30,53 +30,66 @@ export const useGamePicks = () => {
 
       console.log('Fetching recent pick for user:', user.id);
 
-      const { data: pickData, error } = await supabase
+      // First, get the most recent pick
+      const { data: pickData, error: pickError } = await supabase
         .from('game_picks')
-        .select(`
-          id,
-          game_id,
-          picked_at,
-          filters,
-          games (
-            id,
-            name,
-            image_url,
-            header_image,
-            release_date,
-            price_cents,
-            genres,
-            categories,
-            description,
-            developer,
-            publisher
-          ),
-          user_games (
-            acquisition_date,
-            playtime_minutes
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('picked_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching recent pick:', error);
-        throw error;
+      if (pickError) {
+        console.error('Error fetching recent pick:', pickError);
+        throw pickError;
       }
 
-      console.log('Recent pick data:', pickData);
+      if (!pickData) {
+        console.log('No recent pick found');
+        return null;
+      }
 
-      // Transform the data to match our GamePick interface if data exists
-      if (!pickData) return null;
+      console.log('Recent pick found:', pickData);
 
+      // Get the game data for this pick
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('*')
+        .eq('id', pickData.game_id)
+        .single();
+
+      if (gameError) {
+        console.error('Error fetching game data:', gameError);
+        // Don't throw here, we can still return the pick without full game data
+      }
+
+      // Get the user's game data for this specific game
+      const { data: userGameData, error: userGameError } = await supabase
+        .from('user_games')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('game_id', pickData.game_id)
+        .maybeSingle();
+
+      if (userGameError) {
+        console.error('Error fetching user game data:', userGameError);
+        // Don't throw here, we can still return the pick without user game data
+      }
+
+      console.log('Complete pick data assembled:', {
+        pick: pickData,
+        game: gameData,
+        userGame: userGameData
+      });
+
+      // Transform the data to match our GamePick interface
       return {
         id: pickData.id,
         game_id: pickData.game_id,
         picked_at: pickData.picked_at,
         filters: pickData.filters as GamePickFilters,
-        game: pickData.games,
-        userGameData: pickData.user_games?.[0]
+        game: gameData,
+        userGameData: userGameData
       } as GamePick;
     },
     enabled: isAuthenticated,
@@ -141,12 +154,20 @@ export const useGamePicks = () => {
         fullError: error
       });
       
-      // Only show error toast for actual failures (not race condition conflicts that resolve)
-      toast({
-        title: "Failed to save pick",
-        description: "Your selection could not be saved. Please try again.",
-        variant: "destructive",
-      });
+      // Handle specific RLS error
+      if (error.code === '42501') {
+        toast({
+          title: "Authentication required",
+          description: "Please make sure you're logged in to save picks.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to save pick",
+          description: "Your selection could not be saved. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
