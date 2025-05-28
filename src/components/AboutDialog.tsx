@@ -161,11 +161,11 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
             
             <AccordionItem value="international">
               <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                Can I use this if I'm outside the U.S.?
+                What's up with that supabase.unplayed.wtf URL?
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p>
-                  Yep! We convert prices to your Steam currency region and don't gate features by location. If you've got a backlog, you're one of us.
+                  We use Supabase for our database and authentication. I don't know how it all works exactly. Maybe magic. Please don't ask me any more technical questions.
                 </p>
               </AccordionContent>
             </AccordionItem>
