@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, RotateCcw, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
@@ -51,6 +52,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   // Helper functions for backward compatibility
   const getGameReleaseDate = () => game.release_date || game.releaseDate;
   const getGamePriceCents = () => game.price_cents || (game.price ? game.price * 100 : undefined);
+
+  // Check if description is long enough to warrant scrolling
+  const isDescriptionLong = game.description && game.description.length > 300;
 
   return (
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg">
@@ -110,15 +114,21 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
           )}
         </div>
 
-        {/* Game Description - Scrollable */}
+        {/* Game Description - Conditional ScrollArea */}
         {game.description && (
           <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
             <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
-            <ScrollArea className="max-h-32">
-              <div className="text-gray-300 leading-relaxed text-sm pr-4">
+            {isDescriptionLong ? (
+              <ScrollArea className="max-h-32">
+                <div className="text-gray-300 leading-relaxed text-sm pr-4">
+                  {game.description.replace(/<[^>]*>/g, '')}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-gray-300 leading-relaxed text-sm">
                 {game.description.replace(/<[^>]*>/g, '')}
               </div>
-            </ScrollArea>
+            )}
           </div>
         )}
 

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,9 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
     const steamStoreUrl = `https://store.steampowered.com/app/${recentPick.game_id}`;
     window.open(steamStoreUrl, '_blank');
   };
+
+  // Check if description is long enough to warrant scrolling
+  const isDescriptionLong = gameData?.description && gameData.description.length > 300;
 
   return (
     <Card className="bg-gray-900/50 border-gray-700">
@@ -128,15 +132,21 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           )}
         </div>
 
-        {/* Game Description - Scrollable */}
+        {/* Game Description - Conditional ScrollArea */}
         {gameData?.description && (
           <div className="bg-gray-800/20 rounded-lg p-4">
             <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
-            <ScrollArea className="max-h-32">
-              <div className="text-gray-300 leading-relaxed text-sm pr-4">
+            {isDescriptionLong ? (
+              <ScrollArea className="max-h-32">
+                <div className="text-gray-300 leading-relaxed text-sm pr-4">
+                  {gameData.description.replace(/<[^>]*>/g, '')}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-gray-300 leading-relaxed text-sm">
                 {gameData.description.replace(/<[^>]*>/g, '')}
               </div>
-            </ScrollArea>
+            )}
           </div>
         )}
 
