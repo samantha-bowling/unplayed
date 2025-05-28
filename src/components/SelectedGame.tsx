@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, RotateCcw, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
@@ -6,6 +5,7 @@ import { GameListItem } from '@/types/unplayed-data.types';
 import { getBestGameImage } from '@/utils/image-utils';
 import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
@@ -65,13 +65,17 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
           {headerMessage}
         </h2>
         
-        {/* Game Info - Enhanced Layout */}
+        {/* Game Info - Enhanced Layout with 16:9 Aspect Ratio */}
         <div className="flex items-start space-x-4 mb-6">
-          <img 
-            src={gameImage} 
-            alt={game.name}
-            className="w-24 h-24 object-cover rounded-lg shadow-md"
-          />
+          <div className="w-32 flex-shrink-0">
+            <AspectRatio ratio={16 / 9}>
+              <img 
+                src={gameImage} 
+                alt={game.name}
+                className="w-full h-full object-cover rounded-lg shadow-md"
+              />
+            </AspectRatio>
+          </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-white mb-2 leading-tight">{game.name}</h3>
             {game.developer && game.developer.length > 0 && (

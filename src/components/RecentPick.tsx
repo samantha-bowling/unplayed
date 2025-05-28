@@ -7,6 +7,7 @@ import { GamePick } from '@/types/picks.types';
 import { getBestGameImage } from '@/utils/image-utils';
 import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
@@ -68,13 +69,17 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Game Info - Enhanced Layout */}
+        {/* Game Info - Enhanced Layout with 16:9 Aspect Ratio */}
         <div className="flex items-start space-x-4">
-          <img 
-            src={gameImage} 
-            alt={gameName}
-            className="w-24 h-24 object-cover rounded-lg shadow-md"
-          />
+          <div className="w-32 flex-shrink-0">
+            <AspectRatio ratio={16 / 9}>
+              <img 
+                src={gameImage} 
+                alt={gameName}
+                className="w-full h-full object-cover rounded-lg shadow-md"
+              />
+            </AspectRatio>
+          </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-white mb-2 leading-tight">{gameName}</h3>
             {gameData?.developer && gameData.developer.length > 0 && (
