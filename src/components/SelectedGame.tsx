@@ -19,7 +19,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   onRollAgain,
   disabled = false
 }) => {
-  const gameImage = getBestGameImage(game.headerImage, game.imageUrl, game.id);
+  const gameImage = getBestGameImage(game.header_image, game.image, game.id);
   
   const handleViewOnSteam = () => {
     const steamStoreUrl = `https://store.steampowered.com/app/${game.id}`;
