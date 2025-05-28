@@ -28,9 +28,12 @@ export const DemoModeProvider = ({ children }: { children: React.ReactNode }) =>
   const { status, isLoading } = useAuth();
 
   const enableDemo = useCallback(() => {
-    setIsDemo(true);
-    setIsDemoExplicit(true);
-  }, []);
+    // Only allow demo mode if user is not authenticated
+    if (status === 'UNAUTHENTICATED') {
+      setIsDemo(true);
+      setIsDemoExplicit(true);
+    }
+  }, [status]);
 
   const disableDemo = useCallback(() => {
     setIsDemo(false);
@@ -38,14 +41,16 @@ export const DemoModeProvider = ({ children }: { children: React.ReactNode }) =>
   }, []);
 
   useEffect(() => {
-    // Enable demo mode by default if not authenticated
-    if (status === 'UNAUTHENTICATED') {
+    // If user is authenticated, force demo mode off
+    if (status === 'AUTHENTICATED') {
+      setIsDemo(false);
+      setIsDemoExplicit(false);
+    } else if (status === 'UNAUTHENTICATED') {
+      // Enable demo mode by default if not authenticated
       setIsDemo(true);
       setIsDemoExplicit(false);
-    } else {
-      setIsDemo(isDemoExplicit);
     }
-  }, [status, isDemoExplicit]);
+  }, [status]);
 
   const contextValue: DemoModeContextType = {
     isDemo,

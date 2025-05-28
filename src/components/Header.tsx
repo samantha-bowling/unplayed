@@ -205,7 +205,7 @@ const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                // Non-admin user avatar with dropdown
+                // Non-admin authenticated user avatar with dropdown (no preview mode toggle)
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
@@ -231,18 +231,6 @@ const Header = () => {
                         <span className="text-xs text-gray-400">Manage your account</span>
                       </div>
                     </DropdownMenuLabel>
-                    
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                    
-                    {/* Demo Mode Toggle */}
-                    <div className="px-2 py-1.5 flex items-center justify-between">
-                      <span className="text-sm text-gray-400">Preview Mode</span>
-                      <Switch 
-                        checked={isDemoExplicit}
-                        onCheckedChange={setIsDemoExplicit}
-                        className="scale-75 data-[state=checked]:bg-unplayed-amber"
-                      />
-                    </div>
                     
                     <DropdownMenuSeparator className="bg-gray-700" />
                     
@@ -346,21 +334,11 @@ const Header = () => {
                     {profile?.steam_name || 'User'}
                   </div>
                   
-                  {/* Demo Mode toggle for logged-in users on mobile */}
-                  <div className="flex items-center space-x-2 text-xs">
-                    <span className="text-gray-400">Preview Mode</span>
-                    <Switch 
-                      checked={isDemoExplicit}
-                      onCheckedChange={setIsDemoExplicit}
-                      className="scale-75 data-[state=checked]:bg-unplayed-amber"
-                    />
-                  </div>
-                  
                   <button onClick={signOut} className="btn-secondary w-full mt-2">
                     Logout
                   </button>
                   
-                  {/* Delete account button for mobile */}
+                  {/* Delete account button for mobile - removed preview mode toggle */}
                   {!isAdmin && (
                     <button 
                       onClick={() => setShowDeletionModal(true)} 

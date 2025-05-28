@@ -5,7 +5,6 @@ import useGamePicks from '@/hooks/use-game-picks';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
 import { useAuth } from '@/context/AuthContext';
-import { useDemoMode } from '@/context/DemoModeContext';
 
 type PickerScope = 'unplayed' | 'all';
 
@@ -16,7 +15,6 @@ export const usePickerData = () => {
   const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
   const { recentPick, isLoadingPicks, savePick, isSaving } = useGamePicks();
   const { user } = useAuth();
-  const { isDemo } = useDemoMode();
   const [scope, setScope] = useState<PickerScope>('unplayed');
   const [activeMood, setActiveMood] = useState<string | null>(null);
   const [preventDuplicates, setPreventDuplicates] = useState(true);
@@ -26,17 +24,16 @@ export const usePickerData = () => {
   const [currentSessionPick, setCurrentSessionPick] = useState<GameListItem | null>(null);
   const [hasPickedInSession, setHasPickedInSession] = useState(false);
   
-  // Check if user is properly authenticated (not just demo mode)
-  const isAuthenticated = !!user && !isDemo;
+  // Simplified authentication check - no more demo mode conflicts
+  const isAuthenticated = !!user;
   
   // Log data received
   useEffect(() => {
     console.log('usePickerData - unplayedData:', unplayedData);
     console.log('usePickerData - gamesList length:', unplayedData?.gamesList?.length || 0);
-    console.log('usePickerData - demo mode:', isDemo);
     console.log('usePickerData - authenticated:', isAuthenticated);
     console.log('usePickerData - user:', user);
-  }, [unplayedData, isDemo, isAuthenticated, user]);
+  }, [unplayedData, isAuthenticated, user]);
   
   // Get recent pick IDs for duplicate prevention
   const recentPickIds = useMemo(() => {
@@ -114,7 +111,7 @@ export const usePickerData = () => {
     setCurrentSessionPick(selectedGame);
     setHasPickedInSession(true);
     
-    // Only save to database if user is properly authenticated
+    // Save to database if user is authenticated
     if (isAuthenticated && selectedGame) {
       console.log('selectRandomGame - Saving pick to database for authenticated user');
       savePick({
@@ -125,7 +122,7 @@ export const usePickerData = () => {
         }
       });
     } else {
-      console.log('selectRandomGame - Skipping database save (user not authenticated or demo mode)');
+      console.log('selectRandomGame - Skipping database save (user not authenticated)');
     }
     
     return selectedGame;
