@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -13,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { getBestGameImage } from '@/utils/image-utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const SpendPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -204,25 +206,31 @@ const SpendPage = () => {
                             {unplayedSpendingData.topSpendingGames.slice(0, 20).map((game) => (
                               <tr key={game.id} className="border-b border-gray-800 hover:bg-gray-900/20">
                                 <td className="px-4 py-3">
-                                  <div className="flex items-center">
-                                    <img 
-                                      src={getBestGameImage(null, game.imageUrl, game.id)} 
-                                      alt={game.title}
-                                      className="w-12 h-12 mr-3 rounded object-cover flex-shrink-0"
-                                      onError={handleImageError}
-                                    />
-                                    <span 
-                                      className="font-medium max-w-[300px] md:max-w-[400px]"
-                                      title={game.title}
-                                      style={{
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        display: 'block'
-                                      }}
-                                    >
-                                      {game.title.length > 45 ? `${game.title.substring(0, 45)}...` : game.title}
-                                    </span>
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-16 h-9 flex-shrink-0">
+                                      <AspectRatio ratio={16 / 9}>
+                                        <img 
+                                          src={getBestGameImage(null, game.imageUrl, game.id)} 
+                                          alt={game.title}
+                                          className="w-full h-full object-cover rounded shadow-sm"
+                                          onError={handleImageError}
+                                        />
+                                      </AspectRatio>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <span 
+                                        className="font-medium text-white block"
+                                        title={game.title}
+                                        style={{
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          maxWidth: '250px'
+                                        }}
+                                      >
+                                        {game.title}
+                                      </span>
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 text-right">
