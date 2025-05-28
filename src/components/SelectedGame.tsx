@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, RotateCcw, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
+import { Play, RotateCcw, ExternalLink, Calendar, Clock, DollarSign, FileText } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { getBestGameImage } from '@/utils/image-utils';
 import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
@@ -27,6 +27,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   headerMessage = "Your Random Pick"
 }) => {
   const gameImage = getBestGameImage(game.header_image, game.image, game.id);
+  const [showDescription, setShowDescription] = useState(false);
   
   const {
     review,
@@ -52,12 +53,17 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     });
   };
 
+  const handleToggleDescription = () => {
+    setShowDescription(!showDescription);
+  };
+
   // Helper functions for backward compatibility
   const getGameReleaseDate = () => game.release_date || game.releaseDate;
   const getGamePriceCents = () => game.price_cents || (game.price ? game.price * 100 : undefined);
 
   // Check if description is long enough to warrant scrolling - lowered threshold
   const isDescriptionLong = game.description && game.description.length > 200;
+  const hasDescription = game.description && game.description.trim().length > 0;
 
   return (
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg">
@@ -121,19 +127,35 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
           )}
         </div>
 
-        {/* Game Description - Enhanced ScrollArea with better visibility */}
-        {game.description && (
+        {/* User-Triggered Game Description */}
+        {hasDescription && (
           <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
-            <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
-            {isDescriptionLong ? (
-              <ScrollArea className="max-h-40">
-                <div className="text-gray-300 leading-relaxed text-sm pr-4">
-                  {game.description.replace(/<[^>]*>/g, '')}
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="text-gray-300 leading-relaxed text-sm">
-                {game.description.replace(/<[^>]*>/g, '')}
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-gray-300 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
+              <Button
+                onClick={handleToggleDescription}
+                variant="ghost"
+                size="sm"
+                className="text-gray-400 hover:text-gray-200 p-2"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                {showDescription ? "Hide description" : "Show description"}
+              </Button>
+            </div>
+            
+            {showDescription && (
+              <div className="animate-fade-in">
+                {isDescriptionLong ? (
+                  <ScrollArea className="max-h-40">
+                    <div className="text-gray-300 leading-relaxed text-sm pr-4">
+                      {game.description.replace(/<[^>]*>/g, '')}
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <div className="text-gray-300 leading-relaxed text-sm">
+                    {game.description.replace(/<[^>]*>/g, '')}
+                  </div>
+                )}
               </div>
             )}
           </div>
