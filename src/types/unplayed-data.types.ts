@@ -1,4 +1,3 @@
-
 /**
  * Core game data structure used throughout the app
  */
@@ -9,11 +8,18 @@ export interface GameListItem {
   header_image?: string | null;
   playtimeMinutes: number;
   releaseDate?: string | null;
+  release_date?: string | null; // Added for compatibility with database format
   price?: number;
+  price_cents?: number; // Added for compatibility with database format
   genres?: string[];
   categories?: string[];
   addedDate?: string;
   dustScore?: number;
+  developer?: string[]; // Added for developer information
+  publisher?: string[]; // Added for publisher information
+  description?: string; // Added for game description
+  platforms?: string[]; // Added for platform information
+  screenshots?: string[]; // Added for screenshots
 }
 
 /**

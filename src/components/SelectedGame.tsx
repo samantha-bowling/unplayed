@@ -47,6 +47,10 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     });
   };
 
+  // Helper functions for backward compatibility
+  const getGameReleaseDate = () => game.release_date || game.releaseDate;
+  const getGamePriceCents = () => game.price_cents || (game.price ? game.price * 100 : undefined);
+
   return (
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg">
       <div className="p-6 pb-4">
@@ -82,11 +86,11 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
         {/* Game Metadata - Enhanced Display */}
         <div className="grid grid-cols-1 gap-3 text-sm bg-gray-800/30 rounded-lg p-4 mb-6">
-          {game.release_date && (
+          {getGameReleaseDate() && (
             <div className="flex items-center text-gray-300">
               <Calendar className="w-4 h-4 mr-3 text-gray-500" />
               <span className="text-gray-500 mr-2 min-w-[80px]">Released:</span>
-              <span className="font-medium">{formatDate(game.release_date)}</span>
+              <span className="font-medium">{formatDate(getGameReleaseDate())}</span>
             </div>
           )}
           
@@ -96,11 +100,11 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             <span className="font-medium">{formatPlaytime(game.playtimeMinutes)}</span>
           </div>
 
-          {game.price_cents && (
+          {getGamePriceCents() && (
             <div className="flex items-center text-gray-300">
               <DollarSign className="w-4 h-4 mr-3 text-gray-500" />
               <span className="text-gray-500 mr-2 min-w-[80px]">Price:</span>
-              <span className="font-medium">{formatPrice(game.price_cents)}</span>
+              <span className="font-medium">{formatPrice(getGamePriceCents())}</span>
             </div>
           )}
         </div>

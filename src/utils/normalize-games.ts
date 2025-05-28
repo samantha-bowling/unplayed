@@ -22,11 +22,19 @@ export const buildGamesList = (data: any[]): GameListItem[] => {
     id: item.game_id || item.id || item.appid,
     name: item.games?.name || item.name || 'Unknown Game',
     image: item.games?.image_url || item.games?.header_image || item.image || item.img_icon_url || '',
+    header_image: item.games?.header_image || item.header_image || null,
     playtimeMinutes: item.playtime_minutes || item.playtime_forever || 0,
-    releaseDate: item.games?.release_date || null,
+    releaseDate: item.games?.release_date || item.release_date || null,
+    release_date: item.games?.release_date || item.release_date || null,
     price: item.games?.price_cents ? item.games.price_cents / 100 : undefined,
-    genres: item.games?.genres || [],
-    categories: item.games?.categories || []
+    price_cents: item.games?.price_cents || item.price_cents || undefined,
+    genres: item.games?.genres || item.genres || [],
+    categories: item.games?.categories || item.categories || [],
+    developer: item.games?.developer || item.developer || [],
+    publisher: item.games?.publisher || item.publisher || [],
+    description: item.games?.description || item.description || undefined,
+    platforms: item.games?.platforms || item.platforms || [],
+    screenshots: item.games?.screenshots || item.screenshots || []
   }));
 };
 
