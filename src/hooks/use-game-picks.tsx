@@ -70,7 +70,7 @@ export const useGamePicks = () => {
     enabled: isAuthenticated,
   });
 
-  // Mutation for saving a new pick (using upsert logic)
+  // Mutation for saving a new pick using defensive update-or-insert approach
   const {
     mutate: savePick,
     isPending: isSaving,
@@ -81,23 +81,64 @@ export const useGamePicks = () => {
         throw new Error('User must be authenticated to save picks');
       }
 
-      // Use upsert logic to replace any existing pick for this user
-      const { data, error } = await supabase
+      const pickData = {
+        user_id: user.id,
+        game_id: gameId,
+        filters: filters as unknown as Json || {},
+        picked_at: new Date().toISOString()
+      };
+
+      console.log('Attempting to save game pick:', { gameId, userId: user.id });
+
+      // Step 1: Try to update existing pick for this user
+      const { data: updateData, error: updateError } = await supabase
         .from('game_picks')
-        .upsert({
-          user_id: user.id,
+        .update({
           game_id: gameId,
-          filters: filters as unknown as Json || {},
-          picked_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
+          filters: pickData.filters,
+          picked_at: pickData.picked_at
         })
+        .eq('user_id', user.id)
         .select();
 
-      if (error) throw error;
-      return data[0];
+      if (updateError) {
+        console.error('Error during update attempt:', {
+          message: updateError.message,
+          details: updateError.details,
+          code: updateError.code,
+          hint: updateError.hint
+        });
+        throw updateError;
+      }
+
+      // Step 2: If no rows were updated, insert a new pick
+      if (!updateData || updateData.length === 0) {
+        console.log('No existing pick found, inserting new pick');
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from('game_picks')
+          .insert(pickData)
+          .select();
+
+        if (insertError) {
+          console.error('Error during insert attempt:', {
+            message: insertError.message,
+            details: insertError.details,
+            code: insertError.code,
+            hint: insertError.hint
+          });
+          throw insertError;
+        }
+
+        console.log('Successfully inserted new pick');
+        return insertData[0];
+      }
+
+      console.log('Successfully updated existing pick');
+      return updateData[0];
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Game pick saved successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['gamePicks', user?.id] });
       toast({
         title: "Game picked!",
@@ -105,10 +146,17 @@ export const useGamePicks = () => {
       });
     },
     onError: (error) => {
-      console.error('Error saving game pick:', error);
+      console.error('Error saving game pick:', {
+        message: error.message,
+        details: error.details || 'No additional details',
+        code: error.code || 'No error code',
+        hint: error.hint || 'No hint provided',
+        fullError: error
+      });
+      
       toast({
         title: "Failed to save pick",
-        description: "Your selection could not be saved.",
+        description: "Your selection could not be saved. Please try again.",
         variant: "destructive",
       });
     },
