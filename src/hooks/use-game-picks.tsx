@@ -9,8 +9,7 @@ import { GamePick, GamePickFilters } from '@/types/picks.types';
 import { 
   getAuthDebugInfo, 
   testGamePicksRLS, 
-  logDatabaseError, 
-  debugSupabaseOperation 
+  logDatabaseError
 } from '@/utils/supabase-debug';
 
 // Type for Supabase-compatible JSON
@@ -55,27 +54,21 @@ export const useGamePicks = () => {
       console.log('🔍 Auth info during query:', authInfo);
 
       // First, get the most recent pick with enhanced debugging
-      const pickResult = await debugSupabaseOperation(
-        () => supabase
-          .from('game_picks')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('picked_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        {
-          operation: 'SELECT',
-          table: 'game_picks',
-          details: { userId: user.id, operation: 'get recent pick' }
-        }
-      );
+      const { data: pickData, error: pickError } = await supabase
+        .from('game_picks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('picked_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (pickResult.error) {
+      if (pickError) {
         // Enhanced error handling with specific guidance
-        console.error('🔒 Error fetching recent pick:', pickResult.error);
+        console.error('🔒 Error fetching recent pick:', pickError);
+        logDatabaseError('SELECT', 'game_picks', pickError, { userId: user.id, operation: 'get recent pick' });
         
         // Don't throw for permission errors in authenticated users - this indicates RLS issues
-        if (pickResult.error.code === '42501' || pickResult.error.code === 'PGRST301') {
+        if (pickError.code === '42501' || pickError.code === 'PGRST301') {
           console.error('🔒 RLS permission issue - this should not happen for authenticated users');
           console.error('🔒 Recommended actions:');
           console.error('   1. Check if game_picks table has RLS enabled');
@@ -83,10 +76,9 @@ export const useGamePicks = () => {
           console.error('   3. Ensure policies allow user to access their own picks');
           return null;
         }
-        throw pickResult.error;
+        throw pickError;
       }
 
-      const pickData = pickResult.data;
       if (!pickData) {
         console.log('✅ No recent pick found for user');
         return null;
@@ -95,46 +87,34 @@ export const useGamePicks = () => {
       console.log('✅ Recent pick found:', pickData);
 
       // Get the game data for this pick with debugging
-      const gameResult = await debugSupabaseOperation(
-        () => supabase
-          .from('games')
-          .select('*')
-          .eq('id', pickData.game_id)
-          .single(),
-        {
-          operation: 'SELECT',
-          table: 'games',
-          details: { gameId: pickData.game_id }
-        }
-      );
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('*')
+        .eq('id', pickData.game_id)
+        .single();
 
-      if (gameResult.error) {
-        console.error('⚠️ Error fetching game data - continuing without it:', gameResult.error);
+      if (gameError) {
+        console.error('⚠️ Error fetching game data - continuing without it:', gameError);
+        logDatabaseError('SELECT', 'games', gameError, { gameId: pickData.game_id });
       }
 
       // Get the user's game data for this specific game with debugging
-      const userGameResult = await debugSupabaseOperation(
-        () => supabase
-          .from('user_games')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('game_id', pickData.game_id)
-          .maybeSingle(),
-        {
-          operation: 'SELECT',
-          table: 'user_games',
-          details: { userId: user.id, gameId: pickData.game_id }
-        }
-      );
+      const { data: userGameData, error: userGameError } = await supabase
+        .from('user_games')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('game_id', pickData.game_id)
+        .maybeSingle();
 
-      if (userGameResult.error) {
-        console.error('⚠️ Error fetching user game data - continuing without it:', userGameResult.error);
+      if (userGameError) {
+        console.error('⚠️ Error fetching user game data - continuing without it:', userGameError);
+        logDatabaseError('SELECT', 'user_games', userGameError, { userId: user.id, gameId: pickData.game_id });
       }
 
       console.log('✅ Complete pick data assembled:', {
         pick: pickData,
-        game: gameResult.data,
-        userGame: userGameResult.data
+        game: gameData,
+        userGame: userGameData
       });
 
       // Transform the data to match our GamePick interface
@@ -143,8 +123,8 @@ export const useGamePicks = () => {
         game_id: pickData.game_id,
         picked_at: pickData.picked_at,
         filters: pickData.filters as GamePickFilters,
-        game: gameResult.data,
-        userGameData: userGameResult.data
+        game: gameData,
+        userGameData: userGameData
       } as GamePick;
     },
     enabled: isAuthenticated,
@@ -168,37 +148,31 @@ export const useGamePicks = () => {
       console.log('🔍 Auth info during save:', authInfo);
 
       // Use PostgreSQL upsert (ON CONFLICT DO UPDATE) for better race condition handling
-      const saveResult = await debugSupabaseOperation(
-        () => supabase
-          .from('game_picks')
-          .upsert(
-            {
-              user_id: user.id,
-              game_id: gameId,
-              filters: (filters as unknown as Json) || {},
-              picked_at: new Date().toISOString()
-            },
-            {
-              onConflict: 'user_id',
-              ignoreDuplicates: false
-            }
-          )
-          .select()
-          .single(),
-        {
-          operation: 'UPSERT',
-          table: 'game_picks',
-          details: { userId: user.id, gameId, filters }
-        }
-      );
+      const { data, error } = await supabase
+        .from('game_picks')
+        .upsert(
+          {
+            user_id: user.id,
+            game_id: gameId,
+            filters: (filters as unknown as Json) || {},
+            picked_at: new Date().toISOString()
+          },
+          {
+            onConflict: 'user_id',
+            ignoreDuplicates: false
+          }
+        )
+        .select()
+        .single();
 
-      if (saveResult.error) {
-        console.error('💥 Error saving game pick:', saveResult.error);
-        throw saveResult.error;
+      if (error) {
+        console.error('💥 Error saving game pick:', error);
+        logDatabaseError('UPSERT', 'game_picks', error, { userId: user.id, gameId, filters });
+        throw error;
       }
 
-      console.log('✅ Successfully saved game pick:', saveResult.data);
-      return saveResult.data;
+      console.log('✅ Successfully saved game pick:', data);
+      return data;
     },
     onSuccess: (data) => {
       console.log('✅ Game pick saved successfully:', data);

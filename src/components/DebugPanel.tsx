@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight, Bug } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import useAuthPermission from '@/hooks/use-auth-permission';
 import { 
   getAuthDebugInfo, 
   testGamePicksRLS, 
@@ -13,17 +14,21 @@ import {
 
 /**
  * Debug panel for troubleshooting authentication and database issues
- * Only visible in development or when explicitly enabled
+ * Only visible to authenticated admin users in development or when explicitly enabled
  */
 const DebugPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const { user, status } = useAuth();
+  const { isAdmin, isLoading: isLoadingPermissions } = useAuthPermission();
 
-  // Only show in development or when debug flag is set
+  // Only show to authenticated admin users in development or when debug flag is set
   const shouldShowDebugPanel = 
-    process.env.NODE_ENV === 'development' || 
-    localStorage.getItem('enableDebugPanel') === 'true';
+    user && // Must be authenticated
+    isAdmin && // Must be admin
+    !isLoadingPermissions && // Permissions must be loaded
+    (process.env.NODE_ENV === 'development' || 
+     localStorage.getItem('enableDebugPanel') === 'true');
 
   if (!shouldShowDebugPanel) {
     return null;
@@ -53,7 +58,7 @@ const DebugPanel = () => {
             <CardHeader className="cursor-pointer hover:bg-gray-800 pb-2">
               <CardTitle className="flex items-center text-sm text-amber-400">
                 <Bug className="h-4 w-4 mr-2" />
-                Debug Panel
+                Debug Panel (Admin)
                 {isOpen ? <ChevronDown className="h-4 w-4 ml-auto" /> : <ChevronRight className="h-4 w-4 ml-auto" />}
               </CardTitle>
             </CardHeader>
@@ -65,6 +70,7 @@ const DebugPanel = () => {
               <div className="text-xs space-y-1">
                 <div className="text-gray-400">Auth Status: <span className="text-white">{status}</span></div>
                 <div className="text-gray-400">User ID: <span className="text-white">{user?.id || 'None'}</span></div>
+                <div className="text-gray-400">Admin: <span className="text-white">{isAdmin ? 'Yes' : 'No'}</span></div>
               </div>
 
               {/* Debug Actions */}

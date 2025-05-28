@@ -151,7 +151,7 @@ export function logDatabaseError(operation: string, tableName: string, error: an
 }
 
 /**
- * Test user's access to various tables
+ * Test user's access to various tables with type-safe approach
  */
 export async function testUserTableAccess(): Promise<void> {
   console.log('🔍 Testing user table access...');
@@ -163,50 +163,79 @@ export async function testUserTableAccess(): Promise<void> {
     return;
   }
 
-  const tables = ['users', 'user_games', 'games', 'game_picks'];
-  
-  for (const table of tables) {
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .limit(1);
-
-      if (error) {
-        console.error(`❌ Access denied to ${table}:`, {
-          code: error.code,
-          message: error.message
-        });
-      } else {
-        console.log(`✅ Access granted to ${table}:`, data?.length || 0, 'records');
-      }
-    } catch (err) {
-      console.error(`💥 Exception accessing ${table}:`, err);
-    }
-  }
-}
-
-/**
- * Enhanced wrapper for Supabase operations with debugging
- */
-export async function debugSupabaseOperation<T>(
-  operation: () => Promise<{ data: T; error: any }>,
-  context: { operation: string; table: string; details?: any }
-): Promise<{ data: T | null; error: any }> {
-  console.log(`🔍 Starting ${context.operation} on ${context.table}`, context.details);
-  
+  // Test access to users table
   try {
-    const result = await operation();
-    
-    if (result.error) {
-      logDatabaseError(context.operation, context.table, result.error, context.details);
-      return { data: null, error: result.error };
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.error(`❌ Access denied to users:`, {
+        code: error.code,
+        message: error.message
+      });
+    } else {
+      console.log(`✅ Access granted to users:`, data?.length || 0, 'records');
     }
-    
-    console.log(`✅ ${context.operation} on ${context.table} succeeded:`, result.data);
-    return result;
   } catch (err) {
-    console.error(`💥 Exception in ${context.operation} on ${context.table}:`, err);
-    return { data: null, error: err };
+    console.error(`💥 Exception accessing users:`, err);
+  }
+
+  // Test access to user_games table
+  try {
+    const { data, error } = await supabase
+      .from('user_games')
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.error(`❌ Access denied to user_games:`, {
+        code: error.code,
+        message: error.message
+      });
+    } else {
+      console.log(`✅ Access granted to user_games:`, data?.length || 0, 'records');
+    }
+  } catch (err) {
+    console.error(`💥 Exception accessing user_games:`, err);
+  }
+
+  // Test access to games table
+  try {
+    const { data, error } = await supabase
+      .from('games')
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.error(`❌ Access denied to games:`, {
+        code: error.code,
+        message: error.message
+      });
+    } else {
+      console.log(`✅ Access granted to games:`, data?.length || 0, 'records');
+    }
+  } catch (err) {
+    console.error(`💥 Exception accessing games:`, err);
+  }
+
+  // Test access to game_picks table
+  try {
+    const { data, error } = await supabase
+      .from('game_picks')
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.error(`❌ Access denied to game_picks:`, {
+        code: error.code,
+        message: error.message
+      });
+    } else {
+      console.log(`✅ Access granted to game_picks:`, data?.length || 0, 'records');
+    }
+  } catch (err) {
+    console.error(`💥 Exception accessing game_picks:`, err);
   }
 }

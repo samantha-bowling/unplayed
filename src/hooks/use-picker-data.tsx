@@ -152,6 +152,7 @@ export const usePickerData = () => {
     hasPickedInSession,
     resetSessionState,
     isSaving: isAuthenticated ? isSaving : false, // Only show saving state for authenticated users
+    user, // Add user to the return object
   };
 };
 
