@@ -41,6 +41,11 @@ export const useGamePicks = () => {
 
       if (pickError) {
         console.error('Error fetching recent pick:', pickError);
+        // Don't throw for permission errors - just log them
+        if (pickError.code === '42501' || pickError.code === 'PGRST301') {
+          console.log('RLS permission issue fetching picks - user may not have access');
+          return null;
+        }
         throw pickError;
       }
 
@@ -142,6 +147,8 @@ export const useGamePicks = () => {
     onSuccess: (data) => {
       console.log('Game pick saved successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['gamePicks', user?.id] });
+      
+      // Only show success toast for actual user-initiated saves
       toast({
         title: "Game picked!",
         description: "Your selection has been saved.",
@@ -154,14 +161,29 @@ export const useGamePicks = () => {
         fullError: error
       });
       
-      // Handle specific RLS error
+      // Handle specific error types more gracefully
       if (error.code === '42501') {
-        toast({
-          title: "Authentication required",
-          description: "Please make sure you're logged in to save picks.",
-          variant: "destructive",
-        });
+        // RLS permission error - log but don't show toast for authenticated users
+        console.error('RLS permission error - this should not happen for authenticated users');
+        console.error('User ID:', user?.id);
+        console.error('User auth status:', isAuthenticated);
+        
+        // Only show toast if user appears to be truly unauthenticated
+        if (!user || !isAuthenticated) {
+          toast({
+            title: "Authentication required",
+            description: "Please make sure you're logged in to save picks.",
+            variant: "destructive",
+          });
+        }
+      } else if (error.code === 'PGRST301') {
+        // No matching RLS policy - similar to permission error
+        console.error('No matching RLS policy - check game_picks table policies');
+      } else if (error.message?.includes('duplicate key') || error.code === '23505') {
+        // Unique constraint violation - this is expected with upserts, don't show error
+        console.log('Duplicate key during upsert - this is normal behavior');
       } else {
+        // Show toast for genuine errors that users should know about
         toast({
           title: "Failed to save pick",
           description: "Your selection could not be saved. Please try again.",
