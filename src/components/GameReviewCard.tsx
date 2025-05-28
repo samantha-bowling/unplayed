@@ -15,6 +15,8 @@ interface GameReviewCardProps {
     language?: string;
   } | null;
   isLoading: boolean;
+  hasFetched: boolean;
+  onGetReview: () => void;
   onGetAnotherReview: () => void;
   gameId?: number;
 }
@@ -22,9 +24,26 @@ interface GameReviewCardProps {
 const GameReviewCard: React.FC<GameReviewCardProps> = ({ 
   review, 
   isLoading, 
+  hasFetched,
+  onGetReview,
   onGetAnotherReview,
   gameId
 }) => {
+  // Show initial "Get Review" button if we haven't fetched yet
+  if (!hasFetched) {
+    return (
+      <div className="mt-4 p-4 bg-gray-800/50 rounded-md border border-gray-700 text-center">
+        <Button 
+          onClick={onGetReview}
+          className="bg-unplayed-amber hover:bg-unplayed-amber/80 text-black font-semibold"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Finding reasons...' : 'Give me a reason to play'}
+        </Button>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="mt-4 p-3 bg-gray-800/50 rounded-md animate-pulse">

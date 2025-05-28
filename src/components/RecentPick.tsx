@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,8 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
   const {
     review,
     isLoading: isLoadingReview,
+    hasFetched,
+    fetchReviews,
     cycleNextReview,
     tryAnotherFallback,
     hasReviews
@@ -141,13 +142,11 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
 
         {/* Steam Review Section - Enhanced */}
         <div className="bg-gray-800/20 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Give me a reason to play</h4>
-          </div>
-          
           <GameReviewCard
             review={review}
             isLoading={isLoadingReview}
+            hasFetched={hasFetched}
+            onGetReview={fetchReviews}
             onGetAnotherReview={hasReviews ? cycleNextReview : tryAnotherFallback}
             gameId={recentPick.game_id}
           />

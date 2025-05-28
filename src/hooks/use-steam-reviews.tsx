@@ -40,6 +40,7 @@ interface SteamReviewsData {
 const useSteamReviews = (gameId: number | null) => {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [fallbackLevel, setFallbackLevel] = useState(0);
+  const [shouldFetch, setShouldFetch] = useState(false); // New state to control fetching
 
   // The main query to fetch reviews using the edge function
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -73,7 +74,7 @@ const useSteamReviews = (gameId: number | null) => {
         throw err;
       }
     },
-    enabled: !!gameId,
+    enabled: !!gameId && shouldFetch, // Only fetch when explicitly triggered
     retry: 1,
     retryDelay: 1000,
   });
@@ -82,6 +83,11 @@ const useSteamReviews = (gameId: number | null) => {
   const currentReview = data?.reviews && data.reviews.length > 0 
     ? data.reviews[currentReviewIndex % data.reviews.length] 
     : null;
+  
+  // Function to trigger fetching reviews
+  const fetchReviews = () => {
+    setShouldFetch(true);
+  };
   
   // Function to cycle to the next review
   const cycleNextReview = () => {
@@ -111,6 +117,8 @@ const useSteamReviews = (gameId: number | null) => {
     isError,
     error,
     hasReviews: data?.reviews && data.reviews.length > 0,
+    hasFetched: shouldFetch && !isLoading, // Whether we've attempted to fetch
+    fetchReviews,
     cycleNextReview,
     tryAnotherFallback,
     fallbackLevel,

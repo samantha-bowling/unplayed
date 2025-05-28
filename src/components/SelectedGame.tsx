@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, RotateCcw, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
@@ -28,6 +27,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const {
     review,
     isLoading: isLoadingReview,
+    hasFetched,
+    fetchReviews,
     cycleNextReview,
     tryAnotherFallback,
     hasReviews
@@ -123,13 +124,11 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
         {/* Steam Review Section */}
         <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Give me a reason to play</h4>
-          </div>
-          
           <GameReviewCard
             review={review}
             isLoading={isLoadingReview}
+            hasFetched={hasFetched}
+            onGetReview={fetchReviews}
             onGetAnotherReview={hasReviews ? cycleNextReview : tryAnotherFallback}
             gameId={game.id}
           />
