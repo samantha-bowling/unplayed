@@ -27,6 +27,9 @@ export interface DatabaseGame {
   price_cents?: number | null;
   genres?: string[] | null;
   categories?: string[] | null;
+  description?: string | null;
+  developer?: string[] | null;
+  publisher?: string[] | null;
 }
 
 /**
