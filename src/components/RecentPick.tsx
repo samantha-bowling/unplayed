@@ -6,6 +6,7 @@ import { ExternalLink, Play, Calendar, Clock, DollarSign } from 'lucide-react';
 import { GamePick } from '@/types/picks.types';
 import { getBestGameImage } from '@/utils/image-utils';
 import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
@@ -126,13 +127,15 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           )}
         </div>
 
-        {/* Game Description - Full Display */}
+        {/* Game Description - Scrollable */}
         {gameData?.description && (
           <div className="bg-gray-800/20 rounded-lg p-4">
             <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
-            <div className="text-gray-300 leading-relaxed text-sm">
-              {gameData.description.replace(/<[^>]*>/g, '')}
-            </div>
+            <ScrollArea className="max-h-32">
+              <div className="text-gray-300 leading-relaxed text-sm pr-4">
+                {gameData.description.replace(/<[^>]*>/g, '')}
+              </div>
+            </ScrollArea>
           </div>
         )}
 

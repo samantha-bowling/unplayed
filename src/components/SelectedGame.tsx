@@ -1,10 +1,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, RotateCcw, ExternalLink } from 'lucide-react';
+import { Play, RotateCcw, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { getBestGameImage } from '@/utils/image-utils';
-import { formatPlaytime } from '@/utils/format-utils';
+import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import GameReviewCard from '@/components/GameReviewCard';
+import useSteamReviews from '@/hooks/use-steam-reviews';
+import { toast } from '@/hooks/use-toast';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -21,62 +25,145 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 }) => {
   const gameImage = getBestGameImage(game.header_image, game.image, game.id);
   
+  const {
+    review,
+    isLoading: isLoadingReview,
+    cycleNextReview,
+    tryAnotherFallback,
+    hasReviews
+  } = useSteamReviews(game.id);
+  
   const handleViewOnSteam = () => {
     const steamStoreUrl = `https://store.steampowered.com/app/${game.id}`;
     window.open(steamStoreUrl, '_blank');
   };
 
+  const handlePlayGame = () => {
+    onPlayGame();
+    
+    toast({
+      title: "Launching game",
+      description: `Opening ${game.name} in Steam`,
+    });
+  };
+
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-      <div className="flex items-start space-x-4 mb-6">
-        <img 
-          src={gameImage} 
-          alt={game.name}
-          className="w-20 h-20 object-cover rounded"
-        />
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold text-white mb-2">{game.name}</h2>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {game.genres && game.genres.slice(0, 3).map(genre => (
-              <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
-                {genre}
-              </span>
-            ))}
+    <div className="bg-gray-900/50 border border-gray-700 rounded-lg">
+      <div className="p-6 pb-4">
+        <h2 className="text-xl text-gray-200 mb-6 font-semibold">
+          Your Random Pick
+        </h2>
+        
+        {/* Game Info - Enhanced Layout */}
+        <div className="flex items-start space-x-4 mb-6">
+          <img 
+            src={gameImage} 
+            alt={game.name}
+            className="w-24 h-24 object-cover rounded-lg shadow-md"
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-white mb-2 leading-tight">{game.name}</h3>
+            {game.developer && game.developer.length > 0 && (
+              <p className="text-sm text-gray-400 mb-2">
+                by {game.developer.join(', ')}
+              </p>
+            )}
+            {game.genres && game.genres.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {game.genres.slice(0, 3).map(genre => (
+                  <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          <p className="text-sm text-gray-400">
-            Playtime: {formatPlaytime(game.playtimeMinutes)}
-          </p>
         </div>
-      </div>
-      
-      <div className="flex gap-3">
-        <Button 
-          onClick={onPlayGame}
-          className="flex-1 bg-green-600 hover:bg-green-700"
-          disabled={disabled}
-        >
-          <Play className="w-4 h-4 mr-2" />
-          Play Now
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          onClick={onRollAgain}
-          className="border-gray-600 hover:bg-gray-800"
-          disabled={disabled}
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Roll Again
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleViewOnSteam}
-          className="border-gray-600 hover:bg-gray-800"
-          disabled={disabled}
-        >
-          <ExternalLink className="w-4 h-4" />
-        </Button>
+
+        {/* Game Metadata - Enhanced Display */}
+        <div className="grid grid-cols-1 gap-3 text-sm bg-gray-800/30 rounded-lg p-4 mb-6">
+          {game.release_date && (
+            <div className="flex items-center text-gray-300">
+              <Calendar className="w-4 h-4 mr-3 text-gray-500" />
+              <span className="text-gray-500 mr-2 min-w-[80px]">Released:</span>
+              <span className="font-medium">{formatDate(game.release_date)}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center text-gray-300">
+            <Clock className="w-4 h-4 mr-3 text-gray-500" />
+            <span className="text-gray-500 mr-2 min-w-[80px]">Playtime:</span>
+            <span className="font-medium">{formatPlaytime(game.playtimeMinutes)}</span>
+          </div>
+
+          {game.price_cents && (
+            <div className="flex items-center text-gray-300">
+              <DollarSign className="w-4 h-4 mr-3 text-gray-500" />
+              <span className="text-gray-500 mr-2 min-w-[80px]">Price:</span>
+              <span className="font-medium">{formatPrice(game.price_cents)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Game Description - Scrollable */}
+        {game.description && (
+          <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
+            <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
+            <ScrollArea className="max-h-32">
+              <div className="text-gray-300 leading-relaxed text-sm pr-4">
+                {game.description.replace(/<[^>]*>/g, '')}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Steam Review Section */}
+        <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Give me a reason to play</h4>
+          </div>
+          
+          <GameReviewCard
+            review={review}
+            isLoading={isLoadingReview}
+            onGetAnotherReview={hasReviews ? cycleNextReview : tryAnotherFallback}
+            gameId={game.id}
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <Button 
+            onClick={handlePlayGame}
+            className="flex-1 bg-green-600 hover:bg-green-700 font-semibold"
+            size="lg"
+            disabled={disabled}
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Play Now
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={onRollAgain}
+            className="border-gray-600 hover:bg-gray-800"
+            size="lg"
+            disabled={disabled}
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Roll Again
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={handleViewOnSteam}
+            className="border-gray-600 hover:bg-gray-800 px-4"
+            size="lg"
+            disabled={disabled}
+          >
+            <ExternalLink className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
