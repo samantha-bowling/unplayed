@@ -18,7 +18,7 @@ export const useGamePicks = () => {
   const queryClient = useQueryClient();
   const isAuthenticated = !!user;
 
-  // Query to fetch user's most recent pick with full game data
+  // Query to fetch user's most recent pick with full game data and user game data
   const {
     data: recentPick,
     isLoading: isLoadingPicks,
@@ -47,6 +47,10 @@ export const useGamePicks = () => {
             description,
             developer,
             publisher
+          ),
+          user_games!inner (
+            acquisition_date,
+            playtime_minutes
           )
         `)
         .eq('user_id', user.id)
@@ -64,7 +68,8 @@ export const useGamePicks = () => {
         game_id: pickData.game_id,
         picked_at: pickData.picked_at,
         filters: pickData.filters as GamePickFilters,
-        game: pickData.games
+        game: pickData.games,
+        userGameData: pickData.user_games?.[0]
       } as GamePick;
     },
     enabled: isAuthenticated,

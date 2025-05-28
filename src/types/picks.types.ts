@@ -33,6 +33,14 @@ export interface DatabaseGame {
 }
 
 /**
+ * User game data from the user_games table
+ */
+export interface UserGameData {
+  acquisition_date?: string | null;
+  playtime_minutes?: number | null;
+}
+
+/**
  * Represents a user's game pick history item
  */
 export interface GamePick {
@@ -46,4 +54,6 @@ export interface GamePick {
   filters: GamePickFilters;
   /** Optional game data if joined with game information from database */
   game?: DatabaseGame;
+  /** User-specific game data (purchase date, playtime, etc.) */
+  userGameData?: UserGameData;
 }

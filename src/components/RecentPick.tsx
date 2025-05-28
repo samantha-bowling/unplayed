@@ -2,9 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Play } from 'lucide-react';
+import { ExternalLink, Play, Calendar, Clock, DollarSign } from 'lucide-react';
 import { GamePick } from '@/types/picks.types';
 import { getBestGameImage } from '@/utils/image-utils';
+import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +27,7 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
 
   // Handle both nested and direct game data from database
   const gameData = recentPick.game && Object.keys(recentPick.game).length > 0 ? recentPick.game : null;
+  const userGameData = recentPick.userGameData;
   const gameName = gameData?.name || `Game #${recentPick.game_id}`;
   const gameImage = getBestGameImage(
     gameData?.header_image || null,
@@ -54,7 +56,7 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
         <CardTitle className="text-lg text-gray-300 flex items-center justify-between">
           Recently Picked
           <span className="text-xs text-gray-500 font-normal">
-            {new Date(recentPick.picked_at).toLocaleDateString()}
+            {formatDate(recentPick.picked_at)}
           </span>
         </CardTitle>
       </CardHeader>
@@ -82,13 +84,38 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           </div>
         </div>
 
+        {/* Game Details */}
+        <div className="grid grid-cols-1 gap-2 text-sm">
+          {gameData?.release_date && (
+            <div className="flex items-center text-gray-400">
+              <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+              <span className="text-gray-500 mr-2">Released:</span>
+              {formatDate(gameData.release_date)}
+            </div>
+          )}
+          
+          {userGameData?.acquisition_date && (
+            <div className="flex items-center text-gray-400">
+              <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
+              <span className="text-gray-500 mr-2">Purchased:</span>
+              {formatDate(userGameData.acquisition_date)}
+            </div>
+          )}
+          
+          <div className="flex items-center text-gray-400">
+            <Clock className="w-4 h-4 mr-2 text-gray-500" />
+            <span className="text-gray-500 mr-2">Playtime:</span>
+            {formatPlaytime(userGameData?.playtime_minutes)}
+          </div>
+        </div>
+
         {/* Game Description */}
         {gameData?.description && (
           <div className="text-sm text-gray-300">
-            <p className="line-clamp-3">
-              {gameData.description.replace(/<[^>]*>/g, '').slice(0, 200)}
-              {gameData.description.length > 200 ? '...' : ''}
-            </p>
+            <h4 className="text-gray-400 mb-2 font-medium">Description</h4>
+            <div className="text-gray-300 leading-relaxed">
+              {gameData.description.replace(/<[^>]*>/g, '')}
+            </div>
           </div>
         )}
 
