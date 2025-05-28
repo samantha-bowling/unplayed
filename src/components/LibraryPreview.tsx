@@ -172,13 +172,9 @@ const LibraryPreview = ({
       return 'h-[calc(100vh-250px)]';
     }
     
-    // For grid view, calculate height based on number of items and grid layout
+    // For grid view, use a fixed height to prevent expansion
     if (viewMode === 'grid') {
-      const cols = showFullScreenMode ? 8 : 5; // grid-cols-5 normally, more in fullscreen
-      const rows = Math.ceil(currentGames.length / cols);
-      const baseHeight = rows * 120; // Approximate height per row including gaps
-      const minHeight = Math.max(320, baseHeight + 40); // Add padding, minimum 320px
-      return `min-h-[${minHeight}px] max-h-[600px]`;
+      return 'h-96'; // Fixed height of 384px (24rem)
     }
     
     // For zen view, use fixed height
@@ -371,11 +367,11 @@ const LibraryPreview = ({
         </div>
       </div>
       
-      {/* Dynamic container that adjusts height based on content */}
+      {/* Fixed height container that doesn't expand */}
       <div className={`${getContainerHeight()} relative w-full`}>
         {/* Grid view mode */}
         {viewMode === 'grid' ? (
-          <ScrollArea className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-full'} w-full`}>
+          <ScrollArea className="h-full w-full">
             <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-2 ${showFullScreenMode ? 'lg:grid-cols-6 xl:grid-cols-8' : ''}`}>
               {currentGames.map(game => {
                 // Handle both LibraryGame and GameListItem types, plus demo data
