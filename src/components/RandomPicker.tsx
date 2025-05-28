@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MousePointer } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -66,6 +65,8 @@ const RandomPicker = ({
     setScope,
     activeMood,
     setActiveMood,
+    sourceFilter,
+    setSourceFilter,
     preventDuplicates,
     setPreventDuplicates,
     selectRandomGame,
