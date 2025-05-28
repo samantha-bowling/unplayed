@@ -6,14 +6,11 @@ import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { queryKeys } from '@/hooks/use-query-keys';
 
 type PickerScope = 'unplayed' | 'all';
 
 /**
- * Hook to provide filtered game data for the picker
+ * Hook to provide filtered game data for the picker with proper session state management
  */
 export const usePickerData = () => {
   const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
@@ -25,6 +22,10 @@ export const usePickerData = () => {
   const [preventDuplicates, setPreventDuplicates] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   
+  // Session state management - tracks current session pick separately from database
+  const [currentSessionPick, setCurrentSessionPick] = useState<GameListItem | null>(null);
+  const [hasPickedInSession, setHasPickedInSession] = useState(false);
+  
   // Log data received
   useEffect(() => {
     console.log('usePickerData - unplayedData:', unplayedData);
@@ -34,9 +35,20 @@ export const usePickerData = () => {
   
   // Get recent pick IDs for duplicate prevention
   const recentPickIds = useMemo(() => {
-    if (!recentPick) return [];
-    return [recentPick.game_id];
-  }, [recentPick]);
+    const ids = [];
+    
+    // Add the current session pick if exists
+    if (currentSessionPick) {
+      ids.push(currentSessionPick.id);
+    }
+    
+    // Add the database recent pick if exists and different from current session
+    if (recentPick && (!currentSessionPick || recentPick.game_id !== currentSessionPick.id)) {
+      ids.push(recentPick.game_id);
+    }
+    
+    return ids;
+  }, [recentPick, currentSessionPick]);
   
   // Filter games based on selected criteria
   const filteredGames = useMemo(() => {
@@ -93,6 +105,10 @@ export const usePickerData = () => {
     
     console.log('selectRandomGame - Selected game:', selectedGame);
     
+    // Update session state
+    setCurrentSessionPick(selectedGame);
+    setHasPickedInSession(true);
+    
     // If user is authenticated, save the pick to the database
     if (user && selectedGame) {
       savePick({
@@ -105,6 +121,12 @@ export const usePickerData = () => {
     }
     
     return selectedGame;
+  };
+
+  // Reset session state when filters change significantly
+  const resetSessionState = () => {
+    setCurrentSessionPick(null);
+    setHasPickedInSession(false);
   };
   
   return {
@@ -121,7 +143,10 @@ export const usePickerData = () => {
     setPreventDuplicates,
     selectRandomGame,
     recentPick,
-    isSaving, // Expose the saving state
+    currentSessionPick,
+    hasPickedInSession,
+    resetSessionState,
+    isSaving,
   };
 };
 

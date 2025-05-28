@@ -1,11 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { MousePointer, ExternalLink } from 'lucide-react';
+import { MousePointer } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { GameListItem } from '@/types/unplayed-data.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import usePickerData from '@/hooks/use-picker-data';
 import GameSpinner from './GameSpinner';
@@ -71,13 +69,14 @@ const RandomPicker = ({
     setPreventDuplicates,
     selectRandomGame,
     recentPick,
-    isSaving: isPickSaving, // Get the saving state from the picker data hook
+    currentSessionPick,
+    hasPickedInSession,
+    resetSessionState,
+    isSaving: isPickSaving,
   } = usePickerData();
 
   const [isSpinning, setIsSpinning] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<GameListItem | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [spinHistory, setSpinHistory] = useState<Array<GameListItem>>([]);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   
   const {
@@ -93,9 +92,10 @@ const RandomPicker = ({
   // Log data received for debugging
   useEffect(() => {
     console.log('RandomPicker - Games received:', games?.length || 0);
-    console.log('RandomPicker - Sample games:', games?.slice(0, 3));
+    console.log('RandomPicker - Current session pick:', currentSessionPick);
+    console.log('RandomPicker - Recent pick:', recentPick);
     console.log('RandomPicker - Demo mode:', isDemo);
-  }, [games, isDemo]);
+  }, [games, currentSessionPick, recentPick, isDemo]);
   
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
@@ -132,7 +132,6 @@ const RandomPicker = ({
     setCurrentQuip(selectionQuips[randomQuipIndex]);
     
     setIsSpinning(true);
-    setSelectedGame(null);
 
     // Simulate picking random game
     setTimeout(() => {
@@ -149,11 +148,6 @@ const RandomPicker = ({
       }
       
       console.log('Selected game:', newSelectedGame);
-      setSelectedGame(newSelectedGame);
-      
-      // Save to local history
-      setSpinHistory(prev => [newSelectedGame, ...prev].slice(0, 5));
-      
       setIsSpinning(false);
     }, 2000);
   };
@@ -161,24 +155,32 @@ const RandomPicker = ({
   const handleFilterSelect = (filterId: string) => {
     setActiveMood(filterId);
     setIsDropdownOpen(false);
+    // Reset session state when filters change
+    resetSessionState();
   };
   
   const handlePlayGame = () => {
-    if (!selectedGame) return;
+    if (!currentSessionPick) return;
     
-    const steamUrl = `steam://run/${selectedGame.id}`;
+    const steamUrl = `steam://run/${currentSessionPick.id}`;
     window.open(steamUrl, '_blank');
     
     toast({
       title: "Launching game",
-      description: `Opening ${selectedGame.name} in Steam`,
+      description: `Opening ${currentSessionPick.name} in Steam`,
     });
   };
 
   const handleClearMood = () => {
     setActiveMood(null);
     setIsDropdownOpen(false);
+    // Reset session state when filters change
+    resetSessionState();
   };
+
+  // Determine what to show in the recently picked section
+  // Show previous pick only if we have a current session pick, otherwise show the most recent
+  const recentPickToShow = hasPickedInSession && recentPick ? recentPick : null;
   
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
@@ -228,7 +230,7 @@ const RandomPicker = ({
           {isSpinning ? 'Selecting...' : isPickSaving ? 'Saving...' : 'Select Game.exe'}
         </button>
         
-        {!showFullScreenMode && !selectedGame && (
+        {!showFullScreenMode && !currentSessionPick && (
           <div className="flex items-center ml-2 text-sm">
             <label className="flex items-center cursor-pointer">
               <input
@@ -244,13 +246,13 @@ const RandomPicker = ({
         )}
       </div>
       
-      {/* Game display area */}
+      {/* Game display area - shows current session pick */}
       <div className="mb-6">
         {isSpinning ? (
           <GameSpinner quip={currentQuip} />
-        ) : selectedGame ? (
+        ) : currentSessionPick ? (
           <SelectedGame 
-            game={selectedGame} 
+            game={currentSessionPick} 
             onPlayGame={handlePlayGame} 
             onRollAgain={handleSpin}
             disabled={isOperationInProgress}
@@ -265,8 +267,15 @@ const RandomPicker = ({
         )}
       </div>
       
-      {/* Recent Pick section */}
-      <RecentPick recentPick={recentPick} />
+      {/* Recent Pick section - shows previous database pick when appropriate */}
+      {recentPickToShow && (
+        <RecentPick recentPick={recentPickToShow} />
+      )}
+      
+      {/* Show recent pick for returning users when no session pick exists */}
+      {!hasPickedInSession && recentPick && (
+        <RecentPick recentPick={recentPick} />
+      )}
     </div>
   );
 };
