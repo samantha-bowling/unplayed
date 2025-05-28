@@ -65,17 +65,20 @@ const PaginatedGameGrid: React.FC<PaginatedGameGridProps> = ({
   // Display loading state
   if (isLoading) {
     return (
-      <div>
+      <div className="space-y-6">
         <div className="mb-4 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-unplayed-mint mr-2" />
           <p className="text-gray-400">Loading your game collection...</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: pagination.pageSize }).map((_, index) => (
-            <div key={`skeleton-${index}`} className="animate-pulse opacity-70">
-              <GameCardSkeleton />
-            </div>
-          ))}
+        {/* Fixed height container for loading skeletons */}
+        <div className="h-[600px] overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
+            {Array.from({ length: pagination.pageSize }).map((_, index) => (
+              <div key={`skeleton-${index}`} className="animate-pulse opacity-70">
+                <GameCardSkeleton />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -152,33 +155,36 @@ const PaginatedGameGrid: React.FC<PaginatedGameGridProps> = ({
 
   return (
     <div className="space-y-6">
-      <ScrollArea className="max-h-[80vh] w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
-          {games.map((game) => (
-            <div 
-              key={game.userGame.id} 
-              id={`game-${game.id}`}
-              className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
-            >
-              <GameCard
-                id={game.userGame.id}
-                gameId={game.id}
-                title={game.name}
-                imageUrl={game.image_url || game.header_image}
-                dustScore={game.userGame.dust_score}
-                playtimeMinutes={game.userGame.playtime_minutes}
-                isHidden={game.userGame.hidden}
-                notes={game.userGame.notes}
-                onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
-                onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
-                onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
-              />
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+      {/* Fixed height scrollable container */}
+      <div className="h-[600px] relative w-full">
+        <ScrollArea className="h-full w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
+            {games.map((game) => (
+              <div 
+                key={game.userGame.id} 
+                id={`game-${game.id}`}
+                className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
+              >
+                <GameCard
+                  id={game.userGame.id}
+                  gameId={game.id}
+                  title={game.name}
+                  imageUrl={game.image_url || game.header_image}
+                  dustScore={game.userGame.dust_score}
+                  playtimeMinutes={game.userGame.playtime_minutes}
+                  isHidden={game.userGame.hidden}
+                  notes={game.userGame.notes}
+                  onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
+                  onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
+                  onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
+                />
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
       
-      {/* Pagination controls */}
+      {/* Pagination controls - always visible below the fixed container */}
       {pagination.totalPages > 1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
