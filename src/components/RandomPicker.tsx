@@ -81,7 +81,7 @@ const RandomPicker = ({
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   const [destinyMessage, setDestinyMessage] = useState<string>("Your Random Pick");
   
-  // Track the previous session pick to show in "Recently Picked" section
+  // Simplified: Track only the most recent previous pick from this session
   const [previousSessionPick, setPreviousSessionPick] = useState<GameListItem | null>(null);
   
   const {
@@ -94,18 +94,23 @@ const RandomPicker = ({
   // Check if any operation is in progress to prevent rapid clicking
   const isOperationInProgress = isSpinning || isPickSaving;
   
-  // Log data received for debugging
+  // Enhanced logging for debugging
   useEffect(() => {
-    console.log('RandomPicker - Games received:', games?.length || 0);
-    console.log('RandomPicker - Current session pick:', currentSessionPick);
-    console.log('RandomPicker - Previous session pick:', previousSessionPick);
-    console.log('RandomPicker - Recent pick from DB:', recentPick);
-    console.log('RandomPicker - Demo mode:', isDemo);
-  }, [games, currentSessionPick, previousSessionPick, recentPick, isDemo]);
+    console.log('=== RandomPicker State Debug ===');
+    console.log('Games available:', games?.length || 0);
+    console.log('Current session pick:', currentSessionPick?.name || 'None');
+    console.log('Previous session pick:', previousSessionPick?.name || 'None');
+    console.log('Recent pick from DB:', recentPick?.game?.name || 'None');
+    console.log('Has picked in session:', hasPickedInSession);
+    console.log('Demo mode:', isDemo);
+    console.log('================================');
+  }, [games, currentSessionPick, previousSessionPick, recentPick, hasPickedInSession, isDemo]);
   
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
     if (initialFilters) {
+      console.log('Applying initial filters:', initialFilters);
+      
       // Apply genre or mood filter if provided
       if (initialFilters.mood) {
         setActiveMood(initialFilters.mood);
@@ -133,7 +138,9 @@ const RandomPicker = ({
       return;
     }
     
-    console.log('Starting spin process...');
+    console.log('=== Starting Spin Process ===');
+    console.log('Current filters:', { scope, activeMood, preventDuplicates });
+    console.log('Available games:', games?.length || 0);
     
     // If we currently have a session pick, move it to previous before getting a new one
     if (currentSessionPick) {
@@ -149,7 +156,7 @@ const RandomPicker = ({
 
     // Simulate picking random game with proper state management
     setTimeout(() => {
-      console.log('Attempting to select random game...');
+      console.log('Executing selectRandomGame...');
       const newSelectedGame = selectRandomGame();
       
       if (!newSelectedGame) {
@@ -167,12 +174,13 @@ const RandomPicker = ({
       setDestinyMessage(getRandomDestinyMessage());
       
       console.log('Successfully selected game:', newSelectedGame.name);
-      console.log('Game selection process complete');
+      console.log('=== Spin Process Complete ===');
       setIsSpinning(false);
     }, 2000);
   };
   
   const handleFilterSelect = (filterId: string) => {
+    console.log('Filter selected:', filterId);
     setActiveMood(filterId);
     setIsDropdownOpen(false);
     // Reset session state when filters change
@@ -194,6 +202,7 @@ const RandomPicker = ({
   };
 
   const handleClearMood = () => {
+    console.log('Clearing mood filter');
     setActiveMood(null);
     setIsDropdownOpen(false);
     // Reset session state when filters change
@@ -202,10 +211,13 @@ const RandomPicker = ({
     setPreviousSessionPick(null);
   };
 
-  // Determine what to show in the recently picked section
+  // Simplified recent pick logic - clearer and more predictable
   const getRecentPickToShow = () => {
-    // If we have a current session pick and a previous session pick, show the previous session pick
-    if (hasPickedInSession && previousSessionPick) {
+    console.log('=== Determining Recent Pick to Show ===');
+    
+    // Priority 1: If we have a current session pick AND a previous session pick, show the previous
+    if (hasPickedInSession && currentSessionPick && previousSessionPick) {
+      console.log('Showing previous session pick:', previousSessionPick.name);
       return {
         id: 'session-previous',
         game_id: previousSessionPick.id,
@@ -232,11 +244,13 @@ const RandomPicker = ({
       };
     }
     
-    // If we don't have a current session pick or no previous session pick, show the database recent pick
-    if (!hasPickedInSession && recentPick) {
+    // Priority 2: If no current session pick or no previous session pick, show database recent pick
+    if (recentPick && (!hasPickedInSession || !currentSessionPick)) {
+      console.log('Showing database recent pick:', recentPick.game?.name || `Game #${recentPick.game_id}`);
       return recentPick;
     }
     
+    console.log('No recent pick to show');
     return null;
   };
   
