@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useEffect } from 'react';
 import useUnplayedData from '@/hooks/useUnplayedData';
 import useGamePicks from '@/hooks/use-game-picks';
@@ -16,7 +17,7 @@ type PickerScope = 'unplayed' | 'all';
  */
 export const usePickerData = () => {
   const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
-  const { picks, isLoadingPicks, savePick } = useGamePicks();
+  const { recentPick, isLoadingPicks, savePick } = useGamePicks();
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
   const [scope, setScope] = useState<PickerScope>('unplayed');
@@ -33,9 +34,9 @@ export const usePickerData = () => {
   
   // Get recent pick IDs for duplicate prevention
   const recentPickIds = useMemo(() => {
-    if (!picks) return [];
-    return picks.map(pick => pick.game_id);
-  }, [picks]);
+    if (!recentPick) return [];
+    return [recentPick.game_id];
+  }, [recentPick]);
   
   // Filter games based on selected criteria
   const filteredGames = useMemo(() => {
@@ -119,7 +120,7 @@ export const usePickerData = () => {
     preventDuplicates,
     setPreventDuplicates,
     selectRandomGame,
-    recentPicks: picks,
+    recentPick,
   };
 };
 
