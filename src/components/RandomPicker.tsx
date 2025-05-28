@@ -133,8 +133,11 @@ const RandomPicker = ({
       return;
     }
     
+    console.log('Starting spin process...');
+    
     // If we currently have a session pick, move it to previous before getting a new one
     if (currentSessionPick) {
+      console.log('Moving current session pick to previous:', currentSessionPick.name);
       setPreviousSessionPick(currentSessionPick);
     }
     
@@ -144,11 +147,13 @@ const RandomPicker = ({
     
     setIsSpinning(true);
 
-    // Simulate picking random game
+    // Simulate picking random game with proper state management
     setTimeout(() => {
+      console.log('Attempting to select random game...');
       const newSelectedGame = selectRandomGame();
       
       if (!newSelectedGame) {
+        console.log('No game was selected - showing error');
         setIsSpinning(false);
         toast({
           title: "No matching games found",
@@ -161,7 +166,8 @@ const RandomPicker = ({
       // Generate a destiny message for the selected game
       setDestinyMessage(getRandomDestinyMessage());
       
-      console.log('Selected game:', newSelectedGame);
+      console.log('Successfully selected game:', newSelectedGame.name);
+      console.log('Game selection process complete');
       setIsSpinning(false);
     }, 2000);
   };
