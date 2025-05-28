@@ -18,15 +18,15 @@ export const useGamePicks = () => {
   const queryClient = useQueryClient();
   const isAuthenticated = !!user;
 
-  // Query to fetch user's pick history with game data
+  // Query to fetch user's most recent pick with full game data
   const {
-    data: picks,
+    data: recentPick,
     isLoading: isLoadingPicks,
     error: picksError,
   } = useQuery({
     queryKey: ['gamePicks', user?.id],
     queryFn: async () => {
-      if (!isAuthenticated) return [];
+      if (!isAuthenticated) return null;
 
       const { data: pickData, error } = await supabase
         .from('game_picks')
@@ -43,27 +43,34 @@ export const useGamePicks = () => {
             release_date,
             price_cents,
             genres,
-            categories
+            categories,
+            description,
+            developer,
+            publisher
           )
         `)
+        .eq('user_id', user.id)
         .order('picked_at', { ascending: false })
-        .limit(10);
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
 
-      // Transform the data to match our GamePick interface
-      return pickData.map(pick => ({
-        id: pick.id,
-        game_id: pick.game_id,
-        picked_at: pick.picked_at,
-        filters: pick.filters as GamePickFilters,
-        game: pick.games
-      })) as GamePick[];
+      // Transform the data to match our GamePick interface if data exists
+      if (!pickData) return null;
+
+      return {
+        id: pickData.id,
+        game_id: pickData.game_id,
+        picked_at: pickData.picked_at,
+        filters: pickData.filters as GamePickFilters,
+        game: pickData.games
+      } as GamePick;
     },
     enabled: isAuthenticated,
   });
 
-  // Mutation for saving a new pick
+  // Mutation for saving a new pick (using upsert logic)
   const {
     mutate: savePick,
     isPending: isSaving,
@@ -74,12 +81,16 @@ export const useGamePicks = () => {
         throw new Error('User must be authenticated to save picks');
       }
 
+      // Use upsert logic to replace any existing pick for this user
       const { data, error } = await supabase
         .from('game_picks')
-        .insert({
+        .upsert({
           user_id: user.id,
           game_id: gameId,
           filters: filters as unknown as Json || {},
+          picked_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         })
         .select();
 
@@ -104,7 +115,7 @@ export const useGamePicks = () => {
   });
 
   return {
-    picks,
+    recentPick,
     isLoadingPicks,
     picksError,
     savePick,
