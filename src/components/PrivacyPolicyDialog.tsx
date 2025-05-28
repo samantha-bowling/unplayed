@@ -27,7 +27,7 @@ const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) =
             <span className="text-unplayed-pink">– unplayed</span>
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-400">
-            Effective Date: May 8, 2025 | Last Updated: May 10, 2025
+            Effective Date: May 8, 2025 | Last Updated: May 28, 2025
           </DialogDescription>
         </DialogHeader>
 
@@ -67,7 +67,7 @@ const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) =
           <div>
             <h3 className="text-lg font-bold text-white mb-2">2. How We Use Your Data</h3>
             <ul className="list-disc pl-5 space-y-1">
-              <li>To create and display your personalized Unplayed dashboard.</li>
+              <li>To create and display your personalized unplayed dashboard.</li>
               <li>To provide features like the Random Game Picker and Dust Score.</li>
               <li>To improve the platform experience through anonymized usage patterns.</li>
             </ul>
@@ -88,16 +88,15 @@ const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) =
           <div>
             <h3 className="text-lg font-bold text-white mb-2">4. Data Retention & Deletion</h3>
             <p>
-              We retain only the data required to operate Unplayed. You may request
-              permanent deletion of your synced Steam data by emailing us at
-              support@unplayed.wtf.
+              We retain only the data required to operate unplayed. You may 
+              delete your profile and subsequent data at any time.
             </p>
           </div>
 
           <div>
             <h3 className="text-lg font-bold text-white mb-2">5. Children's Privacy</h3>
             <p>
-              Unplayed is not intended for users under 13 years old. If we become aware
+              unplayed is not intended for users under 13 years old. If we become aware
               that we have collected personal information from a child under 13, we will
               delete it immediately.
             </p>
@@ -107,7 +106,7 @@ const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) =
             <h3 className="text-lg font-bold text-white mb-2">6. Changes to This Policy</h3>
             <p>
               We may update this Privacy Policy from time to time. Any material changes
-              will be posted to our site. Continued use of Unplayed after updates
+              will be posted to our site. Continued use of unplayed after updates
               constitutes acceptance of those changes.
             </p>
           </div>
