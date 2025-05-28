@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MousePointer } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -13,6 +12,7 @@ import RecentPick from './RecentPick';
 import { PickerNavigationState } from '@/utils/navigation';
 import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
 import { GameListItem } from '@/types/unplayed-data.types';
+import { getRandomDestinyMessage } from '@/utils/destiny-messages';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -79,6 +79,7 @@ const RandomPicker = ({
   const [isSpinning, setIsSpinning] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
+  const [destinyMessage, setDestinyMessage] = useState<string>("Your Random Pick");
   
   // Track the previous session pick to show in "Recently Picked" section
   const [previousSessionPick, setPreviousSessionPick] = useState<GameListItem | null>(null);
@@ -156,6 +157,9 @@ const RandomPicker = ({
         });
         return;
       }
+      
+      // Generate a destiny message for the selected game
+      setDestinyMessage(getRandomDestinyMessage());
       
       console.log('Selected game:', newSelectedGame);
       setIsSpinning(false);
@@ -304,6 +308,7 @@ const RandomPicker = ({
             onPlayGame={handlePlayGame} 
             onRollAgain={handleSpin}
             disabled={isOperationInProgress}
+            headerMessage={destinyMessage}
           />
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-center">

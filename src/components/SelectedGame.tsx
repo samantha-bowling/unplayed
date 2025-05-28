@@ -15,13 +15,15 @@ interface SelectedGameProps {
   onPlayGame: () => void;
   onRollAgain: () => void;
   disabled?: boolean;
+  headerMessage?: string;
 }
 
 const SelectedGame: React.FC<SelectedGameProps> = ({ 
   game, 
   onPlayGame, 
   onRollAgain,
-  disabled = false
+  disabled = false,
+  headerMessage = "Your Random Pick"
 }) => {
   const gameImage = getBestGameImage(game.header_image, game.image, game.id);
   
@@ -60,7 +62,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg">
       <div className="p-6 pb-4">
         <h2 className="text-xl text-gray-200 mb-6 font-semibold">
-          Your Random Pick
+          {headerMessage}
         </h2>
         
         {/* Game Info - Enhanced Layout */}
