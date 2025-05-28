@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -22,10 +23,17 @@ const SpendingEstimate = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // FIXED: Use unplayedSpent from dashboard data, not totalSpent
   // Use amount from props if provided, otherwise use unplayed spending from dashboard data
   const spendingAmount = amount !== undefined 
     ? amount 
     : (dashboardData?.unplayedSpent || 0);
+
+  console.log('SpendingEstimate - Dashboard data:', {
+    unplayedSpent: dashboardData?.unplayedSpent,
+    totalSpent: dashboardData?.totalSpent,
+    usingAmount: spendingAmount
+  });
 
   const handleRefresh = async () => {
     if (!isRefreshing) {

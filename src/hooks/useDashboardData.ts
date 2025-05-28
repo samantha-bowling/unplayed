@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -165,10 +166,25 @@ export const useDashboardData = () => {
       
       const result = transformUserGameData(dashboardData, gameEstimatesData || {});
       
+      // ENHANCED: Ensure unplayedSpent is correctly calculated
+      const unplayedGames = result.gamesList?.filter(game => game.playtimeMinutes === 0) || [];
+      const unplayedSpent = unplayedGames.reduce((total, game) => {
+        const price = game.price_cents ? (game.price_cents / 100) : (game.price || 0);
+        return total + price;
+      }, 0);
+      
+      console.log('Dashboard data calculation:', {
+        totalGames: result.gamesList?.length || 0,
+        unplayedGames: unplayedGames.length,
+        unplayedSpent: unplayedSpent.toFixed(2),
+        totalSpent: result.totalSpent
+      });
+      
       // Ensure all required properties exist with fallbacks
       return {
         ...createFallbackData(),
         ...result,
+        unplayedSpent, // Override with our calculated value
         // Ensure arrays are never undefined
         genres: result.genres || [],
         shelfLife: result.shelfLife || [],
