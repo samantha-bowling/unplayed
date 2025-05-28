@@ -102,12 +102,7 @@ export const useGamePicks = () => {
         .select();
 
       if (updateError) {
-        console.error('Error during update attempt:', {
-          message: updateError.message,
-          details: updateError.details,
-          code: updateError.code,
-          hint: updateError.hint
-        });
+        console.error('Error during update attempt:', updateError);
         throw updateError;
       }
 
@@ -121,12 +116,7 @@ export const useGamePicks = () => {
           .select();
 
         if (insertError) {
-          console.error('Error during insert attempt:', {
-            message: insertError.message,
-            details: insertError.details,
-            code: insertError.code,
-            hint: insertError.hint
-          });
+          console.error('Error during insert attempt:', insertError);
           throw insertError;
         }
 
@@ -148,9 +138,6 @@ export const useGamePicks = () => {
     onError: (error) => {
       console.error('Error saving game pick:', {
         message: error.message,
-        details: error.details || 'No additional details',
-        code: error.code || 'No error code',
-        hint: error.hint || 'No hint provided',
         fullError: error
       });
       
