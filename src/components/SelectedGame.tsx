@@ -56,8 +56,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const getGameReleaseDate = () => game.release_date || game.releaseDate;
   const getGamePriceCents = () => game.price_cents || (game.price ? game.price * 100 : undefined);
 
-  // Check if description is long enough to warrant scrolling
-  const isDescriptionLong = game.description && game.description.length > 300;
+  // Check if description is long enough to warrant scrolling - lowered threshold
+  const isDescriptionLong = game.description && game.description.length > 200;
 
   return (
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg">
@@ -121,12 +121,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
           )}
         </div>
 
-        {/* Game Description - Conditional ScrollArea */}
+        {/* Game Description - Enhanced ScrollArea with better visibility */}
         {game.description && (
           <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
             <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
             {isDescriptionLong ? (
-              <ScrollArea className="max-h-32">
+              <ScrollArea className="max-h-40">
                 <div className="text-gray-300 leading-relaxed text-sm pr-4">
                   {game.description.replace(/<[^>]*>/g, '')}
                 </div>
