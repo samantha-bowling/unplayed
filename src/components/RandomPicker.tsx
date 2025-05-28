@@ -10,7 +10,7 @@ import usePickerData from '@/hooks/use-picker-data';
 import GameSpinner from './GameSpinner';
 import MoodFilterDropdown from './MoodFilterDropdown';
 import SelectedGame from './SelectedGame';
-import RecentlySelected from './RecentlySelected';
+import RecentPick from './RecentPick';
 import { PickerNavigationState } from '@/utils/navigation';
 import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
 
@@ -70,7 +70,7 @@ const RandomPicker = ({
     preventDuplicates,
     setPreventDuplicates,
     selectRandomGame,
-    recentPicks,
+    recentPick,
   } = usePickerData();
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -254,8 +254,8 @@ const RandomPicker = ({
         )}
       </div>
       
-      {/* History section */}
-      <RecentlySelected recentPicks={recentPicks} spinHistory={spinHistory} />
+      {/* Recent Pick section */}
+      <RecentPick recentPick={recentPick} />
     </div>
   );
 };
