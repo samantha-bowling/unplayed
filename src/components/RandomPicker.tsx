@@ -12,6 +12,7 @@ import SelectedGame from './SelectedGame';
 import RecentPick from './RecentPick';
 import { PickerNavigationState } from '@/utils/navigation';
 import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
+import { GameListItem } from '@/types/unplayed-data.types';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -79,6 +80,9 @@ const RandomPicker = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   
+  // Track the previous session pick to show in "Recently Picked" section
+  const [previousSessionPick, setPreviousSessionPick] = useState<GameListItem | null>(null);
+  
   const {
     isFullScreenMode
   } = useFullScreenMode();
@@ -93,9 +97,10 @@ const RandomPicker = ({
   useEffect(() => {
     console.log('RandomPicker - Games received:', games?.length || 0);
     console.log('RandomPicker - Current session pick:', currentSessionPick);
-    console.log('RandomPicker - Recent pick:', recentPick);
+    console.log('RandomPicker - Previous session pick:', previousSessionPick);
+    console.log('RandomPicker - Recent pick from DB:', recentPick);
     console.log('RandomPicker - Demo mode:', isDemo);
-  }, [games, currentSessionPick, recentPick, isDemo]);
+  }, [games, currentSessionPick, previousSessionPick, recentPick, isDemo]);
   
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
@@ -125,6 +130,11 @@ const RandomPicker = ({
     if (isOperationInProgress) {
       console.log('Spin prevented - operation in progress');
       return;
+    }
+    
+    // If we currently have a session pick, move it to previous before getting a new one
+    if (currentSessionPick) {
+      setPreviousSessionPick(currentSessionPick);
     }
     
     // Select a random quip to display
@@ -157,6 +167,8 @@ const RandomPicker = ({
     setIsDropdownOpen(false);
     // Reset session state when filters change
     resetSessionState();
+    // Clear previous session pick when filters change
+    setPreviousSessionPick(null);
   };
   
   const handlePlayGame = () => {
@@ -176,11 +188,47 @@ const RandomPicker = ({
     setIsDropdownOpen(false);
     // Reset session state when filters change
     resetSessionState();
+    // Clear previous session pick when filters change
+    setPreviousSessionPick(null);
   };
 
   // Determine what to show in the recently picked section
-  // Show previous pick only if we have a current session pick, otherwise show the most recent
-  const recentPickToShow = hasPickedInSession && recentPick ? recentPick : null;
+  const getRecentPickToShow = () => {
+    // If we have a current session pick and a previous session pick, show the previous session pick
+    if (hasPickedInSession && previousSessionPick) {
+      return {
+        id: 'session-previous',
+        game_id: previousSessionPick.id,
+        picked_at: new Date().toISOString(),
+        filters: { mood: activeMood || undefined },
+        game: {
+          id: previousSessionPick.id,
+          name: previousSessionPick.name,
+          image_url: previousSessionPick.image,
+          header_image: previousSessionPick.header_image,
+          release_date: previousSessionPick.release_date || previousSessionPick.releaseDate,
+          price_cents: previousSessionPick.price_cents || (previousSessionPick.price ? previousSessionPick.price * 100 : undefined),
+          genres: previousSessionPick.genres || [],
+          developer: previousSessionPick.developer || [],
+          publisher: previousSessionPick.publisher || [],
+          description: previousSessionPick.description,
+          platforms: previousSessionPick.platforms || [],
+          screenshots: previousSessionPick.screenshots || []
+        },
+        userGameData: {
+          playtime_minutes: previousSessionPick.playtimeMinutes || 0,
+          acquisition_date: null
+        }
+      };
+    }
+    
+    // If we don't have a current session pick or no previous session pick, show the database recent pick
+    if (!hasPickedInSession && recentPick) {
+      return recentPick;
+    }
+    
+    return null;
+  };
   
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
@@ -267,14 +315,9 @@ const RandomPicker = ({
         )}
       </div>
       
-      {/* Recent Pick section - shows previous database pick when appropriate */}
-      {recentPickToShow && (
-        <RecentPick recentPick={recentPickToShow} />
-      )}
-      
-      {/* Show recent pick for returning users when no session pick exists */}
-      {!hasPickedInSession && recentPick && (
-        <RecentPick recentPick={recentPick} />
+      {/* Recent Pick section - shows appropriate previous pick */}
+      {getRecentPickToShow() && (
+        <RecentPick recentPick={getRecentPickToShow()} />
       )}
     </div>
   );
