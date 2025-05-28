@@ -26,12 +26,17 @@ export const usePickerData = () => {
   const [currentSessionPick, setCurrentSessionPick] = useState<GameListItem | null>(null);
   const [hasPickedInSession, setHasPickedInSession] = useState(false);
   
+  // Check if user is properly authenticated (not just demo mode)
+  const isAuthenticated = !!user && !isDemo;
+  
   // Log data received
   useEffect(() => {
     console.log('usePickerData - unplayedData:', unplayedData);
     console.log('usePickerData - gamesList length:', unplayedData?.gamesList?.length || 0);
     console.log('usePickerData - demo mode:', isDemo);
-  }, [unplayedData, isDemo]);
+    console.log('usePickerData - authenticated:', isAuthenticated);
+    console.log('usePickerData - user:', user);
+  }, [unplayedData, isDemo, isAuthenticated, user]);
   
   // Get recent pick IDs for duplicate prevention
   const recentPickIds = useMemo(() => {
@@ -82,14 +87,14 @@ export const usePickerData = () => {
     }
     
     // Finally, filter out recent picks if enabled
-    if (preventDuplicates && user) {
+    if (preventDuplicates && isAuthenticated) {
       const finalFiltered = filterOutRecentPicks(moodFiltered, recentPickIds);
       console.log('usePickerData - After duplicate filter:', finalFiltered.length);
       return finalFiltered;
     }
     
     return moodFiltered;
-  }, [unplayedData, scope, activeMood, recentPickIds, preventDuplicates, user, sourceFilter]);
+  }, [unplayedData, scope, activeMood, recentPickIds, preventDuplicates, isAuthenticated, sourceFilter]);
 
   // Select a random game from the filtered pool
   const selectRandomGame = (): GameListItem | null => {
@@ -109,8 +114,9 @@ export const usePickerData = () => {
     setCurrentSessionPick(selectedGame);
     setHasPickedInSession(true);
     
-    // If user is authenticated, save the pick to the database
-    if (user && selectedGame) {
+    // Only save to database if user is properly authenticated
+    if (isAuthenticated && selectedGame) {
+      console.log('selectRandomGame - Saving pick to database for authenticated user');
       savePick({
         gameId: selectedGame.id,
         filters: {
@@ -118,6 +124,8 @@ export const usePickerData = () => {
           source: sourceFilter || undefined
         }
       });
+    } else {
+      console.log('selectRandomGame - Skipping database save (user not authenticated or demo mode)');
     }
     
     return selectedGame;
@@ -146,7 +154,7 @@ export const usePickerData = () => {
     currentSessionPick,
     hasPickedInSession,
     resetSessionState,
-    isSaving,
+    isSaving: isAuthenticated ? isSaving : false, // Only show saving state for authenticated users
   };
 };
 
