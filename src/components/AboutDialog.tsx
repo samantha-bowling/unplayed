@@ -192,8 +192,8 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
                     <DiscordIcon className="h-4 w-4 mr-1" /> Join our Discord server
                   </a> 
                   or email us at 
-                  <a href="mailto:hello@unplayed.wtf" className="flex items-center ml-1 text-unplayed-pink hover:underline">
-                    <Mail className="h-4 w-4 mr-1" />hello@unplayed.wtf
+                  <a href="mailto:unplayed.wtf@gmail.com" className="flex items-center ml-1 text-unplayed-pink hover:underline">
+                    <Mail className="h-4 w-4 mr-1" />unplayed.wtf@gmail.com
                   </a>
                 </p>
               </AccordionContent>
