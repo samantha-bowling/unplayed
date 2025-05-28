@@ -1,106 +1,83 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Clock, ExternalLink } from 'lucide-react';
+import { Play, RotateCcw, ExternalLink } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
-import GameReviewCard from './GameReviewCard';
-import useSteamReviews from '@/hooks/use-steam-reviews';
 import { getBestGameImage } from '@/utils/image-utils';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { formatPlaytime } from '@/utils/format-utils';
 
 interface SelectedGameProps {
   game: GameListItem;
   onPlayGame: () => void;
   onRollAgain: () => void;
+  disabled?: boolean;
 }
 
-const SelectedGame: React.FC<SelectedGameProps> = ({ game, onPlayGame, onRollAgain }) => {
-  const [showReview, setShowReview] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const { 
-    review, 
-    isLoading, 
-    hasReviews,
-    cycleNextReview 
-  } = useSteamReviews(showReview ? game.id : null);
-
-  const handleGetReason = () => {
-    setShowReview(true);
+const SelectedGame: React.FC<SelectedGameProps> = ({ 
+  game, 
+  onPlayGame, 
+  onRollAgain,
+  disabled = false
+}) => {
+  const gameImage = getBestGameImage(game.headerImage, game.imageUrl, game.id);
+  
+  const handleViewOnSteam = () => {
+    const steamStoreUrl = `https://store.steampowered.com/app/${game.id}`;
+    window.open(steamStoreUrl, '_blank');
   };
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
-
-  // Get the best available image with fallback
-  const gameImage = imageError ? '/placeholder.svg' : getBestGameImage(
-    game.header_image || null, 
-    game.image || null, 
-    game.id
-  );
 
   return (
-    <div className="pixel-card animate-fade-in">
-      <div className="max-w-md mx-auto mb-4">
-        <AspectRatio ratio={16 / 9}>
-          <img 
-            src={gameImage} 
-            alt={game.name} 
-            className="w-full h-full object-cover rounded-md" 
-            onError={handleImageError}
-          />
-        </AspectRatio>
-      </div>
-      
-      <h3 className="text-xl font-bold text-white mb-2">{game.name}</h3>
-      
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center text-gray-400">
-          <Clock className="h-4 w-4 mr-1" />
-          <span>Never played</span>
+    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+      <div className="flex items-start space-x-4 mb-6">
+        <img 
+          src={gameImage} 
+          alt={game.name}
+          className="w-20 h-20 object-cover rounded"
+        />
+        <div className="flex-1 min-w-0">
+          <h2 className="text-xl font-bold text-white mb-2">{game.name}</h2>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {game.genres && game.genres.slice(0, 3).map(genre => (
+              <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
+                {genre}
+              </span>
+            ))}
+          </div>
+          <p className="text-sm text-gray-400">
+            Playtime: {formatPlaytime(game.playtimeMinutes)}
+          </p>
         </div>
       </div>
       
-      <div className="flex justify-between space-x-2">
+      <div className="flex gap-3">
         <Button 
-          className="btn-primary flex-grow"
           onClick={onPlayGame}
-          disabled={!game.id}
+          className="flex-1 bg-green-600 hover:bg-green-700"
+          disabled={disabled}
         >
+          <Play className="w-4 h-4 mr-2" />
           Play Now
         </Button>
+        
         <Button 
-          className="btn-secondary flex-grow" 
+          variant="outline" 
           onClick={onRollAgain}
+          className="border-gray-600 hover:bg-gray-800"
+          disabled={disabled}
         >
+          <RotateCcw className="w-4 h-4 mr-2" />
           Roll Again
         </Button>
+        
+        <Button 
+          variant="outline" 
+          onClick={handleViewOnSteam}
+          className="border-gray-600 hover:bg-gray-800"
+          disabled={disabled}
+        >
+          <ExternalLink className="w-4 h-4" />
+        </Button>
       </div>
-      
-      <div className="mt-4 text-center">
-        <p className="text-unplayed-amber font-medium">
-          Fate has spoken: Play <span className="text-unplayed-pink">{game.name}</span>
-        </p>
-      </div>
-      
-      {!showReview ? (
-        <div className="mt-4 text-center">
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={handleGetReason}
-            className="text-sm"
-          >
-            Give me a reason to play
-          </Button>
-        </div>
-      ) : (
-        <GameReviewCard 
-          review={review} 
-          isLoading={isLoading}
-          onGetAnotherReview={cycleNextReview}
-          gameId={game.id}
-        />
-      )}
     </div>
   );
 };

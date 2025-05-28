@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MousePointer, ExternalLink } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -39,7 +40,6 @@ const selectionQuips = [
   "Digging into the digital bargain bin...",
   "Mounting ancient ISO files...",
   "Filtering out that 300-hour RPG (you're welcome)...",
-  "Updating your will-to-launch drivers...",
   "Evaluating decision trees... and lighting them on fire...",
   "Waiting for inspiration to load...",
   "Optimizing for guilt-based performance...",
@@ -71,6 +71,7 @@ const RandomPicker = ({
     setPreventDuplicates,
     selectRandomGame,
     recentPick,
+    isSaving: isPickSaving, // Get the saving state from the picker data hook
   } = usePickerData();
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -85,6 +86,9 @@ const RandomPicker = ({
 
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
+  
+  // Check if any operation is in progress to prevent rapid clicking
+  const isOperationInProgress = isSpinning || isPickSaving;
   
   // Log data received for debugging
   useEffect(() => {
@@ -118,7 +122,10 @@ const RandomPicker = ({
   }, [initialFilters]);
 
   const handleSpin = () => {
-    if (isSpinning) return;
+    if (isOperationInProgress) {
+      console.log('Spin prevented - operation in progress');
+      return;
+    }
     
     // Select a random quip to display
     const randomQuipIndex = Math.floor(Math.random() * selectionQuips.length);
@@ -213,12 +220,12 @@ const RandomPicker = ({
         />
         
         <button 
-          className="btn-amber flex items-center" 
+          className={`btn-amber flex items-center ${isOperationInProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={handleSpin} 
-          disabled={isSpinning}
+          disabled={isOperationInProgress}
         >
           <MousePointer className="mr-2 h-4 w-4" />
-          {isSpinning ? 'Selecting...' : 'Select Game.exe'}
+          {isSpinning ? 'Selecting...' : isPickSaving ? 'Saving...' : 'Select Game.exe'}
         </button>
         
         {!showFullScreenMode && !selectedGame && (
@@ -229,6 +236,7 @@ const RandomPicker = ({
                 checked={preventDuplicates}
                 onChange={() => setPreventDuplicates(!preventDuplicates)}
                 className="mr-1 h-4 w-4"
+                disabled={isOperationInProgress}
               />
               <span className="text-gray-400">Prevent duplicates</span>
             </label>
@@ -244,12 +252,15 @@ const RandomPicker = ({
           <SelectedGame 
             game={selectedGame} 
             onPlayGame={handlePlayGame} 
-            onRollAgain={handleSpin} 
+            onRollAgain={handleSpin}
+            disabled={isOperationInProgress}
           />
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-center">
             <MousePointer className="h-12 w-12 text-gray-600 mb-4" />
-            <p className="text-gray-400">Click "Select Game.exe" to find your next game</p>
+            <p className="text-gray-400">
+              {isPickSaving ? 'Saving your pick...' : 'Click "Select Game.exe" to find your next game'}
+            </p>
           </div>
         )}
       </div>

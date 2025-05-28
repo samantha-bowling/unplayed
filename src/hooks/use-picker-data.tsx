@@ -17,7 +17,7 @@ type PickerScope = 'unplayed' | 'all';
  */
 export const usePickerData = () => {
   const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
-  const { recentPick, isLoadingPicks, savePick } = useGamePicks();
+  const { recentPick, isLoadingPicks, savePick, isSaving } = useGamePicks();
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
   const [scope, setScope] = useState<PickerScope>('unplayed');
@@ -121,6 +121,7 @@ export const usePickerData = () => {
     setPreventDuplicates,
     selectRandomGame,
     recentPick,
+    isSaving, // Expose the saving state
   };
 };
 

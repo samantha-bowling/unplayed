@@ -82,7 +82,7 @@ export const useGamePicks = () => {
     enabled: isAuthenticated,
   });
 
-  // Mutation for saving a new pick using defensive update-or-insert approach
+  // Mutation for saving a new pick using PostgreSQL upsert
   const {
     mutate: savePick,
     isPending: isSaving,
@@ -93,76 +93,38 @@ export const useGamePicks = () => {
         throw new Error('User must be authenticated to save picks');
       }
 
-      const pickData = {
-        user_id: user.id,
-        game_id: gameId,
-        filters: filters as unknown as Json || {},
-        picked_at: new Date().toISOString()
-      };
-
       console.log('Attempting to save game pick:', { gameId, userId: user.id, filters });
 
-      // Step 1: Try to update existing pick for this user
-      const { data: updateData, error: updateError } = await supabase
+      // Use PostgreSQL upsert (ON CONFLICT DO UPDATE) for better race condition handling
+      const { data, error } = await supabase
         .from('game_picks')
-        .update({
-          game_id: gameId,
-          filters: pickData.filters,
-          picked_at: pickData.picked_at
-        })
-        .eq('user_id', user.id)
-        .select();
-
-      if (updateError) {
-        console.error('Error during update attempt:', updateError);
-        throw updateError;
-      }
-
-      // Step 2: If no rows were updated, insert a new pick
-      if (!updateData || updateData.length === 0) {
-        console.log('No existing pick found, inserting new pick');
-        
-        const { data: insertData, error: insertError } = await supabase
-          .from('game_picks')
-          .insert(pickData)
-          .select();
-
-        if (insertError) {
-          console.error('Error during insert attempt:', insertError);
-          
-          // Check if this is a unique constraint violation (expected behavior)
-          if (insertError.code === '23505' && insertError.message.includes('unique_user_pick')) {
-            console.log('Unique constraint violation - attempting update again');
-            
-            // Try the update one more time in case of race condition
-            const { data: retryUpdateData, error: retryUpdateError } = await supabase
-              .from('game_picks')
-              .update({
-                game_id: gameId,
-                filters: pickData.filters,
-                picked_at: pickData.picked_at
-              })
-              .eq('user_id', user.id)
-              .select();
-
-            if (retryUpdateError) {
-              console.error('Error during retry update:', retryUpdateError);
-              throw retryUpdateError;
-            }
-
-            console.log('Successfully updated pick on retry');
-            return retryUpdateData[0];
+        .upsert(
+          {
+            user_id: user.id,
+            game_id: gameId,
+            filters: (filters as unknown as Json) || {},
+            picked_at: new Date().toISOString()
+          },
+          {
+            onConflict: 'user_id',
+            ignoreDuplicates: false
           }
-          
-          throw insertError;
-        }
+        )
+        .select()
+        .single();
 
-        console.log('Successfully inserted new pick');
-        return insertData[0];
+      if (error) {
+        console.error('Error saving game pick:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
       }
 
-      console.log('Successfully updated existing pick');
-      return updateData[0];
+      console.log('Successfully saved game pick:', data);
+      return data;
     },
     onSuccess: (data) => {
       console.log('Game pick saved successfully:', data);
@@ -172,12 +134,14 @@ export const useGamePicks = () => {
         description: "Your selection has been saved.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error saving game pick:', {
         message: error.message,
+        code: error.code,
         fullError: error
       });
       
+      // Only show error toast for actual failures (not race condition conflicts that resolve)
       toast({
         title: "Failed to save pick",
         description: "Your selection could not be saved. Please try again.",
