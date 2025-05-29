@@ -15,6 +15,7 @@ export interface DashboardData {
   potentialGameplayHours: number;
   cleanScore: number;
   recentlyPlayedCount: number;
+  totalPlaytime: number; // Add totalPlaytime to interface
 }
 
 export const useDashboardData = () => {
@@ -37,6 +38,7 @@ export const useDashboardData = () => {
           potentialGameplayHours: demoData.potentialGameplayHours,
           cleanScore: demoData.cleanScore,
           recentlyPlayedCount: demoData.recentlyPlayedCount,
+          totalPlaytime: demoData.totalPlaytime || 0, // Add totalPlaytime
         };
       }
 
@@ -52,6 +54,7 @@ export const useDashboardData = () => {
           potentialGameplayHours: 0,
           cleanScore: 0,
           recentlyPlayedCount: 0,
+          totalPlaytime: 0, // Add totalPlaytime
         };
       }
 
@@ -59,6 +62,7 @@ export const useDashboardData = () => {
         unplayedGames: unplayedData.unplayedGames,
         unplayedSpent: spendingData.totalSpent,
         totalSpent: unplayedData.totalSpent,
+        totalPlaytime: unplayedData.totalPlaytime,
         spendingConfidence: spendingData.confidence
       });
 
@@ -71,6 +75,7 @@ export const useDashboardData = () => {
         potentialGameplayHours: unplayedData.potentialGameplayHours,
         cleanScore: unplayedData.cleanScore,
         recentlyPlayedCount: unplayedData.recentlyPlayedCount,
+        totalPlaytime: unplayedData.totalPlaytime, // Include totalPlaytime from unplayed data
       };
     },
     enabled: isDemo || (!!user && !unplayedLoading && !spendingLoading),
@@ -90,6 +95,7 @@ export const useDashboardData = () => {
       potentialGameplayHours: 0,
       cleanScore: 0,
       recentlyPlayedCount: 0,
+      totalPlaytime: 0, // Add totalPlaytime to fallback
     },
     isLoading: isLoading || unplayedLoading || spendingLoading,
     error,

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import LibraryStatsSection from '@/components/LibraryStatsSection';
@@ -48,10 +47,7 @@ const LibraryTabbedSection: React.FC<LibraryTabbedSectionProps> = ({
           </TabsList>
           
           <TabsContent value="overview" className="mt-6">
-            <LibraryStatsSection
-              totalGames={totalGames}
-              unplayedGames={unplayedGames}
-            />
+            <LibraryStatsSection />
           </TabsContent>
           
           <TabsContent value="genres" className="mt-6">
