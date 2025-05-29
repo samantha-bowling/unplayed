@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { withDemoIndicator } from './withDemoIndicator';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useLocation as useRouterLocation } from 'react-router-dom';
-import { useMobileDetection } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   HOME_ROUTE,
   LIBRARY_ROUTE,
@@ -33,18 +33,18 @@ import {
 } from "@/components/ui/tooltip";
 import AboutDialog from './AboutDialog';
 import AuthModal from './AuthModal';
-import SteamIcon from './icons/SteamIcon';
+import { SteamIcon } from './icons/SteamIcon';
 import clsx from 'clsx';
 
 // Main header component for navigation
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const { isAdmin } = useAuthPermission();
-  const { isDemo, toggleDemoMode } = useDemoMode();
+  const { isDemo, exitDemoMode } = useDemoMode();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const isMobile = useMobileDetection();
+  const isMobile = useIsMobile();
   const [showAuthModal, setShowAuthModal] = useState(false);
   
   // Function to determine if a route is active
@@ -68,7 +68,7 @@ const Header: React.FC = () => {
 
   const handleLoginClick = () => {
     if (isDemo) {
-      toggleDemoMode();
+      exitDemoMode();
     } else {
       setShowAuthModal(true);
     }
@@ -115,7 +115,7 @@ const Header: React.FC = () => {
               isAdmin={isAdmin} 
               isDemo={isDemo} 
               onLoginClick={handleLoginClick}
-              onLogoutClick={logout}
+              onLogoutClick={signOut}
             />
           </div>
 
@@ -154,7 +154,7 @@ const Header: React.FC = () => {
                     isAdmin={isAdmin}
                     isDemo={isDemo}
                     onLoginClick={handleLoginClick}
-                    onLogoutClick={logout}
+                    onLogoutClick={signOut}
                     closeMenu={closeMenu}
                   />
                 </div>
@@ -165,7 +165,7 @@ const Header: React.FC = () => {
       </div>
       
       <AuthModal 
-        isOpen={showAuthModal} 
+        open={showAuthModal} 
         onOpenChange={setShowAuthModal} 
       />
     </header>

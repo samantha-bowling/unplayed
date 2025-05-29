@@ -38,13 +38,24 @@ const QueueManagerPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <QueueStatsCard />
+              <QueueStatsCard 
+                stats={{
+                  pending: 0,
+                  processing: 0,
+                  completed: 0,
+                  failed: 0
+                }}
+                onRefresh={() => {}}
+              />
               <MetadataConsistencyCard />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <SmartPrioritizationCard />
-              <BatchProcessingControls />
+              <BatchProcessingControls 
+                batchSize={50}
+                onBatchSizeChange={() => {}}
+              />
             </div>
           </div>
         </main>

@@ -1,9 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
-import CountUp from 'react-countup';
 import { Layers } from 'lucide-react';
 
 const UnplayedCounter = () => {
@@ -42,7 +40,7 @@ const UnplayedCounter = () => {
       <CardContent>
         <div className="flex items-baseline gap-2">
           <div className="text-3xl font-bold">
-            <CountUp end={unplayedCount} duration={2} />
+            {unplayedCount}
           </div>
           <div className="text-muted-foreground text-sm">
             of {totalGames} total ({unplayedPercentage}%)
