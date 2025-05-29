@@ -11,6 +11,7 @@ export interface DemoDataType {
     id: number;
     name: string;  // Changed from title to name
     addedDate: string;
+    releaseDate: string; // Added release date field
     image: string;  // Changed from imageUrl to image
   }>;
   library: Array<{
@@ -40,37 +41,42 @@ export const DEMO_DATA: DemoDataType = {
     { name: 'Other', value: 5, color: '#6C757D' }
   ],
 
-  // Shelf life data - oldest games
+  // Shelf life data - oldest games (now properly ordered by release date, oldest first)
   shelfLife: [
     {
       id: 1,
-      name: "Half-Life 2",  // Changed from title to name
+      name: "Half-Life 2",
       addedDate: "2015-06-12",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/220/capsule_184x69.jpg"  // Changed from imageUrl to image
-    },
-    {
-      id: 2,
-      name: "Deus Ex: Human Revolution",  // Changed from title to name
-      addedDate: "2016-02-18",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/238010/capsule_184x69.jpg"  // Changed from imageUrl to image
-    },
-    {
-      id: 3,
-      name: "Portal 2",  // Changed from title to name
-      addedDate: "2016-11-05",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_184x69.jpg"  // Changed from imageUrl to image
-    },
-    {
-      id: 4,
-      name: "BioShock Infinite",  // Changed from title to name
-      addedDate: "2017-05-24",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/8870/capsule_184x69.jpg"  // Changed from imageUrl to image
+      releaseDate: "2004-11-16",
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/220/capsule_184x69.jpg"
     },
     {
       id: 5,
-      name: "Mass Effect 2",  // Changed from title to name
+      name: "Mass Effect 2",
       addedDate: "2018-01-10",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/24980/capsule_184x69.jpg"  // Changed from imageUrl to image
+      releaseDate: "2010-01-26",
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/24980/capsule_184x69.jpg"
+    },
+    {
+      id: 3,
+      name: "Portal 2",
+      addedDate: "2016-11-05",
+      releaseDate: "2011-04-19",
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_184x69.jpg"
+    },
+    {
+      id: 2,
+      name: "Deus Ex: Human Revolution",
+      addedDate: "2016-02-18",
+      releaseDate: "2011-08-23",
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/238010/capsule_184x69.jpg"
+    },
+    {
+      id: 4,
+      name: "BioShock Infinite",
+      addedDate: "2017-05-24",
+      releaseDate: "2013-03-26",
+      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/8870/capsule_184x69.jpg"
     }
   ],
 
