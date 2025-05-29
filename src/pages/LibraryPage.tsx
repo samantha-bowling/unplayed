@@ -249,7 +249,7 @@ const LibraryPage: React.FC = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        <main className="flex-grow px-4 py-8 header-spacing">
+        <main className="flex-grow px-4 py-12 header-spacing">
           <div className="max-w-7xl mx-auto">
             <LibraryWelcomeSection
               unplayedCount={unplayedGames}

@@ -1,8 +1,6 @@
 
 import React, { useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check } from 'lucide-react';
 
 interface ShelfLifeGameItemProps {
   game: any;
@@ -31,20 +29,13 @@ const ShelfLifeGameItem: React.FC<ShelfLifeGameItemProps> = ({
   calculateReleaseAge,
   formatDate
 }) => {
-  const handleMarkAsPlayed = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onMarkAsPlayed) {
-      onMarkAsPlayed(game.id, e);
-    }
-  }, [onMarkAsPlayed, game.id]);
-
   const imageUrl = imageErrors.has(game.id) 
     ? '/placeholder.svg' 
     : (game.image || '/placeholder.svg');
 
   return (
     <div 
-      className={`flex items-center p-3 rounded-lg transition-all duration-300 cursor-pointer ${
+      className={`flex items-center p-4 rounded-lg transition-all duration-300 cursor-pointer min-h-[80px] ${
         hoveredGame === game.id 
           ? 'bg-unplayed-mint/10 border border-unplayed-mint/30' 
           : 'bg-black/30 border border-transparent'
@@ -63,14 +54,16 @@ const ShelfLifeGameItem: React.FC<ShelfLifeGameItemProps> = ({
         />
       </div>
       
-      <div className="ml-4 flex-grow">
-        <h4 className="text-white font-medium truncate">{game.name || 'Unknown Game'}</h4>
+      <div className="ml-4 flex-grow min-w-0">
+        <h4 className="text-white font-medium text-sm leading-5 mb-1 line-clamp-2">
+          {game.name || 'Unknown Game'}
+        </h4>
         
         <div className="flex items-center text-xs text-gray-400">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className="text-left truncate">
+                <button className="text-left">
                   Released {new Date(game.releaseDate || '2000-01-01').toLocaleDateString()}
                 </button>
               </TooltipTrigger>
@@ -82,7 +75,7 @@ const ShelfLifeGameItem: React.FC<ShelfLifeGameItemProps> = ({
         </div>
       </div>
       
-      <div className="text-right flex items-center gap-2">
+      <div className="text-right flex-shrink-0">
         <span className={`text-lg font-vt ${
           index === 0 ? 'text-unplayed-red' : 
           index === 1 ? 'text-unplayed-amber' : 
@@ -90,31 +83,6 @@ const ShelfLifeGameItem: React.FC<ShelfLifeGameItemProps> = ({
         }`}>
           {calculateReleaseAge(game.releaseDate || '2000-01-01')}
         </span>
-
-        <div className={`flex-shrink-0 transition-opacity duration-200 ${
-          hoveredGame === game.id ? 'opacity-100' : 'opacity-0'
-        }`}>
-          {onMarkAsPlayed && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-8 w-8 p-0" 
-                    title="Mark as played" 
-                    onClick={handleMarkAsPlayed}
-                  >
-                    <Check className="h-4 w-4 text-unplayed-mint" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <p>Mark as played</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -92,7 +92,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   );
 
   return (
-    <div className="terminal-container w-full h-[600px] flex flex-col">
+    <div className="terminal-container w-full h-[650px] flex flex-col">
       <ShelfLifeHeader
         displayCount={displayCount}
         setDisplayCount={setDisplayCount}

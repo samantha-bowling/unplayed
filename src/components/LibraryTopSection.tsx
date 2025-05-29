@@ -23,7 +23,7 @@ const LibraryTopSection: React.FC<LibraryTopSectionProps> = ({
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <div className="space-y-6 min-h-[600px] flex flex-col">
+      <div className="space-y-6 min-h-[650px] flex flex-col">
         {/* Stats Section in left column */}
         <LibraryStatsSection 
           totalGames={totalGames}
@@ -31,7 +31,7 @@ const LibraryTopSection: React.FC<LibraryTopSectionProps> = ({
         />
         
         {/* Genres Section in left column - flex-grow to fill remaining space */}
-        <div className="transition-transform duration-300 hover:scale-[1.01] flex-grow">
+        <div className="flex-grow">
           <GenreHoarding 
             onGenreSelect={onGenreSelect} 
             activeGenre={activeGenre} 
@@ -40,7 +40,7 @@ const LibraryTopSection: React.FC<LibraryTopSectionProps> = ({
       </div>
       
       {/* Shelf Life on right column - matching height */}
-      <div className="transition-transform duration-300 hover:scale-[1.01] min-h-[600px]">
+      <div className="min-h-[650px]">
         <ShelfLife 
           onJumpToGame={onJumpToGame} 
           onMarkAsPlayed={onMarkAsPlayed} 

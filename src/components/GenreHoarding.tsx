@@ -75,7 +75,7 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
         You say you love <span className="text-unplayed-amber">{mostHoardedGenre.name}</span>... the data agrees
       </p>
 
-      <div className="terminal-content w-full h-[250px]">
+      <div className="terminal-content w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie 
