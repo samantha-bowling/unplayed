@@ -21,6 +21,7 @@ const RandomPicker = React.memo<RandomPickerProps>(({
   fullScreen = false 
 }: RandomPickerProps) => {
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user } = useAuth();
   
   const { 
@@ -64,6 +65,20 @@ const RandomPicker = React.memo<RandomPickerProps>(({
     toast.success("Opening game in Steam!");
   }, [currentSessionPick]);
 
+  const handleSelectMood = useCallback((moodId: string) => {
+    setActiveMood(moodId);
+    setIsDropdownOpen(false);
+  }, [setActiveMood]);
+
+  const handleClearMood = useCallback(() => {
+    setActiveMood(null);
+    setIsDropdownOpen(false);
+  }, [setActiveMood]);
+
+  const toggleDropdown = useCallback(() => {
+    setIsDropdownOpen(prev => !prev);
+  }, []);
+
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-screen' : 'h-[600px]'} flex flex-col p-4`}>
       <div className="flex items-center justify-between mb-4">
@@ -72,8 +87,11 @@ const RandomPicker = React.memo<RandomPickerProps>(({
       
       <div className="space-y-4 mb-4">
         <MoodFilterDropdown 
-          value={activeMood || ''} 
-          onValueChange={setActiveMood} 
+          activeMood={activeMood}
+          onSelectMood={handleSelectMood}
+          onClearMood={handleClearMood}
+          isDropdownOpen={isDropdownOpen}
+          toggleDropdown={toggleDropdown}
         />
       </div>
 
