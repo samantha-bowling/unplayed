@@ -6,6 +6,7 @@ import LibraryFilters from '@/components/LibraryFilters';
 import GameGrid from '@/components/GameGrid';
 import PaginatedGameGrid from '@/components/PaginatedGameGrid';
 import LibraryPreview from '@/components/LibraryPreview';
+import { SortOption } from '@/hooks/use-library-data';
 
 interface LibraryContentProps {
   games: any[];
@@ -17,9 +18,9 @@ interface LibraryContentProps {
   toggleOnlyUnplayed: () => void;
   updateSelectedGenre: (genre: string) => void;
   resetFilters: () => void;
-  sortBy: string;
+  sortBy: SortOption;
   sortDirection: 'asc' | 'desc';
-  updateSort: (sortBy: string, direction: 'asc' | 'desc') => void;
+  updateSort: (sortBy: SortOption, direction?: 'asc' | 'desc') => void;
   viewMode: 'grid' | 'zen';
   updateViewMode: (mode: 'grid' | 'zen') => void;
   usePagination: boolean;
@@ -56,6 +57,11 @@ const LibraryContent: React.FC<LibraryContentProps> = ({
 }) => {
   const gameGridRef = useRef<HTMLDivElement>(null);
 
+  // Create a wrapper function that matches LibraryFilters' expected signature
+  const handleSortChange = (option: SortOption) => {
+    updateSort(option);
+  };
+
   return (
     <>
       {/* Library filters */}
@@ -70,7 +76,7 @@ const LibraryContent: React.FC<LibraryContentProps> = ({
         onGenreChange={updateSelectedGenre}
         sortBy={sortBy}
         sortDirection={sortDirection}
-        onSortChange={updateSort}
+        onSortChange={handleSortChange}
         onResetFilters={resetFilters}
       />
       

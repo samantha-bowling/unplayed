@@ -329,10 +329,15 @@ export function useLibraryData() {
     });
   }, []);
 
-  // Sorting updaters
-  const updateSort = useCallback((option: SortOption) => {
+  // Updated sorting function to match the expected signature from paginated hook
+  const updateSort = useCallback((option: SortOption, direction?: 'asc' | 'desc') => {
     console.log(`Updating sort from ${sortBy} ${sortDirection} to ${option}`);
-    if (sortBy === option) {
+    if (direction) {
+      // If direction is explicitly provided, use it
+      setSortBy(option);
+      setSortDirection(direction);
+      console.log(`Set sort to: ${option} ${direction}`);
+    } else if (sortBy === option) {
       // Toggle direction if clicking the same sort option
       const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
       setSortDirection(newDirection);
