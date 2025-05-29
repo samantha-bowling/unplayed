@@ -10,6 +10,7 @@ import DiscordIcon from "./icons/DiscordIcon";
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const { isFullScreenMode } = useFullScreenMode();
   
   // Use useCallback to prevent unnecessary re-renders
@@ -21,6 +22,11 @@ const Footer = () => {
   const openTermsOfService = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setTermsOfServiceOpen(true);
+  }, []);
+  
+  const openAbout = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setAboutOpen(true);
   }, []);
 
   // Hide footer in full screen mode
@@ -47,13 +53,9 @@ const Footer = () => {
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openTermsOfService}>
               Terms of Service
             </a>
-            <AboutDialog 
-              trigger={
-                <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
-                  About
-                </a>
-              }
-            />
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openAbout}>
+              About
+            </a>
             <Link to="/support" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
               Support
             </Link>
@@ -77,6 +79,7 @@ const Footer = () => {
       {/* Dialog components with React.memo to prevent unnecessary re-renders */}
       {privacyPolicyOpen && <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />}
       {termsOfServiceOpen && <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />}
+      {aboutOpen && <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />}
     </footer>
   );
 };

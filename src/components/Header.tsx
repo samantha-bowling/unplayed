@@ -1,496 +1,383 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Menu, LogIn, ChevronDown, Settings, Shield, Bug, UserMinus, ActivitySquare, Clock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useProfile } from '@/hooks/use-profile';
-import { useAuthPermission } from '@/hooks/use-auth-permission';
-import { useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { withDemoIndicator } from './withDemoIndicator';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useLocation as useRouterLocation } from 'react-router-dom';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import FullScreenModeToggle from './FullScreenModeToggle';
+import DiscordIcon from './icons/DiscordIcon';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useProfile } from '@/hooks/use-profile';
+import AccountDeletionModal from './AccountDeletionModal';
+
+// Import dropdown menu components
 import {
-  HOME_ROUTE,
-  LIBRARY_ROUTE,
-  DUSTSCORE_ROUTE,
-  SPEND_ROUTE,
-  LEADERBOARD_ROUTE,
-  RANDOM_PICKER_ROUTE,
-  ADMIN_DASHBOARD_ROUTE,
-  ADMIN_QUEUE_MANAGER_ROUTE,
-  ADMIN_STEAM_DATA_ROUTE,
-  ADMIN_SUPPORT_ROUTE,
-  SUPPORT_ROUTE,
-  ADMIN_ACCOUNT_DELETIONS_ROUTE
-} from '@/config/routes';
-import { Menu, X, Library, Award, DollarSign, LineChart, UserPlus, Settings, LogOut, User, Users, ShieldCheck, MousePointer, Database, BarChart2, HelpCircle, UserMinus } from 'lucide-react';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import AboutDialog from './AboutDialog';
-import AuthModal from './AuthModal';
-import { SteamIcon } from './icons/SteamIcon';
-import clsx from 'clsx';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-// Main header component for navigation
-const Header: React.FC = () => {
-  const { user, signOut } = useAuth();
-  const { profile, isLoading: profileLoading } = useProfile();
-  const { isAdmin } = useAuthPermission();
-  const { isDemo, disableDemo } = useDemoMode();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
-  const isMobile = useIsMobile();
-  const [showAuthModal, setShowAuthModal] = useState(false);
+const Header = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showDeletionModal, setShowDeletionModal] = useState(false);
+  const { user, signOut, isLoading, status } = useAuth();
+  const { profile } = useProfile();
+  const navigate = useNavigate();
+  const { isDemoExplicit, setIsDemoExplicit } = useDemoMode();
+  const { isFullScreenMode } = useFullScreenMode();
   
-  // Function to determine if a route is active
-  const isActiveRoute = (routePath: string) => {
-    const currentPath = location.pathname;
-    if (routePath === HOME_ROUTE) {
-      return currentPath === routePath;
-    }
-    return currentPath.startsWith(routePath);
-  };
-  
-  // Toggle the mobile menu
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
+  // Add a stable render state to prevent flickering during auth transitions
+  const [stableRenderState, setStableRenderState] = useState({
+    isAuthenticated: false,
+    isLoading: true,
+    hasProfile: false,
+  });
 
-  // Close the mobile menu
-  const closeMenu = () => {
-    setMenuOpen(false);
-  };
+  // Update stable render state when auth state changes
+  useEffect(() => {
+    setStableRenderState({
+      isAuthenticated: !!user,
+      isLoading,
+      hasProfile: !!profile,
+    });
+  }, [user, profile, isLoading]);
 
-  const handleLoginClick = () => {
-    if (isDemo) {
-      disableDemo();
-    } else {
-      setShowAuthModal(true);
-    }
-  };
+  // Check if user has admin role - only using app_metadata since profile.roles doesn't exist
+  const isAdmin = user?.app_metadata?.roles?.includes('admin');
 
-  return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 fixed top-0 left-0 w-full z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center py-3">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 hover:opacity-90 transition" onClick={closeMenu}>
-            <span className="font-extrabold text-xl font-mono">SteamBacklog.app</span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <MainNavLinks isAdmin={isAdmin} isActiveRoute={isActiveRoute} closeMenu={closeMenu} />
-          </nav>
-
-          {/* Auth / User Menu (Desktop) */}
-          <div className="hidden md:flex items-center space-x-4">
-            <AboutDialog 
-              trigger={
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        className="hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 transition"
-                        aria-label="About"
-                      >
-                        <HelpCircle className="h-5 w-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>About</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              }
-            />
-            <UserMenuDesktop 
-              user={user} 
-              profile={profile} 
-              isAdmin={isAdmin} 
-              isDemo={isDemo} 
-              onLoginClick={handleLoginClick}
-              onLogoutClick={signOut}
-            />
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
-            <button 
-              onClick={toggleMenu} 
-              className="p-1 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-200 dark:hover:text-white dark:hover:bg-gray-800"
-              aria-label="Menu"
-            >
-              {menuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden overflow-hidden"
-            >
-              <div className="py-2 space-y-2">
-                <MainNavLinks isAdmin={isAdmin} isActiveRoute={isActiveRoute} closeMenu={closeMenu} />
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <UserMenuMobile 
-                    user={user}
-                    profile={profile}
-                    isAdmin={isAdmin}
-                    isDemo={isDemo}
-                    onLoginClick={handleLoginClick}
-                    onLogoutClick={signOut}
-                    closeMenu={closeMenu}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+  // Hide header in full screen mode if it's fully activated
+  if (isFullScreenMode) {
+    return (
+      <div className="fixed w-full px-4 py-2 flex justify-end top-0 left-0 z-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <FullScreenModeToggle />
       </div>
-      
-      <AuthModal 
-        open={showAuthModal} 
-        onOpenChange={setShowAuthModal} 
-      />
-    </header>
-  );
-};
-
-// MainNavLinks component for both desktop and mobile
-const MainNavLinks: React.FC<{
-  isAdmin: boolean;
-  isActiveRoute: (route: string) => boolean;
-  closeMenu: () => void;
-}> = ({ isAdmin, isActiveRoute, closeMenu }) => {
-  const location = useRouterLocation();
-  
-  // Navigation items with their icons and routes
-  const navItems = [
-    { 
-      icon: <Library className="h-4 w-4 mr-2" />,
-      name: 'Library', 
-      route: LIBRARY_ROUTE 
-    },
-    { 
-      icon: <LineChart className="h-4 w-4 mr-2" />,
-      name: 'Dust Score', 
-      route: DUSTSCORE_ROUTE 
-    },
-    { 
-      icon: <DollarSign className="h-4 w-4 mr-2" />,
-      name: 'Spend', 
-      route: SPEND_ROUTE 
-    },
-    { 
-      icon: <Award className="h-4 w-4 mr-2" />,
-      name: 'Leaderboard', 
-      route: LEADERBOARD_ROUTE 
-    },
-    { 
-      icon: <MousePointer className="h-4 w-4 mr-2" />,
-      name: 'Random', 
-      route: RANDOM_PICKER_ROUTE 
-    }
-  ];
-  
-  // Admin navigation items (removed HLTB item)
-  const adminItems = [
-    { 
-      icon: <BarChart2 className="h-4 w-4 mr-2" />,
-      name: 'Admin Dashboard', 
-      route: ADMIN_DASHBOARD_ROUTE 
-    },
-    { 
-      icon: <Database className="h-4 w-4 mr-2" />,
-      name: 'Queue Manager', 
-      route: ADMIN_QUEUE_MANAGER_ROUTE 
-    },
-    { 
-      icon: <SteamIcon className="h-4 w-4 mr-2" />,
-      name: 'Steam Data', 
-      route: ADMIN_STEAM_DATA_ROUTE 
-    },
-    { 
-      icon: <Users className="h-4 w-4 mr-2" />,
-      name: 'Support Tickets', 
-      route: ADMIN_SUPPORT_ROUTE 
-    },
-    { 
-      icon: <UserMinus className="h-4 w-4 mr-2" />,
-      name: 'Account Deletions', 
-      route: ADMIN_ACCOUNT_DELETIONS_ROUTE 
-    }
-  ];
-
-  return (
-    <div className="flex flex-col md:flex-row md:items-center md:space-x-6 md:space-y-0 space-y-2">
-      {navItems.map((item) => (
-        <Link 
-          key={item.route} 
-          to={item.route} 
-          className={clsx(
-            "flex items-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition",
-            {
-              'bg-gray-100 dark:bg-gray-800 font-medium': isActiveRoute(item.route),
-              'text-gray-700 dark:text-gray-300': !isActiveRoute(item.route)
-            }
-          )}
-          onClick={closeMenu}
-        >
-          {item.icon}
-          {item.name}
-        </Link>
-      ))}
-      
-      {/* Admin section - only visible to admins */}
-      {isAdmin && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-          <div className="px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-            Admin
-          </div>
-          {adminItems.map((item) => (
-            <Link 
-              key={item.route} 
-              to={item.route} 
-              className={clsx(
-                "flex items-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition",
-                {
-                  'bg-gray-100 dark:bg-gray-800 font-medium': isActiveRoute(item.route),
-                  'text-gray-700 dark:text-gray-300': !isActiveRoute(item.route)
-                }
-              )}
-              onClick={closeMenu}
-            >
-              {item.icon}
-              {item.name}
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Admin Dropdown (Desktop only) */}
-      {isAdmin && (
-        <div className="hidden md:block relative group">
-          <button className="flex items-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-            <ShieldCheck className="h-4 w-4 mr-2" />
-            Admin
-          </button>
-          <div className="hidden group-hover:block absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 z-50">
-            <div className="py-1">
-              {adminItems.map((item) => (
-                <Link 
-                  key={item.route} 
-                  to={item.route} 
-                  className={clsx(
-                    "flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition",
-                    {
-                      'bg-gray-100 dark:bg-gray-800 font-medium': isActiveRoute(item.route),
-                      'text-gray-700 dark:text-gray-300': !isActiveRoute(item.route)
-                    }
-                  )}
-                  onClick={closeMenu}
-                >
-                  {item.icon}
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Desktop user menu
-const UserMenuDesktop: React.FC<{
-  user: any;
-  profile: any;
-  isAdmin: boolean;
-  isDemo: boolean;
-  onLoginClick: () => void;
-  onLogoutClick: () => void;
-}> = ({ user, profile, isAdmin, isDemo, onLoginClick, onLogoutClick }) => {
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  
-  if (isDemo) {
-    return (
-      <button 
-        onClick={onLoginClick}
-        className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-      >
-        Exit Demo Mode
-      </button>
     );
   }
-  
-  if (!user) {
-    return (
-      <button 
-        onClick={onLoginClick}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-      >
-        Login with Steam
-      </button>
-    );
-  }
-  
+
   return (
-    <div className="relative">
-      <button 
-        onClick={() => setUserMenuOpen(!userMenuOpen)} 
-        className="flex items-center space-x-2 focus:outline-none"
-      >
-        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200">
-          {profile?.steam_avatar ? (
-            <img src={profile.steam_avatar} alt="Avatar" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
-              <User className="h-4 w-4" />
-            </div>
-          )}
-        </div>
-        <span className="text-sm font-medium">{profile?.steam_name || 'User'}</span>
-      </button>
-      
-      {userMenuOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
-          {/* User menu items */}
-          <Link 
-            to={SUPPORT_ROUTE} 
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-            onClick={() => setUserMenuOpen(false)}
-          >
-            <div className="flex items-center">
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Support
-            </div>
+    <>
+      <header className="fixed top-0 left-0 w-full px-4 py-4 flex items-center justify-between z-50 glass-panel bg-black/60 backdrop-blur-md border-b border-white/10">
+        <div className="flex items-center">
+          <Link to="/" className="text-2xl font-space font-bold">
+            <span className="text-unplayed-mint">unplayed</span>
+            <span className="text-unplayed-pink">.wtf</span>
           </Link>
+        </div>
+
+        <div className="hidden md:flex items-center space-x-6">
+          <NavLink href="/" label="Dashboard" />
+          {stableRenderState.isAuthenticated && (
+            <>
+              <NavLink href="/library" label="Library" />
+              {/* Hide admin links from main navigation when we have the dropdown */}
+              {isAdmin && !stableRenderState.hasProfile && (
+                <>
+                  <NavLink href="/auth-debug" label="Debug" />
+                  <NavLink href="/admin/support" label="Admin Support" />
+                  <NavLink href="/admin/queue-manager" label="Queue Manager" />
+                </>
+              )}
+            </>
+          )}
+          <NavLink href="/leaderboard" label="Leaderboard" />
           
-          <button 
-            onClick={() => {
-              onLogoutClick();
-              setUserMenuOpen(false);
-            }} 
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            <div className="flex items-center">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign out
+          {/* Discord Link with Button styling to match FullScreenModeToggle */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 p-0 flex items-center justify-center bg-black/50 border-gray-700 hover:bg-black/70"
+                  asChild
+                >
+                  <a 
+                    href="https://discord.gg/TvcNPryU8N" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="Join our Discord"
+                  >
+                    <DiscordIcon size={18} />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Join our Discord</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <FullScreenModeToggle />
+
+          {stableRenderState.isLoading ? (
+            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+          ) : stableRenderState.isAuthenticated ? (
+            <div className="flex items-center space-x-4">
+              {/* If user is admin, wrap avatar in dropdown menu */}
+              {isAdmin && stableRenderState.hasProfile ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
+                      <Avatar className="border border-unplayed-mint/30 cursor-pointer">
+                        {profile?.steam_avatar ? (
+                          <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
+                        ) : (
+                          <AvatarFallback className="bg-gray-800 text-unplayed-mint">
+                            {profile?.steam_name?.substring(0, 2) || 'UN'}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="flex items-center">
+                        <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
+                        <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col">
+                        <span className="text-unplayed-mint">Admin Controls</span>
+                        <span className="text-xs text-gray-400">Manage system settings</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                        onClick={() => navigate('/auth-debug')}
+                      >
+                        <Bug className="mr-2 h-4 w-4 text-unplayed-mint" />
+                        <span>Auth Debug</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                        onClick={() => navigate('/admin/support')}
+                      >
+                        <Shield className="mr-2 h-4 w-4 text-unplayed-pink" />
+                        <span>Admin Support</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                        onClick={() => navigate('/admin/hltb-data')}
+                      >
+                        <Clock className="mr-2 h-4 w-4 text-purple-400" />
+                        <span>HLTB Data</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                        onClick={() => navigate('/admin/account-deletions')}
+                      >
+                        <UserMinus className="mr-2 h-4 w-4 text-unplayed-red" />
+                        <span>Account Deletions</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                        onClick={() => navigate('/admin/queue-manager')}
+                      >
+                        <ActivitySquare className="mr-2 h-4 w-4 text-blue-400" />
+                        <span>Queue Manager</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-unplayed-red"
+                      onClick={signOut}
+                    >
+                      <LogIn className="mr-2 h-4 w-4 rotate-180" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                // Non-admin authenticated user avatar with dropdown (no preview mode toggle)
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
+                      <Avatar className="border border-unplayed-mint/30 cursor-pointer">
+                        {stableRenderState.hasProfile && profile?.steam_avatar ? (
+                          <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
+                        ) : (
+                          <AvatarFallback className="bg-gray-800 text-unplayed-mint">
+                            {profile?.steam_name?.substring(0, 2) || 'UN'}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="flex items-center">
+                        <span className="text-gray-300">{profile?.steam_name || 'User'}</span>
+                        <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800 text-gray-200">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col">
+                        <span className="text-unplayed-mint">User Settings</span>
+                        <span className="text-xs text-gray-400">Manage your account</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    
+                    {/* Logout Option */}
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                      onClick={signOut}
+                    >
+                      <LogIn className="mr-2 h-4 w-4 rotate-180" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                    
+                    {/* Delete Account Option */}
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-unplayed-red"
+                      onClick={() => setShowDeletionModal(true)}
+                    >
+                      <UserMinus className="mr-2 h-4 w-4" />
+                      <span>Delete Account</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
+          ) : (
+            // Show login button instead of Steam login
+            <Button 
+              onClick={() => navigate('/auth')}
+              variant="outline"
+              className="flex items-center gap-2 bg-black/50 border-gray-700 hover:bg-black/70"
+            >
+              <LogIn size={16} />
+              <span>Sign In</span>
+            </Button>
+          )}
+        </div>
+
+        <div className="md:hidden flex items-center space-x-3">
+          {/* Discord Icon for Mobile - Updated to match FullScreenModeToggle */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 p-0 flex items-center justify-center bg-black/50 border-gray-700 hover:bg-black/70"
+            asChild
+          >
+            <a 
+              href="https://discord.gg/TvcNPryU8N" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              aria-label="Join our Discord"
+            >
+              <DiscordIcon size={18} />
+            </a>
+          </Button>
+          
+          <FullScreenModeToggle />
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+            className="text-unplayed-mint p-2"
+          >
+            <Menu />
           </button>
         </div>
-      )}
-    </div>
-  );
-};
 
-// Mobile user menu
-const UserMenuMobile: React.FC<{
-  user: any;
-  profile: any;
-  isAdmin: boolean;
-  isDemo: boolean;
-  onLoginClick: () => void;
-  onLogoutClick: () => void;
-  closeMenu: () => void;
-}> = ({ user, profile, isDemo, onLoginClick, onLogoutClick, closeMenu }) => {
-  if (isDemo) {
-    return (
-      <button 
-        onClick={() => {
-          onLoginClick();
-          closeMenu();
-        }}
-        className="w-full flex items-center px-3 py-2 rounded-md text-sm text-center bg-amber-500 hover:bg-amber-600 text-white justify-center"
-      >
-        Exit Demo Mode
-      </button>
-    );
-  }
-  
-  if (!user) {
-    return (
-      <button 
-        onClick={() => {
-          onLoginClick();
-          closeMenu();
-        }}
-        className="w-full flex items-center px-3 py-2 rounded-md text-sm text-center bg-blue-600 hover:bg-blue-700 text-white justify-center"
-      >
-        <SteamIcon className="h-4 w-4 mr-2" />
-        Login with Steam
-      </button>
-    );
-  }
-  
-  return (
-    <div className="space-y-2">
-      {profile && (
-        <div className="flex items-center px-3 py-2">
-          <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 mr-2">
-            {profile.steam_avatar ? (
-              <img src={profile.steam_avatar} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
-                <User className="h-4 w-4" />
-              </div>
-            )}
+        {mobileMenuOpen && (
+          <div className="absolute top-16 right-0 left-0 glass-panel z-10 py-4 md:hidden animate-fade-in">
+            <div className="flex flex-col space-y-4 items-center">
+              <NavLink href="/" label="Dashboard" />
+              {user && (
+                <>
+                  <NavLink href="/library" label="Library" />
+                  {/* Display admin links in the mobile menu */}
+                  {isAdmin && (
+                    <>
+                      <NavLink href="/auth-debug" label="Debug" />
+                      <NavLink href="/admin/support" label="Admin Support" />
+                      <NavLink href="/admin/queue-manager" label="Queue Manager" />
+                      <NavLink href="/admin/account-deletions" label="Account Deletions" />
+                      <NavLink href="/admin/hltb-data" label="HLTB Data" />
+                    </>
+                  )}
+                </>
+              )}
+              <NavLink href="/leaderboard" label="Leaderboard" />
+              
+              {isLoading ? (
+                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+              ) : user ? (
+                <div className="flex flex-col items-center space-y-2">
+                  <Avatar className="cursor-pointer border border-unplayed-mint/30">
+                    {profile?.steam_avatar ? (
+                      <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
+                    ) : (
+                      <AvatarFallback className="bg-gray-800 text-unplayed-mint">
+                        {profile?.steam_name?.substring(0, 2) || 'UN'}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="text-sm text-gray-300">
+                    {profile?.steam_name || 'User'}
+                  </div>
+                  
+                  <button onClick={signOut} className="btn-secondary w-full mt-2">
+                    Logout
+                  </button>
+                  
+                  {/* Delete account button for mobile - removed preview mode toggle */}
+                  {!isAdmin && (
+                    <button 
+                      onClick={() => setShowDeletionModal(true)} 
+                      className="text-unplayed-red hover:text-red-400 transition-colors w-full mt-2"
+                    >
+                      <UserMinus size={16} className="inline mr-1" />
+                      Delete Account
+                    </button>
+                  )}
+                </div>
+              ) : (
+                // Show login button in mobile menu instead of Steam login
+                <Button 
+                  onClick={() => navigate('/auth')}
+                  className="w-full"
+                >
+                  <LogIn size={16} className="mr-2" />
+                  Sign In
+                </Button>
+              )}
+            </div>
           </div>
-          <div>
-            <div className="text-sm font-medium">{profile.steam_name}</div>
-          </div>
-        </div>
-      )}
+        )}
+      </header>
       
-      {/* User actions */}
-      <Link 
-        to={SUPPORT_ROUTE} 
-        onClick={closeMenu}
-        className="flex items-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-      >
-        <HelpCircle className="h-4 w-4 mr-2" />
-        Support
-      </Link>
-
-      <AboutDialog 
-        trigger={
-          <button className="w-full flex items-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 text-left">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            About
-          </button>
-        }
+      {/* Account deletion modal */}
+      <AccountDeletionModal 
+        open={showDeletionModal}
+        onOpenChange={setShowDeletionModal}
       />
-      
-      <button 
-        onClick={() => {
-          onLogoutClick();
-          closeMenu();
-        }}
-        className="flex items-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-left"
-      >
-        <LogOut className="h-4 w-4 mr-2" />
-        Sign out
-      </button>
-    </div>
+    </>
   );
 };
 
-// Export the Header component with demo indicator wrapper
-export default withDemoIndicator(Header);
+const NavLink = ({ href, label }: { href: string; label: string }) => (
+  <Link 
+    to={href} 
+    className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200"
+  >
+    {label}
+  </Link>
+);
+
+export default Header;

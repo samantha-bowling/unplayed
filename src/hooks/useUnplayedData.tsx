@@ -84,6 +84,37 @@ export const useUnplayedData = () => {
     refetchInterval: 15 * 60 * 1000, // Increased to 15 minutes
   });
 
+  // Memoize game IDs to prevent unnecessary estimate queries
+  const gameIds = useMemo(() => 
+    userGamesData?.map(game => game.game_id) || [], 
+    [userGamesData]
+  );
+
+  // Query for game time estimates with optimized caching
+  const {
+    data: gameEstimatesData,
+    isLoading: isLoadingEstimates,
+  } = useQuery({
+    queryKey: optimizedQueryKeys.estimates.byGameIds(gameIds),
+    queryFn: async () => {
+      if (gameIds.length === 0) return {};
+      
+      const { data: estimatesData, error: estimatesError } = await supabase
+        .from('game_estimates')
+        .select('*')
+        .in('game_id', gameIds);
+      
+      if (estimatesError) throw estimatesError;
+      
+      // Use Object.fromEntries for better performance
+      return Object.fromEntries(
+        estimatesData?.map(estimate => [estimate.game_id, estimate]) || []
+      );
+    },
+    enabled: gameIds.length > 0 && !!user && !isDemo,
+    staleTime: 30 * 60 * 1000, // 30 minutes for estimates (they change less frequently)
+  });
+
   // Memoize demo data processing to prevent unnecessary recalculations
   const normalizedDemoData = useMemo(() => {
     if (!isDemo) return null;
@@ -101,8 +132,8 @@ export const useUnplayedData = () => {
       return normalizeDemoGames(demoData);
     }
     
-    return transformUserGameData(userGamesData);
-  }, [userGamesData, demoData, isDemo, normalizedDemoData]);
+    return transformUserGameData(userGamesData, gameEstimatesData || {});
+  }, [userGamesData, gameEstimatesData, demoData, isDemo, normalizedDemoData]);
 
   // Memoize last refreshed calculation
   const lastRefreshed = useMemo(() => 
@@ -111,7 +142,7 @@ export const useUnplayedData = () => {
   );
 
   // Calculate loading state
-  const isLoading = isDemo ? false : isLoadingUserGames;
+  const isLoading = isDemo ? false : (isLoadingUserGames || isLoadingEstimates);
   const error = isDemo ? null : userGamesError;
 
   // Log transformed data for debugging (only in development)

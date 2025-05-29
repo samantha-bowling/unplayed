@@ -1,3 +1,4 @@
+
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -91,7 +92,7 @@ const Index = () => {
       refetch?.();
       
       // Refresh profile as well
-      refreshProfile();
+      refreshProfile(true);
       
       // Notify success after a short delay
       setTimeout(() => {
@@ -342,7 +343,7 @@ const Index = () => {
             ) : (
               <>
                 <div className="dashboard-grid">
-                  <UnplayedCounter />
+                  <UnplayedCounter count={safeData.unplayedGames} />
                   <DustScoreMeter score={safeData.dustScore} />
                   <SpendingEstimate amount={safeData.totalSpent} />
                 </div>

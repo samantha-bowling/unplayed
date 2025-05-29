@@ -34,7 +34,7 @@ export const useDashboardData = () => {
           dustScore: demoData.dustScore,
           totalSpent: demoData.totalSpent,
           unplayedSpent: demoData.totalSpent, // Use same value for demo
-          potentialGameplayHours: 0, // Removed HLTB estimates
+          potentialGameplayHours: demoData.potentialGameplayHours,
           cleanScore: demoData.cleanScore,
           recentlyPlayedCount: demoData.recentlyPlayedCount,
         };
@@ -68,7 +68,7 @@ export const useDashboardData = () => {
         dustScore: unplayedData.dustScore,
         totalSpent: unplayedData.totalSpent, // Total library value
         unplayedSpent: spendingData.totalSpent, // Enhanced calculation for unplayed only
-        potentialGameplayHours: 0, // Removed HLTB estimates
+        potentialGameplayHours: unplayedData.potentialGameplayHours,
         cleanScore: unplayedData.cleanScore,
         recentlyPlayedCount: unplayedData.recentlyPlayedCount,
       };
@@ -97,5 +97,3 @@ export const useDashboardData = () => {
     lastRefreshed,
   };
 };
-
-export default useDashboardData;

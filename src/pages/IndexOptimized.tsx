@@ -352,7 +352,7 @@ const IndexOptimized = () => {
             </h2>
             <DataErrorBoundary component="Dashboard">
               <div className="dashboard-grid">
-                <UnplayedCounter />
+                <UnplayedCounter count={dashboardData.unplayedGames} />
                 <DustScoreMeter score={dashboardData.dustScore} />
                 <SpendingEstimate amount={dashboardData.totalSpent} />
               </div>

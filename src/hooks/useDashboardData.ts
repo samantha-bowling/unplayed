@@ -62,7 +62,7 @@ export const useDashboardData = () => {
     error: dashboardError,
     refetch: refetchDashboard,
   } = useQuery({
-    queryKey: optimizedQueryKeys.unplayed.data(user?.id),
+    queryKey: optimizedQueryKeys.unplayed.data(user?.id, profile?.steam_id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -116,6 +116,30 @@ export const useDashboardData = () => {
     [dashboardData]
   );
 
+  // Query for game time estimates
+  const {
+    data: gameEstimatesData,
+    isLoading: isLoadingEstimates,
+  } = useQuery({
+    queryKey: optimizedQueryKeys.estimates.byGameIds(gameIds),
+    queryFn: async () => {
+      if (gameIds.length === 0) return {};
+      
+      const { data: estimatesData, error: estimatesError } = await supabase
+        .from('game_estimates')
+        .select('*')
+        .in('game_id', gameIds);
+      
+      if (estimatesError) throw estimatesError;
+      
+      return Object.fromEntries(
+        estimatesData?.map(estimate => [estimate.game_id, estimate]) || []
+      );
+    },
+    enabled: gameIds.length > 0 && !!user && !isDemo,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+
   // Memoize demo data processing
   const normalizedDemoData = useMemo(() => {
     if (!isDemo) return null;
@@ -140,7 +164,7 @@ export const useDashboardData = () => {
         return createFallbackData();
       }
       
-      const result = transformUserGameData(dashboardData);
+      const result = transformUserGameData(dashboardData, gameEstimatesData || {});
       
       // ENHANCED: Ensure unplayedSpent is correctly calculated
       const unplayedGames = result.gamesList?.filter(game => game.playtimeMinutes === 0) || [];
@@ -174,7 +198,7 @@ export const useDashboardData = () => {
       console.error('Error transforming dashboard data:', error);
       return createFallbackData();
     }
-  }, [dashboardData, isDemo, normalizedDemoData]);
+  }, [dashboardData, gameEstimatesData, isDemo, normalizedDemoData]);
 
   // Memoize last refreshed calculation
   const lastRefreshed = useMemo(() => 
@@ -183,7 +207,7 @@ export const useDashboardData = () => {
   );
 
   // Calculate loading state - only show loading for live data
-  const isLoading = isDemo ? false : isLoadingDashboard;
+  const isLoading = isDemo ? false : (isLoadingDashboard || isLoadingEstimates);
   const error = isDemo ? null : dashboardError;
 
   return {
