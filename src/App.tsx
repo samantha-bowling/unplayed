@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import LibraryPage from "./pages/LibraryPage";
-import PickerPage from "./pages/PickerPage";
 import AuthDebugPage from "./pages/AuthDebugPage";
 import SupportPage from "./pages/SupportPage";
 import AdminSupportPage from "./pages/AdminSupportPage";
@@ -15,7 +14,7 @@ import AdminSteamDataPage from "./pages/AdminSteamDataPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
 import QueueManagerPage from "./pages/QueueManagerPage";
-import AdminHltbDataPage from "./pages/AdminHltbDataPage"; // Add the new import
+import AdminHltbDataPage from "./pages/AdminHltbDataPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
@@ -96,7 +95,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {/* Add the new HLTB Data route */}
         <Route
           path={routes.ADMIN_HLTB_DATA.path}
           element={
@@ -122,14 +120,6 @@ const App = () => {
           element={
             <ProtectedRoute>
               <LibraryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.PICKER.path}
-          element={
-            <ProtectedRoute>
-              <PickerPage />
             </ProtectedRoute>
           }
         />

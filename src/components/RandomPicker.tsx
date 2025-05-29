@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MousePointer } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -83,7 +84,7 @@ const RandomPicker = ({
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   const [destinyMessage, setDestinyMessage] = useState<string>("Your Random Pick");
   
-  // Simplified: Track only the most recent previous pick from this session
+  // Simplified state - only track previous pick from current session
   const [previousSessionPick, setPreviousSessionPick] = useState<GameListItem | null>(null);
   
   const {
@@ -217,11 +218,11 @@ const RandomPicker = ({
     setPreviousSessionPick(null);
   };
 
-  // Simplified recent pick logic - clearer and more predictable
+  // Simplified recent pick logic - show DB pick only if no current session
   const getRecentPickToShow = () => {
     console.log('=== Determining Recent Pick to Show ===');
     
-    // Priority 1: If we have a current session pick AND a previous session pick, show the previous
+    // If we have a current session pick and a previous session pick, show the previous
     if (hasPickedInSession && currentSessionPick && previousSessionPick) {
       console.log('Showing previous session pick:', previousSessionPick.name);
       return {
@@ -250,8 +251,8 @@ const RandomPicker = ({
       };
     }
     
-    // Priority 2: If no current session pick or no previous session pick, show database recent pick
-    if (recentPick && (!hasPickedInSession || !currentSessionPick)) {
+    // Only show database recent pick if no current session pick
+    if (recentPick && !hasPickedInSession) {
       console.log('Showing database recent pick:', recentPick.game?.name || `Game #${recentPick.game_id}`);
       return recentPick;
     }
@@ -262,9 +263,6 @@ const RandomPicker = ({
   
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
-      {/* Debug Panel for development */}
-      <DebugPanel />
-      
       {/* Show the full screen mode toggle in the corner when in full screen mode */}
       {showFullScreenMode && (
         <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">

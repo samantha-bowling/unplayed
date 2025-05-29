@@ -45,8 +45,9 @@ export const queryKeys = {
   gameEstimates: (userId?: string) => ['gameEstimates', userId],
   gameDetails: (gameId?: number) => ['gameDetails', gameId],
   
-  // Picker data
+  // Picker data - improved cache keys
   pickerGames: (userId?: string) => ['pickerGames', userId],
+  gamePicks: (userId?: string) => ['gamePicks', userId],
   previousPicks: (userId?: string) => ['previousPicks', userId],
   
   // Spending data
@@ -65,6 +66,7 @@ export const queryKeys = {
     queryKeys.detailedDustData(userId),
     queryKeys.gameEstimates(userId),
     queryKeys.pickerGames(userId),
+    queryKeys.gamePicks(userId),
     queryKeys.previousPicks(userId),
     queryKeys.spendingData(userId)
   ]

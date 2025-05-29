@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick, GamePickFilters } from '@/types/picks.types';
+import { queryKeys } from '@/hooks/use-query-keys';
 import { 
   getAuthDebugInfo, 
   testGamePicksRLS, 
@@ -40,7 +41,7 @@ export const useGamePicks = () => {
     isLoading: isLoadingPicks,
     error: picksError,
   } = useQuery({
-    queryKey: ['gamePicks', user?.id],
+    queryKey: queryKeys.gamePicks(user?.id),
     queryFn: async () => {
       if (!isAuthenticated) {
         console.log('🔍 Query skipped - user not authenticated');
@@ -176,7 +177,8 @@ export const useGamePicks = () => {
     },
     onSuccess: (data) => {
       console.log('✅ Game pick saved successfully:', data);
-      queryClient.invalidateQueries({ queryKey: ['gamePicks', user?.id] });
+      // Invalidate the specific user's game picks cache using the correct query key
+      queryClient.invalidateQueries({ queryKey: queryKeys.gamePicks(user?.id) });
       
       // Only show success toast for actual user-initiated saves
       toast({

@@ -59,10 +59,6 @@ export const routes: Record<string, RouteConfig> = {
     path: "/library",
     requiresAuth: true
   },
-  PICKER: {
-    path: "/picker",
-    requiresAuth: true
-  },
   DUST: {
     path: "/dust",
     requiresAuth: true
