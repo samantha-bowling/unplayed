@@ -1,8 +1,7 @@
-
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Medal, Calendar, HelpCircle, Trophy, Zap, Target } from 'lucide-react';
+import { Clock, ShieldCheck, Calendar, HelpCircle, Trophy, Zap, Target, Brush } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -119,11 +118,11 @@ const CleanScoreBreakdown = ({
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Medal className="h-5 w-5 text-cyan-400" />
+              <Brush className="h-5 w-5 text-cyan-400" />
               Clean Score Breakdown
             </CardTitle>
             <CardDescription>
-              Your Clean Score of {cleanScore} is calculated from these factors
+              Your Clean Score of <span className="text-white font-bold">{cleanScore}</span> is calculated from these factors
             </CardDescription>
           </div>
         </div>
@@ -134,7 +133,7 @@ const CleanScoreBreakdown = ({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <span className="w-4 h-4 mr-2 text-center text-cyan-400">🎮</span>
+                  <ShieldCheck className="h-4 w-4 mr-2 text-cyan-400" />
                   <span className="text-sm font-medium">Completion Rate</span>
                 </div>
                 <TooltipProvider>
