@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { SteamIcon } from '@/components/icons/SteamIcon';
-import { ExternalLink } from 'lucide-react';
+import { BookOpenCheck, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -123,7 +121,7 @@ const GameReviewCard: React.FC<GameReviewCardProps> = ({
     <div className="mt-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <SteamIcon className="h-4 w-4 mr-2" />
+          <BookOpenCheck className="h-4 w-4 mr-2" />
           <span className="text-sm text-gray-400">Steam Review</span>
         </div>
         {review.language && review.language !== 'english' && (
