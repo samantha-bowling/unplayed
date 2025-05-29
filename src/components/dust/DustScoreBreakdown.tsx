@@ -2,7 +2,7 @@
 import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Wind, Clock, Play, Star, DollarSign, Gamepad2 } from 'lucide-react';
+import { Wind, Clock, Play, Star, DollarSign, BookMarked } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -79,7 +79,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   const dustTier = getDustTier();
   
   return (
-    <Card className="terminal-container">
+    <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
       <CardHeader className="pb-4">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
@@ -87,8 +87,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <Wind className="h-5 w-5 text-unplayed-mint" />
               Dust Score Breakdown
             </CardTitle>
-            <CardDescription>
-              Your total Dust Score of {totalScore.toLocaleString()} is calculated from these 5 factors
+            <CardDescription className="text-base mt-3">
+              Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is calculated from these 5 factors
             </CardDescription>
           </div>
         </div>
@@ -171,7 +171,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <Gamepad2 className="h-4 w-4 mr-2 text-purple-400" />
+                  <BookMarked className="h-4 w-4 mr-2 text-purple-400" />
                   <span className="text-sm font-medium">Genre Score</span>
                 </div>
                 <TooltipProvider>
