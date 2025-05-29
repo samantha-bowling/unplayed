@@ -27,10 +27,15 @@ const RandomPicker = React.memo<RandomPickerProps>(({
   const { 
     games: availableGames,
     isLoading: pickerLoading,
+    scope,
+    setScope,
     activeMood,
     setActiveMood,
+    preventDuplicates,
+    setPreventDuplicates,
     selectRandomGame,
     currentSessionPick,
+    previousSessionPick,
     hasPickedInSession,
     resetSessionState
   } = useSessionPicker();
@@ -79,13 +84,59 @@ const RandomPicker = React.memo<RandomPickerProps>(({
     setIsDropdownOpen(prev => !prev);
   }, []);
 
+  const handleScopeChange = useCallback((newScope: 'unplayed' | 'all') => {
+    setScope(newScope);
+    resetSessionState();
+  }, [setScope, resetSessionState]);
+
+  const handlePreventDuplicatesChange = useCallback((checked: boolean) => {
+    setPreventDuplicates(checked);
+  }, [setPreventDuplicates]);
+
   return (
     <div className={`terminal-container w-full ${fullScreen ? 'h-screen' : 'h-[600px]'} flex flex-col p-4`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="terminal-header text-2xl">Select Game</h3>
+        <h3 className="terminal-header text-2xl">Random Game Picker</h3>
       </div>
       
+      {/* Controls Section */}
       <div className="space-y-4 mb-4">
+        {/* Scope Toggle and Prevent Duplicates */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={scope === 'unplayed' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleScopeChange('unplayed')}
+              className={scope === 'unplayed' ? 'bg-unplayed-mint text-black' : ''}
+            >
+              Unplayed Only
+            </Button>
+            <Button
+              variant={scope === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleScopeChange('all')}
+              className={scope === 'all' ? 'bg-unplayed-mint text-black' : ''}
+            >
+              Full Library
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="prevent-duplicates"
+              checked={preventDuplicates}
+              onChange={(e) => handlePreventDuplicatesChange(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="prevent-duplicates" className="text-sm text-gray-300">
+              Prevent duplicates
+            </label>
+          </div>
+        </div>
+
+        {/* Mood Filter */}
         <MoodFilterDropdown 
           activeMood={activeMood}
           onSelectMood={handleSelectMood}
@@ -134,7 +185,7 @@ const RandomPicker = React.memo<RandomPickerProps>(({
             ) : isSpinning ? (
               <GameSpinner 
                 quip="Finding your next adventure..."
-                source={activeMood ? `${activeMood} games` : 'unplayed games'}
+                source={activeMood ? `${activeMood} games` : scope === 'unplayed' ? 'unplayed games' : 'all games'}
               />
             ) : (
               <div className="text-center">
@@ -146,12 +197,40 @@ const RandomPicker = React.memo<RandomPickerProps>(({
                   Spin for a Game
                 </Button>
                 <p className="text-gray-400 mt-2 text-sm">
-                  {availableGames.length} unplayed games available
+                  {availableGames.length} {scope === 'unplayed' ? 'unplayed' : ''} games available
                   {activeMood && ` (filtered by ${activeMood})`}
                 </p>
               </div>
             )}
           </div>
+
+          {/* Recently Picked Section */}
+          {previousSessionPick && !isSpinning && (
+            <div className="mt-4">
+              <RecentPick 
+                recentPick={{
+                  id: `session-${Date.now()}`,
+                  game_id: previousSessionPick.id,
+                  picked_at: new Date().toISOString(),
+                  filters: { mood: activeMood || undefined },
+                  game: {
+                    id: previousSessionPick.id,
+                    name: previousSessionPick.name,
+                    image_url: previousSessionPick.image,
+                    header_image: previousSessionPick.header_image || null,
+                    release_date: previousSessionPick.releaseDate || null,
+                    price_cents: previousSessionPick.price ? previousSessionPick.price * 100 : null,
+                    genres: previousSessionPick.genres || null,
+                    categories: previousSessionPick.categories || null,
+                    description: previousSessionPick.description || null,
+                    developer: previousSessionPick.developer || null,
+                    publisher: previousSessionPick.publisher || null,
+                  }
+                }}
+                isDemo={isDemo}
+              />
+            </div>
+          )}
         </>
       )}
 
