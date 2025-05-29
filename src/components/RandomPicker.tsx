@@ -237,11 +237,50 @@ const RandomPicker = ({
       
       {/* Main content container with terminal styling */}
       <div className="terminal-container">
-        <div className="terminal-header mb-6">Select Game.exe</div>
+        <div className="terminal-header mb-6">Random Game Picker</div>
         
         <div className="terminal-content">
-          {/* Controls Section */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {/* Controls Section - Reorganized layout */}
+          <div className="flex justify-between items-center gap-4 mb-8">
+            {/* Left side: Mood, Select Game button, Prevent Duplicates */}
+            <div className="flex items-center gap-4">
+              <MoodFilterDropdown 
+                activeMood={activeMood}
+                onSelectMood={handleFilterSelect}
+                onClearMood={handleClearMood}
+                isDropdownOpen={isDropdownOpen}
+                toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
+              />
+              
+              <button 
+                className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleSpin} 
+                disabled={isSpinning}
+              >
+                <MousePointer className="mr-2 h-4 w-4" />
+                {isSpinning ? 'Selecting...' : 'Select Game.exe'}
+              </button>
+              
+              {!showFullScreenMode && !currentSessionPick && (
+                <div className="flex items-center text-sm">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preventDuplicates}
+                      onChange={() => {
+                        console.log('Prevent duplicates toggled:', !preventDuplicates);
+                        setPreventDuplicates(!preventDuplicates);
+                      }}
+                      className="mr-1 h-4 w-4"
+                      disabled={isSpinning}
+                    />
+                    <span className="text-gray-400">Prevent duplicates</span>
+                  </label>
+                </div>
+              )}
+            </div>
+            
+            {/* Right side: Unplayed/Full Library tabs */}
             {!showFullScreenMode && (
               <Tabs 
                 defaultValue="unplayed" 
@@ -254,41 +293,6 @@ const RandomPicker = ({
                   <TabsTrigger value="all">Full Library</TabsTrigger>
                 </TabsList>
               </Tabs>
-            )}
-            
-            <MoodFilterDropdown 
-              activeMood={activeMood}
-              onSelectMood={handleFilterSelect}
-              onClearMood={handleClearMood}
-              isDropdownOpen={isDropdownOpen}
-              toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
-            />
-            
-            <button 
-              className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={handleSpin} 
-              disabled={isSpinning}
-            >
-              <MousePointer className="mr-2 h-4 w-4" />
-              {isSpinning ? 'Selecting...' : 'Select Game.exe'}
-            </button>
-            
-            {!showFullScreenMode && !currentSessionPick && (
-              <div className="flex items-center text-sm">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preventDuplicates}
-                    onChange={() => {
-                      console.log('Prevent duplicates toggled:', !preventDuplicates);
-                      setPreventDuplicates(!preventDuplicates);
-                    }}
-                    className="mr-1 h-4 w-4"
-                    disabled={isSpinning}
-                  />
-                  <span className="text-gray-400">Prevent duplicates</span>
-                </label>
-              </div>
             )}
           </div>
           

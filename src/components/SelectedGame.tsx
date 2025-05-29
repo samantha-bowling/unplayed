@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, ExternalLink, Calendar, Clock, DollarSign, RotateCcw } from 'lucide-react';
+import { Play, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { getBestGameImage } from '@/utils/image-utils';
 import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
@@ -114,84 +114,48 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             </div>
           </div>
 
-          {/* Game metadata and Steam link */}
-          <div className="flex items-center justify-between text-sm bg-gray-800/30 rounded-lg p-3">
-            <div className="flex items-center gap-4">
-              {getGameReleaseDate() && (
-                <div className="flex items-center text-gray-300">
-                  <Calendar className="w-3 h-3 mr-2 text-gray-500" />
-                  <span className="text-gray-500 mr-1 text-xs">Released:</span>
-                  <span className="font-medium text-xs">{formatDate(getGameReleaseDate())}</span>
-                </div>
-              )}
-              
+          {/* Game metadata - stacked vertically */}
+          <div className="space-y-2 mb-4">
+            {getGameReleaseDate() && (
               <div className="flex items-center text-gray-300">
-                <Clock className="w-3 h-3 mr-2 text-gray-500" />
-                <span className="text-gray-500 mr-1 text-xs">Playtime:</span>
-                <span className="font-medium text-xs">{formatPlaytime(game.playtimeMinutes)}</span>
+                <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                <span className="text-gray-500 mr-2 text-sm">Released:</span>
+                <span className="font-medium text-sm">{formatDate(getGameReleaseDate())}</span>
               </div>
-
-              {getGamePriceCents() && (
-                <div className="flex items-center text-gray-300">
-                  <DollarSign className="w-3 h-3 mr-2 text-gray-500" />
-                  <span className="text-gray-500 mr-1 text-xs">Price:</span>
-                  <span className="font-medium text-xs">{formatPrice(getGamePriceCents())}</span>
-                </div>
-              )}
+            )}
+            
+            <div className="flex items-center text-gray-300">
+              <Clock className="w-4 h-4 mr-2 text-gray-500" />
+              <span className="text-gray-500 mr-2 text-sm">Playtime:</span>
+              <span className="font-medium text-sm">{formatPlaytime(game.playtimeMinutes)}</span>
             </div>
+
+            {getGamePriceCents() && (
+              <div className="flex items-center text-gray-300">
+                <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
+                <span className="text-gray-500 mr-2 text-sm">Price:</span>
+                <span className="font-medium text-sm">{formatPrice(getGamePriceCents())}</span>
+              </div>
+            )}
             
             {/* Steam Link */}
             <Button 
               variant="ghost" 
               size="sm"
               onClick={handleViewOnSteam}
-              className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-3 py-1 h-auto"
+              className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-0 py-1 h-auto justify-start"
               disabled={disabled}
             >
-              <ExternalLink className="w-3 h-3 mr-1" />
-              <span className="text-xs">View on Steam</span>
+              <ExternalLink className="w-4 h-4 mr-2" />
+              <span className="text-sm">View on Steam</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Game Description */}
-      {hasDescription && (
-        <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
-          <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
-          <ScrollArea className="max-h-40">
-            <div className="text-gray-300 leading-relaxed text-sm pr-4">
-              {game.description.replace(/<[^>]*>/g, '')}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
-
-      {/* Steam Review Section */}
-      <div className="bg-gray-800/20 rounded-lg p-4 mb-6">
-        <GameReviewCard
-          review={review}
-          isLoading={isLoadingReview}
-          hasFetched={hasFetched}
-          onGetReview={fetchReviews}
-          onGetAnotherReview={hasReviews ? cycleNextReview : tryAnotherFallback}
-          gameId={game.id}
-        />
-      </div>
-
-      {/* Action Buttons at the bottom */}
-      <div className="flex gap-3">
-        <Button 
-          onClick={onRollAgain}
-          variant="outline"
-          className="flex-1 border-gray-600 hover:bg-gray-800"
-          disabled={disabled}
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Roll Again
-        </Button>
-        
-        <button className="btn-amber-outline flex-1">
+      {/* Give me a reason to play button */}
+      <div className="mb-6">
+        <button className="btn-amber-outline w-full">
           Give me a reason to play
         </button>
       </div>
