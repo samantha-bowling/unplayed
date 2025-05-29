@@ -14,19 +14,19 @@ interface ShelfLifeProps {
   onMarkAsPlayed?: (gameId: number) => void;
 }
 
-// Memoized date calculation functions
-const calculateAge = (dateString: string) => {
-  const addedDate = new Date(dateString);
+// Memoized date calculation functions for release dates
+const calculateReleaseAge = (dateString: string) => {
+  const releaseDate = new Date(dateString);
   const today = new Date();
   
   // Validate the date - Steam launched in 2003, so anything before that is suspicious
-  if (addedDate.getFullYear() < 2003) {
-    return 'Legacy game';
+  if (releaseDate.getFullYear() < 1980) {
+    return 'Retro game';
   }
   
-  const yearDiff = today.getFullYear() - addedDate.getFullYear();
-  const monthDiff = today.getMonth() - addedDate.getMonth();
-  const dayDiff = today.getDate() - addedDate.getDate();
+  const yearDiff = today.getFullYear() - releaseDate.getFullYear();
+  const monthDiff = today.getMonth() - releaseDate.getMonth();
+  const dayDiff = today.getDate() - releaseDate.getDate();
   
   let totalMonths = yearDiff * 12 + monthDiff;
   
@@ -152,11 +152,11 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button className="text-left truncate">
-                      Added on {new Date(game.addedDate).toLocaleDateString()}
+                      Released {new Date(game.releaseDate || '2000-01-01').toLocaleDateString()}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p>Owned since: {formatDate(game.addedDate)}</p>
+                    <p>Released: {formatDate(game.releaseDate || '2000-01-01')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -169,7 +169,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
               index === 1 ? 'text-unplayed-amber' : 
               index === 2 ? 'text-unplayed-mint' : 'text-gray-300'
             }`}>
-              {calculateAge(game.addedDate)}
+              {calculateReleaseAge(game.releaseDate || '2000-01-01')}
             </span>
 
             <div className={`flex-shrink-0 transition-opacity duration-200 ${
@@ -204,7 +204,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   );
 
   return (
-    <div className="terminal-container w-full h-full">
+    <div className="terminal-container w-full h-[500px] flex flex-col">
       <div className="flex justify-between items-center mb-2">
         <h3 className="terminal-header text-2xl">Shelf Life</h3>
         <div className="flex items-center gap-3">
@@ -232,7 +232,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
       
       <div className="flex items-center mb-4">
         <p className="text-sm text-gray-400">
-          Oldest Games Still Sealed in Digital Shrink Wrap
+          Oldest Released Games Still Unplayed
         </p>
         <TooltipProvider>
           <Tooltip>
@@ -242,17 +242,19 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="max-w-xs">
-              <p className="text-sm">These games have been in your library the longest without being played.</p>
+              <p className="text-sm">These games were released the longest ago but you still haven't played them.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
       
-      <ScrollArea className="h-[400px] pr-4">
-        <div className="space-y-3">
-          {gameItems}
-        </div>
-      </ScrollArea>
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full pr-4">
+          <div className="space-y-3">
+            {gameItems}
+          </div>
+        </ScrollArea>
+      </div>
       
       {oldestGames.length === 0 && (
         <div className="text-center p-6">
@@ -262,7 +264,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
       
       {oldestGames.length > 0 && allOldestGames.length <= 5 && (
         <div className="text-center p-4 mt-4 border-t border-gray-800">
-          <p className="text-unplayed-mint text-sm">Nice work! You're tackling your oldest games.</p>
+          <p className="text-unplayed-mint text-sm">Nice work! You're tackling your oldest unplayed games.</p>
         </div>
       )}
       
@@ -279,7 +281,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   // Custom comparison for optimal re-rendering
   return (
     prevProps.onJumpToGame === nextProps.onJumpToGame &&
-    prevProps.onMarkAsPlayed === nextProps.onMarkAsPlayed
+    nextProps.onMarkAsPlayed === nextProps.onMarkAsPlayed
   );
 });
 

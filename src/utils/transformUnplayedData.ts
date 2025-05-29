@@ -65,12 +65,13 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
       // Add to unplayed spending only for unplayed games
       unplayedSpent += gamePrice;
       
-      // Add to shelf life array with proper structure
+      // Add to shelf life array with proper structure including release date
       unplayedForShelfLife.push({
         id: item.id,
         game_id: item.game_id,
         name: item.games?.name || item.name || 'Unknown Game',
-        addedDate: item.acquisition_date || new Date().toISOString(),
+        releaseDate: item.games?.release_date || item.release_date || '2000-01-01', // Use release date instead of acquisition
+        addedDate: item.acquisition_date || new Date().toISOString(), // Keep acquisition date as fallback
         // Use getBestGameImage logic here
         image: item.games?.header_image || item.games?.image_url || item.header_image || item.image_url,
         header_image: item.games?.header_image || item.header_image,
@@ -141,18 +142,18 @@ const buildGamesListFromDatabase = (data: any[]): GameListItem[] => {
 };
 
 /**
- * Enhanced processShelfLife function for database data with proper image handling
+ * Enhanced processShelfLife function for database data with proper image handling and release date sorting
  */
 const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
   if (!unplayedForShelfLife || unplayedForShelfLife.length === 0) {
     return [];
   }
 
-  // Sort by acquisition date (oldest first) and take top items
+  // Sort by release date (oldest first) and take top items
   const sortedGames = [...unplayedForShelfLife]
     .sort((a, b) => {
-      const dateA = new Date(a.addedDate || '2000-01-01');
-      const dateB = new Date(b.addedDate || '2000-01-01');
+      const dateA = new Date(a.releaseDate || '2000-01-01');
+      const dateB = new Date(b.releaseDate || '2000-01-01');
       return dateA.getTime() - dateB.getTime();
     })
     .slice(0, 50); // Limit to top 50 for performance
@@ -160,7 +161,8 @@ const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
   return sortedGames.map((game: any) => ({
     id: game.game_id,
     name: game.name,
-    addedDate: game.addedDate,
+    releaseDate: game.releaseDate, // Use release date as primary date
+    addedDate: game.addedDate, // Keep as fallback
     // Use getBestGameImage to get the proper image URL with game ID for Steam CDN construction
     image: getBestGameImageFromDbData(game, game.game_id),
     header_image: game.header_image,
