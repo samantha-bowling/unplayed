@@ -481,6 +481,10 @@ export type Database = {
         Args: { value: number }
         Returns: number
       }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       mark_onboarding_complete: {
         Args: Record<PropertyKey, never>
         Returns: undefined
