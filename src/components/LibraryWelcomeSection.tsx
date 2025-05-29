@@ -20,10 +20,18 @@ const LibraryWelcomeSection: React.FC<LibraryWelcomeSectionProps> = ({
   totalGames
 }) => {
   const getMotivationalMessage = () => {
-    if (unplayedCount === 0) return "Impressive! You've played all your games. Time to add more?";
-    if (unplayedCount <= 5) return "You're so close to tackling your entire backlog. Keep it up!";
-    if (unplayedCount <= 20) return "Your backlog is manageable. Pick something from the Shelf Life section!";
-    if (unplayedCount <= 50) return "You've got quite the collection. Try the Random Picker to decide what's next!";
+    // Handle edge case where totalGames is 0
+    if (totalGames === 0) {
+      return "Ready to start your gaming journey? Import your Steam library to get started!";
+    }
+    
+    // Calculate percentage of unplayed games
+    const unplayedPercentage = (unplayedCount / totalGames) * 100;
+    
+    if (unplayedPercentage === 0) return "Impressive! You've played all your games. Time to add more?";
+    if (unplayedPercentage <= 10) return "You're so close to tackling your entire backlog. Keep it up!";
+    if (unplayedPercentage <= 25) return "Your backlog is manageable. Pick something from the Shelf Life section!";
+    if (unplayedPercentage <= 50) return "You've got quite the collection. Try the Random Picker to decide what's next!";
     return "That's an epic backlog! Let's organize and conquer it one game at a time.";
   };
 
