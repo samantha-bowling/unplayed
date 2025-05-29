@@ -141,6 +141,8 @@ const DustPage = () => {
                     breakdown={data.cleanScoreBreakdown}
                     cleanStreak={data.cleanStreak}
                     recentlyPlayedCount={data.recentlyPlayedCount}
+                    recentlyPlayedUnplayed={data.recentlyPlayedUnplayed}
+                    cleanStreakMetadata={data.cleanStreakMetadata}
                   />
                 </TabsContent>
                 
