@@ -1,4 +1,3 @@
-
 /**
  * Core game data structure used throughout the app
  */
@@ -8,8 +7,8 @@ export interface GameListItem {
   image: string | null;
   header_image?: string | null;
   playtimeMinutes: number;
-  releaseDate?: string | null;
-  release_date?: string | null; // Added for compatibility with database format
+  lastPlayed?: string | null; // Added missing property
+  added?: string | null; // Added for compatibility
   price?: number;
   price_cents?: number; // Added for compatibility with database format
   genres?: string[];
@@ -21,7 +20,17 @@ export interface GameListItem {
   description?: string; // Added for game description
   platforms?: string[]; // Added for platform information
   screenshots?: string[]; // Added for screenshots
+  metacritic?: number; // Added for quality factor
+  releaseDate?: string | null;
+  release_date?: string | null; // Added for compatibility with database format
   metacritic_score?: number; // Added for quality factor
+  notes?: string | null; // Added missing property
+  hidden?: boolean; // Added missing property
+  completionEstimate?: number | null; // Added missing property
+  mainStoryEstimate?: number | null; // Added missing property
+  averageEstimate?: number | null; // Added missing property
+  steamAppid?: number | null; // Added missing property
+  howLongToBeatId?: number | null; // Added missing property
 }
 
 /**

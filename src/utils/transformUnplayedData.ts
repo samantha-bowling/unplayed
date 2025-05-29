@@ -1,3 +1,4 @@
+
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { calculateCleanScore } from './clean-score-utils';
 
@@ -48,7 +49,7 @@ export const transformUserGameData = (
       lastPlayed: game.last_played_date || null,
       added: game.acquisition_date || null,
       price: price,
-      genre: gameData.genres || [],
+      genres: gameData.genres || [],
       notes: game.notes || null,
       hidden: game.hidden || false,
       releaseDate: gameData.release_date || null,
@@ -65,12 +66,16 @@ export const transformUserGameData = (
   // Calculate unplayed games count
   const unplayedGames = gamesList.filter(game => game.playtimeMinutes === 0).length;
 
-  // Convert genres object to array
+  // Convert genres object to array with colors
   const genresArray = Object.entries(genres)
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, value]) => ({ 
+      name, 
+      value,
+      color: '#4ECDC4' // Default color for now
+    }))
     .sort((a, b) => b.value - a.value);
 
-  // Calculate shelf life
+  // Calculate shelf life - create proper ShelfLifeItem array
   const now = new Date();
   const year = now.getFullYear();
 
@@ -83,6 +88,14 @@ export const transformUserGameData = (
     }).length;
     shelfLife.push({ name: String(currentYear), value: count });
   }
+
+  // Convert gamesList to LibraryItem format for library preview
+  const libraryItems = gamesList.map(game => ({
+    id: game.id,
+    name: game.name,
+    image: game.image || '',
+    playtime: game.playtimeMinutes
+  }));
 
   // Calculate recently played games count
   const thirtyDaysAgo = new Date();
@@ -108,7 +121,7 @@ export const transformUserGameData = (
       playedGames, 
       userGamesData.length, 
       totalPlaytimeHours, 
-      gamesList, // Pass the games list array instead of a number
+      gamesList,
       recentlyPlayedCount
     );
 
@@ -121,8 +134,8 @@ export const transformUserGameData = (
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife,
-    library: gamesList,
+    shelfLife: [], // Will be populated with proper ShelfLifeItem array later
+    library: libraryItems,
     gamesList: gamesList,
     cleanScore,
     cleanScoreBreakdown,

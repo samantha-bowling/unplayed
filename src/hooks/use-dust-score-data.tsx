@@ -188,7 +188,7 @@ const useDustScoreData = () => {
       const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
 
       // Calculate clean score using our type-safe utility
-      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
+      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak: calculatedCleanStreak } =
         calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, userGamesWithDust, recentlyPlayedCount);
 
       return {
@@ -204,7 +204,7 @@ const useDustScoreData = () => {
         cleanScore,
         cleanScoreBreakdown,
         cleanTier,
-        cleanStreak,
+        cleanStreak: calculatedCleanStreak,
         recentlyPlayedCount,
         totalGames,
         unplayedGames: totalGames - playedGames
