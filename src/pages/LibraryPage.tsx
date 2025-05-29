@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -221,14 +220,6 @@ const LibraryPage: React.FC = () => {
     }, 500);
   };
 
-  // Handle view most expensive unplayed
-  const handleViewExpensive = () => {
-    // Navigate to library with a filter for expensive unplayed games
-    updateSelectedGenre('');
-    toggleOnlyUnplayed();
-    updateSort('dust_score', 'desc');
-  };
-
   // Reset focused game after a delay
   useEffect(() => {
     if (focusedGameId) {
@@ -262,7 +253,6 @@ const LibraryPage: React.FC = () => {
           <LibraryHeroSection
             unplayedCount={unplayedGames}
             totalGames={totalGames}
-            onViewExpensive={handleViewExpensive}
           />
 
           <LibraryTabbedSection

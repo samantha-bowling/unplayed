@@ -23,13 +23,8 @@ const LibraryTabbedSection: React.FC<LibraryTabbedSectionProps> = ({
   onMarkAsPlayed
 }) => {
   return (
-    <section className="w-full py-8 px-4 bg-black/30">
+    <section className="w-full py-4 px-4 bg-black/30">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold font-space mb-6 text-center">
-          <span className="text-unplayed-mint">Command Center</span>
-          <span className="text-white">.exe</span>
-        </h2>
-        
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-unplayed-mint/20">
             <TabsTrigger 
