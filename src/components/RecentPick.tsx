@@ -84,10 +84,29 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           
           {/* Right: Game Info and Actions (2/3 of horizontal space) */}
           <div className="flex-1 flex flex-col justify-between">
-            {/* Top section: Game name and Play button */}
+            {/* Top section: Game name, developer, genres, and Play button */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1 min-w-0 mr-4">
                 <h3 className="text-xl font-semibold text-white mb-2 leading-tight">{gameName}</h3>
+                {gameData?.developer && gameData.developer.length > 0 && (
+                  <p className="text-sm text-gray-400 mb-2">
+                    by {gameData.developer.join(', ')}
+                  </p>
+                )}
+                {gameData?.genres && gameData.genres.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {gameData.genres.slice(0, 3).map(genre => (
+                      <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {recentPick.filters?.mood && (
+                  <span className="inline-block px-2 py-1 text-xs bg-purple-600/20 text-purple-300 rounded">
+                    Mood: {recentPick.filters.mood}
+                  </span>
+                )}
               </div>
               
               {/* Prominent Play Button */}
@@ -103,49 +122,25 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
               </div>
             </div>
 
-            {/* Game info stacked vertically */}
-            <div className="space-y-3">
-              {/* Developer */}
-              {gameData?.developer && gameData.developer.length > 0 && (
-                <p className="text-sm text-gray-400">
-                  by {gameData.developer.join(', ')}
-                </p>
-              )}
-              
-              {/* Genres and Mood */}
-              <div className="flex flex-wrap gap-1">
-                {gameData?.genres && gameData.genres.length > 0 && (
-                  gameData.genres.slice(0, 3).map(genre => (
-                    <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
-                      {genre}
-                    </span>
-                  ))
-                )}
-                {recentPick.filters?.mood && (
-                  <span className="px-2 py-1 text-xs bg-purple-600/20 text-purple-300 rounded">
-                    Mood: {recentPick.filters.mood}
-                  </span>
-                )}
-              </div>
-
-              {/* Game metadata */}
-              <div className="flex flex-wrap gap-4 text-sm text-gray-300">
+            {/* Game metadata and Steam link */}
+            <div className="flex items-center justify-between text-sm bg-gray-800/30 rounded-lg p-3">
+              <div className="flex items-center gap-4">
                 {gameData?.release_date && (
-                  <div className="flex items-center">
+                  <div className="flex items-center text-gray-300">
                     <Calendar className="w-3 h-3 mr-2 text-gray-500" />
                     <span className="text-gray-500 mr-1 text-xs">Released:</span>
                     <span className="font-medium text-xs">{formatDate(gameData.release_date)}</span>
                   </div>
                 )}
                 
-                <div className="flex items-center">
+                <div className="flex items-center text-gray-300">
                   <Clock className="w-3 h-3 mr-2 text-gray-500" />
                   <span className="text-gray-500 mr-1 text-xs">Playtime:</span>
                   <span className="font-medium text-xs">{formatPlaytime(userGameData?.playtime_minutes)}</span>
                 </div>
 
                 {gameData?.price_cents && (
-                  <div className="flex items-center">
+                  <div className="flex items-center text-gray-300">
                     <DollarSign className="w-3 h-3 mr-2 text-gray-500" />
                     <span className="text-gray-500 mr-1 text-xs">Price:</span>
                     <span className="font-medium text-xs">{formatPrice(gameData.price_cents)}</span>
@@ -154,17 +149,15 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
               </div>
               
               {/* Steam Link */}
-              <div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleViewOnSteam}
-                  className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-3 py-1 h-auto"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  <span className="text-xs">View on Steam</span>
-                </Button>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleViewOnSteam}
+                className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-3 py-1 h-auto"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                <span className="text-xs">View on Steam</span>
+              </Button>
             </div>
           </div>
         </div>
