@@ -14,8 +14,6 @@ interface LibraryTopSectionProps {
 }
 
 const LibraryTopSection: React.FC<LibraryTopSectionProps> = ({
-  totalGames,
-  unplayedGames,
   activeGenre,
   onGenreSelect,
   onJumpToGame,
@@ -25,10 +23,7 @@ const LibraryTopSection: React.FC<LibraryTopSectionProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <div className="space-y-6 min-h-[650px] flex flex-col">
         {/* Stats Section in left column */}
-        <LibraryStatsSection 
-          totalGames={totalGames}
-          unplayedGames={unplayedGames}
-        />
+        <LibraryStatsSection />
         
         {/* Genres Section in left column - flex-grow to fill remaining space */}
         <div className="flex-grow">
