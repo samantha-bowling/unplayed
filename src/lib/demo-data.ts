@@ -1,3 +1,4 @@
+
 export interface DemoDataType {
   unplayedGames: number;
   totalGames: number;
@@ -203,11 +204,11 @@ export const DEMO_DATA: DemoDataType = {
   ],
   
   shelfLife: [
-    { id: 367520, name: "Hollow Knight", addedDate: "2017-02-24T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg" },
-    { id: 292030, name: "The Witcher 3: Wild Hunt", addedDate: "2015-05-19T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg" },
-    { id: 271590, name: "Grand Theft Auto V", addedDate: "2015-04-14T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg" },
-    { id: 418370, name: "Terraria", addedDate: "2011-05-16T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg" },
-    { id: 108200, name: "Garry's Mod", addedDate: "2006-11-29T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/4000/header.jpg" }
+    { id: 367520, name: "Hollow Knight", addedDate: "2017-02-24T00:00:00Z", releaseDate: "2017-02-24", image: "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg" },
+    { id: 292030, name: "The Witcher 3: Wild Hunt", addedDate: "2015-05-19T00:00:00Z", releaseDate: "2015-05-19", image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg" },
+    { id: 271590, name: "Grand Theft Auto V", addedDate: "2015-04-14T00:00:00Z", releaseDate: "2015-04-14", image: "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg" },
+    { id: 418370, name: "Terraria", addedDate: "2011-05-16T00:00:00Z", releaseDate: "2011-05-16", image: "https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg" },
+    { id: 108200, name: "Garry's Mod", addedDate: "2006-11-29T00:00:00Z", releaseDate: "2006-11-29", image: "https://cdn.akamai.steamstatic.com/steam/apps/4000/header.jpg" }
   ],
   
   genres: [
