@@ -1,20 +1,23 @@
+
 import { getBestGameImage } from './image-utils';
 
 /**
- * Efficiently processes shelf life data with optimized sorting
+ * Efficiently processes shelf life data with optimized sorting by RELEASE DATE
  */
 export const processShelfLife = (unplayedItems: any[]): any[] => {
-  // Use a more efficient sort approach for dates
+  // Sort by RELEASE DATE (oldest games first) instead of acquisition date
   return unplayedItems
+    .filter(item => item.games?.release_date) // Only include games with release dates
     .map(item => ({
       item,
-      timestamp: new Date(item.acquisition_date || '').getTime()
+      timestamp: new Date(item.games.release_date || '').getTime()
     }))
-    .sort((a, b) => a.timestamp - b.timestamp)
+    .sort((a, b) => a.timestamp - b.timestamp) // Oldest release date first
     .map(({ item }) => ({
       id: item.game_id,
       name: item.games?.name || 'Unknown Game',
       addedDate: item.acquisition_date || new Date().toISOString(),
+      releaseDate: item.games?.release_date || null,
       header_image: item.games?.header_image,
       image: item.games?.image_url
     }));

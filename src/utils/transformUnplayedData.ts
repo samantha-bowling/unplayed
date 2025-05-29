@@ -62,16 +62,16 @@ export const transformUserGameData = (
   const genreCounts = countGenres(userGamesData);
   const genresArray = processGenres(genreCounts);
 
-  // Calculate shelf life - get oldest unplayed games by acquisition date
+  // Calculate shelf life - get oldest unplayed games by RELEASE DATE (not acquisition date)
   const unplayedGamesList = gamesList.filter(game => game.playtimeMinutes === 0);
   const shelfLife = unplayedGamesList
-    .filter(game => game.added) // Only games with acquisition dates
+    .filter(game => game.releaseDate) // Only games with release dates
     .sort((a, b) => {
-      const dateA = new Date(a.added!).getTime();
-      const dateB = new Date(b.added!).getTime();
-      return dateA - dateB; // Oldest first
+      const dateA = new Date(a.releaseDate!).getTime();
+      const dateB = new Date(b.releaseDate!).getTime();
+      return dateA - dateB; // Oldest release date first
     })
-    .slice(0, 10) // Top 10 oldest
+    .slice(0, 50) // Get top 50 oldest by release date
     .map(game => ({
       id: game.id,
       name: game.name,
@@ -133,7 +133,7 @@ export const transformUserGameData = (
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: shelfLife, // Now properly populated with oldest unplayed games
+    shelfLife: shelfLife, // Now properly sorted by oldest release date
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,

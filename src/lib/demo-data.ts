@@ -1,4 +1,3 @@
-
 import { 
   DustScoreBreakdown, 
   GameDustData, 
@@ -227,7 +226,7 @@ export const DEMO_DATA: DemoDataType = {
     { id: 108200, name: "Garry's Mod", image: "https://cdn.akamai.steamstatic.com/steam/apps/4000/header.jpg", playtime: 0 }
   ],
   
-  // Updated shelfLife array - sorted from oldest to newest by addedDate
+  // Updated shelfLife array - sorted from oldest to newest by releaseDate
   shelfLife: [
     { id: 108200, name: "Garry's Mod", addedDate: "2006-11-29T00:00:00Z", releaseDate: "2006-11-29", image: "https://cdn.akamai.steamstatic.com/steam/apps/4000/header.jpg" },
     { id: 418370, name: "Terraria", addedDate: "2011-05-16T00:00:00Z", releaseDate: "2011-05-16", image: "https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg" },
