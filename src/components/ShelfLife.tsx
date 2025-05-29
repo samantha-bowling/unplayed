@@ -2,8 +2,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useNavigate } from 'react-router-dom';
-import { createPickerNavigation } from '@/utils/navigation';
 import ShelfLifeHeader from '@/components/shelf-life/ShelfLifeHeader';
 import ShelfLifeDescription from '@/components/shelf-life/ShelfLifeDescription';
 import ShelfLifeGameItem from '@/components/shelf-life/ShelfLifeGameItem';
@@ -23,7 +21,6 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   const [displayCount, setDisplayCount] = useState<string>("10");
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const { data: dashboardData } = useDashboardData();
-  const navigate = useNavigate();
 
   // Memoize the shelf life data and slicing - now respects the selected display count
   const { allOldestGames, oldestGames } = useMemo(() => {
@@ -52,11 +49,9 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   }, [onJumpToGame]);
 
   const handlePickFromOldest = useCallback(() => {
-    navigate('/picker', createPickerNavigation({
-      source: 'shelfLife',
-      shouldAutoSpin: true
-    }));
-  }, [navigate]);
+    // Since picker page is removed, we can navigate to library instead
+    console.log('Navigate to library to see oldest games');
+  }, []);
 
   const handleMouseEnter = useCallback((gameId: number) => {
     setHoveredGame(gameId);
