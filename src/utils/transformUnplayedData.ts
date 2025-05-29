@@ -1,308 +1,133 @@
-
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
-import { buildGamesList, createEmptyGamesList } from './normalize-games';
-import { calculateCleanScore, CLEAN_SCORE_TIERS } from './clean-score-utils';
-import { countGenres, processGenres } from './genre-processing';
-import { processShelfLife, processLibraryPreview } from './shelf-life-processing';
-import { getBestGameImageFromDbData } from './image-utils';
+import { calculateCleanScore } from './clean-score-utils';
 
 /**
- * Object pool for reusing frequently created objects
+ * Transforms user game data into a structured format for the dashboard.
+ * Aggregates playtime, spending, and other relevant metrics.
  */
-const objectPool = {
-  aggregationCache: new Map<string, any>(),
-  clearCache() {
-    this.aggregationCache.clear();
-  }
-};
-
-/**
- * Optimized single-pass data aggregation with memory efficiency
- */
-const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) => {
-  const cacheKey = `${data.length}-${Object.keys(estimatesMap).length}`;
-  
-  // Check cache first for repeated calculations
-  if (objectPool.aggregationCache.has(cacheKey)) {
-    const cached = objectPool.aggregationCache.get(cacheKey);
-    if (cached && cached.timestamp > Date.now() - 30000) { // 30 second cache
-      return cached.data;
-    }
-  }
-
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  // Pre-allocate arrays to avoid dynamic resizing
-  const unplayedForShelfLife: any[] = [];
-  unplayedForShelfLife.length = 0; // Ensure clean start
-  
-  let unplayedGames = 0;
+export const transformUserGameData = (
+  userGamesData: any[],
+  gameEstimatesData: Record<number, any> = {}
+): UnplayedDataType => {
+  // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
-  let unplayedSpent = 0; // New field for unplayed games spending
-  let dustScore = 0;
-  let potentialGameplayHours = 0;
-  let recentlyPlayedCount = 0;
+  const genres: { [key: string]: number } = {};
+  const shelfLife: { name: string; value: number }[] = [];
+  const gamesList: GameListItem[] = [];
 
-  // Single pass through all data with optimized access patterns
-  const dataLength = data.length;
-  for (let i = 0; i < dataLength; i++) {
-    const item = data[i];
-    const playtimeMinutes = item.playtime_minutes || 0;
-    
-    // Handle both nested and direct price access
-    const priceCents = item.games?.price_cents || item.price_cents || 0;
-    const gamePrice = priceCents * 0.01; // Convert to dollars
-    
-    // Count unplayed games and potential hours
-    if (playtimeMinutes === 0) {
-      unplayedGames++;
-      const estimate = estimatesMap[item.game_id];
-      const gameHours = estimate?.main_hours || 12.5;
-      potentialGameplayHours += gameHours;
-      
-      // Add to unplayed spending only for unplayed games
-      unplayedSpent += gamePrice;
-      
-      // Add to shelf life array with proper structure including release date
-      unplayedForShelfLife.push({
-        id: item.id,
-        game_id: item.game_id,
-        name: item.games?.name || item.name || 'Unknown Game',
-        releaseDate: item.games?.release_date || item.release_date || '2000-01-01', // Use release date instead of acquisition
-        addedDate: item.acquisition_date || new Date().toISOString(), // Keep acquisition date as fallback
-        // Use getBestGameImage logic here
-        image: item.games?.header_image || item.games?.image_url || item.header_image || item.image_url,
-        header_image: item.games?.header_image || item.header_image,
+  // Process each game
+  userGamesData.forEach(game => {
+    const gameData = game.games;
+
+    // Ensure gameData is valid before proceeding
+    if (!gameData) return;
+
+    const price = gameData.price_cents ? (gameData.price_cents / 100) : 0;
+    const playtimeMinutes = game.playtime_minutes || 0;
+
+    // Accumulate total playtime
+    totalPlaytime += playtimeMinutes;
+
+    // Accumulate total spent
+    totalSpent += price;
+
+    // Aggregate genres
+    if (gameData.genres) {
+      gameData.genres.forEach((genre: string) => {
+        genres[genre] = (genres[genre] || 0) + 1;
       });
     }
-    
-    // Accumulate totals with minimal operations
-    totalPlaytime += playtimeMinutes;
-    totalSpent += gamePrice; // Total spending includes all games
-    dustScore += (item.dust_score || 0);
-    
-    // Check recently played with cached date comparison
-    if (item.last_played_date && new Date(item.last_played_date) >= thirtyDaysAgo) {
-      recentlyPlayedCount++;
-    }
-  }
 
-  const result = {
-    unplayedGames,
-    totalPlaytime: totalPlaytime / 60, // Convert to hours
-    totalSpent,
-    unplayedSpent, // New field for dashboard spending estimate
-    dustScore,
-    potentialGameplayHours,
-    recentlyPlayedCount,
-    playedGames: dataLength - unplayedGames,
-    unplayedForShelfLife
-  };
-
-  // Cache result for potential reuse
-  objectPool.aggregationCache.set(cacheKey, {
-    data: result,
-    timestamp: Date.now()
-  });
-
-  return result;
-};
-
-/**
- * Enhanced buildGamesList function that handles both demo and database data structures
- */
-const buildGamesListFromDatabase = (data: any[]): GameListItem[] => {
-  if (!data || data.length === 0) {
-    return [];
-  }
-
-  console.log('Building games list from database data, sample item:', data[0]);
-
-  return data.map((item: any) => {
-    // Handle both nested and direct game data access
-    const gameData = item.games || item;
-    const gameId = item.game_id || item.id;
-    
-    return {
-      id: gameId,
-      name: gameData.name || 'Unknown Game',
-      image: gameData.image_url || gameData.img_icon_url || null,
-      header_image: gameData.header_image || gameData.img_logo_url || null,
-      playtimeMinutes: item.playtime_minutes || 0,
+    // Populate games list
+    gamesList.push({
+      id: game.game_id,
+      name: gameData.name,
+      image: gameData.image_url || gameData.header_image || '',
+      playtimeMinutes: playtimeMinutes,
+      lastPlayed: game.last_played_date || null,
+      added: game.acquisition_date || null,
+      price: price,
+      genre: gameData.genres || [],
+      notes: game.notes || null,
+      hidden: game.hidden || false,
       releaseDate: gameData.release_date || null,
-      price: gameData.price_cents ? gameData.price_cents / 100 : undefined,
-      genres: gameData.genres || [],
+      metacritic: gameData.metacritic_score || null,
       categories: gameData.categories || [],
-      addedDate: item.acquisition_date || undefined,
-      dustScore: item.dust_score || 0,
-    };
-  });
-};
-
-/**
- * Enhanced processShelfLife function for database data with proper image handling and release date sorting
- */
-const processShelfLifeFromDatabase = (unplayedForShelfLife: any[]) => {
-  if (!unplayedForShelfLife || unplayedForShelfLife.length === 0) {
-    return [];
-  }
-
-  // Sort by release date (oldest first) and take top items
-  const sortedGames = [...unplayedForShelfLife]
-    .sort((a, b) => {
-      const dateA = new Date(a.releaseDate || '2000-01-01');
-      const dateB = new Date(b.releaseDate || '2000-01-01');
-      return dateA.getTime() - dateB.getTime();
-    })
-    .slice(0, 50); // Limit to top 50 for performance
-
-  return sortedGames.map((game: any) => ({
-    id: game.game_id,
-    name: game.name,
-    releaseDate: game.releaseDate, // Use release date as primary date
-    addedDate: game.addedDate, // Keep as fallback
-    // Use getBestGameImage to get the proper image URL with game ID for Steam CDN construction
-    image: getBestGameImageFromDbData(game, game.game_id),
-    header_image: game.header_image,
-  }));
-};
-
-/**
- * Enhanced processLibraryPreview function for database data with proper image handling
- * This creates a small preview for dashboard display, not for pagination
- */
-const processLibraryPreviewFromDatabase = (data: any[]) => {
-  if (!data || data.length === 0) {
-    return [];
-  }
-
-  console.log('Processing library preview from database data, sample item:', data[0]);
-
-  // Take a small sample of games for the dashboard library preview only
-  return data.slice(0, 12).map((item: any) => {
-    const gameData = item.games || item;
-    const gameId = item.game_id || item.id;
-    
-    // Use the enhanced image utility for proper image handling
-    const image = getBestGameImageFromDbData(item, gameId);
-    
-    console.log('Library preview item image processing:', {
-      gameId,
-      gameName: gameData.name,
-      originalHeaderImage: gameData.header_image,
-      originalImageUrl: gameData.image_url,
-      finalImage: image
+      completionEstimate: gameEstimatesData[game.game_id]?.completionist || null,
+      mainStoryEstimate: gameEstimatesData[game.game_id]?.main_story || null,
+      averageEstimate: gameEstimatesData[game.game_id]?.average || null,
+      steamAppid: gameEstimatesData[game.game_id]?.steam_appid || null,
+      howLongToBeatId: gameEstimatesData[game.game_id]?.how_long_to_beat_id || null,
     });
-    
-    return {
-      id: gameId,
-      name: gameData.name || 'Unknown Game',
-      image: image,
-      playtime: item.playtime_minutes || 0,
-    };
   });
-};
 
-/**
- * Optimized transformation with performance improvements and memory efficiency
- * Works for both demo and live data while maintaining consistent output structure
- */
-export const transformUserGameData = (data: any[], estimatesMap: Record<string, any> = {}): UnplayedDataType => {
-  if (!data || data.length === 0) {
-    return {
-      unplayedGames: 0,
-      totalGames: 0,
-      dustScore: 0,
-      totalPlaytime: 0,
-      totalSpent: 0,
-      unplayedSpent: 0, // Add to fallback data
-      potentialGameplayHours: 0,
-      genres: [],
-      shelfLife: [],
-      library: [],
-      gamesList: createEmptyGamesList(),
-      cleanScore: 0,
-      cleanScoreBreakdown: {
-        completionRate: 0,
-        engagementFactor: 0,
-        recencyFactor: 0
-      },
-      cleanTier: CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
-      cleanStreak: 0,
-      recentlyPlayedCount: 0
-    };
+  // Calculate unplayed games count
+  const unplayedGames = gamesList.filter(game => game.playtimeMinutes === 0).length;
+
+  // Convert genres object to array
+  const genresArray = Object.entries(genres)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
+  // Calculate shelf life
+  const now = new Date();
+  const year = now.getFullYear();
+
+  for (let i = 0; i < 5; i++) {
+    const currentYear = year - i;
+    const count = gamesList.filter(game => {
+      if (!game.releaseDate) return false;
+      const releaseYear = new Date(game.releaseDate).getFullYear();
+      return releaseYear === currentYear;
+    }).length;
+    shelfLife.push({ name: String(currentYear), value: count });
   }
 
-  console.log('Transforming user game data, sample item:', data[0]);
+  // Calculate recently played games count
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  // Step 1: Aggregate all numeric data in single pass
-  const aggregated = aggregateGameData(data, estimatesMap);
+  const recentlyPlayedCount = gamesList.filter(game => {
+    if (!game.lastPlayed) return false;
+    const lastPlayedDate = new Date(game.lastPlayed);
+    return lastPlayedDate >= thirtyDaysAgo;
+  }).length;
 
-  // Step 2: Calculate clean score using optimized helper
-  const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier } = calculateCleanScore(
-    aggregated.playedGames,
-    data.length,
-    aggregated.totalPlaytime,
-    12.5,
-    aggregated.recentlyPlayedCount
-  );
+  // Calculate total potential gameplay hours
+  const potentialGameplayHours = gamesList.reduce((sum, game) => {
+    return sum + (game.completionEstimate || 0);
+  }, 0);
 
-  // Step 3: Process genres efficiently - handle nested structure
-  const genreCounts = countGenres(data.map(item => ({
-    ...item,
-    genres: item.games?.genres || item.genres || []
-  })));
-  const genres = processGenres(genreCounts);
+  const playedGames = gamesList.filter(game => game.playtimeMinutes > 0).length;
+  const totalPlaytimeHours = totalPlaytime / 60;
 
-  // Step 4: Process shelf life and library preview using enhanced functions
-  const shelfLife = processShelfLifeFromDatabase(aggregated.unplayedForShelfLife);
-  const library = processLibraryPreviewFromDatabase(data);
-
-  // Step 5: Use enhanced buildGamesList for database data - this includes ALL games
-  const gamesList = buildGamesListFromDatabase(data);
-  
-  // Step 6: Generate clean streak (simulated value)
-  const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
-
-  console.log('Transformation complete:', {
-    totalGames: data.length,
-    unplayedGames: aggregated.unplayedGames,
-    totalSpent: aggregated.totalSpent,
-    unplayedSpent: aggregated.unplayedSpent,
-    shelfLifeCount: shelfLife.length,
-    libraryCount: library.length,
-    gamesListCount: gamesList.length
-  });
+  // Calculate clean score using enhanced calculation
+  const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } = 
+    calculateCleanScore(
+      playedGames, 
+      userGamesData.length, 
+      totalPlaytimeHours, 
+      gamesList, // Pass the games list array instead of a number
+      recentlyPlayedCount
+    );
 
   return {
-    unplayedGames: aggregated.unplayedGames,
-    totalGames: data.length,
-    dustScore: aggregated.dustScore,
-    totalPlaytime: aggregated.totalPlaytime,
-    totalSpent: aggregated.totalSpent,
-    unplayedSpent: aggregated.unplayedSpent, // Include new field in return
-    potentialGameplayHours: aggregated.potentialGameplayHours,
-    genres,
+    unplayedGames,
+    totalGames: userGamesData.length,
+    dustScore: 0, // This will be populated later
+    totalPlaytime: totalPlaytimeHours,
+    totalSpent,
+    unplayedSpent: 0, // This will be populated later
+    potentialGameplayHours,
+    genres: genresArray,
     shelfLife,
-    library,
-    gamesList, // This now contains ALL games, not just a preview
+    library: gamesList,
+    gamesList: gamesList,
     cleanScore,
     cleanScoreBreakdown,
     cleanTier,
     cleanStreak,
-    recentlyPlayedCount: aggregated.recentlyPlayedCount
+    recentlyPlayedCount
   };
 };
-
-/**
- * Clean up object pool - call this when component unmounts or app closes
- */
-export const cleanupTransformCache = () => {
-  objectPool.clearCache();
-};
-
-// Export both names for backward compatibility during transition
-export const transformUserGameDataOptimized = transformUserGameData;
-export const transformUnplayedData = transformUserGameData;

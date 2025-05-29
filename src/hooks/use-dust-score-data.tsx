@@ -1,4 +1,3 @@
-
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -17,11 +16,13 @@ import { normalizeDemoGames } from '@/utils/normalize-games';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { safeGetNumber } from '@/utils/safe-json';
 import { 
-  CLEAN_SCORE_TIERS, 
-  calculateCleanScore, 
   processDustBreakdown, 
   processDustBreakdowns 
 } from '@/utils/dust-score-utils';
+import { 
+  CLEAN_SCORE_TIERS, 
+  calculateCleanScore 
+} from '@/utils/clean-score-utils';
 
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
   const processed = processDustBreakdown(breakdown);
@@ -187,8 +188,8 @@ const useDustScoreData = () => {
       const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
 
       // Calculate clean score using our type-safe utility
-      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier } =
-        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, 12.5, recentlyPlayedCount);
+      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
+        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, userGamesWithDust, recentlyPlayedCount);
 
       return {
         dustScoreBreakdown: {
