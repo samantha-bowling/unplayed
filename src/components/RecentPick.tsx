@@ -67,16 +67,6 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
     fetchReviews();
   };
 
-  const reasonButton = (
-    <button 
-      className="btn-amber-outline w-full"
-      onClick={handleGetReview}
-      disabled={isLoadingReview}
-    >
-      {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
-    </button>
-  );
-
   return (
     <Card className="bg-gray-900/50 border-gray-700">
       <CardHeader className="pb-4">
@@ -180,13 +170,19 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
           </div>
         </div>
 
-        {/* Give me a reason to play button */}
+        {/* Give me a reason to play button - only one button now */}
         <div className="pt-2">
           {isDemo ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  {reasonButton}
+                  <button 
+                    className="btn-amber-outline w-full"
+                    onClick={handleGetReview}
+                    disabled={isLoadingReview}
+                  >
+                    {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Fetch a positive Steam review to give you motivation to play this game!</p>
@@ -194,7 +190,13 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
               </Tooltip>
             </TooltipProvider>
           ) : (
-            reasonButton
+            <button 
+              className="btn-amber-outline w-full"
+              onClick={handleGetReview}
+              disabled={isLoadingReview}
+            >
+              {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
+            </button>
           )}
         </div>
 

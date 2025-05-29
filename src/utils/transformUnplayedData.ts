@@ -1,6 +1,7 @@
 
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { calculateCleanScore } from './clean-score-utils';
+import { processGenres, countGenres } from './genre-processing';
 
 /**
  * Transforms user game data into a structured format for the dashboard.
@@ -13,8 +14,6 @@ export const transformUserGameData = (
   // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
-  const genres: { [key: string]: number } = {};
-  const shelfLife: { name: string; value: number }[] = [];
   const gamesList: GameListItem[] = [];
 
   // Process each game
@@ -32,13 +31,6 @@ export const transformUserGameData = (
 
     // Accumulate total spent
     totalSpent += price;
-
-    // Aggregate genres
-    if (gameData.genres) {
-      gameData.genres.forEach((genre: string) => {
-        genres[genre] = (genres[genre] || 0) + 1;
-      });
-    }
 
     // Populate games list
     gamesList.push({
@@ -66,28 +58,29 @@ export const transformUserGameData = (
   // Calculate unplayed games count
   const unplayedGames = gamesList.filter(game => game.playtimeMinutes === 0).length;
 
-  // Convert genres object to array with colors
-  const genresArray = Object.entries(genres)
-    .map(([name, value]) => ({ 
-      name, 
-      value,
-      color: '#4ECDC4' // Default color for now
-    }))
-    .sort((a, b) => b.value - a.value);
+  // Process genres using new consolidation logic
+  const genreCounts = countGenres(userGamesData);
+  const genresArray = processGenres(genreCounts);
 
-  // Calculate shelf life - create proper ShelfLifeItem array
-  const now = new Date();
-  const year = now.getFullYear();
-
-  for (let i = 0; i < 5; i++) {
-    const currentYear = year - i;
-    const count = gamesList.filter(game => {
-      if (!game.releaseDate) return false;
-      const releaseYear = new Date(game.releaseDate).getFullYear();
-      return releaseYear === currentYear;
-    }).length;
-    shelfLife.push({ name: String(currentYear), value: count });
-  }
+  // Calculate shelf life - get oldest unplayed games by acquisition date
+  const unplayedGamesList = gamesList.filter(game => game.playtimeMinutes === 0);
+  const shelfLife = unplayedGamesList
+    .filter(game => game.added) // Only games with acquisition dates
+    .sort((a, b) => {
+      const dateA = new Date(a.added!).getTime();
+      const dateB = new Date(b.added!).getTime();
+      return dateA - dateB; // Oldest first
+    })
+    .slice(0, 10) // Top 10 oldest
+    .map(game => ({
+      id: game.id,
+      name: game.name,
+      image: game.image || '',
+      addedDate: game.added,
+      releaseDate: game.releaseDate,
+      price: game.price,
+      genres: game.genres
+    }));
 
   // Convert gamesList to LibraryItem format for library preview
   const libraryItems = gamesList.map(game => ({
@@ -140,7 +133,7 @@ export const transformUserGameData = (
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: [], // Will be populated with proper ShelfLifeItem array later
+    shelfLife: shelfLife, // Now properly populated with oldest unplayed games
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,

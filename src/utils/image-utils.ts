@@ -115,7 +115,20 @@ export function getBestGameImageFromDbData(
   const headerImage = actualGameData.header_image || gameData.header_image;
   const imageUrl = actualGameData.image_url || gameData.image_url;
   
-  return getBestGameImage(headerImage, imageUrl, actualGameId);
+  // Additional validation to ensure we have real image URLs
+  const validHeaderImage = headerImage && 
+    headerImage !== '' && 
+    headerImage !== '/placeholder.svg' && 
+    headerImage !== 'null' && 
+    headerImage !== null ? headerImage : null;
+    
+  const validImageUrl = imageUrl && 
+    imageUrl !== '' && 
+    imageUrl !== '/placeholder.svg' && 
+    imageUrl !== 'null' && 
+    imageUrl !== null ? imageUrl : null;
+  
+  return getBestGameImage(validHeaderImage, validImageUrl, actualGameId);
 }
 
 /**

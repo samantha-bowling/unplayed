@@ -258,7 +258,7 @@ const RandomPicker = ({
                 disabled={isSpinning}
               >
                 <MousePointer className="mr-2 h-4 w-4" />
-                {isSpinning ? 'Selecting...' : 'Random Game Picker'}
+                {isSpinning ? 'Selecting...' : 'Select Game'}
               </button>
               
               {!showFullScreenMode && !currentSessionPick && (
@@ -313,7 +313,7 @@ const RandomPicker = ({
               <div className="h-64 flex flex-col items-center justify-center text-center">
                 <MousePointer className="h-12 w-12 text-gray-600 mb-4" />
                 <p className="text-gray-400">
-                  Click "Random Game Picker" to find your next game
+                  Click "Select Game" to find your next game
                 </p>
               </div>
             )}
