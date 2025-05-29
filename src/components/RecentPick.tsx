@@ -11,6 +11,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RecentPickProps {
   recentPick: GamePick | null;
@@ -65,6 +66,16 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
     }
     fetchReviews();
   };
+
+  const reasonButton = (
+    <button 
+      className="btn-amber-outline w-full"
+      onClick={handleGetReview}
+      disabled={isLoadingReview}
+    >
+      {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
+    </button>
+  );
 
   return (
     <Card className="bg-gray-900/50 border-gray-700">
@@ -169,7 +180,25 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
           </div>
         </div>
 
-        {/* Review Display - Only show the GameReviewCard for non-demo users */}
+        {/* Give me a reason to play button */}
+        <div className="pt-2">
+          {isDemo ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {reasonButton}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Fetch a positive Steam review to give you motivation to play this game!</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            reasonButton
+          )}
+        </div>
+
+        {/* Review Display */}
         {!isDemo && (
           <GameReviewCard
             review={review}

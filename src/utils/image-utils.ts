@@ -115,11 +115,6 @@ export function getBestGameImageFromDbData(
   const headerImage = actualGameData.header_image || gameData.header_image;
   const imageUrl = actualGameData.image_url || gameData.image_url;
   
-  // Ensure we have valid image data before processing
-  if (!headerImage && !imageUrl) {
-    return '/placeholder.svg';
-  }
-  
   return getBestGameImage(headerImage, imageUrl, actualGameId);
 }
 

@@ -1,7 +1,6 @@
 
-import { UnplayedDataType, GameListItem, ShelfLifeItem } from '@/types/unplayed-data.types';
+import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { calculateCleanScore } from './clean-score-utils';
-import { processGenres, countGenres } from './genre-processing';
 
 /**
  * Transforms user game data into a structured format for the dashboard.
@@ -14,6 +13,8 @@ export const transformUserGameData = (
   // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
+  const genres: { [key: string]: number } = {};
+  const shelfLife: { name: string; value: number }[] = [];
   const gamesList: GameListItem[] = [];
 
   // Process each game
@@ -31,6 +32,13 @@ export const transformUserGameData = (
 
     // Accumulate total spent
     totalSpent += price;
+
+    // Aggregate genres
+    if (gameData.genres) {
+      gameData.genres.forEach((genre: string) => {
+        genres[genre] = (genres[genre] || 0) + 1;
+      });
+    }
 
     // Populate games list
     gamesList.push({
@@ -58,56 +66,28 @@ export const transformUserGameData = (
   // Calculate unplayed games count
   const unplayedGames = gamesList.filter(game => game.playtimeMinutes === 0).length;
 
-  // Process genres using the enhanced utility
-  const genreCounts = countGenres(userGamesData);
-  const genresArray = processGenres(genreCounts);
+  // Convert genres object to array with colors
+  const genresArray = Object.entries(genres)
+    .map(([name, value]) => ({ 
+      name, 
+      value,
+      color: '#4ECDC4' // Default color for now
+    }))
+    .sort((a, b) => b.value - a.value);
 
-  // Calculate shelf life by release year with proper ShelfLifeItem format
+  // Calculate shelf life - create proper ShelfLifeItem array
   const now = new Date();
   const year = now.getFullYear();
-  const shelfLife: ShelfLifeItem[] = [];
 
-  // Create shelf life data for the last 10 years
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 5; i++) {
     const currentYear = year - i;
-    const gamesInYear = gamesList.filter(game => {
+    const count = gamesList.filter(game => {
       if (!game.releaseDate) return false;
       const releaseYear = new Date(game.releaseDate).getFullYear();
       return releaseYear === currentYear;
-    });
-    
-    if (gamesInYear.length > 0) {
-      shelfLife.push({ 
-        name: String(currentYear), 
-        value: gamesInYear.length,
-        games: gamesInYear.slice(0, 20) // Limit to first 20 games for performance
-      });
-    }
+    }).length;
+    shelfLife.push({ name: String(currentYear), value: count });
   }
-
-  // Sort by oldest games first (by release date, then by acquisition date)
-  const sortedOldestGames = gamesList
-    .filter(game => game.playtimeMinutes === 0) // Only unplayed games
-    .sort((a, b) => {
-      // Primary sort by release date (oldest first)
-      if (a.releaseDate && b.releaseDate) {
-        const dateComparison = new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime();
-        if (dateComparison !== 0) return dateComparison;
-      }
-      
-      // If release dates are equal or missing, sort by acquisition date (oldest first)
-      if (a.added && b.added) {
-        return new Date(a.added).getTime() - new Date(b.added).getTime();
-      }
-      
-      // Handle missing dates - games with dates come first
-      if (a.releaseDate && !b.releaseDate) return -1;
-      if (!a.releaseDate && b.releaseDate) return 1;
-      if (a.added && !b.added) return -1;
-      if (!a.added && b.added) return 1;
-      
-      return 0;
-    });
 
   // Convert gamesList to LibraryItem format for library preview
   const libraryItems = gamesList.map(game => ({
@@ -151,19 +131,16 @@ export const transformUserGameData = (
     recentlyPlayedCount
   );
 
-  // Calculate total dust score
-  const totalDustScore = userGamesData.reduce((sum, game) => sum + (game.dust_score || 0), 0);
-
   return {
     unplayedGames,
     totalGames: userGamesData.length,
-    dustScore: totalDustScore,
+    dustScore: 0, // This will be populated later
     totalPlaytime: totalPlaytimeHours,
     totalSpent,
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: sortedOldestGames, // Use the sorted games directly for shelf life display
+    shelfLife: [], // Will be populated with proper ShelfLifeItem array later
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,

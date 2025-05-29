@@ -1,3 +1,4 @@
+
 import { GenreData } from '@/types/unplayed-data.types';
 
 // Enhanced genre color mapping
@@ -38,48 +39,34 @@ const getGenreColor = (genre: string, index: number): string => {
 };
 
 /**
- * Efficiently processes genres with consolidation of small genres into "Other"
+ * Efficiently processes genres with single sort operation and memoization support
  */
 export const processGenres = (genreCounts: Map<string, number>): GenreData[] => {
-  // Calculate total count
-  const totalCount = Array.from(genreCounts.values()).reduce((sum, count) => sum + count, 0);
-  
-  if (totalCount === 0) return [];
-  
   // Convert and sort in single operation
   const sortedGenres = Array.from(genreCounts.entries())
     .sort((a, b) => b[1] - a[1]);
 
-  // Separate genres that are 5% or more vs less than 5%
-  const significantGenres: GenreData[] = [];
-  let otherCount = 0;
-  
-  sortedGenres.forEach(([name, value], index) => {
-    const percentage = (value / totalCount) * 100;
-    
-    if (percentage >= 5 && significantGenres.length < 6) {
-      // Keep genres with 5% or more (max 6 total including potential "Other")
-      significantGenres.push({
-        name,
-        value,
-        color: getGenreColor(name, index)
-      });
-    } else {
-      // Add to "Other" category
-      otherCount += value;
-    }
-  });
+  // Take top 5 genres
+  const topGenres = sortedGenres.slice(0, 5)
+    .map(([name, value], index) => ({
+      name,
+      value,
+      color: getGenreColor(name, index)
+    }));
 
-  // Add "Other" category if there are small genres
-  if (otherCount > 0) {
-    significantGenres.push({
+  // Add "Other" category if needed
+  if (genreCounts.size > 5) {
+    const otherCount = sortedGenres.slice(5)
+      .reduce((sum, [, count]) => sum + count, 0);
+    
+    topGenres.push({
       name: 'Other',
       value: otherCount,
       color: GENRE_COLORS.Other || '#95a5a6'
     });
   }
 
-  return significantGenres;
+  return topGenres;
 };
 
 /**
