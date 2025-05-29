@@ -204,7 +204,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   );
 
   return (
-    <div className="terminal-container w-full h-[500px] flex flex-col">
+    <div className="terminal-container w-full h-[600px] flex flex-col">
       <div className="flex justify-between items-center mb-2">
         <h3 className="terminal-header text-2xl">Shelf Life</h3>
         <div className="flex items-center gap-3">
