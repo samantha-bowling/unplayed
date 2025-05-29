@@ -57,6 +57,16 @@ const LibraryFilters: React.FC<LibraryFiltersProps> = ({
 
   const hasActiveFilters = searchQuery || hideIgnored || onlyUnplayed || selectedGenre;
 
+  // Handle genre change - convert "all" back to empty string for filtering
+  const handleGenreChange = (value: string) => {
+    onGenreChange(value === 'all' ? '' : value);
+  };
+
+  // Get display value for select - use "all" when no genre is selected
+  const getSelectValue = () => {
+    return selectedGenre === '' ? 'all' : selectedGenre;
+  };
+
   return (
     <div className="bg-black/20 border border-unplayed-mint/20 rounded-lg p-4 mb-6">
       {/* Search Bar */}
@@ -98,12 +108,12 @@ const LibraryFilters: React.FC<LibraryFiltersProps> = ({
         </Button>
         
         {/* Genre Filter */}
-        <Select value={selectedGenre} onValueChange={onGenreChange}>
+        <Select value={getSelectValue()} onValueChange={handleGenreChange}>
           <SelectTrigger className="w-48 bg-black/30 border-unplayed-mint/20">
             <SelectValue placeholder="Filter by genre" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Genres</SelectItem>
+            <SelectItem value="all">All Genres</SelectItem>
             <SelectItem value="Action">Action</SelectItem>
             <SelectItem value="Adventure">Adventure</SelectItem>
             <SelectItem value="RPG">RPG</SelectItem>
