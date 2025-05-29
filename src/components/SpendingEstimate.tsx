@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
@@ -17,21 +17,19 @@ const SpendingEstimate = ({
   amount, 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: dashboardData, isLoading: dataLoading, refetch } = useDashboardData();
+  const { data: spendingData, isLoading: dataLoading, refetch } = useEnhancedSpendingData();
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // FIXED: Use unplayedSpent from dashboard data, not totalSpent
-  // Use amount from props if provided, otherwise use unplayed spending from dashboard data
-  const spendingAmount = amount !== undefined 
-    ? amount 
-    : (dashboardData?.unplayedSpent || 0);
+  // Use amount from props if provided, otherwise use enhanced spending data
+  const spendingAmount = amount !== undefined ? amount : spendingData.totalSpent;
 
-  console.log('SpendingEstimate - Dashboard data:', {
-    unplayedSpent: dashboardData?.unplayedSpent,
-    totalSpent: dashboardData?.totalSpent,
+  console.log('SpendingEstimate - Enhanced data:', {
+    totalSpent: spendingData.totalSpent,
+    confidence: spendingData.confidence,
+    dataQuality: spendingData.dataQuality,
     usingAmount: spendingAmount
   });
 
@@ -65,6 +63,34 @@ const SpendingEstimate = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          
+          {/* Data quality indicator for authenticated users */}
+          {!isDemo && user && spendingData && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className={`w-2 h-2 rounded-full ${
+                      spendingData.confidence === 'high' ? 'bg-green-500' :
+                      spendingData.confidence === 'medium' ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`} />
+                    <span className="text-xs text-gray-500">
+                      {spendingData.confidence} confidence
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <div className="text-sm space-y-1">
+                    <p>{spendingData.displayInfo.confidenceText}</p>
+                    {spendingData.displayInfo.warningText && (
+                      <p className="text-yellow-400">⚠️ {spendingData.displayInfo.warningText}</p>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         {showRefresh && (
           <TooltipProvider>
@@ -99,7 +125,7 @@ const SpendingEstimate = ({
             isLoading={dataLoading || authLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
-            totalSaved={undefined}
+            totalSaved={spendingData.totalSaved}
             isDemo={isDemo}
             hasUser={!!user}
           />
@@ -108,6 +134,18 @@ const SpendingEstimate = ({
             <p className="text-gray-300 mb-6">
               Do you really want to see how much money you've spent on games you've never played?
             </p>
+            
+            {/* Show data quality summary for authenticated users */}
+            {!isDemo && user && spendingData && (
+              <div className="mb-4 text-sm text-gray-400 space-y-1">
+                <p>{spendingData.displayInfo.displayText}</p>
+                {spendingData.displayInfo.warningText && (
+                  <p className="text-yellow-400 text-xs">
+                    ⚠️ {spendingData.displayInfo.warningText}
+                  </p>
+                )}
+              </div>
+            )}
             
             <button 
               onClick={() => setIsVisible(true)}

@@ -127,6 +127,11 @@ const SpendingMeter = ({
       
       <div className="mt-auto text-sm text-gray-400 text-center pb-2">
         Based on{isDemo ? ' estimated' : ' current'} Steam store prices
+        {!isDemo && (
+          <div className="text-xs mt-1">
+            Enhanced calculation with proper free game detection
+          </div>
+        )}
       </div>
     </div>
   );
