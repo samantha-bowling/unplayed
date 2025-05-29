@@ -1,3 +1,4 @@
+
 /**
  * Core game data structure used throughout the app
  */

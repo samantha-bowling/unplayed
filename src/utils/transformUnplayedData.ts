@@ -19,8 +19,8 @@ const objectPool = {
 /**
  * Optimized single-pass data aggregation with memory efficiency
  */
-const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) => {
-  const cacheKey = `${data.length}-${Object.keys(estimatesMap).length}`;
+const aggregateGameData = (data: any[]) => {
+  const cacheKey = `${data.length}`;
   
   // Check cache first for repeated calculations
   if (objectPool.aggregationCache.has(cacheKey)) {
@@ -42,7 +42,6 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
   let totalSpent = 0;
   let unplayedSpent = 0; // New field for unplayed games spending
   let dustScore = 0;
-  let potentialGameplayHours = 0;
   let recentlyPlayedCount = 0;
 
   // Single pass through all data with optimized access patterns
@@ -55,12 +54,9 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
     const priceCents = item.games?.price_cents || item.price_cents || 0;
     const gamePrice = priceCents * 0.01; // Convert to dollars
     
-    // Count unplayed games and potential hours
+    // Count unplayed games
     if (playtimeMinutes === 0) {
       unplayedGames++;
-      const estimate = estimatesMap[item.game_id];
-      const gameHours = estimate?.main_hours || 12.5;
-      potentialGameplayHours += gameHours;
       
       // Add to unplayed spending only for unplayed games
       unplayedSpent += gamePrice;
@@ -95,7 +91,6 @@ const aggregateGameData = (data: any[], estimatesMap: Record<string, any> = {}) 
     totalSpent,
     unplayedSpent, // New field for dashboard spending estimate
     dustScore,
-    potentialGameplayHours,
     recentlyPlayedCount,
     playedGames: dataLength - unplayedGames,
     unplayedForShelfLife
@@ -209,7 +204,7 @@ const processLibraryPreviewFromDatabase = (data: any[]) => {
  * Optimized transformation with performance improvements and memory efficiency
  * Works for both demo and live data while maintaining consistent output structure
  */
-export const transformUserGameData = (data: any[], estimatesMap: Record<string, any> = {}): UnplayedDataType => {
+export const transformUserGameData = (data: any[]): UnplayedDataType => {
   if (!data || data.length === 0) {
     return {
       unplayedGames: 0,
@@ -238,14 +233,14 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
   console.log('Transforming user game data, sample item:', data[0]);
 
   // Step 1: Aggregate all numeric data in single pass
-  const aggregated = aggregateGameData(data, estimatesMap);
+  const aggregated = aggregateGameData(data);
 
   // Step 2: Calculate clean score using optimized helper
   const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier } = calculateCleanScore(
     aggregated.playedGames,
     data.length,
     aggregated.totalPlaytime,
-    12.5,
+    0, // Remove HLTB hours estimate
     aggregated.recentlyPlayedCount
   );
 
@@ -283,7 +278,7 @@ export const transformUserGameData = (data: any[], estimatesMap: Record<string, 
     totalPlaytime: aggregated.totalPlaytime,
     totalSpent: aggregated.totalSpent,
     unplayedSpent: aggregated.unplayedSpent, // Include new field in return
-    potentialGameplayHours: aggregated.potentialGameplayHours,
+    potentialGameplayHours: 0, // Remove HLTB data, set to 0
     genres,
     shelfLife,
     library,
