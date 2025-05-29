@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { BookOpenCheck, ExternalLink } from 'lucide-react';
+import { BookOpenCheck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -155,18 +156,6 @@ const GameReviewCard: React.FC<GameReviewCardProps> = ({
           >
             Another review
           </Button>
-          
-          {gameId && (
-            <a
-              href={`https://store.steampowered.com/app/${gameId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-gray-400 hover:text-unplayed-amber flex items-center ml-2"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              Steam
-            </a>
-          )}
         </div>
       </div>
     </div>

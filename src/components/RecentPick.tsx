@@ -171,7 +171,7 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
                 variant="ghost" 
                 size="sm"
                 onClick={handleViewOnSteam}
-                className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-0 py-1 h-auto justify-start"
+                className="text-gray-400 hover:text-unplayed-amber px-0 py-1 h-auto justify-start"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 <span className="text-sm">View on Steam</span>
