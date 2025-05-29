@@ -2,7 +2,7 @@
 import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Wind, Clock, Play } from 'lucide-react';
+import { Wind, Clock, Play, Star, DollarSign, Gamepad2 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -34,19 +34,23 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
     );
   }
   
-  // Ensure we have valid values for calculation
+  // Ensure we have valid values for calculation with new 5-factor system
+  const qualityScore = breakdown.qualityScore || 0;
+  const priceScore = breakdown.priceScore || 0;
   const ageScore = breakdown.ageScore || 0;
-  const ownershipScore = breakdown.ownershipScore || 0;
+  const genreScore = breakdown.genreScore || 0;
   const playtimeFactor = breakdown.playtimeFactor || 1.0;
   
   // Calculate percentages for the visualizations
   const actualTotal = totalScore || 1; // Prevent division by zero
   
   // Calculate what percentage each component contributes to the total
-  const rawTotal = ageScore + ownershipScore;
-  const ageScorePercent = Math.round((ageScore / (rawTotal || 1)) * 100);
-  const ownershipScorePercent = Math.round((ownershipScore / (rawTotal || 1)) * 100);
-  const playtimeFactorPercent = Math.round(playtimeFactor * 100);
+  const rawTotal = qualityScore + priceScore + ageScore + genreScore;
+  const qualityPercent = Math.round((qualityScore / (rawTotal || 1)) * 100);
+  const pricePercent = Math.round((priceScore / (rawTotal || 1)) * 100);
+  const agePercent = Math.round((ageScore / (rawTotal || 1)) * 100);
+  const genrePercent = Math.round((genreScore / (rawTotal || 1)) * 100);
+  const playtimePercent = Math.round(playtimeFactor * 100);
   
   // Define dust score tiers based on total score
   const getDustTier = () => {
@@ -84,7 +88,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               Dust Score Breakdown
             </CardTitle>
             <CardDescription>
-              Your total Dust Score of {totalScore.toLocaleString()} is calculated from these factors
+              Your total Dust Score of {totalScore.toLocaleString()} is calculated from these 5 factors
             </CardDescription>
           </div>
         </div>
@@ -92,6 +96,54 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <Star className="h-4 w-4 mr-2 text-yellow-400" />
+                  <span className="text-sm font-medium">Quality Score</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-yellow-400">{qualityScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Based on Metacritic scores - lower quality games get higher dust scores</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={qualityPercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-yellow-400 mt-[-8px] rounded-full" style={{ width: `${qualityPercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                {qualityPercent}% of your raw score comes from game quality
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2 text-green-400" />
+                  <span className="text-sm font-medium">Price Score</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-green-400">{priceScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Based on game price - more expensive unplayed games accumulate more dust</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={pricePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${pricePercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                {pricePercent}% of your raw score comes from game pricing
+              </p>
+            </div>
+            
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
@@ -104,39 +156,39 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-unplayed-amber">{ageScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Points based on how old the games in your library are</p>
+                      <p>Based on game release date - older games get higher scores</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={ageScorePercent} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-unplayed-amber mt-[-8px] rounded-full" style={{ width: `${ageScorePercent}%` }}></div>
+              <Progress value={agePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-amber mt-[-8px] rounded-full" style={{ width: `${agePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                {ageScorePercent}% of your raw score comes from game age
+                {agePercent}% of your raw score comes from game age
               </p>
             </div>
-            
+
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <span className="w-4 h-4 mr-2 text-center text-unplayed-mint">📅</span>
-                  <span className="text-sm font-medium">Ownership Score</span>
+                  <Gamepad2 className="h-4 w-4 mr-2 text-purple-400" />
+                  <span className="text-sm font-medium">Genre Score</span>
                 </div>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-unplayed-mint">{ownershipScore}</span>
+                      <span className="text-lg font-bold text-purple-400">{genreScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Points based on how long you've owned your games</p>
+                      <p>Based on genre rarity - niche genres get higher scores</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={ownershipScorePercent} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-unplayed-mint mt-[-8px] rounded-full" style={{ width: `${ownershipScorePercent}%` }}></div>
+              <Progress value={genrePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${genrePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                {ownershipScorePercent}% of your raw score comes from ownership time
+                {genrePercent}% of your raw score comes from genre rarity
               </p>
             </div>
             
@@ -157,20 +209,21 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={playtimeFactorPercent} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-unplayed-pink mt-[-8px] rounded-full" style={{ width: `${playtimeFactorPercent}%` }}></div>
+              <Progress value={playtimePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-pink mt-[-8px] rounded-full" style={{ width: `${playtimePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                Playtime reduces your dust score by {(100 - playtimeFactorPercent)}%
+                Playtime reduces your dust score by {(100 - playtimePercent)}%
               </p>
             </div>
 
             <div className="bg-black/20 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-2">How to Improve</h3>
               <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
-                <li>Play the games with the highest dust scores first</li>
-                <li>Focus on games you've owned for a long time</li>
-                <li>Play newer game purchases before they accumulate dust</li>
-                <li>Set aside regular time to tackle your backlog</li>
+                <li>Play high-quality games you've been avoiding</li>
+                <li>Focus on expensive games sitting in your backlog</li>
+                <li>Tackle older games before they accumulate more dust</li>
+                <li>Try games from genres you don't usually play</li>
+                <li>Set aside regular time to reduce your unplayed collection</li>
               </ul>
             </div>
           </div>
@@ -193,13 +246,19 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <h3 className="text-lg font-medium mb-2">What It Means</h3>
               <div className="space-y-3 text-sm">
                 <p>
-                  <span className="text-unplayed-amber font-bold">Age Score:</span> Based on how old the games in your library are. Older games get higher scores.
+                  <span className="text-yellow-400 font-bold">Quality:</span> Games with poor reviews or no Metacritic score get higher dust scores.
                 </p>
                 <p>
-                  <span className="text-unplayed-mint font-bold">Ownership Score:</span> Based on how long you've owned each game. Games owned for years accumulate more dust.
+                  <span className="text-green-400 font-bold">Price:</span> More expensive unplayed games accumulate significantly more dust.
                 </p>
                 <p>
-                  <span className="text-unplayed-pink font-bold">Playtime Factor:</span> A multiplier that reduces your score for games you've played. Unplayed games get the full factor of 1.0x.
+                  <span className="text-unplayed-amber font-bold">Age:</span> Older games get higher scores - classics deserve attention!
+                </p>
+                <p>
+                  <span className="text-purple-400 font-bold">Genre:</span> Niche or rare genres get slightly higher scores.
+                </p>
+                <p>
+                  <span className="text-unplayed-pink font-bold">Playtime:</span> Playing games significantly reduces their dust accumulation.
                 </p>
               </div>
             </div>

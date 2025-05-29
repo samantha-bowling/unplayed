@@ -1,3 +1,4 @@
+
 /**
  * Core game data structure used throughout the app
  */
@@ -20,23 +21,28 @@ export interface GameListItem {
   description?: string; // Added for game description
   platforms?: string[]; // Added for platform information
   screenshots?: string[]; // Added for screenshots
+  metacritic_score?: number; // Added for quality factor
 }
 
 /**
- * Represents breakdown of a dust score calculation
+ * Represents breakdown of a dust score calculation with new 5-factor system
  */
 export interface DustScoreBreakdown {
-  ageScore: number;
-  ownershipScore: number;
-  playtimeFactor: number;
+  qualityScore: number;     // Based on Metacritic score
+  priceScore: number;       // Based on game price
+  ageScore: number;         // Based on release date
+  genreScore: number;       // Based on genre rarity
+  playtimeFactor: number;   // Multiplier based on playtime
 }
 
 /**
  * Type for the response from dust score breakdown database function
  */
 export interface DustScoreBreakdownResponse {
+  qualityScore: number;
+  priceScore: number;
   ageScore: number;
-  ownershipScore: number;
+  genreScore: number;
   playtimeFactor: number;
   totalScore: number;
 }

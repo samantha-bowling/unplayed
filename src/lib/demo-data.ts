@@ -1,4 +1,3 @@
-
 export interface DemoDataType {
   unplayedGames: number;
   totalGames: number;
@@ -24,111 +23,200 @@ export interface DemoDataType {
 }
 
 export const DEMO_DATA: DemoDataType = {
-  unplayedGames: 137,
-  totalGames: 312,
-  dustScore: 237,
-  totalPlaytime: 523, // in hours
-  totalSpent: 2175.89, // in dollars
-  potentialGameplayHours: 137 * 12.5, // Added: average of 12.5 hours per unplayed game
-
-  // Genre data for pie chart
-  genres: [
-    { name: 'RPG', value: 32, color: '#A3F7BF' },
-    { name: 'Action', value: 23, color: '#EF5DFF' },
-    { name: 'Strategy', value: 18, color: '#FFD866' },
-    { name: 'Simulation', value: 12, color: '#FF3C38' },
-    { name: 'Adventure', value: 10, color: '#61DAFB' },
-    { name: 'Other', value: 5, color: '#6C757D' }
-  ],
-
-  // Shelf life data - oldest games (now properly ordered by release date, oldest first)
-  shelfLife: [
+  unplayedGames: 47,
+  totalGames: 89,
+  dustScore: 1847,
+  totalPlaytime: 142.5,
+  totalSpent: 234.99,
+  unplayedSpent: 189.50,
+  potentialGameplayHours: 587.5,
+  
+  // Enhanced dust score breakdown with new 5-factor system
+  dustScoreBreakdown: {
+    qualityScore: 12,    // Average quality across library
+    priceScore: 18,      // Mix of pricing tiers
+    ageScore: 15,        // Mix of old and new games
+    genreScore: 10,      // Common genres mostly
+    playtimeFactor: 0.85 // Some games played
+  },
+  
+  topDustContributors: [
     {
       id: 1,
-      name: "Half-Life 2",
-      addedDate: "2015-06-12",
-      releaseDate: "2004-11-16",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/220/capsule_184x69.jpg"
-    },
-    {
-      id: 5,
-      name: "Mass Effect 2",
-      addedDate: "2018-01-10",
-      releaseDate: "2010-01-26",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/24980/capsule_184x69.jpg"
-    },
-    {
-      id: 3,
-      name: "Portal 2",
-      addedDate: "2016-11-05",
-      releaseDate: "2011-04-19",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/620/capsule_184x69.jpg"
+      name: "Cyberpunk 2077",
+      dustScore: 95,
+      addedDate: "2020-12-10T00:00:00Z",
+      releaseDate: "2020-12-10",
+      playtimeMinutes: 0,
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg",
+      breakdown: {
+        qualityScore: 18, // Decent Metacritic
+        priceScore: 25,   // AAA pricing
+        ageScore: 10,     // Recent game
+        genreScore: 8,    // Common genre
+        playtimeFactor: 1.0 // Unplayed
+      }
     },
     {
       id: 2,
-      name: "Deus Ex: Human Revolution",
-      addedDate: "2016-02-18",
-      releaseDate: "2011-08-23",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/238010/capsule_184x69.jpg"
+      name: "The Witcher 3: Wild Hunt",
+      dustScore: 88,
+      addedDate: "2015-05-19T00:00:00Z",
+      releaseDate: "2015-05-19",
+      playtimeMinutes: 0,
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg",
+      breakdown: {
+        qualityScore: 5,  // Excellent Metacritic
+        priceScore: 20,   // Premium pricing
+        ageScore: 20,     // Older game
+        genreScore: 8,    // Common genre
+        playtimeFactor: 1.0 // Unplayed
+      }
+    },
+    {
+      id: 3,
+      name: "Fall Guys",
+      dustScore: 75,
+      addedDate: "2020-08-04T00:00:00Z",
+      releaseDate: "2020-08-04",
+      playtimeMinutes: 0,
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/1097150/header.jpg",
+      breakdown: {
+        qualityScore: 12, // Good Metacritic
+        priceScore: 5,    // Free game
+        ageScore: 10,     // Recent
+        genreScore: 12,   // Mixed genre
+        playtimeFactor: 1.0 // Unplayed
+      }
     },
     {
       id: 4,
-      name: "BioShock Infinite",
-      addedDate: "2017-05-24",
-      releaseDate: "2013-03-26",
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/8870/capsule_184x69.jpg"
+      name: "Among Us",
+      dustScore: 72,
+      addedDate: "2018-11-16T00:00:00Z",
+      releaseDate: "2018-11-16",
+      playtimeMinutes: 0,
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/945360/header.jpg",
+      breakdown: {
+        qualityScore: 15, // Decent score
+        priceScore: 5,    // Very cheap
+        ageScore: 15,     // Few years old
+        genreScore: 12,   // Social deduction
+        playtimeFactor: 1.0 // Unplayed
+      }
+    },
+    {
+      id: 5,
+      name: "Hollow Knight",
+      dustScore: 65,
+      addedDate: "2017-02-24T00:00:00Z",
+      releaseDate: "2017-02-24",
+      playtimeMinutes: 0,
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg",
+      breakdown: {
+        qualityScore: 5,  // Excellent reviews
+        priceScore: 10,   // Budget pricing
+        ageScore: 20,     // Older indie
+        genreScore: 8,    // Metroidvania
+        playtimeFactor: 1.0 // Unplayed
+      }
     }
   ],
-
-  // Library games data
+  
+  avgDustScore: 29.7,
+  
+  // Keep existing clean score data
+  cleanScore: 68,
+  cleanScoreBreakdown: {
+    completionRate: 75,
+    engagementFactor: 60,
+    recencyFactor: 65
+  },
+  cleanTier: {
+    name: 'Reasonably Clean',
+    color: '#60a5fa',
+    range: [50, 74]
+  },
+  cleanStreak: 4,
+  recentlyPlayedCount: 5,
+  
+  // Keep existing demo games data
+  gamesList: [
+    {
+      id: 1091500,
+      name: "Cyberpunk 2077",
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg",
+      playtimeMinutes: 0,
+      releaseDate: "2020-12-10",
+      price: 59.99,
+      price_cents: 5999,
+      genres: ["Action", "RPG"],
+      categories: ["Single-player", "Steam Cloud"],
+      addedDate: "2020-12-10T00:00:00Z",
+      dustScore: 95,
+      metacritic_score: 72
+    },
+    {
+      id: 292030,
+      name: "The Witcher 3: Wild Hunt",
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg",
+      playtimeMinutes: 0,
+      releaseDate: "2015-05-19",
+      price: 39.99,
+      price_cents: 3999,
+      genres: ["RPG", "Adventure"],
+      categories: ["Single-player", "Steam Trading Cards"],
+      addedDate: "2015-05-19T00:00:00Z",
+      dustScore: 88,
+      metacritic_score: 93
+    },
+    {
+      id: 1097150,
+      name: "Fall Guys",
+      image: "https://cdn.akamai.steamstatic.com/steam/apps/1097150/header.jpg",
+      playtimeMinutes: 120,
+      releaseDate: "2020-08-04",
+      price: 0,
+      price_cents: 0,
+      genres: ["Action", "Casual", "Indie"],
+      categories: ["Multi-player", "Online Multi-Player"],
+      addedDate: "2020-08-04T00:00:00Z",
+      dustScore: 45,
+      metacritic_score: 79
+    }
+  ],
+  
+  // Keep existing visualization data
   library: [
-    {
-      id: 1,
-      name: "The Witcher 3: Wild Hunt",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/292030/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 2,
-      name: "Hades",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 3,
-      name: "Stardew Valley",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/413150/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 4,
-      name: "Cyberpunk 2077",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 5,
-      name: "Hollow Knight",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 6,
-      name: "Disco Elysium",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/632470/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 7,
-      name: "Divinity: Original Sin 2",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/435150/capsule_616x353.jpg",
-      playtime: 0
-    }, 
-    {
-      id: 8,
-      name: "Red Dead Redemption 2",  // Changed from title to name
-      image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/capsule_616x353.jpg",
-      playtime: 0
-    }
+    { id: 1091500, name: "Cyberpunk 2077", image: "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg", playtime: 0 },
+    { id: 292030, name: "The Witcher 3", image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg", playtime: 0 },
+    { id: 1097150, name: "Fall Guys", image: "https://cdn.akamai.steamstatic.com/steam/apps/1097150/header.jpg", playtime: 120 },
+    { id: 945360, name: "Among Us", image: "https://cdn.akamai.steamstatic.com/steam/apps/945360/header.jpg", playtime: 0 },
+    { id: 367520, name: "Hollow Knight", image: "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg", playtime: 0 },
+    { id: 271590, name: "Grand Theft Auto V", image: "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg", playtime: 45 },
+    { id: 730, name: "Counter-Strike: Global Offensive", image: "https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg", playtime: 0 },
+    { id: 578080, name: "PUBG: BATTLEGROUNDS", image: "https://cdn.akamai.steamstatic.com/steam/apps/578080/header.jpg", playtime: 0 },
+    { id: 418370, name: "Terraria", image: "https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg", playtime: 0 },
+    { id: 570, name: "Dota 2", image: "https://cdn.akamai.steamstatic.com/steam/apps/570/header.jpg", playtime: 0 },
+    { id: 444090, name: "Payday 2", image: "https://cdn.akamai.steamstatic.com/steam/apps/218620/header.jpg", playtime: 0 },
+    { id: 108200, name: "Garry's Mod", image: "https://cdn.akamai.steamstatic.com/steam/apps/4000/header.jpg", playtime: 0 }
+  ],
+  
+  shelfLife: [
+    { id: 367520, name: "Hollow Knight", addedDate: "2017-02-24T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg" },
+    { id: 292030, name: "The Witcher 3: Wild Hunt", addedDate: "2015-05-19T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg" },
+    { id: 271590, name: "Grand Theft Auto V", addedDate: "2015-04-14T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg" },
+    { id: 418370, name: "Terraria", addedDate: "2011-05-16T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg" },
+    { id: 108200, name: "Garry's Mod", addedDate: "2006-11-29T00:00:00Z", image: "https://cdn.akamai.steamstatic.com/steam/apps/4000/header.jpg" }
+  ],
+  
+  genres: [
+    { name: "Action", value: 23, color: "#FF6B6B" },
+    { name: "Adventure", value: 18, color: "#4ECDC4" },
+    { name: "Indie", value: 15, color: "#45B7D1" },
+    { name: "RPG", value: 12, color: "#96CEB4" },
+    { name: "Strategy", value: 8, color: "#FFEAA7" },
+    { name: "Simulation", value: 7, color: "#DDA0DD" },
+    { name: "Casual", value: 6, color: "#98D8C8" }
   ]
 };
