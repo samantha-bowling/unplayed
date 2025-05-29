@@ -69,9 +69,10 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Game Info - Enhanced Layout with 16:9 Aspect Ratio */}
-        <div className="flex items-start space-x-4">
-          <div className="w-32 flex-shrink-0">
+        {/* Main Game Layout - Image takes 1/3, content takes 2/3 */}
+        <div className="flex gap-6">
+          {/* Left: Game Image (1/3 of horizontal space) */}
+          <div className="w-1/3 flex-shrink-0">
             <AspectRatio ratio={16 / 9}>
               <img 
                 src={gameImage} 
@@ -80,64 +81,88 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
               />
             </AspectRatio>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-white mb-2 leading-tight">{gameName}</h3>
-            {gameData?.developer && gameData.developer.length > 0 && (
-              <p className="text-sm text-gray-400 mb-2">
-                by {gameData.developer.join(', ')}
-              </p>
-            )}
-            {gameData?.genres && gameData.genres.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {gameData.genres.slice(0, 3).map(genre => (
-                  <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
-                    {genre}
+          
+          {/* Right: Game Info and Actions (2/3 of horizontal space) */}
+          <div className="flex-1 flex flex-col justify-between">
+            {/* Top section: Game name, developer, genres, and Play button */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1 min-w-0 mr-4">
+                <h3 className="text-xl font-semibold text-white mb-2 leading-tight">{gameName}</h3>
+                {gameData?.developer && gameData.developer.length > 0 && (
+                  <p className="text-sm text-gray-400 mb-2">
+                    by {gameData.developer.join(', ')}
+                  </p>
+                )}
+                {gameData?.genres && gameData.genres.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {gameData.genres.slice(0, 3).map(genre => (
+                      <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {recentPick.filters?.mood && (
+                  <span className="inline-block px-2 py-1 text-xs bg-purple-600/20 text-purple-300 rounded">
+                    Mood: {recentPick.filters.mood}
                   </span>
-                ))}
+                )}
               </div>
-            )}
-            {recentPick.filters?.mood && (
-              <span className="inline-block px-2 py-1 text-xs bg-purple-600/20 text-purple-300 rounded">
-                Mood: {recentPick.filters.mood}
-              </span>
-            )}
+              
+              {/* Prominent Play Button */}
+              <div className="flex-shrink-0">
+                <Button 
+                  onClick={handlePlayGame}
+                  className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
+                  size="lg"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Play Now
+                </Button>
+              </div>
+            </div>
+
+            {/* Game metadata and Steam link */}
+            <div className="flex items-center justify-between text-sm bg-gray-800/30 rounded-lg p-3">
+              <div className="flex items-center gap-4">
+                {gameData?.release_date && (
+                  <div className="flex items-center text-gray-300">
+                    <Calendar className="w-3 h-3 mr-2 text-gray-500" />
+                    <span className="text-gray-500 mr-1 text-xs">Released:</span>
+                    <span className="font-medium text-xs">{formatDate(gameData.release_date)}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center text-gray-300">
+                  <Clock className="w-3 h-3 mr-2 text-gray-500" />
+                  <span className="text-gray-500 mr-1 text-xs">Playtime:</span>
+                  <span className="font-medium text-xs">{formatPlaytime(userGameData?.playtime_minutes)}</span>
+                </div>
+
+                {gameData?.price_cents && (
+                  <div className="flex items-center text-gray-300">
+                    <DollarSign className="w-3 h-3 mr-2 text-gray-500" />
+                    <span className="text-gray-500 mr-1 text-xs">Price:</span>
+                    <span className="font-medium text-xs">{formatPrice(gameData.price_cents)}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Steam Link */}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleViewOnSteam}
+                className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-3 py-1 h-auto"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                <span className="text-xs">View on Steam</span>
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Game Metadata - Enhanced Display */}
-        <div className="grid grid-cols-1 gap-3 text-sm bg-gray-800/30 rounded-lg p-4">
-          {gameData?.release_date && (
-            <div className="flex items-center text-gray-300">
-              <Calendar className="w-4 h-4 mr-3 text-gray-500" />
-              <span className="text-gray-500 mr-2 min-w-[80px]">Released:</span>
-              <span className="font-medium">{formatDate(gameData.release_date)}</span>
-            </div>
-          )}
-          
-          {userGameData?.acquisition_date && (
-            <div className="flex items-center text-gray-300">
-              <DollarSign className="w-4 h-4 mr-3 text-gray-500" />
-              <span className="text-gray-500 mr-2 min-w-[80px]">Purchased:</span>
-              <span className="font-medium">{formatDate(userGameData.acquisition_date)}</span>
-            </div>
-          )}
-          
-          <div className="flex items-center text-gray-300">
-            <Clock className="w-4 h-4 mr-3 text-gray-500" />
-            <span className="text-gray-500 mr-2 min-w-[80px]">Playtime:</span>
-            <span className="font-medium">{formatPlaytime(userGameData?.playtime_minutes)}</span>
-          </div>
-
-          {gameData?.price_cents && (
-            <div className="flex items-center text-gray-300">
-              <DollarSign className="w-4 h-4 mr-3 text-gray-500" />
-              <span className="text-gray-500 mr-2 min-w-[80px]">Price:</span>
-              <span className="font-medium">{formatPrice(gameData.price_cents)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Game Description - Always Visible if Available with Consistent Height */}
+        {/* Game Description */}
         {hasDescription && (
           <div className="bg-gray-800/20 rounded-lg p-4">
             <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
@@ -149,7 +174,7 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           </div>
         )}
 
-        {/* Steam Review Section - Enhanced */}
+        {/* Steam Review Section */}
         <div className="bg-gray-800/20 rounded-lg p-4">
           <GameReviewCard
             review={review}
@@ -161,25 +186,11 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           />
         </div>
 
-        {/* Action Buttons - Enhanced Layout */}
-        <div className="flex gap-3 pt-2">
-          <Button 
-            onClick={handlePlayGame}
-            className="flex-1 bg-green-600 hover:bg-green-700 font-semibold"
-            size="lg"
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Play Now
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={handleViewOnSteam}
-            className="border-gray-600 hover:bg-gray-800 px-4"
-            size="lg"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </Button>
+        {/* Give me a reason to play button */}
+        <div className="pt-2">
+          <button className="btn-amber-outline w-full">
+            Give me a reason to play
+          </button>
         </div>
       </CardContent>
     </Card>
