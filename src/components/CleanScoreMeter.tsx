@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon, Medal } from 'lucide-react';
+import { InfoIcon, Medal, Trophy, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface CleanScoreProps extends WithDemoProps {
@@ -53,7 +53,25 @@ const CleanScoreMeter = ({
   const getTierName = () => cleanTier?.name || 'Calculating...';
 
   const cleanStreak = data.cleanStreak || 0;
+  const recentlyPlayedUnplayed = data.recentlyPlayedUnplayed || 0;
+  const cleanStreakMetadata = data.cleanStreakMetadata;
+  
   const hasCleanStreak = cleanStreak > 1;
+
+  // Get streak quality icon and color
+  const getStreakQuality = () => {
+    const quality = cleanStreakMetadata?.streakQuality || 'bronze';
+    switch (quality) {
+      case 'gold':
+        return { icon: Trophy, color: '#ffd700', label: 'Gold' };
+      case 'silver':
+        return { icon: Medal, color: '#c0c0c0', label: 'Silver' };
+      default:
+        return { icon: Target, color: '#cd7f32', label: 'Bronze' };
+    }
+  };
+
+  const streakQuality = getStreakQuality();
 
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
@@ -121,13 +139,47 @@ const CleanScoreMeter = ({
 
         <div className="text-center mt-2">
           <p className="text-xl font-medium" style={{ color: getTierColor() }}>{getTierName()}</p>
+          
+          {/* Enhanced Clean Streak Display */}
           {hasCleanStreak && (
-            <div className="flex items-center justify-center gap-1 mt-2 text-amber-300">
-              <Medal size={16} className="animate-pulse" />
-              <span className="text-sm">Clean Streak: {cleanStreak} days</span>
+            <div className="flex items-center justify-center gap-2 mt-3 p-2 bg-black/20 rounded-lg">
+              <streakQuality.icon 
+                size={18} 
+                className="animate-pulse" 
+                style={{ color: streakQuality.color }}
+              />
+              <div className="text-left">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium" style={{ color: streakQuality.color }}>
+                    {streakQuality.label} Streak
+                  </span>
+                  <span className="text-sm font-bold" style={{ color: streakQuality.color }}>
+                    {cleanStreak} days
+                  </span>
+                </div>
+                {cleanStreakMetadata?.gracePeriodUsed && (
+                  <span className="text-xs text-yellow-400">Grace period active</span>
+                )}
+              </div>
             </div>
           )}
-          <p className="text-sm text-gray-400 mt-2">
+
+          {/* Recently Played Unplayed Games */}
+          {recentlyPlayedUnplayed > 0 && (
+            <div className="flex items-center justify-center gap-2 mt-2 p-2 bg-black/20 rounded-lg">
+              <span className="text-purple-400">⚡</span>
+              <div className="text-left">
+                <div className="text-sm font-medium text-purple-400">
+                  Backlog Progress: {recentlyPlayedUnplayed}
+                </div>
+                <div className="text-xs text-gray-400">
+                  Games conquered from your backlog
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-400 mt-3">
             {actualScore < 25
               ? "You're barely playing your games. Time to dust off some titles!"
               : actualScore < 50
@@ -151,7 +203,7 @@ const CleanScoreMeter = ({
 
         {isDemo && !document.cookie.includes("demo_note_dismissed") && (
           <div className="mt-auto pt-4 text-center flex justify-center">
-            <p className="text-sm text-cyan-400">You’re in Demo Mode. Sign in to track your Clean Score.</p>
+            <p className="text-sm text-cyan-400">You're in Demo Mode. Sign in to track your Clean Score.</p>
           </div>
         )}
       </div>

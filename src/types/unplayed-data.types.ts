@@ -1,3 +1,4 @@
+
 /**
  * Core game data structure used throughout the app
  */
@@ -80,6 +81,17 @@ export interface CleanScoreBreakdown {
 }
 
 /**
+ * Enhanced clean streak metadata
+ */
+export interface CleanStreakMetadata {
+  gracePeriodUsed: boolean;
+  lastPlayDate: string | null;
+  averageSessionLength: number;
+  streakStartDate: string | null;
+  streakQuality: 'bronze' | 'silver' | 'gold';
+}
+
+/**
  * Defines a tier in the clean score system
  */
 export interface CleanScoreTier {
@@ -149,4 +161,8 @@ export interface UnplayedDataType {
   cleanTier?: CleanScoreTier;
   cleanStreak?: number;
   recentlyPlayedCount?: number;
+  
+  // New enhanced features
+  recentlyPlayedUnplayed?: number; // Games that went from 0 to >0 playtime
+  cleanStreakMetadata?: CleanStreakMetadata; // Enhanced streak information
 }

@@ -116,14 +116,20 @@ export const transformUserGameData = (
   const totalPlaytimeHours = totalPlaytime / 60;
 
   // Calculate clean score using enhanced calculation
-  const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } = 
-    calculateCleanScore(
-      playedGames, 
-      userGamesData.length, 
-      totalPlaytimeHours, 
-      gamesList,
-      recentlyPlayedCount
-    );
+  const { 
+    cleanScore, 
+    breakdown: cleanScoreBreakdown, 
+    tier: cleanTier, 
+    cleanStreak,
+    recentlyPlayedUnplayed,
+    streakMetadata
+  } = calculateCleanScore(
+    playedGames, 
+    userGamesData.length, 
+    totalPlaytimeHours, 
+    gamesList,
+    recentlyPlayedCount
+  );
 
   return {
     unplayedGames,
@@ -141,6 +147,8 @@ export const transformUserGameData = (
     cleanScoreBreakdown,
     cleanTier,
     cleanStreak,
-    recentlyPlayedCount
+    recentlyPlayedCount,
+    recentlyPlayedUnplayed,
+    cleanStreakMetadata: streakMetadata
   };
 };

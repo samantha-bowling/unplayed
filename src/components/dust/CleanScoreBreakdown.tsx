@@ -1,8 +1,8 @@
 
-import { CleanScoreBreakdown as CleanBreakdownType } from '@/types/unplayed-data.types';
+import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Medal, Calendar, HelpCircle } from 'lucide-react';
+import { Clock, Medal, Calendar, HelpCircle, Trophy, Zap, Target } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -15,13 +15,17 @@ interface CleanScoreBreakdownProps {
   breakdown?: CleanBreakdownType;
   cleanStreak?: number;
   recentlyPlayedCount?: number;
+  recentlyPlayedUnplayed?: number;
+  cleanStreakMetadata?: CleanStreakMetadata;
 }
 
 const CleanScoreBreakdown = ({ 
   cleanScore, 
   breakdown, 
   cleanStreak = 0, 
-  recentlyPlayedCount = 0 
+  recentlyPlayedCount = 0,
+  recentlyPlayedUnplayed = 0,
+  cleanStreakMetadata
 }: CleanScoreBreakdownProps) => {
   // If no breakdown data is available, show placeholder
   if (!breakdown) {
@@ -93,6 +97,21 @@ const CleanScoreBreakdown = ({
   };
   
   const tierInfo = getTierInfo();
+
+  // Get streak quality icon and color
+  const getStreakQuality = () => {
+    const quality = cleanStreakMetadata?.streakQuality || 'bronze';
+    switch (quality) {
+      case 'gold':
+        return { icon: Trophy, color: '#ffd700', label: 'Gold Streak' };
+      case 'silver':
+        return { icon: Medal, color: '#c0c0c0', label: 'Silver Streak' };
+      default:
+        return { icon: Target, color: '#cd7f32', label: 'Bronze Streak' };
+    }
+  };
+
+  const streakQuality = getStreakQuality();
   
   return (
     <Card className="terminal-container">
@@ -193,30 +212,45 @@ const CleanScoreBreakdown = ({
               </ul>
             </div>
 
-            <div className="space-y-2">
-              <div className="bg-black/20 rounded-lg p-3">
-                <div className="flex items-center mb-1">
-                  <Medal className="h-4 w-4 mr-2 text-amber-400" />
+            {/* Enhanced Clean Streak Section */}
+            <div className="space-y-3">
+              <div className="bg-black/20 rounded-lg p-4">
+                <div className="flex items-center mb-2">
+                  <streakQuality.icon className="h-5 w-5 mr-2" style={{ color: streakQuality.color }} />
                   <span className="text-gray-300 font-medium mr-1">Clean Streak</span>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                        <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p>Clean Streak counts the consecutive days you've played your games. Playing at least one game each day maintains your streak.</p>
+                      <TooltipContent side="top" className="max-w-sm">
+                        <div className="space-y-2">
+                          <p><strong>Grace Period:</strong> 1-2 day breaks won't reset your streak - life happens!</p>
+                          <p><strong>Minimum Sessions:</strong> Play for 30+ minutes to count towards streak</p>
+                          <p><strong>Streak Decay:</strong> Long breaks gradually reduce streak instead of instant reset</p>
+                          {cleanStreakMetadata?.averageSessionLength && (
+                            <p><strong>Your Average:</strong> {cleanStreakMetadata.averageSessionLength} min/session</p>
+                          )}
+                        </div>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <span className="ml-auto text-amber-400 font-bold">{cleanStreak} days</span>
+                  <span className="ml-auto font-bold" style={{ color: streakQuality.color }}>
+                    {cleanStreak} days
+                  </span>
                 </div>
-                <p className="text-xs text-gray-400">
-                  {cleanStreak > 3 
-                    ? "Impressive consistency!" 
-                    : cleanStreak > 0 
-                    ? "Keep the momentum going!" 
-                    : "Start a streak by playing today!"}
-                </p>
+                
+                <div className="text-xs text-gray-400 space-y-1">
+                  <p className="font-medium" style={{ color: streakQuality.color }}>
+                    {streakQuality.label}
+                  </p>
+                  {cleanStreakMetadata?.gracePeriodUsed && (
+                    <p className="text-yellow-400">Grace period active - keep it up!</p>
+                  )}
+                  {cleanStreakMetadata?.lastPlayDate && (
+                    <p>Last played: {new Date(cleanStreakMetadata.lastPlayDate).toLocaleDateString()}</p>
+                  )}
+                </div>
               </div>
               
               <div className="bg-black/20 rounded-lg p-3">
@@ -226,6 +260,30 @@ const CleanScoreBreakdown = ({
                   <span className="ml-auto text-green-400 font-bold">{recentlyPlayedCount}</span>
                 </div>
                 <p className="text-xs text-gray-400">Games played in the last 30 days</p>
+              </div>
+
+              {/* New Recently Played Unplayed Section */}
+              <div className="bg-black/20 rounded-lg p-3">
+                <div className="flex items-center mb-1">
+                  <Zap className="h-4 w-4 mr-2 text-purple-400" />
+                  <span className="text-gray-300 font-medium">Backlog Progress</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help ml-1" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>Games that had zero playtime when you signed up but you've since started playing. This shows your progress in tackling your backlog!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="ml-auto text-purple-400 font-bold">{recentlyPlayedUnplayed}</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  {recentlyPlayedUnplayed > 0 
+                    ? "Great progress conquering your backlog!" 
+                    : "Start playing some unplayed games to see progress here"}
+                </p>
               </div>
             </div>
           </div>
@@ -245,17 +303,29 @@ const CleanScoreBreakdown = ({
             </div>
 
             <div className="bg-black/30 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">What It Means</h3>
+              <h3 className="text-lg font-medium mb-2">Clean Streak System</h3>
               <div className="space-y-3 text-sm">
-                <p>
-                  <span className="text-cyan-400 font-bold">Completion Rate:</span> Percentage of your library that you've played at least once.
-                </p>
-                <p>
-                  <span className="text-amber-400 font-bold">Engagement Factor:</span> How deeply you engage with the games you play compared to expected playtime.
-                </p>
-                <p>
-                  <span className="text-green-400 font-bold">Recency Factor:</span> How active you've been with your library in the past 30 days.
-                </p>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-green-400 font-medium">Grace Period</p>
+                    <p className="text-gray-300">1-2 day breaks won't reset your streak. Taking breaks is healthy!</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-amber-400 font-medium">Minimum Sessions</p>
+                    <p className="text-gray-300">Play for 30+ minutes to count towards your streak</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-blue-400 font-medium">Gradual Decay</p>
+                    <p className="text-gray-300">Long breaks reduce your streak gradually, not instantly</p>
+                  </div>
+                </div>
               </div>
             </div>
             
