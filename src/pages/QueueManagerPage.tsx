@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,6 @@ interface SteamProcessResponse {
 }
 
 const QueueManagerPage = () => {
-  const [batchSize, setBatchSize] = useState<number>(25);
   const [userId, setUserId] = useState<string>("");
   const [priorityLevel, setPriorityLevel] = useState<number>(10);
   const [isPrioritizing, setIsPrioritizing] = useState<boolean>(false);
@@ -207,16 +207,103 @@ const QueueManagerPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <QueueStatsCard />
+          <QueueStatsCard 
+            stats={stats || { pending: 0, processing: 0, completed: 0, failed: 0, total: 0 }}
+            onRefresh={fetchStats}
+            isLoading={isLoading}
+            processedCount={queueProcessor.processedCount}
+          />
           <SmartPrioritizationCard />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <BatchProcessingControls />
+          <Card className="bg-gradient-to-br from-blue-900/40 to-blue-700/20 border-blue-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg">Batch Processing Controls</CardTitle>
+              <CardDescription>
+                Configure and control batch processing operations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BatchProcessingControls
+                batchSize={queueProcessor.batchSize}
+                onBatchSizeChange={queueProcessor.setBatchSize}
+                continuousMode={queueProcessor.continuousMode}
+                processedCount={queueProcessor.processedCount}
+                lastProcessedId={queueProcessor.lastProcessedId}
+                processComplete={queueProcessor.processComplete}
+                showWarningThreshold={30}
+                warningMessage="Large batches may cause timeouts"
+              />
+              <div className="mt-6">
+                <ProcessingFooter
+                  isProcessing={queueProcessor.isProcessing}
+                  onProcess={queueProcessor.processBatch}
+                  processText="Process Batch"
+                  processingText="Processing..."
+                  continuousMode={queueProcessor.continuousMode}
+                  onToggleContinuous={queueProcessor.toggleContinuousMode}
+                  onReset={queueProcessor.resetProcessor}
+                  resetDisabled={queueProcessor.isProcessing}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <MetadataConsistencyCard />
         </div>
 
-        <ProcessingFooter />
+        <Card className="bg-gradient-to-br from-purple-900/40 to-purple-700/20 border-purple-400/30">
+          <CardHeader>
+            <CardTitle className="text-lg">Smart User Prioritization</CardTitle>
+            <CardDescription>
+              Prioritize games for specific users to improve their experience
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="user-id">User ID</Label>
+              <Input
+                id="user-id"
+                type="text"
+                placeholder="Enter Steam User ID or UUID"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="priority-level">Priority Level: {priorityLevel}</Label>
+              <Slider
+                id="priority-level"
+                min={1}
+                max={100}
+                step={1}
+                value={[priorityLevel]}
+                onValueChange={(value) => setPriorityLevel(value[0])}
+                className="py-4"
+              />
+            </div>
+
+            <button
+              onClick={prioritizeUserGames}
+              disabled={isPrioritizing || !userId}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
+            >
+              {isPrioritizing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Prioritizing...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Prioritize User Games
+                </>
+              )}
+            </button>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
