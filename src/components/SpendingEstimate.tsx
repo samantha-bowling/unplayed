@@ -17,11 +17,10 @@ const SpendingEstimate = ({
   amount, 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refetch } = useEnhancedSpendingData();
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Use amount from props if provided, otherwise use enhanced spending data
   const spendingAmount = amount !== undefined ? amount : spendingData.totalSpent;
@@ -35,9 +34,7 @@ const SpendingEstimate = ({
 
   const handleRefresh = async () => {
     if (!isRefreshing) {
-      setIsRefreshing(true);
-      await refetch();
-      setTimeout(() => setIsRefreshing(false), 1000);
+      await refreshPrices();
     }
   };
 
