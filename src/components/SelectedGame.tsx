@@ -80,24 +80,10 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         
         {/* Right: Game Info and Actions (2/3 of horizontal space) */}
         <div className="flex-1 flex flex-col justify-between">
-          {/* Top section: Game name, developer, genres, and Play button */}
+          {/* Top section: Game name and Play button */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0 mr-4">
               <h3 className="text-2xl font-semibold text-white mb-2 leading-tight">{game.name}</h3>
-              {game.developer && game.developer.length > 0 && (
-                <p className="text-sm text-gray-400 mb-3">
-                  by {game.developer.join(', ')}
-                </p>
-              )}
-              {game.genres && game.genres.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {game.genres.slice(0, 3).map(genre => (
-                    <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
             
             {/* Prominent Play Button */}
@@ -114,25 +100,44 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             </div>
           </div>
 
-          {/* Game metadata and Steam link */}
-          <div className="flex items-center justify-between text-sm bg-gray-800/30 rounded-lg p-3">
-            <div className="flex items-center gap-4">
+          {/* Game info stacked vertically */}
+          <div className="space-y-3">
+            {/* Developer */}
+            {game.developer && game.developer.length > 0 && (
+              <p className="text-sm text-gray-400">
+                by {game.developer.join(', ')}
+              </p>
+            )}
+            
+            {/* Genres */}
+            {game.genres && game.genres.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {game.genres.slice(0, 3).map(genre => (
+                  <span key={genre} className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded">
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Game metadata */}
+            <div className="flex flex-wrap gap-4 text-sm text-gray-300">
               {getGameReleaseDate() && (
-                <div className="flex items-center text-gray-300">
+                <div className="flex items-center">
                   <Calendar className="w-3 h-3 mr-2 text-gray-500" />
                   <span className="text-gray-500 mr-1 text-xs">Released:</span>
                   <span className="font-medium text-xs">{formatDate(getGameReleaseDate())}</span>
                 </div>
               )}
               
-              <div className="flex items-center text-gray-300">
+              <div className="flex items-center">
                 <Clock className="w-3 h-3 mr-2 text-gray-500" />
                 <span className="text-gray-500 mr-1 text-xs">Playtime:</span>
                 <span className="font-medium text-xs">{formatPlaytime(game.playtimeMinutes)}</span>
               </div>
 
               {getGamePriceCents() && (
-                <div className="flex items-center text-gray-300">
+                <div className="flex items-center">
                   <DollarSign className="w-3 h-3 mr-2 text-gray-500" />
                   <span className="text-gray-500 mr-1 text-xs">Price:</span>
                   <span className="font-medium text-xs">{formatPrice(getGamePriceCents())}</span>
@@ -141,16 +146,18 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             </div>
             
             {/* Steam Link */}
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleViewOnSteam}
-              className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-3 py-1 h-auto"
-              disabled={disabled}
-            >
-              <ExternalLink className="w-3 h-3 mr-1" />
-              <span className="text-xs">View on Steam</span>
-            </Button>
+            <div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleViewOnSteam}
+                className="text-gray-400 hover:text-unplayed-amber hover:bg-gray-800 px-3 py-1 h-auto"
+                disabled={disabled}
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                <span className="text-xs">View on Steam</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -179,19 +186,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         />
       </div>
 
-      {/* Action Buttons at the bottom */}
-      <div className="flex gap-3">
-        <Button 
-          onClick={onRollAgain}
-          variant="outline"
-          className="flex-1 border-gray-600 hover:bg-gray-800"
-          disabled={disabled}
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Roll Again
-        </Button>
-        
-        <button className="btn-amber-outline flex-1">
+      {/* Give me a reason to play button */}
+      <div className="pt-2">
+        <button className="btn-amber-outline w-full">
           Give me a reason to play
         </button>
       </div>
