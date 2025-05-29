@@ -86,14 +86,6 @@ export const transformUserGameData = (
       return 0;
     });
 
-  // Convert sorted oldest games to ShelfLifeItem format
-  const shelfLifeItems: ShelfLifeItem[] = sortedOldestGames.map(game => ({
-    id: game.id,
-    name: game.name,
-    addedDate: game.added || new Date().toISOString(), // Provide fallback date
-    image: game.image
-  }));
-
   // Convert gamesList to LibraryItem format for library preview
   const libraryItems = gamesList.map(game => ({
     id: game.id,
@@ -148,7 +140,7 @@ export const transformUserGameData = (
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: shelfLifeItems, // Now correctly typed as ShelfLifeItem[]
+    shelfLife: sortedOldestGames, // Now correctly using GameListItem[] which matches ShelfLife component expectations
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,
