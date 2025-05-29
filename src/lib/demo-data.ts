@@ -1,4 +1,11 @@
 
+import { 
+  DustScoreBreakdown, 
+  GameDustData, 
+  CleanScoreBreakdown, 
+  CleanScoreTier, 
+  GameListItem 
+} from '@/types/unplayed-data.types';
 
 export interface DemoDataType {
   unplayedGames: number;
@@ -8,6 +15,22 @@ export interface DemoDataType {
   totalSpent: number; // in dollars
   unplayedSpent: number; // in dollars - spending on unplayed games only
   potentialGameplayHours: number; // Added for HLTB integration
+  
+  // Dust score specific data
+  dustScoreBreakdown?: DustScoreBreakdown;
+  topDustContributors?: GameDustData[];
+  avgDustScore?: number;
+  
+  // Clean score specific data
+  cleanScore?: number;
+  cleanScoreBreakdown?: CleanScoreBreakdown;
+  cleanTier?: CleanScoreTier;
+  cleanStreak?: number;
+  recentlyPlayedCount?: number;
+  
+  // Game collections
+  gamesList?: GameListItem[];
+  
   genres: Array<{ name: string; value: number; color: string }>;
   shelfLife: Array<{ 
     id: number;
@@ -22,7 +45,6 @@ export interface DemoDataType {
     image: string;
     playtime: number;
   }>;
-  // We'll add gamesList in useUnplayedData by transforming the library
 }
 
 export const DEMO_DATA: DemoDataType = {
