@@ -23,6 +23,14 @@ const QueueManagerPage: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
+  const mockStats = {
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0,
+    total: 0
+  };
+
   return (
     <AdminLayout>
       <div className="min-h-screen flex flex-col">
@@ -39,12 +47,7 @@ const QueueManagerPage: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <QueueStatsCard 
-                stats={{
-                  pending: 0,
-                  processing: 0,
-                  completed: 0,
-                  failed: 0
-                }}
+                stats={mockStats}
                 onRefresh={() => {}}
               />
               <MetadataConsistencyCard />

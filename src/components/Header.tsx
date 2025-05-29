@@ -41,7 +41,7 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const { isAdmin } = useAuthPermission();
-  const { isDemo, exitDemoMode } = useDemoMode();
+  const { isDemo, disableDemo } = useDemoMode();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -68,7 +68,7 @@ const Header: React.FC = () => {
 
   const handleLoginClick = () => {
     if (isDemo) {
-      exitDemoMode();
+      disableDemo();
     } else {
       setShowAuthModal(true);
     }
@@ -209,7 +209,7 @@ const MainNavLinks: React.FC<{
     }
   ];
   
-  // Admin navigation items
+  // Admin navigation items (removed HLTB item)
   const adminItems = [
     { 
       icon: <BarChart2 className="h-4 w-4 mr-2" />,
