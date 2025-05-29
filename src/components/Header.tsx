@@ -76,7 +76,6 @@ const Header = () => {
           <NavLink href="/" label="Dashboard" />
           {stableRenderState.isAuthenticated && (
             <>
-              <NavLink href="/picker" label="Picker" />
               <NavLink href="/library" label="Library" />
               {/* Hide admin links from main navigation when we have the dropdown */}
               {isAdmin && !stableRenderState.hasProfile && (
@@ -301,7 +300,6 @@ const Header = () => {
               <NavLink href="/" label="Dashboard" />
               {user && (
                 <>
-                  <NavLink href="/picker" label="Picker" />
                   <NavLink href="/library" label="Library" />
                   {/* Display admin links in the mobile menu */}
                   {isAdmin && (
