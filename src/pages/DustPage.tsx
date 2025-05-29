@@ -121,11 +121,31 @@ const DustPage = () => {
                 onValueChange={setActiveTab}
                 className="space-y-6"
               >
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4">
-                  <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-                  <TabsTrigger value="clean">Clean Score</TabsTrigger>
-                  <TabsTrigger value="contributors">Top Dust</TabsTrigger>
-                  <TabsTrigger value="analysis">Analysis</TabsTrigger>
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
+                  <TabsTrigger 
+                    value="breakdown"
+                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
+                  >
+                    Breakdown
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="clean"
+                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
+                  >
+                    Clean Score
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="contributors"
+                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
+                  >
+                    Top Dust
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="analysis"
+                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
+                  >
+                    Analysis
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="breakdown" className="space-y-4">
