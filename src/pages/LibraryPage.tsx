@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -7,7 +6,6 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { ZenLayout } from '@/layouts';
 import LibraryPreview from '@/components/LibraryPreview';
 import LibraryWelcomeSection from '@/components/LibraryWelcomeSection';
-import LibraryModeControls from '@/components/LibraryModeControls';
 import LibraryTopSection from '@/components/LibraryTopSection';
 import LibraryContent from '@/components/LibraryContent';
 import useLibraryData from '@/hooks/use-library-data';
@@ -21,8 +19,8 @@ const LibraryPage: React.FC = () => {
   // Store reference to focused game for scrolling
   const [focusedGameId, setFocusedGameId] = useState<number | null>(null);
   
-  // Flag to toggle between legacy and paginated mode
-  const [usePagination, setUsePagination] = useState<boolean>(true);
+  // Default to using the optimized pagination mode
+  const usePagination = true;
   
   // Get library data from our hooks
   const legacyData = useLibraryData();
@@ -253,16 +251,11 @@ const LibraryPage: React.FC = () => {
         
         <main className="flex-grow px-4 py-8 header-spacing">
           <div className="max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6">
               <h1 className="text-3xl font-bold font-space">
                 <span className="text-unplayed-mint">Library</span>
                 <span className="text-white">.exe</span>
               </h1>
-              
-              <LibraryModeControls
-                usePagination={usePagination}
-                onModeChange={setUsePagination}
-              />
             </div>
             
             <LibraryWelcomeSection
