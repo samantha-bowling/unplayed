@@ -7,6 +7,12 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { createPickerNavigation } from '@/utils/navigation';
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface GenreHoardingProps extends WithDemoProps {
   onGenreSelect?: (genre: string) => void;
@@ -71,9 +77,18 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   return (
     <div className={`terminal-container w-full h-full ${isDemo ? 'relative' : ''}`}>
       <h3 className="terminal-header text-2xl mb-2">Your Hoarded Genres</h3>
-      <p className="text-sm text-gray-400 mb-6">
-        You say you love <span className="text-unplayed-amber">{mostHoardedGenre.name}</span>... the data agrees
-      </p>
+      <TooltipProvider>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <p className="text-sm text-gray-400 mb-6 cursor-help">
+              You say you love <span className="text-unplayed-amber">{mostHoardedGenre.name}</span>... the data agrees
+            </p>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Based on your entire collection</p>
+          </TooltipContent>
+        </UITooltip>
+      </TooltipProvider>
 
       <div className="terminal-content w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">

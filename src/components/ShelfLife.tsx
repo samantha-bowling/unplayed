@@ -92,7 +92,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   );
 
   return (
-    <div className="terminal-container w-full h-[650px] flex flex-col">
+    <div className="terminal-container w-full h-[650px] flex flex-col p-4">
       <ShelfLifeHeader
         displayCount={displayCount}
         setDisplayCount={setDisplayCount}
@@ -103,8 +103,8 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
       <ShelfLifeDescription />
       
       <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full pr-4">
-          <div className="space-y-3">
+        <ScrollArea className="h-full pr-2">
+          <div className="space-y-2">
             {gameItems}
           </div>
         </ScrollArea>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -249,7 +250,7 @@ const LibraryPage: React.FC = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        <main className="flex-grow px-4 py-12 header-spacing">
+        <main className="flex-grow px-4 py-16 header-spacing">
           <div className="max-w-7xl mx-auto">
             <LibraryWelcomeSection
               unplayedCount={unplayedGames}
