@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -354,21 +355,26 @@ const LibraryPage: React.FC = () => {
               </div>
             </div>
 
-            {/* New Enhanced Stats Section */}
-            <LibraryStatsSection 
-              totalGames={totalGames}
-              unplayedGames={unplayedGames}
-            />
-            
-            {/* Two-column layout for Genres and Shelf Life with improved alignment */}
+            {/* Two-column layout with stats/genres on left and shelf life on right */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div className="transition-transform duration-300 hover:scale-[1.01] h-fit">
-                <GenreHoarding 
-                  onGenreSelect={handleGenreSelect} 
-                  activeGenre={filters.selectedGenre} 
+              <div className="space-y-6">
+                {/* Stats Section in left column */}
+                <LibraryStatsSection 
+                  totalGames={totalGames}
+                  unplayedGames={unplayedGames}
                 />
+                
+                {/* Genres Section in left column */}
+                <div className="transition-transform duration-300 hover:scale-[1.01]">
+                  <GenreHoarding 
+                    onGenreSelect={handleGenreSelect} 
+                    activeGenre={filters.selectedGenre} 
+                  />
+                </div>
               </div>
-              <div className="transition-transform duration-300 hover:scale-[1.01] h-fit">
+              
+              {/* Shelf Life on right column */}
+              <div className="transition-transform duration-300 hover:scale-[1.01]">
                 <ShelfLife 
                   onJumpToGame={handleJumpToGame} 
                   onMarkAsPlayed={handleMarkAsPlayedFromShelf} 
