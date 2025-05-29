@@ -140,7 +140,7 @@ export const useDashboardData = () => {
         return createFallbackData();
       }
       
-      const result = transformUserGameData(dashboardData, {});
+      const result = transformUserGameData(dashboardData);
       
       // ENHANCED: Ensure unplayedSpent is correctly calculated
       const unplayedGames = result.gamesList?.filter(game => game.playtimeMinutes === 0) || [];

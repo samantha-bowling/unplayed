@@ -23,7 +23,7 @@ const AboutDialog: React.FC<AboutDialogProps> = ({ trigger }) => {
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>About SteamBacklog.app</DialogTitle>
+          <DialogTitle>About unplayed.wtf</DialogTitle>
           <DialogDescription>
             Tackle your gaming backlog with powerful insights
           </DialogDescription>
@@ -31,7 +31,7 @@ const AboutDialog: React.FC<AboutDialogProps> = ({ trigger }) => {
 
         <div className="space-y-4 py-4 text-sm">
           <p>
-            <strong className="text-primary">SteamBacklog.app</strong> helps you manage your Steam
+            <strong className="text-primary">unplayed.wtf</strong> helps you manage your Steam
             library by providing analytics and insights about your unplayed games.
           </p>
           
