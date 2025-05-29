@@ -130,7 +130,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
 
       <div className="terminal-content flex flex-col justify-center items-center py-6 flex-grow">
-        <div className={`text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
+        <div className={`text-6xl md:text-7xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
           isAnimationComplete ? 'drop-shadow-[0_0_10px_rgba(163,247,191,0.8)]' : ''
         }`}>
           {animatedCount}
@@ -141,7 +141,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
         </p>
 
         <div className="text-center">
-          <div className="text-4xl md:text-5xl font-bold text-unplayed-amber mb-2">
+          <div className="text-3xl md:text-4xl font-bold text-unplayed-amber mb-2">
             {calculatedData.unplayedPercentage}%
           </div>
           <p className="text-xl mb-4" style={{ color: '#D1D5DB' }}>
@@ -152,7 +152,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex justify-center">
-                  <MoodIcon size={24} className="text-gray-400 hover:text-gray-300 transition-colors cursor-help" />
+                  <MoodIcon size={48} className="text-gray-400 hover:text-gray-300 transition-colors cursor-help" />
                 </div>
               </TooltipTrigger>
               <TooltipContent>
