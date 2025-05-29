@@ -62,29 +62,6 @@ export const transformUserGameData = (
   const genreCounts = countGenres(userGamesData);
   const genresArray = processGenres(genreCounts);
 
-  // Calculate shelf life by release year with proper ShelfLifeItem format
-  const now = new Date();
-  const year = now.getFullYear();
-  const shelfLife: ShelfLifeItem[] = [];
-
-  // Create shelf life data for the last 10 years
-  for (let i = 0; i < 10; i++) {
-    const currentYear = year - i;
-    const gamesInYear = gamesList.filter(game => {
-      if (!game.releaseDate) return false;
-      const releaseYear = new Date(game.releaseDate).getFullYear();
-      return releaseYear === currentYear;
-    });
-    
-    if (gamesInYear.length > 0) {
-      shelfLife.push({ 
-        name: String(currentYear), 
-        value: gamesInYear.length,
-        games: gamesInYear.slice(0, 20) // Limit to first 20 games for performance
-      });
-    }
-  }
-
   // Sort by oldest games first (by release date, then by acquisition date)
   const sortedOldestGames = gamesList
     .filter(game => game.playtimeMinutes === 0) // Only unplayed games
@@ -163,7 +140,7 @@ export const transformUserGameData = (
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: sortedOldestGames, // Use the sorted games directly for shelf life display
+    shelfLife: sortedOldestGames, // Now correctly using GameListItem[] which matches ShelfLife component expectations
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,
