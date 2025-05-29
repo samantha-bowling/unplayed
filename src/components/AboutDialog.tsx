@@ -53,19 +53,6 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
           <h3 className="text-xl font-bold text-unplayed-amber mb-4">FAQ (Frequently Avoided Questions)</h3>
           
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="hours">
-              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                What's the unplayed Hours number?
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                <p className="mb-2">
-                  That's how many hours of your life you could be spending playing games you already own… but haven't touched.
-                </p>
-                <p>
-                  We pull those estimates from an unofficial API based on HowLongToBeat data. It's not perfect, but it's better than pretending you're actually going to replay Witcher 3 again.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
             
             <AccordionItem value="dust-score">
               <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
