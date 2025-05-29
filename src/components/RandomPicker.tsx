@@ -193,6 +193,10 @@ const RandomPicker = ({
     resetSessionState();
   };
 
+  const handleRollAgain = () => {
+    handleSpin();
+  };
+
   // Create recent pick data for display (session-only)
   const getRecentPickToShow = () => {
     if (!previousSessionPick || !hasPickedInSession) {
@@ -224,7 +228,7 @@ const RandomPicker = ({
   };
   
   return (
-    <div className={`terminal-container w-full ${fullScreen ? 'h-full' : ''}`}>
+    <div className={`w-full ${fullScreen ? 'h-full' : ''}`}>
       {/* Show the full screen mode toggle in the corner when in full screen mode */}
       {showFullScreenMode && (
         <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
@@ -232,90 +236,96 @@ const RandomPicker = ({
         </div>
       )}
       
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="terminal-header text-2xl mb-4">Random Game Picker</h3>
-        
-        {!showFullScreenMode && (
-          <div className="flex items-center gap-2">
+      {/* Main content container with centered layout */}
+      <div className="max-w-4xl mx-auto">
+        {/* Controls Section */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {!showFullScreenMode && (
             <Tabs 
               defaultValue="unplayed" 
               value={scope}
               onValueChange={(value) => setScope(value as 'unplayed' | 'all')}
               className="w-[260px]"
             >
-              <TabsList>
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="unplayed">Unplayed Only</TabsTrigger>
                 <TabsTrigger value="all">Full Library</TabsTrigger>
               </TabsList>
             </Tabs>
-          </div>
-        )}
-      </div>
-      
-      {/* Filter controls */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <MoodFilterDropdown 
-          activeMood={activeMood}
-          onSelectMood={handleFilterSelect}
-          onClearMood={handleClearMood}
-          isDropdownOpen={isDropdownOpen}
-          toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
-        />
-        
-        <button 
-          className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
-          onClick={handleSpin} 
-          disabled={isSpinning}
-        >
-          <MousePointer className="mr-2 h-4 w-4" />
-          {isSpinning ? 'Selecting...' : 'Select Game.exe'}
-        </button>
-        
-        {!showFullScreenMode && !currentSessionPick && (
-          <div className="flex items-center ml-2 text-sm">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preventDuplicates}
-                onChange={() => {
-                  console.log('Prevent duplicates toggled:', !preventDuplicates);
-                  setPreventDuplicates(!preventDuplicates);
-                }}
-                className="mr-1 h-4 w-4"
-                disabled={isSpinning}
-              />
-              <span className="text-gray-400">Prevent duplicates</span>
-            </label>
-          </div>
-        )}
-      </div>
-      
-      {/* Game display area - shows current session pick */}
-      <div className="mb-6">
-        {isSpinning ? (
-          <GameSpinner quip={currentQuip} />
-        ) : currentSessionPick ? (
-          <SelectedGame 
-            game={currentSessionPick} 
-            onPlayGame={handlePlayGame} 
-            onRollAgain={handleSpin}
-            disabled={isSpinning}
-            headerMessage={destinyMessage}
+          )}
+          
+          <MoodFilterDropdown 
+            activeMood={activeMood}
+            onSelectMood={handleFilterSelect}
+            onClearMood={handleClearMood}
+            isDropdownOpen={isDropdownOpen}
+            toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
           />
-        ) : (
-          <div className="h-64 flex flex-col items-center justify-center text-center">
-            <MousePointer className="h-12 w-12 text-gray-600 mb-4" />
-            <p className="text-gray-400">
-              Click "Select Game.exe" to find your next game
-            </p>
+          
+          <button 
+            className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleSpin} 
+            disabled={isSpinning}
+          >
+            <MousePointer className="mr-2 h-4 w-4" />
+            {isSpinning ? 'Selecting...' : 'Select Game.exe'}
+          </button>
+          
+          {!showFullScreenMode && !currentSessionPick && (
+            <div className="flex items-center text-sm">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={preventDuplicates}
+                  onChange={() => {
+                    console.log('Prevent duplicates toggled:', !preventDuplicates);
+                    setPreventDuplicates(!preventDuplicates);
+                  }}
+                  className="mr-1 h-4 w-4"
+                  disabled={isSpinning}
+                />
+                <span className="text-gray-400">Prevent duplicates</span>
+              </label>
+            </div>
+          )}
+        </div>
+        
+        {/* Game display area - shows current session pick */}
+        <div className="mb-6">
+          {isSpinning ? (
+            <GameSpinner quip={currentQuip} />
+          ) : currentSessionPick ? (
+            <SelectedGame 
+              game={currentSessionPick} 
+              onPlayGame={handlePlayGame} 
+              onRollAgain={handleRollAgain}
+              disabled={isSpinning}
+              headerMessage={destinyMessage}
+            />
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-center">
+              <MousePointer className="h-12 w-12 text-gray-600 mb-4" />
+              <p className="text-gray-400">
+                Click "Select Game.exe" to find your next game
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {/* Recent Pick section - shows previous session pick */}
+        {getRecentPickToShow() && (
+          <RecentPick recentPick={getRecentPickToShow()} />
+        )}
+        
+        {/* Give me a reason to play button */}
+        {currentSessionPick && !isSpinning && (
+          <div className="text-center mt-6">
+            <button className="btn-amber-outline">
+              Give me a reason to play
+            </button>
           </div>
         )}
       </div>
-      
-      {/* Recent Pick section - shows previous session pick */}
-      {getRecentPickToShow() && (
-        <RecentPick recentPick={getRecentPickToShow()} />
-      )}
     </div>
   );
 };

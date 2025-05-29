@@ -251,13 +251,6 @@ const LibraryPage: React.FC = () => {
         
         <main className="flex-grow px-4 py-8 header-spacing">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold font-space">
-                <span className="text-unplayed-mint">Library</span>
-                <span className="text-white">.exe</span>
-              </h1>
-            </div>
-            
             <LibraryWelcomeSection
               unplayedCount={unplayedGames}
               totalGames={totalGames}
