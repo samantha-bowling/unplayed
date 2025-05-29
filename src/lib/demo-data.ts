@@ -1,10 +1,12 @@
 
+
 export interface DemoDataType {
   unplayedGames: number;
   totalGames: number;
   dustScore: number;
   totalPlaytime: number; // in hours
   totalSpent: number; // in dollars
+  unplayedSpent: number; // in dollars - spending on unplayed games only
   potentialGameplayHours: number; // Added for HLTB integration
   genres: Array<{ name: string; value: number; color: string }>;
   shelfLife: Array<{ 
