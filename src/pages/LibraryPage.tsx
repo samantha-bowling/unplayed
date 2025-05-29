@@ -6,8 +6,8 @@ import FullScreenModeWrapper from '@/components/FullScreenModeWrapper';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { ZenLayout } from '@/layouts';
 import LibraryPreview from '@/components/LibraryPreview';
-import LibraryWelcomeSection from '@/components/LibraryWelcomeSection';
-import LibraryTopSection from '@/components/LibraryTopSection';
+import LibraryHeroSection from '@/components/LibraryHeroSection';
+import LibraryTabbedSection from '@/components/LibraryTabbedSection';
 import LibraryContent from '@/components/LibraryContent';
 import useLibraryData from '@/hooks/use-library-data';
 import usePaginatedLibrary from '@/hooks/use-paginated-library';
@@ -221,6 +221,14 @@ const LibraryPage: React.FC = () => {
     }, 500);
   };
 
+  // Handle view most expensive unplayed
+  const handleViewExpensive = () => {
+    // Navigate to library with a filter for expensive unplayed games
+    updateSelectedGenre('');
+    toggleOnlyUnplayed();
+    updateSort('dust_score', 'desc');
+  };
+
   // Reset focused game after a delay
   useEffect(() => {
     if (focusedGameId) {
@@ -250,45 +258,48 @@ const LibraryPage: React.FC = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        <main className="flex-grow px-4 py-16 header-spacing">
-          <div className="max-w-7xl mx-auto">
-            <LibraryWelcomeSection
-              unplayedCount={unplayedGames}
-              totalGames={totalGames}
-            />
+        <main className="flex-grow">
+          <LibraryHeroSection
+            unplayedCount={unplayedGames}
+            totalGames={totalGames}
+            onViewExpensive={handleViewExpensive}
+          />
 
-            <LibraryTopSection
-              totalGames={totalGames}
-              unplayedGames={unplayedGames}
-              activeGenre={filters.selectedGenre}
-              onGenreSelect={handleGenreSelect}
-              onJumpToGame={handleJumpToGame}
-              onMarkAsPlayed={handleMarkAsPlayedFromShelf}
-            />
-            
-            <LibraryContent
-              games={games}
-              isLoading={isLoading}
-              error={error}
-              filters={filters}
-              updateSearchFilter={updateSearchFilter}
-              toggleHideIgnored={toggleHideIgnored}
-              toggleOnlyUnplayed={toggleOnlyUnplayed}
-              updateSelectedGenre={updateSelectedGenre}
-              resetFilters={resetFilters}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              updateSort={updateSort}
-              viewMode={viewMode}
-              updateViewMode={updateViewMode}
-              usePagination={usePagination}
-              paginatedData={paginatedData}
-              legacyData={legacyData}
-              onMarkAsPlayed={handleMarkAsPlayed}
-              onToggleHidden={handleToggleHidden}
-              onSaveNote={handleSaveNote}
-              focusedGameId={focusedGameId}
-            />
+          <LibraryTabbedSection
+            totalGames={totalGames}
+            unplayedGames={unplayedGames}
+            activeGenre={filters.selectedGenre}
+            onGenreSelect={handleGenreSelect}
+            onJumpToGame={handleJumpToGame}
+            onMarkAsPlayed={handleMarkAsPlayedFromShelf}
+          />
+          
+          <div className="px-4 py-8">
+            <div className="max-w-7xl mx-auto">
+              <LibraryContent
+                games={games}
+                isLoading={isLoading}
+                error={error}
+                filters={filters}
+                updateSearchFilter={updateSearchFilter}
+                toggleHideIgnored={toggleHideIgnored}
+                toggleOnlyUnplayed={toggleOnlyUnplayed}
+                updateSelectedGenre={updateSelectedGenre}
+                resetFilters={resetFilters}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                updateSort={updateSort}
+                viewMode={viewMode}
+                updateViewMode={updateViewMode}
+                usePagination={usePagination}
+                paginatedData={paginatedData}
+                legacyData={legacyData}
+                onMarkAsPlayed={handleMarkAsPlayed}
+                onToggleHidden={handleToggleHidden}
+                onSaveNote={handleSaveNote}
+                focusedGameId={focusedGameId}
+              />
+            </div>
           </div>
         </main>
         
