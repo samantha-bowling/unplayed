@@ -1,7 +1,8 @@
+
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, ShieldCheck, Calendar, HelpCircle, Trophy, Zap, Target, Brush } from 'lucide-react';
+import { Clock, ShieldCheck, Calendar, HelpCircle, Trophy, Zap, Target, Brush, Medal } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
