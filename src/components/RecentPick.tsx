@@ -54,8 +54,8 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
     window.open(steamStoreUrl, '_blank');
   };
 
-  // Check if description is long enough to warrant scrolling
-  const isDescriptionLong = gameData?.description && gameData.description.length > 300;
+  // Check if description exists and is meaningful
+  const hasDescription = gameData?.description && gameData.description.trim().length > 0;
 
   return (
     <Card className="bg-gray-900/50 border-gray-700">
@@ -137,21 +137,15 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick }) => {
           )}
         </div>
 
-        {/* Game Description - Conditional ScrollArea */}
-        {gameData?.description && (
+        {/* Game Description - Always Visible if Available with Consistent Height */}
+        {hasDescription && (
           <div className="bg-gray-800/20 rounded-lg p-4">
             <h4 className="text-gray-300 mb-3 font-semibold text-sm uppercase tracking-wide">About This Game</h4>
-            {isDescriptionLong ? (
-              <ScrollArea className="max-h-32">
-                <div className="text-gray-300 leading-relaxed text-sm pr-4">
-                  {gameData.description.replace(/<[^>]*>/g, '')}
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="text-gray-300 leading-relaxed text-sm">
+            <ScrollArea className="max-h-40">
+              <div className="text-gray-300 leading-relaxed text-sm pr-4">
                 {gameData.description.replace(/<[^>]*>/g, '')}
               </div>
-            )}
+            </ScrollArea>
           </div>
         )}
 

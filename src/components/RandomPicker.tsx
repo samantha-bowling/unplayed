@@ -5,15 +5,13 @@ import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import usePickerData from '@/hooks/use-picker-data';
+import useSessionPicker from '@/hooks/use-session-picker';
 import GameSpinner from './GameSpinner';
 import MoodFilterDropdown from './MoodFilterDropdown';
 import SelectedGame from './SelectedGame';
 import RecentPick from './RecentPick';
-import DebugPanel from './DebugPanel';
 import { PickerNavigationState } from '@/utils/navigation';
 import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
-import { GameListItem } from '@/types/unplayed-data.types';
 import { getRandomDestinyMessage } from '@/utils/destiny-messages';
 
 // Array of quips to display during game selection
@@ -71,31 +69,22 @@ const RandomPicker = ({
     preventDuplicates,
     setPreventDuplicates,
     selectRandomGame,
-    recentPick,
     currentSessionPick,
+    previousSessionPick,
     hasPickedInSession,
     resetSessionState,
-    isSaving: isPickSaving,
     user
-  } = usePickerData();
+  } = useSessionPicker();
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   const [destinyMessage, setDestinyMessage] = useState<string>("Your Random Pick");
   
-  // Simplified state - only track previous pick from current session
-  const [previousSessionPick, setPreviousSessionPick] = useState<GameListItem | null>(null);
-  
-  const {
-    isFullScreenMode
-  } = useFullScreenMode();
+  const { isFullScreenMode } = useFullScreenMode();
 
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
-  
-  // Check if any operation is in progress to prevent rapid clicking
-  const isOperationInProgress = isSpinning || isPickSaving;
   
   // Enhanced logging for debugging
   useEffect(() => {
@@ -103,12 +92,10 @@ const RandomPicker = ({
     console.log('Games available:', games?.length || 0);
     console.log('Current session pick:', currentSessionPick?.name || 'None');
     console.log('Previous session pick:', previousSessionPick?.name || 'None');
-    console.log('Recent pick from DB:', recentPick?.game?.name || 'None');
     console.log('Has picked in session:', hasPickedInSession);
     console.log('Demo mode:', isDemo);
-    console.log('Is saving pick:', isPickSaving);
     console.log('================================');
-  }, [games, currentSessionPick, previousSessionPick, recentPick, hasPickedInSession, isDemo, isPickSaving]);
+  }, [games, currentSessionPick, previousSessionPick, hasPickedInSession, isDemo]);
   
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
@@ -137,7 +124,7 @@ const RandomPicker = ({
   }, [initialFilters]);
 
   const handleSpin = () => {
-    if (isOperationInProgress) {
+    if (isSpinning) {
       console.log('Spin prevented - operation in progress');
       return;
     }
@@ -145,14 +132,7 @@ const RandomPicker = ({
     console.log('=== Starting Spin Process ===');
     console.log('Current filters:', { scope, activeMood, preventDuplicates });
     console.log('Available games:', games?.length || 0);
-    console.log('Is authenticated:', !!user);
     console.log('Demo mode:', isDemo);
-    
-    // If we currently have a session pick, move it to previous before getting a new one
-    if (currentSessionPick) {
-      console.log('Moving current session pick to previous:', currentSessionPick.name);
-      setPreviousSessionPick(currentSessionPick);
-    }
     
     // Select a random quip to display
     const randomQuipIndex = Math.floor(Math.random() * selectionQuips.length);
@@ -160,7 +140,7 @@ const RandomPicker = ({
     
     setIsSpinning(true);
 
-    // Simulate picking random game with proper state management
+    // Simulate picking random game
     setTimeout(() => {
       console.log('Executing selectRandomGame...');
       const newSelectedGame = selectRandomGame();
@@ -180,7 +160,6 @@ const RandomPicker = ({
       setDestinyMessage(getRandomDestinyMessage());
       
       console.log('Successfully selected game:', newSelectedGame.name);
-      console.log('Game will be saved to database:', !isDemo);
       console.log('=== Spin Process Complete ===');
       setIsSpinning(false);
     }, 2000);
@@ -192,8 +171,6 @@ const RandomPicker = ({
     setIsDropdownOpen(false);
     // Reset session state when filters change
     resetSessionState();
-    // Clear previous session pick when filters change
-    setPreviousSessionPick(null);
   };
   
   const handlePlayGame = () => {
@@ -214,51 +191,36 @@ const RandomPicker = ({
     setIsDropdownOpen(false);
     // Reset session state when filters change
     resetSessionState();
-    // Clear previous session pick when filters change
-    setPreviousSessionPick(null);
   };
 
-  // Simplified recent pick logic - show DB pick only if no current session
+  // Create recent pick data for display (session-only)
   const getRecentPickToShow = () => {
-    console.log('=== Determining Recent Pick to Show ===');
-    
-    // If we have a current session pick and a previous session pick, show the previous
-    if (hasPickedInSession && currentSessionPick && previousSessionPick) {
-      console.log('Showing previous session pick:', previousSessionPick.name);
-      return {
-        id: 'session-previous',
-        game_id: previousSessionPick.id,
-        picked_at: new Date().toISOString(),
-        filters: { mood: activeMood || undefined },
-        game: {
-          id: previousSessionPick.id,
-          name: previousSessionPick.name,
-          image_url: previousSessionPick.image,
-          header_image: previousSessionPick.header_image,
-          release_date: previousSessionPick.release_date || previousSessionPick.releaseDate,
-          price_cents: previousSessionPick.price_cents || (previousSessionPick.price ? previousSessionPick.price * 100 : undefined),
-          genres: previousSessionPick.genres || [],
-          developer: previousSessionPick.developer || [],
-          publisher: previousSessionPick.publisher || [],
-          description: previousSessionPick.description,
-          platforms: previousSessionPick.platforms || [],
-          screenshots: previousSessionPick.screenshots || []
-        },
-        userGameData: {
-          playtime_minutes: previousSessionPick.playtimeMinutes || 0,
-          acquisition_date: null
-        }
-      };
+    if (!previousSessionPick || !hasPickedInSession) {
+      return null;
     }
-    
-    // Only show database recent pick if no current session pick
-    if (recentPick && !hasPickedInSession) {
-      console.log('Showing database recent pick:', recentPick.game?.name || `Game #${recentPick.game_id}`);
-      return recentPick;
-    }
-    
-    console.log('No recent pick to show');
-    return null;
+
+    return {
+      id: 'session-previous',
+      game_id: previousSessionPick.id,
+      picked_at: new Date().toISOString(),
+      filters: { mood: activeMood || undefined },
+      game: {
+        id: previousSessionPick.id,
+        name: previousSessionPick.name,
+        image_url: previousSessionPick.image,
+        header_image: previousSessionPick.header_image,
+        release_date: previousSessionPick.release_date || previousSessionPick.releaseDate,
+        price_cents: previousSessionPick.price_cents || (previousSessionPick.price ? previousSessionPick.price * 100 : undefined),
+        genres: previousSessionPick.genres || [],
+        developer: previousSessionPick.developer || [],
+        publisher: previousSessionPick.publisher || [],
+        description: previousSessionPick.description
+      },
+      userGameData: {
+        playtime_minutes: previousSessionPick.playtimeMinutes || 0,
+        acquisition_date: null
+      }
+    };
   };
   
   return (
@@ -301,15 +263,14 @@ const RandomPicker = ({
         />
         
         <button 
-          className={`btn-amber flex items-center ${isOperationInProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={handleSpin} 
-          disabled={isOperationInProgress}
+          disabled={isSpinning}
         >
           <MousePointer className="mr-2 h-4 w-4" />
-          {isSpinning ? 'Selecting...' : isPickSaving ? 'Saving...' : 'Select Game.exe'}
+          {isSpinning ? 'Selecting...' : 'Select Game.exe'}
         </button>
         
-        {/* Enhanced debugging info for prevent duplicates */}
         {!showFullScreenMode && !currentSessionPick && (
           <div className="flex items-center ml-2 text-sm">
             <label className="flex items-center cursor-pointer">
@@ -321,7 +282,7 @@ const RandomPicker = ({
                   setPreventDuplicates(!preventDuplicates);
                 }}
                 className="mr-1 h-4 w-4"
-                disabled={isOperationInProgress}
+                disabled={isSpinning}
               />
               <span className="text-gray-400">Prevent duplicates</span>
             </label>
@@ -338,20 +299,20 @@ const RandomPicker = ({
             game={currentSessionPick} 
             onPlayGame={handlePlayGame} 
             onRollAgain={handleSpin}
-            disabled={isOperationInProgress}
+            disabled={isSpinning}
             headerMessage={destinyMessage}
           />
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-center">
             <MousePointer className="h-12 w-12 text-gray-600 mb-4" />
             <p className="text-gray-400">
-              {isPickSaving ? 'Saving your pick...' : 'Click "Select Game.exe" to find your next game'}
+              Click "Select Game.exe" to find your next game
             </p>
           </div>
         )}
       </div>
       
-      {/* Recent Pick section - shows appropriate previous pick */}
+      {/* Recent Pick section - shows previous session pick */}
       {getRecentPickToShow() && (
         <RecentPick recentPick={getRecentPickToShow()} />
       )}
