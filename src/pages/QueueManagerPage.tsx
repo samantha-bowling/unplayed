@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +11,7 @@ import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
 import ProcessingFooter from "@/components/admin/ProcessingFooter";
 import SmartPrioritizationCard from "@/components/admin/SmartPrioritizationCard";
+import MetadataConsistencyCard from '@/components/admin/MetadataConsistencyCard';
 import { useBatchProcessor } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
 
@@ -198,134 +198,25 @@ const QueueManagerPage = () => {
 
   return (
     <AdminLayout requiredRole="admin">
-      <div className="container max-w-7xl mx-auto px-4 py-24">
+      <div className="container mx-auto px-4 py-24">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Queue Manager</h1>
+          <h1 className="text-3xl font-bold mb-2">Game Queue Manager</h1>
           <p className="text-gray-400">
-            Advanced tools for managing the Steam game processing queue.
+            Advanced controls for managing the Steam game processing queue and data consistency.
           </p>
         </div>
 
-        {/* Smart Prioritization - Featured at the top */}
-        <div className="mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <QueueStatsCard />
           <SmartPrioritizationCard />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Queue Statistics Card */}
-          <QueueStatsCard 
-            stats={stats || {
-              pending: 0,
-              processing: 0,
-              completed: 0,
-              failed: 0,
-              total: 0
-            }}
-            onRefresh={fetchStats}
-            isLoading={isLoading}
-            processedCount={queueProcessor.processedCount}
-          />
-
-          {/* Batch Processing Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Batch Processing</CardTitle>
-              <CardDescription>
-                Configure and manage batch processing of Steam app details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <BatchProcessingControls
-                batchSize={batchSize}
-                onBatchSizeChange={setBatchSize}
-                batchSizeMin={5}
-                batchSizeMax={50}
-                batchSizeStep={5}
-                batchSizeLabel="Batch Size"
-                showWarningThreshold={30}
-                warningMessage="Higher risk of rate limiting"
-                continuousMode={queueProcessor.continuousMode}
-                processedCount={queueProcessor.processedCount}
-                lastProcessedId={queueProcessor.lastProcessedId}
-                processComplete={queueProcessor.processComplete}
-              />
-            </CardContent>
-            <CardHeader className="pt-0">
-              <ProcessingFooter
-                isProcessing={queueProcessor.isProcessing}
-                onProcess={() => queueProcessor.processBatch({ batchSize: batchSize })}
-                processText={`Process Batch (${batchSize} Games)`}
-                processingText="Processing..."
-                disabled={queueProcessor.processComplete || !stats || stats.pending === 0}
-                continuousMode={queueProcessor.continuousMode}
-                onToggleContinuous={queueProcessor.toggleContinuousMode}
-                continuousText="Enable Continuous Processing"
-                stopContinuousText="Pause Continuous Processing"
-                continuousDisabled={queueProcessor.processComplete || !stats || stats.pending === 0}
-                onReset={queueProcessor.resetProcessor}
-                resetDisabled={queueProcessor.isProcessing || (queueProcessor.lastProcessedId === 0 && queueProcessor.processedCount === 0)}
-              />
-            </CardHeader>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <BatchProcessingControls />
+          <MetadataConsistencyCard />
         </div>
 
-        {/* Prioritize User Games Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Prioritize User Games</CardTitle>
-            <CardDescription>
-              Set high priority for a specific user's games in the processing queue
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="user-id">User ID</Label>
-              <Input
-                id="user-id"
-                placeholder="Enter Supabase User ID"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-              />
-              <p className="text-xs text-gray-400">
-                Enter the Supabase User ID to prioritize all their games in the processing queue.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="priority-level">Priority Level: {priorityLevel}</Label>
-              <Slider
-                id="priority-level"
-                min={1}
-                max={10}
-                step={1}
-                value={[priorityLevel]}
-                onValueChange={(value) => setPriorityLevel(value[0])}
-                className="py-4"
-              />
-              <p className="text-xs text-gray-400">
-                Higher priority (10) means games will be processed before lower priority items.
-              </p>
-            </div>
-          </CardContent>
-          <CardHeader className="pt-0">
-            <div className="w-full">
-              <button
-                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                onClick={prioritizeUserGames}
-                disabled={!userId || isPrioritizing}
-              >
-                {isPrioritizing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Prioritizing...
-                  </>
-                ) : (
-                  "Prioritize User's Games"
-                )}
-              </button>
-            </div>
-          </CardHeader>
-        </Card>
+        <ProcessingFooter />
       </div>
     </AdminLayout>
   );

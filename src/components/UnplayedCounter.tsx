@@ -32,17 +32,15 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     const actualCount = count ?? dashboardData.unplayedGames;
     const totalGames = dashboardData.totalGames;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
-    const potentialHours = dashboardData.potentialGameplayHours ?? actualCount * 12.5;
     const isDemoMode = isDemo || contextIsDemo;
     
     return {
       actualCount,
       totalGames,
       unplayedPercentage,
-      potentialHours,
       isDemoMode
     };
-  }, [count, dashboardData.unplayedGames, dashboardData.totalGames, dashboardData.potentialGameplayHours, isDemo, contextIsDemo]);
+  }, [count, dashboardData.unplayedGames, dashboardData.totalGames, isDemo, contextIsDemo]);
 
   // Animated counters with demo-aware speed
   const animatedCount = useAnimatedCounter({
@@ -51,19 +49,10 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     isDemo: calculatedData.isDemoMode
   });
 
-  const animatedHours = useAnimatedCounter({
-    targetValue: Math.round(calculatedData.potentialHours),
-    duration: 1500,
-    isDemo: calculatedData.isDemoMode
-  });
-
   // Memoized tooltip content to prevent recreation
   const tooltipContent = useMemo(() => ({
-    unplayed: "Includes games with 0 recorded minutes of playtime",
-    hours: calculatedData.isDemoMode
-      ? "Based on an average of 12.5 hours per game in Demo Mode"
-      : "Based on HowLongToBeat.com data where available, otherwise estimated at 12.5 hours per game"
-  }), [calculatedData.isDemoMode]);
+    unplayed: "Includes games with 0 recorded minutes of playtime"
+  }), []);
 
   // Memoized demo note content
   const demoNote = useMemo(() => {
@@ -78,6 +67,9 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       </div>
     );
   }, [calculatedData.isDemoMode]);
+
+  // Check if animation is complete to trigger glow effect
+  const isAnimationComplete = animatedCount === calculatedData.actualCount;
 
   // Render compact version
   if (compact) {
@@ -121,43 +113,22 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     <div className={`terminal-container ${calculatedData.isDemoMode ? 'relative' : ''} equal-height-container`}>
       <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
 
-      <div className="terminal-content flex flex-col py-6">
-        <div className="text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-2 text-center">
+      <div className="terminal-content flex flex-col justify-center items-center py-6 flex-grow">
+        <div className={`text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
+          isAnimationComplete ? 'animate-pulse drop-shadow-[0_0_10px_rgba(163,247,191,0.8)]' : ''
+        }`}>
           {animatedCount}
         </div>
 
-        <p className="text-gray-300 text-center text-lg mb-4">
+        <p className="text-gray-300 text-center text-xl mb-6" style={{ color: '#D1D5DB' }}>
           You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed.wtf files
         </p>
 
-        <div className="text-sm text-gray-400 text-center flex items-center justify-center mb-3">
-          <span>
-            That's approximately{' '}
-            <span className="text-unplayed-pink">
-              {animatedHours} hours
-            </span>{' '}
-            of potential gameplay
-          </span>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="ml-1 text-gray-500 hover:text-gray-400">
-                  <InfoIcon size={14} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>{tooltipContent.hours}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-
         <div className="text-center">
-          <div className="text-2xl font-bold text-unplayed-amber mb-1">
+          <div className="text-5xl md:text-6xl font-bold text-unplayed-amber mb-2">
             {calculatedData.unplayedPercentage}%
           </div>
-          <p className="text-sm text-gray-400">
+          <p className="text-xl" style={{ color: '#D1D5DB' }}>
             of your {calculatedData.totalGames} game library is unplayed
           </p>
         </div>
