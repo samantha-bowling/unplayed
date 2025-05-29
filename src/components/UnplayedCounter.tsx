@@ -11,7 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Laugh, Smile, Meh, Frown } from 'lucide-react';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
@@ -53,6 +53,20 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   const tooltipContent = useMemo(() => ({
     unplayed: "Includes games with 0 recorded minutes of playtime"
   }), []);
+
+  // Memoized mood icon and tooltip based on percentage
+  const moodData = useMemo(() => {
+    const percentage = calculatedData.unplayedPercentage;
+    if (percentage <= 25) {
+      return { icon: Laugh, tooltip: "Backlog? What backlog?" };
+    } else if (percentage <= 50) {
+      return { icon: Smile, tooltip: "Moderate backlog" };
+    } else if (percentage <= 75) {
+      return { icon: Meh, tooltip: "It's getting dusty…" };
+    } else {
+      return { icon: Frown, tooltip: "You have a problem." };
+    }
+  }, [calculatedData.unplayedPercentage]);
 
   // Memoized demo note content
   const demoNote = useMemo(() => {
@@ -108,6 +122,8 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     );
   }
 
+  const MoodIcon = moodData.icon;
+
   // Render full version
   return (
     <div className={`terminal-container ${calculatedData.isDemoMode ? 'relative' : ''} equal-height-container`}>
@@ -115,22 +131,35 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
 
       <div className="terminal-content flex flex-col justify-center items-center py-6 flex-grow">
         <div className={`text-5xl md:text-6xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
-          isAnimationComplete ? 'animate-pulse drop-shadow-[0_0_10px_rgba(163,247,191,0.8)]' : ''
+          isAnimationComplete ? 'drop-shadow-[0_0_10px_rgba(163,247,191,0.8)]' : ''
         }`}>
           {animatedCount}
         </div>
 
         <p className="text-gray-300 text-center text-xl mb-6" style={{ color: '#D1D5DB' }}>
-          You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed.wtf files
+          You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed games
         </p>
 
         <div className="text-center">
-          <div className="text-5xl md:text-6xl font-bold text-unplayed-amber mb-2">
+          <div className="text-4xl md:text-5xl font-bold text-unplayed-amber mb-2">
             {calculatedData.unplayedPercentage}%
           </div>
-          <p className="text-xl" style={{ color: '#D1D5DB' }}>
+          <p className="text-xl mb-4" style={{ color: '#D1D5DB' }}>
             of your {calculatedData.totalGames} game library is unplayed
           </p>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex justify-center">
+                  <MoodIcon size={24} className="text-gray-400 hover:text-gray-300 transition-colors cursor-help" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{moodData.tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {demoNote}
