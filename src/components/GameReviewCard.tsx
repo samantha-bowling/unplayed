@@ -3,6 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { SteamIcon } from '@/components/icons/SteamIcon';
 import { ExternalLink } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface GameReviewCardProps {
   review: {
@@ -19,6 +21,7 @@ interface GameReviewCardProps {
   onGetReview: () => void;
   onGetAnotherReview: () => void;
   gameId?: number;
+  isDemo?: boolean;
 }
 
 const GameReviewCard: React.FC<GameReviewCardProps> = ({ 
@@ -27,19 +30,48 @@ const GameReviewCard: React.FC<GameReviewCardProps> = ({
   hasFetched,
   onGetReview,
   onGetAnotherReview,
-  gameId
+  gameId,
+  isDemo = false
 }) => {
+  const handleGetReview = () => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Sign in to fetch real Steam reviews that will motivate you to play!",
+      });
+      return;
+    }
+    onGetReview();
+  };
+
   // Show initial "Get Review" button if we haven't fetched yet
   if (!hasFetched) {
+    const reasonButton = (
+      <Button 
+        onClick={handleGetReview}
+        className="bg-unplayed-amber hover:bg-unplayed-amber/80 text-black font-semibold w-full"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Finding reasons...' : 'Give me a reason to play'}
+      </Button>
+    );
+
     return (
       <div className="mt-4 p-4 bg-gray-800/50 rounded-md border border-gray-700 text-center">
-        <Button 
-          onClick={onGetReview}
-          className="bg-unplayed-amber hover:bg-unplayed-amber/80 text-black font-semibold"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Finding reasons...' : 'Give me a reason to play'}
-        </Button>
+        {isDemo ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {reasonButton}
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Fetch a positive Steam review to give you motivation to play this game!</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          reasonButton
+        )}
       </div>
     );
   }

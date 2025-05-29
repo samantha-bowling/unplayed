@@ -10,7 +10,6 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -55,33 +54,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     });
   };
 
-  const handleGetReview = () => {
-    if (isDemo) {
-      toast({
-        title: "Demo Mode",
-        description: "Sign in to fetch real Steam reviews that will motivate you to play!",
-      });
-      return;
-    }
-    fetchReviews();
-  };
-
   // Helper functions for backward compatibility
   const getGameReleaseDate = () => game.release_date || game.releaseDate;
   const getGamePriceCents = () => game.price_cents || (game.price ? game.price * 100 : undefined);
 
   // Check if description exists and is meaningful
   const hasDescription = game.description && game.description.trim().length > 0;
-
-  const reasonButton = (
-    <button 
-      className="btn-amber-outline w-full"
-      onClick={handleGetReview}
-      disabled={disabled || isLoadingReview}
-    >
-      {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
-    </button>
-  );
 
   return (
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6">
@@ -177,35 +155,16 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         </div>
       </div>
 
-      {/* Give me a reason to play button */}
-      <div className="mb-6">
-        {isDemo ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {reasonButton}
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Fetch a positive Steam review to give you motivation to play this game!</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          reasonButton
-        )}
-      </div>
-
-      {/* Review Display */}
-      {!isDemo && (
-        <GameReviewCard
-          review={review}
-          isLoading={isLoadingReview}
-          hasFetched={hasFetched}
-          onGetReview={handleGetReview}
-          onGetAnotherReview={cycleNextReview}
-          gameId={game.id}
-        />
-      )}
+      {/* Review Display - Always show GameReviewCard */}
+      <GameReviewCard
+        review={review}
+        isLoading={isLoadingReview}
+        hasFetched={hasFetched}
+        onGetReview={fetchReviews}
+        onGetAnotherReview={cycleNextReview}
+        gameId={game.id}
+        isDemo={isDemo}
+      />
     </div>
   );
 };
