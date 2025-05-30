@@ -32,7 +32,8 @@ const LibraryPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow w-full navbar-offset px-4 py-8">
+      {/* Hero section - Using our header spacing utility class */}
+      <section className="navbar-offset flex-grow px-4 py-12 text-center relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <LibraryHeroSection 
             unplayedCount={unplayedGames}
@@ -84,7 +85,7 @@ const LibraryPage = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </section>
       
       <Footer />
     </div>
