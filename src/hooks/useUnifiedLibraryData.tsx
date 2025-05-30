@@ -57,7 +57,7 @@ export const useUnifiedLibraryData = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
-      console.log('Fetching unified library data for user:', user.id);
+      console.log('🔍 [UnifiedLibraryData] Fetching data for user:', user.id);
       
       const { data: userGamesData, error: userGamesError } = await supabase
         .from('user_games')
@@ -86,11 +86,11 @@ export const useUnifiedLibraryData = () => {
         .order('dust_score', { ascending: false });
       
       if (userGamesError) {
-        console.error('Error fetching unified library data:', userGamesError);
+        console.error('❌ [UnifiedLibraryData] Error fetching data:', userGamesError);
         throw userGamesError;
       }
 
-      console.log(`Unified library: Found ${userGamesData?.length || 0} total games for user ${user.id}`);
+      console.log(`✅ [UnifiedLibraryData] Found ${userGamesData?.length || 0} total games for user ${user.id}`);
       
       return userGamesData as UnifiedGameData[];
     },
@@ -103,7 +103,7 @@ export const useUnifiedLibraryData = () => {
   const demoUnifiedData = useMemo((): UnifiedGameData[] => {
     if (!isDemo || !demoData.gamesList) return [];
     
-    console.log('Transforming demo data to unified format');
+    console.log('🎭 [UnifiedLibraryData] Using demo data');
     
     return demoData.gamesList.map((game, index) => ({
       id: `demo-${game.id}`,
@@ -133,8 +133,7 @@ export const useUnifiedLibraryData = () => {
     const dataToUse = isDemo ? demoUnifiedData : (rawGameData || []);
     
     if (isDemo) {
-      // Return pre-calculated demo stats instead of calculating from limited gamesList
-      console.log('Using pre-calculated demo stats');
+      console.log('📊 [UnifiedLibraryData] Using pre-calculated demo stats');
       
       // Transform demo shelfLife to the expected format
       const shelfLife = demoData.shelfLife?.map(game => ({
@@ -159,6 +158,7 @@ export const useUnifiedLibraryData = () => {
     }
     
     if (!dataToUse.length) {
+      console.log('⚠️ [UnifiedLibraryData] No data available');
       return {
         totalGames: 0,
         unplayedGames: 0,
@@ -228,8 +228,15 @@ export const useUnifiedLibraryData = () => {
       shelfLife,
     };
 
-    console.log('Unified library stats:', result);
-    console.log('Demo mode:', isDemo);
+    console.log('📊 [UnifiedLibraryData] Calculated stats:', {
+      totalGames: result.totalGames,
+      unplayedGames: result.unplayedGames,
+      playedGames: result.playedGames,
+      totalDustScore: result.totalDustScore,
+      totalPlaytimeHours: Math.round(result.totalPlaytime / 60),
+      recentlyPlayedCount: result.recentlyPlayedCount,
+      isDemo
+    });
     
     return result;
   }, [isDemo, demoUnifiedData, rawGameData, demoData]);

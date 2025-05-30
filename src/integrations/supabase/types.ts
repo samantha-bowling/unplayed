@@ -523,6 +523,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      get_clean_game_price: {
+        Args: { p_game_id: number; p_fallback_price_cents?: number }
+        Returns: Json
+      }
       get_dust_score_breakdown: {
         Args: {
           game_id: number
@@ -543,6 +547,10 @@ export type Database = {
       }
       get_user_game_dust_breakdown: {
         Args: { p_user_game_id: string }
+        Returns: Json
+      }
+      get_user_library_stats: {
+        Args: { p_user_id: string }
         Returns: Json
       }
       increment: {
@@ -576,6 +584,10 @@ export type Database = {
       update_leaderboard_dust_rankings: {
         Args: { snapshot_timestamp: string }
         Returns: undefined
+      }
+      validate_and_clean_game_price: {
+        Args: { price_cents: number }
+        Returns: number
       }
     }
     Enums: {

@@ -1,30 +1,30 @@
 
 import React from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { transformToDashboardMetrics } from '@/utils/data-transforms';
 
 interface LibraryStatsSectionProps {
   // Add props as needed
 }
 
 const LibraryStatsSection: React.FC<LibraryStatsSectionProps> = () => {
-  const { stats: unifiedStats } = useUnifiedLibraryData();
+  const { stats: unifiedStats, isLoading } = useUnifiedLibraryData();
   
-  const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
-    unplayedGames: 0,
-    totalGames: 0,
-    dustScore: 0,
-    totalPlaytime: 0,
-    cleanScore: 0,
-    recentlyPlayedCount: 0,
-    playedGames: 0,
-  };
+  if (isLoading) {
+    return (
+      <div className="library-stats-section">
+        <h3>Library Statistics</h3>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="library-stats-section">
       <h3>Library Statistics</h3>
-      <p>Total Games: {dashboardMetrics.totalGames}</p>
-      <p>Unplayed Games: {dashboardMetrics.unplayedGames}</p>
+      <p>Total Games: {unifiedStats?.totalGames || 0}</p>
+      <p>Unplayed Games: {unifiedStats?.unplayedGames || 0}</p>
+      <p>Total Dust Score: {unifiedStats?.totalDustScore || 0}</p>
+      <p>Total Playtime: {Math.round((unifiedStats?.totalPlaytime || 0) / 60)} hours</p>
     </div>
   );
 };
