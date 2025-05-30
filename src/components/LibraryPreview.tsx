@@ -1,22 +1,16 @@
 
 import React, { useState, useMemo } from 'react';
-import { Play, Grid, List, Maximize, Eye, EyeOff, Search, SortAsc, SortDesc, Filter } from 'lucide-react';
+import { Grid, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import SteamLoader from './SteamLoader';
 import GameCard from './GameCard';
-import FloatingIcons from './FloatingIcons';
-import FloatingGameNames from './FloatingGameNames';
-import ZenLayout from '@/layouts/ZenLayout';
 
 interface LibraryPreviewProps {
   zenModeFullScreen?: boolean;
@@ -25,8 +19,6 @@ interface LibraryPreviewProps {
 const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = false }) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { isFullScreenMode } = useFullScreenMode();
-  const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
   const [limit, setLimit] = useState<number>(12);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchFilter, setSearchFilter] = useState<string>('');
@@ -108,11 +100,6 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     }));
   }, [currentPageGames]);
 
-  // Extract game names for zen mode - use current page games only
-  const gameNames = useMemo(() => {
-    return processedGames.map(game => game.name);
-  }, [processedGames]);
-
   const handleMarkAsPlayed = async (userGameId: string) => {
     if (isDemo) {
       console.log('Demo mode: Mark as played:', userGameId);
@@ -163,39 +150,6 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     setCurrentPage(1);
   }, [searchFilter, hideIgnored, onlyUnplayed, limit]);
 
-  if (zenModeFullScreen || viewMode === 'zen') {
-    return (
-      <ZenLayout>
-        <div className="w-full h-full relative">
-          {/* Only show exit button when NOT in full screen mode */}
-          {!isFullScreenMode && (
-            <div className="absolute top-4 left-4 z-10">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="bg-black/50 border-gray-700 hover:bg-black/70"
-              >
-                Exit Zen
-              </Button>
-            </div>
-          )}
-          
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full relative z-10">
-              <SteamLoader message="Loading your library..." size="md" variant="secondary" />
-            </div>
-          ) : (
-            <div className="absolute inset-0 overflow-hidden">
-              <FloatingIcons count={5} />
-              <FloatingGameNames gameNames={gameNames} count={Math.min(8, gameNames.length)} />
-            </div>
-          )}
-        </div>
-      </ZenLayout>
-    );
-  }
-
   return (
     <div className="terminal-container">
       <div className="flex items-center justify-between mb-4">
@@ -222,15 +176,6 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          
-          <ToggleGroup type="single" value={viewMode} onValueChange={value => value && setViewMode(value as 'grid' | 'zen')}>
-            <ToggleGroupItem value="grid" aria-label="Grid View">
-              <Grid className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="zen" aria-label="Zen View">
-              <Eye className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
         </div>
       </div>
 
