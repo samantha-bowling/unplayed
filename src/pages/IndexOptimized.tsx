@@ -13,20 +13,17 @@ import SteamLoader from '@/components/SteamLoader';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import LinkSteamAccount from '@/components/LinkSteamAccount';
+import { LinkSteamAccount } from '@/components/LinkSteamAccount';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import GenreGalaxy from '@/components/GenreGalaxy';
 import RecentPick from '@/components/RecentPick';
-import { useGamePicks } from '@/hooks/use-game-picks';
 
 const IndexOptimized = () => {
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
   const { isFullScreenMode } = useFullScreenMode();
   const { data: unplayedData, isLoading, error } = useUnplayedData();
-  const { recentPick } = useGamePicks();
   const [showSteamLoader, setShowSteamLoader] = useState(false);
-  const [hideSpending, setHideSpending] = useState(false);
 
   // If user is null and we're not in demo mode, show the auth page
   if (!user && !isDemo) {
@@ -98,16 +95,8 @@ const IndexOptimized = () => {
               <DustScoreMeter />
               <UnplayedCounter />
               <CleanScoreMeter />
-              {!hideSpending && (
-                <SpendingMeter
-                  amount={unplayedData?.totalSpent || 0}
-                  isLoading={isLoading}
-                  onHideClick={() => setHideSpending(true)}
-                  isDemo={isDemo}
-                  hasUser={!!user}
-                />
-              )}
-              <RecentPick recentPick={recentPick} isDemo={isDemo} />
+              <SpendingMeter />
+              <RecentPick />
             </div>
           </div>
         </section>
@@ -130,10 +119,7 @@ const IndexOptimized = () => {
               <h2 className="text-3xl font-bold mb-4 text-unplayed-pink font-space">Genre Galaxy</h2>
               <p className="text-gray-300">Explore your gaming universe</p>
             </div>
-            <GenreGalaxy 
-              genres={unplayedData?.genres?.map(genre => ({ genre: genre.name, count: genre.value })) || []}
-              totalGames={unplayedData?.totalGames || 0}
-            />
+            <GenreGalaxy />
           </div>
         </section>
       </div>
