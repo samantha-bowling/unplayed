@@ -83,10 +83,12 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
         {showCleanScore && (
           <>
             <div className="my-4 border-t border-gray-700 w-full"></div>
-            <CleanScoreSimple 
-              score={unplayedData.cleanScore || 0} 
-              tier={unplayedData.cleanTier}
-            />
+            <div className="flex flex-col items-center text-center">
+              <CleanScoreSimple 
+                score={unplayedData.cleanScore || 0} 
+                tier={unplayedData.cleanTier}
+              />
+            </div>
           </>
         )}
 
@@ -94,7 +96,7 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
           <div className="mt-6 flex justify-center">
             <Link
               to="/dust"
-              className="px-4 py-2 bg-unplayed-pink/20 hover:bg-unplayed-pink/30 text-unplayed-pink text-sm rounded-md transition-colors font-medium"
+              className="px-4 py-2 bg-unplayed-pink hover:bg-unplayed-pink/90 text-white text-sm rounded-md transition-colors font-medium"
             >
               View Detailed Report
             </Link>

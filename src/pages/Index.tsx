@@ -1,4 +1,3 @@
-
 // src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -190,7 +189,7 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <SteamLoader message="Loading your profile..." size="md" variant="secondary" />
       </div>
     );
@@ -317,11 +316,11 @@ const Index = () => {
 
   return (
     <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-black">
         <Header />
 
         {/* Hero */}
-        <section className="w-full navbar-offset pb-8 px-4">
+        <section className="w-full navbar-offset pb-8 px-4 bg-black">
           <div className="max-w-7xl mx-auto text-center">
             {renderHeroSection()}
           </div>
@@ -359,7 +358,7 @@ const Index = () => {
         </section>
 
         {/* Picker - Moved before Library */}
-        <section id="picker" className="w-full py-8 px-4">
+        <section id="picker" className="w-full py-8 px-4 bg-black">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-amber">Picker</span>
@@ -382,7 +381,7 @@ const Index = () => {
 
         {/* CTA */}
         {!user && (
-          <section className="w-full py-10 px-4">
+          <section className="w-full py-10 px-4 bg-black">
             <div className="max-w-7xl mx-auto text-center">
               <h2 className="text-3xl font-bold font-space mb-4 text-white">
                 Ready to confront your backlog?
