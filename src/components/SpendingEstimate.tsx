@@ -15,15 +15,16 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
+  // Replace the old hook with the new clean spending data hook
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useCleanSpendingData(true);
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
-  // Use unplayed spending data from enhanced hook
+  // Use clean spending data
   const spendingAmount = spendingData?.totalSpent || 0;
 
-  console.log('SpendingEstimate - Using unplayed spending data:', {
+  console.log('SpendingEstimate - Using clean spending data:', {
     totalSpent: spendingData?.totalSpent,
     confidence: spendingData?.confidence,
     dataQuality: spendingData?.dataQuality,
