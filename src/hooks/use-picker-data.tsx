@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useEffect } from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import useGamePicks from '@/hooks/use-game-picks';
@@ -26,22 +27,30 @@ export const usePickerData = () => {
   // Simplified authentication check - no more demo mode conflicts
   const isAuthenticated = !!user;
 
-  // Transform unified data to gamesList format
+  // Transform unified data to gamesList format with proper typing
   const gamesList = useMemo(() => {
     if (!unifiedData) return [];
     
     return unifiedData.map(game => ({
       id: game.game_id,
       name: game.games.name,
+      image: game.games.image_url || game.games.header_image || '',
       playtimeMinutes: game.playtime_minutes || 0,
-      lastPlayedDate: game.last_played_date,
-      image: game.games.image_url,
-      releaseDate: game.games.release_date,
+      lastPlayed: game.last_played_date,
+      added: game.acquisition_date,
       price: game.games.price_cents ? game.games.price_cents / 100 : 0,
-      dustScore: game.dust_score || 0,
-      addedDate: game.acquisition_date || new Date().toISOString(),
-      genres: game.games.genres || []
-    }));
+      genres: game.games.genres || [],
+      notes: game.notes,
+      hidden: game.hidden || false,
+      releaseDate: game.games.release_date,
+      metacritic: game.games.metacritic_score,
+      categories: game.games.categories || [],
+      completionEstimate: null,
+      mainStoryEstimate: null,
+      averageEstimate: null,
+      steamAppid: null,
+      howLongToBeatId: null,
+    })) as GameListItem[];
   }, [unifiedData]);
   
   // Log data received

@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -36,6 +37,8 @@ export interface PriceRange {
 export interface SpendingData {
   totalSpent: number;
   totalSaved: number | null;
+  totalLibraryValue: number;
+  totalGames: number;
   topSpendingGames: TopSpendingGame[];
   priceDistribution: PriceRange[];
   currency: string;
@@ -117,9 +120,13 @@ export const useSpendingData = () => {
             .sort((a, b) => b.price - a.price)
         : [];
       
+      const totalLibraryValue = gamesList?.reduce((sum, game) => sum + (game.price || 0), 0) || 0;
+      
       return {
         totalSpent: demoData.totalSpent,
         totalSaved: null,
+        totalLibraryValue,
+        totalGames: gamesList?.length || 0,
         topSpendingGames,
         priceDistribution: [],
         currency: 'USD',
@@ -132,6 +139,8 @@ export const useSpendingData = () => {
       return {
         totalSpent: 0,
         totalSaved: null,
+        totalLibraryValue: 0,
+        totalGames: 0,
         topSpendingGames: [],
         priceDistribution: [],
         currency: 'USD',
@@ -146,13 +155,13 @@ export const useSpendingData = () => {
     // Calculate total spent on unplayed games - FIXED: consistent price handling
     let totalSpent = 0;
     let totalOriginalPrice = 0;
+    let totalLibraryValue = 0;
     
     // Track the latest refresh date
     let latestRefresh: Date | null = null;
     
-    // Generate top spending games list
+    // Generate top spending games list and calculate totals
     const topSpendingGames: TopSpendingGame[] = gamesList
-      .filter(game => game.playtimeMinutes === 0)
       .map(game => {
         const priceData = priceMap.get(game.id);
         
@@ -174,8 +183,11 @@ export const useSpendingData = () => {
           : null;
           
         // Add to totals
-        totalSpent += price;
-        if (originalPrice) totalOriginalPrice += originalPrice;
+        totalLibraryValue += price;
+        if (game.playtimeMinutes === 0) {
+          totalSpent += price;
+          if (originalPrice) totalOriginalPrice += originalPrice;
+        }
         
         return {
           id: game.id,
@@ -186,6 +198,11 @@ export const useSpendingData = () => {
           imageUrl: game.image,
           currency: 'USD', // Simplified to USD only
         };
+      })
+      // Filter to only unplayed games for the spending list
+      .filter(game => {
+        const originalGame = gamesList.find(g => g.id === game.id);
+        return originalGame && originalGame.playtimeMinutes === 0;
       })
       // Sort by price (highest first)
       .sort((a, b) => b.price - a.price);
@@ -234,6 +251,8 @@ export const useSpendingData = () => {
     return {
       totalSpent,
       totalSaved,
+      totalLibraryValue,
+      totalGames: gamesList.length,
       topSpendingGames,
       priceDistribution,
       currency: 'USD', // Simplified to USD only

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -6,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, DollarSign, TrendingDown, BarChart3, Info } from "lucide-react";
 import { useEnhancedSpendingData } from "@/hooks/use-spending-data-enhanced";
-import useTotalLibrarySpending from "@/hooks/use-total-library-spending";
+import useSpendingData from "@/hooks/use-spending-data";
 import { DemoModeIndicator } from '@/components/DemoModeIndicator';
 import CurrencyAmount from '@/components/ui/currency-amount';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +20,7 @@ const SpendPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const { user } = useAuth();
   const { data: unplayedSpendingData, isLoading: isUnplayedLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
-  const { data: totalLibraryData, isLoading: isTotalLibraryLoading } = useTotalLibrarySpending();
+  const { data: totalLibraryData, isLoading: isTotalLibraryLoading } = useSpendingData();
 
   const isLoading = isUnplayedLoading || isTotalLibraryLoading;
 
