@@ -1,9 +1,8 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useMemo } from 'react';
-import { optimizedQueryKeys } from './use-query-keys-optimized';
+import { optimizedQueryKeys } from './use-query-keys-optimized.ts';
 
 export interface UnifiedGameData {
   id: string;
