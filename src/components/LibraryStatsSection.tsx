@@ -18,13 +18,21 @@ const LibraryStatsSection: React.FC<LibraryStatsSectionProps> = () => {
     cleanScore: 0,
     recentlyPlayedCount: 0,
     playedGames: 0,
+    dataSource: 'raw_database' as const
   };
+
+  console.log('LibraryStatsSection - Using consistent data source:', {
+    totalGames: dashboardMetrics.totalGames,
+    unplayedGames: dashboardMetrics.unplayedGames,
+    dataSource: dashboardMetrics.dataSource
+  });
 
   return (
     <div className="library-stats-section">
       <h3>Library Statistics</h3>
       <p>Total Games: {dashboardMetrics.totalGames}</p>
       <p>Unplayed Games: {dashboardMetrics.unplayedGames}</p>
+      <p>Data Source: {dashboardMetrics.dataSource}</p>
     </div>
   );
 };

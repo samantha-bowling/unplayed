@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon, Laugh, Smile, Meh, Frown } from 'lucide-react';
+import { InfoIcon, Laugh, Smile, Meh, Frown, Database } from 'lucide-react';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
@@ -27,7 +28,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   const { isDemo: contextIsDemo } = useDemoMode();
   const { user } = useAuth();
 
-  // Memoized base calculations
+  // Memoized base calculations using RAW database statistics
   const calculatedData = useMemo(() => {
     const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
       unplayedGames: 0,
@@ -37,6 +38,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       cleanScore: 0,
       recentlyPlayedCount: 0,
       playedGames: 0,
+      dataSource: 'raw_database' as const
     };
     
     const actualCount = count ?? dashboardMetrics.unplayedGames;
@@ -44,11 +46,26 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     const isDemoMode = isDemo || contextIsDemo;
     
+    // Add validation logging
+    console.log('UnplayedCounter - Data validation:', {
+      actualCount,
+      totalGames,
+      unplayedPercentage,
+      dataSource: dashboardMetrics.dataSource,
+      rawDBStats: unifiedStats ? {
+        totalGamesInDB: unifiedStats.totalGamesInDB,
+        unplayedGamesInDB: unifiedStats.unplayedGamesInDB,
+        metadataCompletion: unifiedStats.metadataCompletionPercentage
+      } : null
+    });
+    
     return {
       actualCount,
       totalGames,
       unplayedPercentage,
-      isDemoMode
+      isDemoMode,
+      dataSource: dashboardMetrics.dataSource,
+      metadataCompletion: dashboardMetrics.metadataCompletionPercentage || 0
     };
   }, [count, unifiedStats, isDemo, contextIsDemo]);
 
@@ -61,7 +78,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
 
   // Memoized tooltip content to prevent recreation
   const tooltipContent = useMemo(() => ({
-    unplayed: "Includes games with 0 recorded minutes of playtime"
+    unplayed: "Games with 0 recorded minutes of playtime (from your actual Steam library)"
   }), []);
 
   // Memoized mood icon and tooltip based on percentage
@@ -103,12 +120,12 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
           <div className="text-2xl font-bold font-vt text-unplayed-mint">
             {animatedCount}
           </div>
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-400 flex items-center gap-1">
             unplayed Games
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button className="ml-1 text-gray-500 hover:text-gray-400">
+                  <button className="text-gray-500 hover:text-gray-400">
                     <InfoIcon size={14} />
                   </button>
                 </TooltipTrigger>
@@ -137,7 +154,21 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   // Render full version
   return (
     <div className={`terminal-container ${calculatedData.isDemoMode ? 'relative' : ''} equal-height-container`}>
-      <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
+      <h3 className="terminal-header text-2xl mb-2 flex items-center gap-2">
+        unplayed Games
+        {calculatedData.dataSource === 'raw_database' && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Database size={16} className="text-green-400" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Using accurate database statistics</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </h3>
 
       <div className="terminal-content flex flex-col justify-center items-center py-6 flex-grow">
         <div className={`text-6xl md:text-7xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
@@ -171,6 +202,14 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
             </Tooltip>
           </TooltipProvider>
         </div>
+
+        {/* Data source indicator for debugging */}
+        {calculatedData.metadataCompletion < 100 && (
+          <div className="mt-4 text-xs text-yellow-400 bg-yellow-400/10 p-2 rounded text-center">
+            Note: {calculatedData.metadataCompletion.toFixed(1)}% of your games have complete metadata. 
+            Total counts reflect your entire Steam library.
+          </div>
+        )}
 
         {demoNote}
       </div>

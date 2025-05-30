@@ -26,7 +26,8 @@ const SpendingEstimate = ({
     totalSpent: spendingData?.totalSpent,
     confidence: spendingData?.confidence,
     dataQuality: spendingData?.dataQuality,
-    finalAmount: spendingAmount
+    finalAmount: spendingAmount,
+    dataSource: 'useCleanSpendingData'
   });
 
   const handleRefresh = async () => {
