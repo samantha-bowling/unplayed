@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { PcCase, TrendingUp, Award, Zap } from 'lucide-react';
+import { PcCase, TrendingUp, Award, Pizza } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts';
@@ -68,12 +69,22 @@ const LibraryGenresTab = () => {
     played: genre.played
   }));
 
-  const pieData = topUnplayedGenres.slice(0, 6).map((genre, index) => ({
+  // Pizza data - top 8 unplayed genres with pizza-themed colors
+  const pizzaColors = [
+    '#dc2626', // Red (tomato sauce)
+    '#ea580c', // Orange (cheese)
+    '#facc15', // Yellow (cheese/corn)
+    '#16a34a', // Green (basil/peppers)
+    '#7c2d12', // Brown (pepperoni/meat)
+    '#a16207', // Gold (cheese)
+    '#dc2626', // Red (more tomato)
+    '#15803d'  // Dark green (herbs)
+  ];
+
+  const pieData = topUnplayedGenres.slice(0, 8).map((genre, index) => ({
     name: genre.genre,
     value: genre.unplayed,
-    color: [
-      '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
-    ][index % 6]
+    color: pizzaColors[index % pizzaColors.length]
   }));
 
   return (
@@ -150,7 +161,7 @@ const LibraryGenresTab = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center space-x-2 cursor-help">
-                    <Zap className="h-5 w-5 text-unplayed-red" />
+                    <Pizza className="h-5 w-5 text-unplayed-red" />
                     <div>
                       <p className="text-2xl font-bold text-white">
                         {mostOwnedGenre?.total || 0}
@@ -212,18 +223,18 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          {/* Unplayed Games by Genre Pie Chart - No hover */}
+          {/* unplayed Pizza */}
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-unplayed-red" />
-                <span>Unplayed Games by Genre</span>
+                <Pizza className="h-5 w-5 text-orange-500" />
+                <span>unplayed Pizza</span>
                 <Tooltip>
                   <TooltipTrigger>
                     <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Distribution of your unplayed games across top genres</p>
+                    <p>Your unplayed games served as pizza slices! Each slice represents a different genre topping.</p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -241,9 +252,17 @@ const LibraryGenresTab = () => {
                       label={({ name, value }) => `${name}: ${value}`}
                     >
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`slice-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
+                    <RechartsTooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1e1e1e', 
+                        borderColor: '#374151',
+                        borderRadius: '0.5rem' 
+                      }}
+                      formatter={(value, name) => [`${value} games`, `${name} slice`]}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -257,7 +276,7 @@ const LibraryGenresTab = () => {
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-unplayed-red" />
+                <Pizza className="h-5 w-5 text-unplayed-red" />
                 <span>Top unplayed Genres</span>
                 <Tooltip>
                   <TooltipTrigger>

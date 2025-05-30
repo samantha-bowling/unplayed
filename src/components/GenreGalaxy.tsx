@@ -56,7 +56,7 @@ const GenreGalaxy = ({ genres, totalGames }: GenreGalaxyProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
-        <div className="relative w-full h-48 bg-gradient-to-br from-indigo-900/20 via-purple-900/20 to-pink-900/20 rounded-lg overflow-hidden">
+        <div className="relative w-full h-64 bg-gradient-to-br from-indigo-900/20 via-purple-900/20 to-pink-900/20 rounded-lg overflow-hidden">
           {/* Background stars for ambiance */}
           <div className="absolute inset-0">
             {Array.from({ length: 15 }).map((_, i) => (
