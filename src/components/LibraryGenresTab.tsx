@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +6,7 @@ import { PcCase, TrendingUp, Award, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts';
+import GenreWordCloud from './GenreWordCloud';
 
 const LibraryGenresTab = () => {
   const { games: libraryGames } = useLibraryData();
@@ -45,17 +45,17 @@ const LibraryGenresTab = () => {
   // Top genres by total games
   const topGenres = genreStats.slice(0, 10);
   
-  // Top unplayed genres
+  // Top unplayed genres - limited to 3
   const topUnplayedGenres = genreStats
     .filter(g => g.unplayed > 0)
     .sort((a, b) => b.unplayed - a.unplayed)
-    .slice(0, 8);
+    .slice(0, 3);
   
-  // Most niche genres (genres with least games)
+  // Most niche genres - limited to 3
   const nicheGenres = genreStats
     .filter(g => g.total >= 2) // At least 2 games to be considered
     .sort((a, b) => a.total - b.total)
-    .slice(0, 6);
+    .slice(0, 3);
   
   // Most owned genre (replaces highest unplayed percentage)
   const mostOwnedGenre = genreStats.length > 0 ? genreStats[0] : null;
@@ -253,18 +253,18 @@ const LibraryGenresTab = () => {
 
         {/* Genre Lists */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Unplayed Genres */}
+          {/* Top unplayed Genres */}
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Zap className="h-5 w-5 text-unplayed-red" />
-                <span>Top Unplayed Genres</span>
+                <span>Top unplayed Genres</span>
                 <Tooltip>
                   <TooltipTrigger>
                     <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Genres with the most unplayed games in your library</p>
+                    <p>Top 3 genres with the most unplayed games in your library</p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -300,7 +300,7 @@ const LibraryGenresTab = () => {
                     <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Genres with the smallest representation in your library</p>
+                    <p>Top 3 genres with the smallest representation in your library</p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -325,6 +325,9 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Genre Word Cloud */}
+        <GenreWordCloud />
       </div>
     </TooltipProvider>
   );

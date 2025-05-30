@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -230,14 +231,14 @@ const LibraryOverview = () => {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Played Games */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-gray-700 flex flex-col h-full">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Star className="h-5 w-5 text-unplayed-amber" />
                 <span>Most Played Games</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex-1 flex flex-col justify-center space-y-4">
               {topPlayedGames.length > 0 ? (
                 topPlayedGames.map((game, index) => {
                   const playtime = game.userGame?.playtime_minutes || 0;
@@ -415,14 +416,14 @@ const LibraryOverview = () => {
           </Card>
 
           {/* Top Genres */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-gray-700 flex flex-col h-full">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Gamepad2 className="h-5 w-5 text-purple-400" />
                 <span>Top Genres</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 flex flex-col justify-center">
               {topGenres.length > 0 ? (
                 <div className="space-y-3">
                   {topGenres.map(([genre, count]) => (
