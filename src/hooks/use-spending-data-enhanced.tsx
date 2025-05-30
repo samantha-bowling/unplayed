@@ -8,7 +8,8 @@ import {
   formatSpendingDisplay,
   type GameWithPrice,
   type GamePriceInfo,
-  type SpendingBreakdown
+  type SpendingBreakdown,
+  type TopSpendingGame
 } from '@/utils/spending-calculations';
 import { validateGamePrice } from '@/utils/price-validation';
 import { callSupabaseFunction } from '@/utils/supabase-functions';
@@ -40,17 +41,6 @@ export interface EnhancedSpendingData {
     rejectedValueText?: string;
   };
   refreshedAt: string;
-}
-
-export interface TopSpendingGame {
-  id: number;
-  title: string;
-  price: number;
-  originalPrice: number | null;
-  discount: number | null;
-  imageUrl: string | null;
-  currency: string;
-  priceDataSource: 'games_table' | 'price_table' | 'estimated';
 }
 
 /**
