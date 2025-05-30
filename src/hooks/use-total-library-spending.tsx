@@ -22,7 +22,7 @@ export const useTotalLibrarySpending = () => {
       };
     }
 
-    if (!unifiedData) {
+    if (!unifiedData?.data) {
       return {
         totalSpent: 0,
         totalGames: 0,
@@ -31,14 +31,14 @@ export const useTotalLibrarySpending = () => {
     }
 
     // Fix the reduce function - correct parameter order: (accumulator, currentValue)
-    const totalSpent = unifiedData.reduce((sum, gameItem) => {
+    const totalSpent = unifiedData.data.reduce((sum, gameItem) => {
       const price = gameItem.games?.price_cents ? gameItem.games.price_cents / 100 : 0;
       return sum + price;
     }, 0); // Initial value of 0
 
     return {
       totalSpent,
-      totalGames: unifiedData.length,
+      totalGames: unifiedData.data.length,
       currency: 'USD'
     };
   }, [isDemo, demoData, unifiedData]);
