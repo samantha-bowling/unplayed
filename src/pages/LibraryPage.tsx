@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -31,8 +32,8 @@ const LibraryPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      {/* Hero section - Using proper header spacing */}
-      <section className="pt-24 flex-grow px-4 py-12 text-center relative overflow-hidden">
+      {/* Hero section - Removed pt-24 to prevent double padding */}
+      <section className="flex-grow px-4 py-12 text-center relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <LibraryHeroSection 
             unplayedCount={unplayedGames}
