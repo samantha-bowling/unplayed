@@ -5,7 +5,7 @@
  */
 
 // Type definitions for query key parameters
-type FilterOptions = {
+export type FilterOptions = {
   search: string;
   hideIgnored: boolean;
   onlyUnplayed: boolean;

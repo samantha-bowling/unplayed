@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { LibraryGame, SortOption } from '@/hooks/use-library-data';
-import { queryKeys } from './use-query-keys';
+import { queryKeys, FilterOptions } from './use-query-keys';
 
 // Constants for pagination
 const DEFAULT_PAGE_SIZE = 24;
@@ -11,13 +11,6 @@ const DEFAULT_PAGE_SIZE = 24;
 type PaginationOptions = {
   page: number;
   pageSize: number;
-};
-
-type FilterOptions = {
-  search: string;
-  hideIgnored: boolean;
-  onlyUnplayed: boolean;
-  selectedGenre: string;
 };
 
 // Return type containing paginated data and pagination controls
@@ -67,7 +60,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
     pageSize: DEFAULT_PAGE_SIZE,
   });
   
-  // Filter state
+  // Filter state - using the shared FilterOptions type
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     hideIgnored: false,
@@ -167,7 +160,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
     enabled: !!user,
   });
   
-  // Main data query - FIXED query key parameters
+  // Main data query - using correct query keys with aligned types
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.paginatedLibraryGames(
       user?.id, 
