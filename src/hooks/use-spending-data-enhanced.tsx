@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +16,7 @@ import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { queryKeys } from './use-query-keys';
+import { usePriceRefreshRateLimit } from './use-price-refresh-rate-limit';
 
 export interface EnhancedSpendingData {
   totalSpent: number;
@@ -56,6 +58,17 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const {
+    canRefresh,
+    isOnCooldown,
+    countdown,
+    createRefreshLog,
+    updateRefreshLog,
+    trackPriceRequest,
+    showRateLimitNotification,
+    formatCountdown
+  } = usePriceRefreshRateLimit();
 
   const queryResult = useQuery({
     queryKey: queryKeys.enhancedSpendingData(user?.id, onlyUnplayed),
@@ -145,9 +158,8 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
         }
       }
 
-      // Transform data to the expected format
       const gamesWithPrices: GameWithPrice[] = userGames
-        ?.filter(ug => ug.games) // Only include games with valid game data
+        ?.filter(ug => ug.games)
         .map(ug => ({
           id: ug.games.id,
           name: ug.games.name,
@@ -178,13 +190,8 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
 
       console.log(`Price validation: ${validatedGames} valid, ${rejectedGames} rejected games (${(totalRejectedValue / 100).toFixed(2)} value rejected)`);
 
-      // Calculate spending breakdown with price validation
       const breakdown = calculateSpending(gamesWithPrices, priceDataMap, onlyUnplayed);
-      
-      // Generate top spending games
       const topSpendingGames = generateTopSpendingGames(gamesWithPrices, priceDataMap, onlyUnplayed, 50);
-      
-      // Format display information
       const displayInfo = formatSpendingDisplay(breakdown);
 
       console.log('Enhanced spending calculation complete:', {
@@ -216,25 +223,79 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   const refreshPrices = async () => {
     if (!user || isDemo) return;
     
+    // Check rate limiting
+    if (!canRefresh) {
+      showRateLimitNotification();
+      return;
+    }
+    
     setIsRefreshing(true);
+    let refreshLog: any = null;
+    
     try {
-      toast.info("Refreshing price data from Steam...", {
-        description: "This may take a moment to update all pricing information."
+      // Get user's game IDs
+      const { data: userGames } = await supabase
+        .from('user_games')
+        .select('game_id')
+        .eq('user_id', user.id);
+      
+      const gameIds = userGames?.map(ug => ug.game_id) || [];
+      
+      if (gameIds.length === 0) {
+        toast.info("No games found to refresh prices for.");
+        return;
+      }
+
+      // Create refresh log
+      refreshLog = await createRefreshLog({
+        refreshType: 'manual',
+        gamesRequested: gameIds.length
       });
 
-      // Call the refresh-game-price function for user's games
-      await callSupabaseFunction('refresh-game-price', {
-        userId: user.id
+      // Track user request for prioritization
+      await trackPriceRequest(gameIds);
+
+      toast.info("Refreshing price data from Steam...", {
+        description: `Processing ${gameIds.length} games. This may take a moment.`
       });
+
+      // Call the refresh-game-price function
+      const response = await callSupabaseFunction('refresh-game-price', {
+        app_ids: gameIds,
+        force_refresh: false // Respect 24-hour cache
+      });
+
+      const updatedCount = response?.updated_count || 0;
+
+      // Update refresh log with success
+      if (refreshLog) {
+        await updateRefreshLog({
+          logId: refreshLog.id,
+          gamesUpdated: updatedCount,
+          status: 'completed'
+        });
+      }
 
       // Refetch the query data
       await queryResult.refetch();
       
       toast.success("Price data refreshed successfully!", {
-        description: "Your spending calculations have been updated with the latest prices."
+        description: `Updated ${updatedCount} game prices with the latest information.`
       });
+
     } catch (error) {
       console.error('Error refreshing prices:', error);
+      
+      // Update refresh log with failure
+      if (refreshLog) {
+        await updateRefreshLog({
+          logId: refreshLog.id,
+          gamesUpdated: 0,
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+      
       toast.error("Failed to refresh prices", {
         description: "Please try again later or check your connection."
       });
@@ -246,7 +307,14 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   return {
     ...queryResult,
     refreshPrices,
-    isRefreshing
+    isRefreshing,
+    
+    // Rate limiting info
+    canRefresh,
+    isOnCooldown,
+    cooldownRemaining: countdown,
+    formatCooldown: () => formatCountdown(countdown),
+    showRateLimitNotification,
   };
 };
 

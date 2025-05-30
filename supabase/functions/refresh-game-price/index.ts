@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -20,6 +19,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 interface RefreshGamePriceRequest {
   app_ids: number | number[];
   force_refresh?: boolean;
+  userId?: string; // For tracking user requests
 }
 
 // Type for Steam API response
@@ -123,7 +123,7 @@ async function processBatch(appIds: number[], forceRefresh: boolean = false) {
     if (priceData) {
       results.push(priceData);
       
-      // Upsert the data into the game_prices table
+      // Upsert the data into the game_prices table with enhanced tracking
       const { error } = await supabase
         .from('game_prices')
         .upsert({
@@ -132,7 +132,11 @@ async function processBatch(appIds: number[], forceRefresh: boolean = false) {
           initial_price_cents: priceData.initial_price_cents,
           final_price_cents: priceData.final_price_cents,
           discount_percent: priceData.discount_percent,
-          last_checked: new Date().toISOString()
+          last_checked: new Date().toISOString(),
+          // Keep existing priority_score and user_request_count
+        }, {
+          onConflict: 'app_id',
+          ignoreDuplicates: false
         });
         
       if (error) {
@@ -180,6 +184,21 @@ serve(async (req) => {
       ? requestData.app_ids
       : [requestData.app_ids];
     
+    console.log(`🔄 Processing price refresh for ${appIds.length} games`);
+    
+    // Track user request if userId provided (for prioritization)
+    if (requestData.userId && appIds.length > 0) {
+      try {
+        console.log(`📊 Tracking user request for prioritization`);
+        await supabase.rpc('track_user_price_request', { 
+          p_app_ids: appIds 
+        });
+      } catch (trackError) {
+        console.warn('Failed to track user request:', trackError);
+        // Don't fail the whole request for tracking errors
+      }
+    }
+    
     // Limit batch size to prevent timeouts
     const batchSize = 10;
     const results = [];
@@ -196,13 +215,17 @@ serve(async (req) => {
       results.push(...batchResults);
     }
     
+    console.log(`✅ Price refresh complete: ${results.length} games updated`);
+    
     // Return the results
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Processed ${results.length} game prices`,
         updated_count: results.length,
-        results: results
+        total_requested: appIds.length,
+        cache_hits: appIds.length - results.length,
+        results: results.slice(0, 5) // Only return first 5 for brevity
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
