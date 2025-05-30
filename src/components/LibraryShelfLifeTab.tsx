@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -278,28 +277,10 @@ const LibraryShelfLifeTab = () => {
           </Card>
         </div>
 
-        {/* Shelf Life Component */}
-        <Card className="bg-black/20 border border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingDown className="h-5 w-5 text-unplayed-red" />
-              <span>Your Shelf Life Games</span>
-              <Tooltip>
-                <TooltipTrigger>
-                  <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Your oldest unplayed games by release date - these might be worth checking out!</p>
-                </TooltipContent>
-              </Tooltip>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="h-[650px]">
-              <ShelfLife />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Shelf Life Component - Remove redundant wrapper */}
+        <div className="h-[650px]">
+          <ShelfLife />
+        </div>
       </div>
     </TooltipProvider>
   );
