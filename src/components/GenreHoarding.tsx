@@ -1,9 +1,9 @@
-
 import React, { useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -22,10 +22,22 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   activeGenre = null
 }: GenreHoardingProps) => {
   const { user } = useAuth();
-  const { data: dashboardData } = useDashboardData();
+  const { stats: unifiedStats } = useUnifiedLibraryData();
 
   // Memoize genre data to prevent unnecessary recalculations
-  const genreData = useMemo(() => dashboardData.genres, [dashboardData.genres]);
+  const genreData = useMemo(() => {
+    const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
+      unplayedGames: 0,
+      totalGames: 0,
+      dustScore: 0,
+      totalPlaytime: 0,
+      cleanScore: 0,
+      recentlyPlayedCount: 0,
+      playedGames: 0,
+      genres: [],
+    };
+    return dashboardMetrics.genres || [];
+  }, [unifiedStats]);
 
   // Memoize most hoarded genre calculation
   const mostHoardedGenre = useMemo(() => {

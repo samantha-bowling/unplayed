@@ -1,6 +1,6 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ShelfLifeHeader from '@/components/shelf-life/ShelfLifeHeader';
 import ShelfLifeDescription from '@/components/shelf-life/ShelfLifeDescription';
@@ -20,11 +20,22 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const [displayCount, setDisplayCount] = useState<string>("10");
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
-  const { data: dashboardData } = useDashboardData();
+  const { stats: unifiedStats } = useUnifiedLibraryData();
 
   // Memoize the shelf life data and slicing - now respects the selected display count
   const { allOldestGames, oldestGames } = useMemo(() => {
-    const allGames = dashboardData.shelfLife || [];
+    const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
+      unplayedGames: 0,
+      totalGames: 0,
+      dustScore: 0,
+      totalPlaytime: 0,
+      cleanScore: 0,
+      recentlyPlayedCount: 0,
+      playedGames: 0,
+      shelfLife: [],
+    };
+    
+    const allGames = dashboardMetrics.shelfLife || [];
     const displayCountNum = parseInt(displayCount);
     const slicedGames = allGames.slice(0, displayCountNum);
     
@@ -32,7 +43,7 @@ const ShelfLife = React.memo<ShelfLifeProps>(({
       allOldestGames: allGames,
       oldestGames: slicedGames
     };
-  }, [dashboardData.shelfLife, displayCount]);
+  }, [unifiedStats, displayCount]);
 
   // Memoized callbacks
   const handleMarkAsPlayed = useCallback((gameId: number, e: React.MouseEvent) => {

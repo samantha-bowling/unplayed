@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useProfile } from '@/hooks/use-profile';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { queryKeys } from '@/hooks/use-query-keys';
@@ -49,18 +49,31 @@ export interface SpendingData {
 export const useSpendingData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: unplayedData, isLoading: isUnplayedLoading } = useUnplayedData();
+  const { data: unifiedData, isLoading: isUnplayedLoading } = useUnifiedLibraryData();
   const { toast } = useToast();
   const [refreshInProgress, setRefreshInProgress] = useState<boolean>(false);
+
+  // Transform unified data to gamesList format
+  const gamesList = useMemo(() => {
+    if (!unifiedData) return [];
+    
+    return unifiedData.map(game => ({
+      id: game.game_id,
+      name: game.games.name,
+      playtimeMinutes: game.playtime_minutes || 0,
+      image: game.games.image_url,
+      price: game.games.price_cents ? game.games.price_cents / 100 : 0,
+    }));
+  }, [unifiedData]);
   
   // Extract game IDs from unplayed data for querying - we need this regardless of demo mode
   const gameIds = useMemo(() => {
-    if (isUnplayedLoading || !unplayedData?.gamesList) return [];
+    if (isUnplayedLoading || !gamesList?.length) return [];
     
-    return unplayedData.gamesList
+    return gamesList
       .filter(game => game.playtimeMinutes === 0)
       .map(game => game.id);
-  }, [unplayedData?.gamesList, isUnplayedLoading]);
+  }, [gamesList, isUnplayedLoading]);
   
   // Query game price data from our database - only if not in demo mode
   const {
@@ -89,8 +102,8 @@ export const useSpendingData = () => {
   const spendingData = useMemo(() => {
     // If in demo mode, return demo data with proper structure
     if (isDemo) {
-      const topSpendingGames = unplayedData?.gamesList
-        ? unplayedData.gamesList
+      const topSpendingGames = gamesList
+        ? gamesList
             .filter(game => game.playtimeMinutes === 0)
             .map(game => ({
               id: game.id,
@@ -115,7 +128,7 @@ export const useSpendingData = () => {
     }
     
     // For real data, calculate from game prices
-    if (!unplayedData?.gamesList || !gamePrices) {
+    if (!gamesList?.length || !gamePrices) {
       return {
         totalSpent: 0,
         totalSaved: null,
@@ -138,7 +151,7 @@ export const useSpendingData = () => {
     let latestRefresh: Date | null = null;
     
     // Generate top spending games list
-    const topSpendingGames: TopSpendingGame[] = unplayedData.gamesList
+    const topSpendingGames: TopSpendingGame[] = gamesList
       .filter(game => game.playtimeMinutes === 0)
       .map(game => {
         const priceData = priceMap.get(game.id);
@@ -226,7 +239,7 @@ export const useSpendingData = () => {
       currency: 'USD', // Simplified to USD only
       refreshedAt: latestRefresh ? latestRefresh.toISOString() : null,
     };
-  }, [isDemo, demoData, unplayedData?.gamesList, gamePrices]);
+  }, [isDemo, demoData, gamesList, gamePrices]);
   
   // Refresh price data by calling our edge function - only for authenticated users
   const refreshPrices = async () => {

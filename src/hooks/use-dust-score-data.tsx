@@ -1,5 +1,7 @@
 
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useMemo } from 'react';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';

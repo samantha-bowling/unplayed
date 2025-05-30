@@ -3,7 +3,8 @@ import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import DustScoreIcon from './dust/DustScoreIcon';
 import {
   Tooltip,
@@ -23,17 +24,29 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
   score,
   isDemo = false
 }: DustScoreProps) => {
-  const { data: unplayedData, isLoading } = useUnplayedData();
+  const { stats: unifiedStats, isLoading } = useUnifiedLibraryData();
   const { user } = useAuth();
   const { isDemo: contextIsDemo } = useDemoMode();
   
-  const actualScore = score ?? unplayedData?.dustScore;
+  const dashboardMetrics = useMemo(() => {
+    return unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
+      unplayedGames: 0,
+      totalGames: 0,
+      dustScore: 0,
+      totalPlaytime: 0,
+      cleanScore: 0,
+      recentlyPlayedCount: 0,
+      playedGames: 0,
+    };
+  }, [unifiedStats]);
+  
+  const actualScore = score ?? dashboardMetrics.dustScore;
   const isDemoMode = isDemo || contextIsDemo;
   
   // Memoized clean score display
   const showCleanScore = useMemo(() => 
-    unplayedData?.cleanScore !== undefined && user,
-    [unplayedData?.cleanScore, user]
+    dashboardMetrics.cleanScore !== undefined && user,
+    [dashboardMetrics.cleanScore, user]
   );
 
   if (isLoading) {
@@ -85,8 +98,8 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
             <div className="my-4 border-t border-gray-700 w-full"></div>
             <div className="flex flex-col items-center text-center">
               <CleanScoreSimple 
-                score={unplayedData.cleanScore || 0} 
-                tier={unplayedData.cleanTier}
+                score={dashboardMetrics.cleanScore || 0} 
+                tier={null}
               />
             </div>
           </>

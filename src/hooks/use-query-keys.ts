@@ -58,6 +58,9 @@ export const queryKeys = {
   enhancedSpendingData: (userId?: string, onlyUnplayed?: boolean) => 
     ['enhancedSpendingData', userId, onlyUnplayed],
   
+  // Dust score data
+  detailedDustData: (userId?: string) => ['detailedDustData', userId],
+  
   // Leaderboard data
   leaderboardData: () => ['leaderboardData'],
   
@@ -74,7 +77,8 @@ export const queryKeys = {
     queryKeys.gamePicks(userId),
     queryKeys.previousPicks(userId),
     queryKeys.spendingData(userId),
-    queryKeys.enhancedSpendingData(userId)
+    queryKeys.enhancedSpendingData(userId),
+    queryKeys.detailedDustData(userId)
   ]
 };
 
