@@ -1,4 +1,3 @@
-
 // src/pages/AuthPage.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -42,7 +41,7 @@ const AuthPage = () => {
       });
       
       queryClient.prefetchQuery({
-        queryKey: queryKeys.unplayedData(user.id),
+        queryKey: queryKeys.unifiedLibrary.data(user.id),
         staleTime: 2 * 60 * 1000, // 2 minutes
       });
       

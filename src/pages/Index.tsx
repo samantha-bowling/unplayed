@@ -70,10 +70,8 @@ const Index = () => {
       
       // Use consolidated cache invalidation
       const keysToInvalidate = [
-        ...utils.invalidateUnplayed(user?.id),
+        ...utils.invalidateUnifiedLibrary(user?.id),
         ...utils.invalidateProfile(user?.id),
-        queryKeys.unifiedLibrary.data(user?.id),
-        queryKeys.detailedDustData(user?.id),
         queryKeys.libraryGames(user?.id),
         queryKeys.paginatedLibraryGames(user?.id),
         queryKeys.libraryGamesCount(user?.id),
