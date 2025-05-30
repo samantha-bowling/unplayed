@@ -10,6 +10,15 @@ import { useProfile } from '@/hooks/use-profile';
 import { queryKeys } from './use-query-keys';
 import { useMemo } from 'react';
 
+// Type guard to ensure data is an array
+const isValidUserGamesArray = (data: any): data is any[] => {
+  return Array.isArray(data) && data.every(game => 
+    game && 
+    typeof game === 'object' && 
+    typeof game.game_id === 'number'
+  );
+};
+
 /**
  * Unified hook that provides unplayed game data with optimized performance
  * Maintains clean separation between demo and live data
@@ -25,7 +34,7 @@ export const useUnplayedData = () => {
     [user, isDemo, profile?.steam_id]
   );
   
-  // Query for real data with optimized key structure
+  // Query for real data with optimized key structure and error handling
   const { 
     data: userGamesData, 
     isLoading: isLoadingUserGames, 
@@ -38,45 +47,59 @@ export const useUnplayedData = () => {
       
       console.log('Fetching unplayed data for user:', user.id);
       
-      const { data: userGamesData, error: userGamesError } = await supabase
-        .from('user_games')
-        .select(`
-          id,
-          game_id,
-          playtime_minutes,
-          hidden,
-          dust_score,
-          last_played_date,
-          acquisition_date,
-          notes,
-          games:game_id(
-            id, 
-            name, 
-            image_url,
-            header_image,
-            release_date,
-            metacritic_score,
-            genres,
-            categories,
-            price_cents
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('dust_score', { ascending: false });
-      
-      if (userGamesError) {
-        console.error('Error fetching user games:', userGamesError);
-        throw userGamesError;
-      }
+      try {
+        const { data: userGamesData, error: userGamesError } = await supabase
+          .from('user_games')
+          .select(`
+            id,
+            game_id,
+            playtime_minutes,
+            hidden,
+            dust_score,
+            last_played_date,
+            acquisition_date,
+            notes,
+            games:game_id(
+              id, 
+              name, 
+              image_url,
+              header_image,
+              release_date,
+              metacritic_score,
+              genres,
+              categories,
+              price_cents
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('dust_score', { ascending: false });
+        
+        if (userGamesError) {
+          console.error('Error fetching user games:', userGamesError);
+          throw userGamesError;
+        }
 
-      console.log(`Found ${userGamesData?.length || 0} games for user ${user.id}`);
-      
-      if (userGamesData && userGamesData.length > 0) {
-        const totalDustScore = userGamesData.reduce((sum, g) => sum + (g.dust_score || 0), 0);
-        console.log('Total dust score:', totalDustScore);
+        // Validate the returned data
+        if (!isValidUserGamesArray(userGamesData)) {
+          console.error('Invalid data structure returned from query:', userGamesData);
+          console.warn('Expected array, received:', typeof userGamesData);
+          // Return empty array instead of throwing to prevent app crash
+          return [];
+        }
+
+        console.log(`Found ${userGamesData.length} games for user ${user.id}`);
+        
+        if (userGamesData.length > 0) {
+          const totalDustScore = userGamesData.reduce((sum, g) => sum + (g.dust_score || 0), 0);
+          console.log('Total dust score:', totalDustScore);
+        }
+        
+        return userGamesData;
+      } catch (error) {
+        console.error('Query function error:', error);
+        // Return empty array instead of throwing to prevent app crash
+        return [];
       }
-      
-      return userGamesData;
     },
     enabled: isQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -84,11 +107,14 @@ export const useUnplayedData = () => {
     refetchInterval: 15 * 60 * 1000, // Increased to 15 minutes
   });
 
-  // Memoize game IDs to prevent unnecessary estimate queries
-  const gameIds = useMemo(() => 
-    userGamesData?.map(game => game.game_id) || [], 
-    [userGamesData]
-  );
+  // Memoize game IDs to prevent unnecessary estimate queries with validation
+  const gameIds = useMemo(() => {
+    if (!isValidUserGamesArray(userGamesData)) {
+      console.warn('userGamesData is not a valid array in gameIds memo:', userGamesData);
+      return [];
+    }
+    return userGamesData.map(game => game.game_id).filter(id => typeof id === 'number');
+  }, [userGamesData]);
 
   // Query for game time estimates with optimized caching
   const {
@@ -99,17 +125,25 @@ export const useUnplayedData = () => {
     queryFn: async () => {
       if (gameIds.length === 0) return {};
       
-      const { data: estimatesData, error: estimatesError } = await supabase
-        .from('game_estimates')
-        .select('*')
-        .in('game_id', gameIds);
-      
-      if (estimatesError) throw estimatesError;
-      
-      // Use Object.fromEntries for better performance
-      return Object.fromEntries(
-        estimatesData?.map(estimate => [estimate.game_id, estimate]) || []
-      );
+      try {
+        const { data: estimatesData, error: estimatesError } = await supabase
+          .from('game_estimates')
+          .select('*')
+          .in('game_id', gameIds);
+        
+        if (estimatesError) {
+          console.error('Error fetching estimates:', estimatesError);
+          return {};
+        }
+        
+        // Use Object.fromEntries for better performance
+        return Object.fromEntries(
+          estimatesData?.map(estimate => [estimate.game_id, estimate]) || []
+        );
+      } catch (error) {
+        console.error('Game estimates query error:', error);
+        return {};
+      }
     },
     enabled: gameIds.length > 0 && !!user && !isDemo,
     staleTime: 30 * 60 * 1000, // 30 minutes for estimates (they change less frequently)
@@ -122,13 +156,15 @@ export const useUnplayedData = () => {
     return normalizeDemoGames(JSON.parse(JSON.stringify(demoData)));
   }, [isDemo, demoData]);
 
-  // Memoize the transformed data to prevent unnecessary recalculations
+  // Memoize the transformed data to prevent unnecessary recalculations with validation
   const transformedData = useMemo(() => {
     if (isDemo && normalizedDemoData) {
       return normalizedDemoData;
     }
     
-    if (!userGamesData) {
+    // Ensure we have valid data before transforming
+    if (!isValidUserGamesArray(userGamesData)) {
+      console.warn('Invalid userGamesData, using demo data fallback:', userGamesData);
       return normalizeDemoGames(demoData);
     }
     
@@ -146,7 +182,7 @@ export const useUnplayedData = () => {
   const error = isDemo ? null : userGamesError;
 
   // Log transformed data for debugging (only in development)
-  if (process.env.NODE_ENV === 'development' && userGamesData) {
+  if (process.env.NODE_ENV === 'development' && isValidUserGamesArray(userGamesData)) {
     console.log('Transformed data gamesList sample:', 
       transformedData.gamesList?.length ? transformedData.gamesList.slice(0, 3) : 'No games in list');
     console.log('Transformed data total dust score:', transformedData.dustScore);
