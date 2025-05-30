@@ -2,7 +2,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BarChart3, TrendingUp, Target, AlertTriangle, CircleDot } from 'lucide-react';
+import { BarChart3, TrendingUp, Target, AlertTriangle, CircleDot, Cherry } from 'lucide-react';
+import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface DustScorePerGameProps {
   avgDustScore: number;
@@ -13,6 +14,14 @@ interface DustScorePerGameProps {
 const DustScorePerGame = ({ avgDustScore, totalGames, unplayedGames }: DustScorePerGameProps) => {
   // Calculate completion rate
   const completionRate = totalGames > 0 ? ((totalGames - unplayedGames) / totalGames) * 100 : 0;
+  const playedGames = totalGames - unplayedGames;
+  const playedPercentage = totalGames > 0 ? (playedGames / totalGames) * 100 : 0;
+  const unplayedPercentage = totalGames > 0 ? (unplayedGames / totalGames) * 100 : 0;
+  
+  // Determine which category is larger for Pac-Man sizing
+  const playedIsLarger = playedGames >= unplayedGames;
+  const largerPercentage = Math.max(playedPercentage, unplayedPercentage);
+  const smallerPercentage = Math.min(playedPercentage, unplayedPercentage);
   
   // Create dust tier breakdown data
   const dustTiers = [
@@ -159,66 +168,61 @@ const DustScorePerGame = ({ avgDustScore, totalGames, unplayedGames }: DustScore
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CircleDot className="h-5 w-5 text-yellow-400" />
-              Pac-Man's Gaming Appetite
+              unplayed Pac-Man
             </CardTitle>
             <CardDescription>
-              Pac-Man devours your game library!
+              Your played vs unplayed library, but Pac-Man
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[250px] flex items-center justify-center relative">
-              {/* Pac-Man Game Visualization */}
-              <div className="relative w-full h-full flex items-center justify-center">
-                {/* Trail dots */}
-                <div className="absolute left-8 top-1/2 transform -translate-y-1/2 flex space-x-4">
-                  <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                  <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-                  <div className="w-2 h-2 bg-white/20 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-                </div>
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative w-full h-full flex items-center justify-center cursor-help">
+                      {/* Trail dots */}
+                      <div className="absolute left-8 top-1/2 transform -translate-y-1/2 flex space-x-4">
+                        <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                        <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+                        <div className="w-2 h-2 bg-white/20 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+                      </div>
 
-                {/* Pac-Man */}
-                <div className="relative">
-                  <div 
-                    className="w-24 h-24 bg-yellow-400 rounded-full relative animate-pulse"
-                    style={{
-                      background: `conic-gradient(from 45deg, transparent 0deg 90deg, #FBBF24 90deg 360deg)`,
-                      animationDuration: '1s'
-                    }}
-                  >
-                    {/* Eye */}
-                    <div className="absolute w-2 h-2 bg-black rounded-full top-4 left-8"></div>
-                    
-                    {/* Mouth animation effect */}
-                    <div className="absolute inset-0 rounded-full border-4 border-yellow-400"></div>
-                  </div>
-                  
-                  {/* Pac-Man glow */}
-                  <div className="absolute inset-0 w-24 h-24 bg-yellow-400/30 rounded-full blur-sm"></div>
-                </div>
+                      {/* Pac-Man */}
+                      <div className="relative">
+                        <div 
+                          className="w-40 h-40 bg-yellow-400 rounded-full relative animate-pulse"
+                          style={{
+                            background: `conic-gradient(from 45deg, transparent 0deg ${smallerPercentage * 3.6}deg, #FBBF24 ${smallerPercentage * 3.6}deg 360deg)`,
+                            animationDuration: '1s'
+                          }}
+                        >
+                          {/* Eye */}
+                          <div className="absolute w-3 h-3 bg-black rounded-full top-6 left-14"></div>
+                          
+                          {/* Mouth animation effect */}
+                          <div className="absolute inset-0 rounded-full border-4 border-yellow-400"></div>
+                        </div>
+                        
+                        {/* Pac-Man glow */}
+                        <div className="absolute inset-0 w-40 h-40 bg-yellow-400/30 rounded-full blur-sm"></div>
+                      </div>
 
-                {/* Dot to be eaten */}
-                <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                  <div className="w-4 h-4 bg-red-400 rounded-full animate-bounce shadow-lg shadow-red-400/50"></div>
-                  <div className="absolute inset-0 w-4 h-4 bg-red-400/30 rounded-full blur-sm"></div>
-                </div>
-
-                {/* Game statistics overlay */}
-                <div className="absolute bottom-4 left-0 right-0 text-center space-y-2">
-                  <div className="flex justify-around text-sm">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-400">{totalGames - unplayedGames}</div>
-                      <div className="text-xs text-gray-400">Games Devoured</div>
+                      {/* Cherry to be eaten */}
+                      <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                        <Cherry className="w-6 h-6 text-red-400 animate-bounce" />
+                        <div className="absolute inset-0 w-6 h-6 bg-red-400/30 rounded-full blur-sm"></div>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-400">{unplayedGames}</div>
-                      <div className="text-xs text-gray-400">Dots Remaining</div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-center">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Library Breakdown</p>
+                      <p className="text-xs">Played: {playedPercentage.toFixed(1)}% ({playedGames} games)</p>
+                      <p className="text-xs">Unplayed: {unplayedPercentage.toFixed(1)}% ({unplayedGames} games)</p>
                     </div>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    Pac-Man has eaten {completionRate.toFixed(1)}% of your library!
-                  </div>
-                </div>
-              </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
             </div>
           </CardContent>
         </Card>
