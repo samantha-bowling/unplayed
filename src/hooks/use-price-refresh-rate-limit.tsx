@@ -37,7 +37,7 @@ export const usePriceRefreshRateLimit = () => {
         .rpc('can_user_refresh_prices', { p_user_id: user.id });
       
       if (error) throw error;
-      return data;
+      return data as RefreshStatus;
     },
     enabled: !!user,
     refetchInterval: countdown > 0 ? 1000 : false, // Refetch every second when on cooldown
@@ -57,7 +57,7 @@ export const usePriceRefreshRateLimit = () => {
         .limit(10);
       
       if (error) throw error;
-      return data;
+      return data as RefreshLog[];
     },
     enabled: !!user,
   });
@@ -76,7 +76,7 @@ export const usePriceRefreshRateLimit = () => {
           user_id: user.id,
           refresh_type: params.refreshType,
           games_requested: params.gamesRequested,
-          status: 'pending'
+          status: 'pending' as const
         })
         .select()
         .single();

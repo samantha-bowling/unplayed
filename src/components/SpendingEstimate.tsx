@@ -76,14 +76,9 @@ const SpendingEstimate = ({
       <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
           <SpendingMeter
-            amount={spendingAmount}
-            currency={'USD'}
-            isLoading={dataLoading || authLoading}
-            showDetailsLink={showMoreDetailsLink}
-            onHideClick={() => setIsVisible(false)}
-            totalSaved={spendingData?.totalSaved || null}
+            onlyUnplayed={true}
+            showRefreshButton={false}
             isDemo={isDemo}
-            hasUser={!!user}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
