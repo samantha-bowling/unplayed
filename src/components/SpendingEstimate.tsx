@@ -22,14 +22,14 @@ const SpendingEstimate = ({
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
-  // Use amount from props if provided, otherwise use enhanced spending data (unplayed only)
+  // FIXED: Always use unplayed spending data from enhanced hook
   const spendingAmount = amount !== undefined ? amount : spendingData.totalSpent;
 
-  console.log('SpendingEstimate - Enhanced data:', {
+  console.log('SpendingEstimate - Using unplayed spending data:', {
     totalSpent: spendingData.totalSpent,
     confidence: spendingData.confidence,
     dataQuality: spendingData.dataQuality,
-    usingAmount: spendingAmount
+    finalAmount: spendingAmount
   });
 
   const handleRefresh = async () => {
@@ -45,21 +45,10 @@ const SpendingEstimate = ({
     <div className="terminal-container equal-height-container">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="terminal-header text-2xl">Spending Estimate</h3>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p className="text-sm text-gray-400 cursor-help underline decoration-dotted">
-                  All prices shown in USD
-                </p>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>
-                  Prices are converted to USD for consistency. Original Steam store prices may vary by region.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <h3 className="terminal-header text-2xl">Unplayed Games Value</h3>
+          <p className="text-sm text-gray-400">
+            How much your unplayed games cost
+          </p>
         </div>
         {showRefresh && (
           <TooltipProvider>
@@ -101,7 +90,7 @@ const SpendingEstimate = ({
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-gray-300 mb-6">
-              Do you really want to see how much money you've spent on games you've never played?
+              Ready to see how much your unplayed games are worth?
             </p>
             
             <button 
@@ -109,7 +98,7 @@ const SpendingEstimate = ({
               className="btn-primary"
               disabled={dataLoading || authLoading}
             >
-              {dataLoading || authLoading ? 'Loading...' : 'Show Me The Damage'}
+              {dataLoading || authLoading ? 'Loading...' : 'Show Me The Value'}
             </button>
           </div>
         )}

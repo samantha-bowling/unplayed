@@ -2,15 +2,16 @@
 import React, { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LibraryTabbedSection from "@/components/LibraryTabbedSection";
 import LibraryHeroSection from "@/components/LibraryHeroSection";
 import LibraryOverview from "@/components/LibraryOverview";
+import LibraryGamesTab from "@/components/LibraryGamesTab";
+import LibraryGenresTab from "@/components/LibraryGenresTab";
+import LibraryShelfLifeTab from "@/components/LibraryShelfLifeTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLibraryData } from "@/hooks/use-library-data";
 
 const LibraryPage = () => {
   const { games: libraryGames, markAsPlayed } = useLibraryData();
-  const [activeGenre, setActiveGenre] = useState<string | null>(null);
 
   // Calculate stats from library data
   const totalGames = libraryGames.length;
@@ -18,15 +19,6 @@ const LibraryPage = () => {
     const playtime = game.userGame?.playtime_minutes || 0;
     return playtime === 0;
   }).length;
-
-  const handleGenreSelect = (genre: string) => {
-    setActiveGenre(genre);
-  };
-
-  const handleJumpToGame = (gameId: number) => {
-    // Implementation for jumping to a specific game
-    console.log('Jump to game:', gameId);
-  };
 
   const handleMarkAsPlayed = async (gameId: number) => {
     // Find the user game record and mark as played
@@ -48,7 +40,7 @@ const LibraryPage = () => {
           />
           
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 bg-black/40 border border-unplayed-mint/20">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
               <TabsTrigger 
                 value="overview"
                 className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
@@ -62,10 +54,16 @@ const LibraryPage = () => {
                 Games
               </TabsTrigger>
               <TabsTrigger 
-                value="insights"
+                value="genres"
                 className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
               >
-                Insights
+                Genres
+              </TabsTrigger>
+              <TabsTrigger 
+                value="shelf-life"
+                className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
+              >
+                Shelf Life
               </TabsTrigger>
             </TabsList>
             
@@ -74,21 +72,15 @@ const LibraryPage = () => {
             </TabsContent>
             
             <TabsContent value="games" className="space-y-4">
-              <LibraryTabbedSection 
-                totalGames={totalGames}
-                unplayedGames={unplayedGames}
-                activeGenre={activeGenre}
-                onGenreSelect={handleGenreSelect}
-                onJumpToGame={handleJumpToGame}
-                onMarkAsPlayed={handleMarkAsPlayed}
-              />
+              <LibraryGamesTab />
             </TabsContent>
             
-            <TabsContent value="insights" className="space-y-4">
-              <div className="text-center py-12">
-                <h3 className="text-xl font-semibold text-white mb-2">Advanced Insights</h3>
-                <p className="text-gray-400">Coming soon: Advanced analytics and personalized recommendations</p>
-              </div>
+            <TabsContent value="genres" className="space-y-4">
+              <LibraryGenresTab />
+            </TabsContent>
+            
+            <TabsContent value="shelf-life" className="space-y-4">
+              <LibraryShelfLifeTab />
             </TabsContent>
           </Tabs>
         </div>

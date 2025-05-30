@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -386,8 +385,7 @@ const LibraryPreview = ({
                   image = game.image || '/placeholder.svg';
                 } else {
                   // For live data, use the enhanced image utility with the full game object
-                  // Pass the entire game object which may have nested games data
-                  image = getBestGameImageFromDbData(game, gameId);
+                  image = getBestGameImageFromDbData(game, gameId) || '/placeholder.svg';
                 }
                 
                 console.log('Grid game image processing:', { 
@@ -409,7 +407,7 @@ const LibraryPreview = ({
                   >
                     <div className="aspect-[460/215] w-full">
                       <img 
-                        src={image || '/placeholder.svg'} 
+                        src={image} 
                         alt={title} 
                         className="w-full h-full object-cover" 
                         loading="lazy"
