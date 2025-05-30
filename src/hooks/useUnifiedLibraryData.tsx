@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +34,7 @@ export interface UnifiedLibraryStats {
   totalDustScore: number;
   totalPlaytime: number;
   recentlyPlayedCount: number;
+  shelfLife?: any[];
 }
 
 /**
@@ -105,6 +107,7 @@ export const useUnifiedLibraryData = () => {
         totalDustScore: 0,
         totalPlaytime: 0,
         recentlyPlayedCount: 0,
+        shelfLife: [],
       };
     }
 
@@ -137,6 +140,25 @@ export const useUnifiedLibraryData = () => {
       return lastPlayedDate >= thirtyDaysAgo;
     }).length;
 
+    // Calculate shelf life - get oldest unplayed games by RELEASE DATE
+    const unplayedGamesList = unplayedGames.filter(game => game.games?.release_date);
+    const shelfLife = unplayedGamesList
+      .sort((a, b) => {
+        const dateA = new Date(a.games!.release_date!).getTime();
+        const dateB = new Date(b.games!.release_date!).getTime();
+        return dateA - dateB;
+      })
+      .slice(0, 50)
+      .map(game => ({
+        id: game.game_id,
+        name: game.games!.name,
+        image: game.games!.image_url || game.games!.header_image,
+        addedDate: game.acquisition_date,
+        releaseDate: game.games!.release_date,
+        price: game.games!.price_cents ? game.games!.price_cents / 100 : 0,
+        genres: game.games!.genres || []
+      }));
+
     const result = {
       totalGames: validGames.length,
       unplayedGames: unplayedGames.length,
@@ -144,6 +166,7 @@ export const useUnifiedLibraryData = () => {
       totalDustScore,
       totalPlaytime,
       recentlyPlayedCount,
+      shelfLife,
     };
 
     console.log('Unified library stats:', result);

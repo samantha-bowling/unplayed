@@ -128,5 +128,19 @@ export const transformToDashboardMetrics = (stats: UnifiedLibraryStats) => {
     cleanScore,
     recentlyPlayedCount: stats.recentlyPlayedCount,
     playedGames: stats.playedGames,
+    shelfLife: stats.shelfLife || [],
+  };
+};
+
+/**
+ * Transform unified data to include genres for GenreHoarding
+ */
+export const transformWithGenres = (unifiedData: UnifiedGameData[]) => {
+  // Process genres using existing logic
+  const genreCounts = countGenres(unifiedData.map(game => ({ games: game.games })));
+  const genresArray = processGenres(genreCounts);
+
+  return {
+    genres: genresArray,
   };
 };

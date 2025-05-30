@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import useDustScoreData from '@/hooks/use-dust-score-data';
 import {
   Tooltip,
@@ -21,11 +22,20 @@ const CleanScoreMeter = ({
   score,
   isDemo = false
 }: CleanScoreProps) => {
-  const {
-    data
-  } = useDustScoreData();
+  const { stats: unifiedStats } = useUnifiedLibraryData();
+  const { data } = useDustScoreData();
 
-  const actualScore = score ?? data.cleanScore ?? 0;
+  const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
+    unplayedGames: 0,
+    totalGames: 0,
+    dustScore: 0,
+    totalPlaytime: 0,
+    cleanScore: 0,
+    recentlyPlayedCount: 0,
+    playedGames: 0,
+  };
+
+  const actualScore = score ?? dashboardMetrics.cleanScore ?? 0;
   const cleanTier = data.cleanTier;
   const [animatedScore, setAnimatedScore] = useState(0);
   const { user } = useAuth();

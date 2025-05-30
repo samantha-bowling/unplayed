@@ -1,7 +1,7 @@
 
 import { useMemo } from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { transformToDashboardMetrics } from '@/utils/data-transforms';
+import { transformToDashboardMetrics, transformToUnplayedData } from '@/utils/data-transforms';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -43,11 +43,18 @@ const useDustScoreData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
   const { 
-    data: basicData, 
+    data: unifiedData, 
+    stats: unifiedStats, 
     isLoading: isBasicDataLoading, 
     error: basicDataError,
     refetch: refetchBasicData 
-  } = useUnplayedData();
+  } = useUnifiedLibraryData();
+
+  // Transform unified data to basic format
+  const basicData = useMemo(() => {
+    if (!unifiedData || !unifiedStats) return null;
+    return transformToUnplayedData(unifiedData, unifiedStats);
+  }, [unifiedData, unifiedStats]);
 
   const { 
     data: detailedDustData, 
