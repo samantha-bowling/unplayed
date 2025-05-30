@@ -1,4 +1,5 @@
 
+
 export const queryKeys = {
   auth: {
     profile: () => ['auth', 'profile'] as const,
@@ -39,6 +40,13 @@ export const queryKeys = {
     sortDirection?: string
   ) => 
     ['paginated-library-games', userId, page, pageSize, filters, sortBy, sortDirection] as const,
+
+  // Add missing query keys that Index.tsx expects
+  libraryGames: (userId?: string) => ['library-games', userId] as const,
+  
+  pickerGames: (userId?: string) => ['picker-games', userId] as const,
+  
+  spendingData: (userId?: string) => ['spending-data', userId] as const,
 } as const;
 
 // Export FilterOptions type that matches actual usage in use-paginated-library.tsx
@@ -69,7 +77,19 @@ export const useCacheManagement = () => {
     utils: {
       invalidateAll: () => {
         console.log('Invalidating all caches');
-      }
+      },
+      invalidateUnifiedLibrary: (userId?: string) => [
+        queryKeys.unifiedLibrary.data(userId),
+        queryKeys.library.data(userId),
+        queryKeys.libraryGames(userId),
+        queryKeys.libraryGamesCount(userId),
+        queryKeys.paginatedLibraryGames(userId),
+      ],
+      invalidateProfile: (userId?: string) => [
+        queryKeys.profile(userId),
+        queryKeys.auth.profile(),
+      ]
     }
   };
 };
+
