@@ -25,7 +25,7 @@ interface LibraryPreviewProps {
 const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = false }) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
+  const { isFullScreenMode } = useFullScreenMode();
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
   const [limit, setLimit] = useState<number>(12);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -167,40 +167,22 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     return (
       <ZenLayout>
         <div className="w-full h-full relative">
-          {/* Only show header and controls when NOT in full screen mode */}
+          {/* Only show exit button when NOT in full screen mode */}
           {!isFullScreenMode && (
-            <div className="flex justify-between items-center mb-6 relative z-10">
-              <h2 className="text-2xl font-bold text-white">Zen Mode - Library</h2>
-              <div className="flex gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={toggleFullScreenMode}
-                      >
-                        <Maximize className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Toggle Full Screen Mode</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  Exit Zen
-                </Button>
-              </div>
+            <div className="absolute top-4 left-4 z-10">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="bg-black/50 border-gray-700 hover:bg-black/70"
+              >
+                Exit Zen
+              </Button>
             </div>
           )}
           
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 relative z-10">
+            <div className="flex items-center justify-center h-full relative z-10">
               <SteamLoader message="Loading your library..." size="md" variant="secondary" />
             </div>
           ) : (
