@@ -1,8 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { BarChart3, TrendingUp, Target, AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart3, TrendingUp, Target, AlertTriangle, CircleDot } from 'lucide-react';
 
 interface DustScorePerGameProps {
   avgDustScore: number;
@@ -20,12 +20,6 @@ const DustScorePerGame = ({ avgDustScore, totalGames, unplayedGames }: DustScore
     { name: 'Medium Dust (26-50)', range: [26, 50], color: '#60a5fa', games: Math.floor(totalGames * 0.4) },
     { name: 'High Dust (51-75)', range: [51, 75], color: '#f59e0b', games: Math.floor(totalGames * 0.2) },
     { name: 'Critical Dust (76-100)', range: [76, 100], color: '#f87171', games: Math.floor(totalGames * 0.1) }
-  ];
-
-  // Library health metrics
-  const libraryHealthData = [
-    { name: 'Played Games', value: totalGames - unplayedGames, color: '#4ade80' },
-    { name: 'Unplayed Games', value: unplayedGames, color: '#f87171' }
   ];
 
   // Dust distribution chart data
@@ -163,36 +157,69 @@ const DustScorePerGame = ({ avgDustScore, totalGames, unplayedGames }: DustScore
 
         <Card className="terminal-container">
           <CardHeader>
-            <CardTitle>Library Composition</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CircleDot className="h-5 w-5 text-yellow-400" />
+              Pac-Man's Gaming Appetite
+            </CardTitle>
             <CardDescription>
-              Breakdown of played vs unplayed games
+              Pac-Man devours your game library!
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={libraryHealthData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
-                >
-                  {libraryHealthData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1F2937', 
-                    border: '1px solid #374151',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="h-[250px] flex items-center justify-center relative">
+              {/* Pac-Man Game Visualization */}
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* Trail dots */}
+                <div className="absolute left-8 top-1/2 transform -translate-y-1/2 flex space-x-4">
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                  <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+                  <div className="w-2 h-2 bg-white/20 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+                </div>
+
+                {/* Pac-Man */}
+                <div className="relative">
+                  <div 
+                    className="w-24 h-24 bg-yellow-400 rounded-full relative animate-pulse"
+                    style={{
+                      background: `conic-gradient(from 45deg, transparent 0deg 90deg, #FBBF24 90deg 360deg)`,
+                      animationDuration: '1s'
+                    }}
+                  >
+                    {/* Eye */}
+                    <div className="absolute w-2 h-2 bg-black rounded-full top-4 left-8"></div>
+                    
+                    {/* Mouth animation effect */}
+                    <div className="absolute inset-0 rounded-full border-4 border-yellow-400"></div>
+                  </div>
+                  
+                  {/* Pac-Man glow */}
+                  <div className="absolute inset-0 w-24 h-24 bg-yellow-400/30 rounded-full blur-sm"></div>
+                </div>
+
+                {/* Dot to be eaten */}
+                <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                  <div className="w-4 h-4 bg-red-400 rounded-full animate-bounce shadow-lg shadow-red-400/50"></div>
+                  <div className="absolute inset-0 w-4 h-4 bg-red-400/30 rounded-full blur-sm"></div>
+                </div>
+
+                {/* Game statistics overlay */}
+                <div className="absolute bottom-4 left-0 right-0 text-center space-y-2">
+                  <div className="flex justify-around text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-400">{totalGames - unplayedGames}</div>
+                      <div className="text-xs text-gray-400">Games Devoured</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-400">{unplayedGames}</div>
+                      <div className="text-xs text-gray-400">Dots Remaining</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Pac-Man has eaten {completionRate.toFixed(1)}% of your library!
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
