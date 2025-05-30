@@ -141,12 +141,7 @@ const LibraryContent: React.FC<LibraryContentProps> = ({
             />
           )
         ) : (
-          <LibraryPreview
-            viewMode="zen"
-            onViewModeChange={updateViewMode}
-            games={games}
-            isLoading={isLoading}
-          />
+          <LibraryPreview />
         )}
       </div>
 

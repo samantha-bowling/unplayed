@@ -11,11 +11,13 @@ export interface DashboardData {
   totalGames: number;
   dustScore: number;
   totalSpent: number;
-  unplayedSpent: number; // This is the key field for unplayed spending
+  unplayedSpent: number;
   potentialGameplayHours: number;
   cleanScore: number;
   recentlyPlayedCount: number;
-  totalPlaytime: number; // Add totalPlaytime to interface
+  totalPlaytime: number;
+  genres: Array<{ name: string; value: number; color: string }>;
+  shelfLife: Array<any>;
 }
 
 export const useDashboardData = () => {
@@ -25,26 +27,27 @@ export const useDashboardData = () => {
   const { data: spendingData, isLoading: spendingLoading } = useEnhancedSpendingData();
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeys.dashboardData(user?.id),
+    queryKey: queryKeys.unplayedData(user?.id),
     queryFn: async (): Promise<DashboardData> => {
-      // In demo mode, return demo data
+      // In demo mode, return demo data with all required fields
       if (isDemo) {
         return {
           unplayedGames: demoData.unplayedGames,
           totalGames: demoData.totalGames,
           dustScore: demoData.dustScore,
           totalSpent: demoData.totalSpent,
-          unplayedSpent: demoData.totalSpent, // Use same value for demo
+          unplayedSpent: demoData.totalSpent,
           potentialGameplayHours: demoData.potentialGameplayHours,
           cleanScore: demoData.cleanScore,
           recentlyPlayedCount: demoData.recentlyPlayedCount,
-          totalPlaytime: demoData.totalPlaytime || 0, // Add totalPlaytime
+          totalPlaytime: demoData.totalPlaytime || 0,
+          genres: demoData.genres || [],
+          shelfLife: demoData.shelfLife || [],
         };
       }
 
       // For authenticated users, combine unplayed data with enhanced spending data
       if (!unplayedData || !spendingData) {
-        // Return default values if data is not ready
         return {
           unplayedGames: 0,
           totalGames: 0,
@@ -54,7 +57,9 @@ export const useDashboardData = () => {
           potentialGameplayHours: 0,
           cleanScore: 0,
           recentlyPlayedCount: 0,
-          totalPlaytime: 0, // Add totalPlaytime
+          totalPlaytime: 0,
+          genres: [],
+          shelfLife: [],
         };
       }
 
@@ -70,12 +75,14 @@ export const useDashboardData = () => {
         unplayedGames: unplayedData.unplayedGames,
         totalGames: unplayedData.totalGames,
         dustScore: unplayedData.dustScore,
-        totalSpent: unplayedData.totalSpent, // Total library value
-        unplayedSpent: spendingData.totalSpent, // Enhanced calculation for unplayed only
+        totalSpent: unplayedData.totalSpent,
+        unplayedSpent: spendingData.totalSpent,
         potentialGameplayHours: unplayedData.potentialGameplayHours,
         cleanScore: unplayedData.cleanScore,
         recentlyPlayedCount: unplayedData.recentlyPlayedCount,
-        totalPlaytime: unplayedData.totalPlaytime, // Include totalPlaytime from unplayed data
+        totalPlaytime: unplayedData.totalPlaytime,
+        genres: unplayedData.genres || [],
+        shelfLife: unplayedData.shelfLife || [],
       };
     },
     enabled: isDemo || (!!user && !unplayedLoading && !spendingLoading),
@@ -95,7 +102,9 @@ export const useDashboardData = () => {
       potentialGameplayHours: 0,
       cleanScore: 0,
       recentlyPlayedCount: 0,
-      totalPlaytime: 0, // Add totalPlaytime to fallback
+      totalPlaytime: 0,
+      genres: [],
+      shelfLife: [],
     },
     isLoading: isLoading || unplayedLoading || spendingLoading,
     error,

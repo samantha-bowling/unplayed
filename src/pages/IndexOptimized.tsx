@@ -354,7 +354,7 @@ const IndexOptimized = () => {
               <div className="dashboard-grid">
                 <UnplayedCounter count={dashboardData.unplayedGames} />
                 <DustScoreMeter score={dashboardData.dustScore} />
-                <SpendingEstimate amount={dashboardData.totalSpent} />
+                <SpendingEstimate />
               </div>
               <div className="mt-4">
                 <GenreHoarding />

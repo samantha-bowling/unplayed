@@ -32,11 +32,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [limit, setLimit] = useState<number>(12);
 
-  const {
-    data: libraryData,
-    isLoading,
-    error
-  } = useLibraryData({
+  const libraryDataResult = useLibraryData({
     search: searchFilter,
     hideIgnored,
     onlyUnplayed,
@@ -45,15 +41,21 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     limit: viewMode === 'zen' ? 100 : limit
   });
 
+  const {
+    games: libraryGames,
+    isLoading,
+    error
+  } = libraryDataResult;
+
   // Memoize filtered and processed games for performance
   const processedGames = useMemo(() => {
-    if (!libraryData?.games) return [];
+    if (!libraryGames) return [];
     
-    return libraryData.games.map(game => ({
+    return libraryGames.map(game => ({
       ...game,
       imageUrl: getBestGameImageFromDbData(game, game.id)
     }));
-  }, [libraryData?.games]);
+  }, [libraryGames]);
 
   const handleMarkAsPlayed = async (userGameId: string) => {
     // Implementation for marking as played
@@ -159,7 +161,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             <Tooltip>
               <TooltipTrigger asChild>
                 <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
-                  <SelectTrigger className="w-24">
+                  <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -292,10 +294,10 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
               ))}
             </div>
             
-            {libraryData?.totalCount && libraryData.totalCount > limit && (
+            {libraryDataResult.totalCount && libraryDataResult.totalCount > limit && (
               <div className="mt-6 text-center">
                 <p className="text-gray-400 text-sm mb-3">
-                  Showing {processedGames.length} of {libraryData.totalCount} games
+                  Showing {processedGames.length} of {libraryDataResult.totalCount} games
                 </p>
                 <Button
                   variant="outline"
