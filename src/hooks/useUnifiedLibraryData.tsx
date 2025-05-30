@@ -132,6 +132,32 @@ export const useUnifiedLibraryData = () => {
   const stats = useMemo((): UnifiedLibraryStats => {
     const dataToUse = isDemo ? demoUnifiedData : (rawGameData || []);
     
+    if (isDemo) {
+      // Return pre-calculated demo stats instead of calculating from limited gamesList
+      console.log('Using pre-calculated demo stats');
+      
+      // Transform demo shelfLife to the expected format
+      const shelfLife = demoData.shelfLife?.map(game => ({
+        id: game.id,
+        name: game.name,
+        image: game.image,
+        addedDate: game.addedDate,
+        releaseDate: game.releaseDate,
+        price: 0, // Demo data doesn't have prices in shelf life
+        genres: []
+      })) || [];
+
+      return {
+        totalGames: demoData.totalGames,
+        unplayedGames: demoData.unplayedGames,
+        playedGames: demoData.totalGames - demoData.unplayedGames,
+        totalDustScore: demoData.dustScore,
+        totalPlaytime: Math.round(demoData.totalPlaytime * 60), // Convert hours to minutes
+        recentlyPlayedCount: demoData.recentlyPlayedCount || 5,
+        shelfLife,
+      };
+    }
+    
     if (!dataToUse.length) {
       return {
         totalGames: 0,
@@ -173,38 +199,24 @@ export const useUnifiedLibraryData = () => {
       return lastPlayedDate >= thirtyDaysAgo;
     }).length;
 
-    // Calculate shelf life - for demo mode, use the existing demo shelf life data
-    let shelfLife;
-    if (isDemo && demoData.shelfLife) {
-      shelfLife = demoData.shelfLife.map(game => ({
-        id: game.id,
-        name: game.name,
-        image: game.image,
-        addedDate: game.addedDate,
-        releaseDate: game.releaseDate,
-        price: 0, // Demo data doesn't have prices in shelf life
-        genres: []
+    // Calculate shelf life for real data - get oldest unplayed games by RELEASE DATE
+    const unplayedGamesList = unplayedGames.filter(game => game.games?.release_date);
+    const shelfLife = unplayedGamesList
+      .sort((a, b) => {
+        const dateA = new Date(a.games!.release_date!).getTime();
+        const dateB = new Date(b.games!.release_date!).getTime();
+        return dateA - dateB;
+      })
+      .slice(0, 50)
+      .map(game => ({
+        id: game.game_id,
+        name: game.games!.name,
+        image: game.games!.image_url || game.games!.header_image,
+        addedDate: game.acquisition_date,
+        releaseDate: game.games!.release_date,
+        price: game.games!.price_cents ? game.games!.price_cents / 100 : 0,
+        genres: game.games!.genres || []
       }));
-    } else {
-      // Calculate shelf life for real data - get oldest unplayed games by RELEASE DATE
-      const unplayedGamesList = unplayedGames.filter(game => game.games?.release_date);
-      shelfLife = unplayedGamesList
-        .sort((a, b) => {
-          const dateA = new Date(a.games!.release_date!).getTime();
-          const dateB = new Date(b.games!.release_date!).getTime();
-          return dateA - dateB;
-        })
-        .slice(0, 50)
-        .map(game => ({
-          id: game.game_id,
-          name: game.games!.name,
-          image: game.games!.image_url || game.games!.header_image,
-          addedDate: game.acquisition_date,
-          releaseDate: game.games!.release_date,
-          price: game.games!.price_cents ? game.games!.price_cents / 100 : 0,
-          genres: game.games!.genres || []
-        }));
-    }
 
     const result = {
       totalGames: validGames.length,
