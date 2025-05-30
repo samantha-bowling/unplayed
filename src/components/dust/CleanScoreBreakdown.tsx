@@ -1,3 +1,4 @@
+
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,7 +15,6 @@ interface CleanScoreBreakdownProps {
   breakdown?: CleanBreakdownType;
   cleanStreak?: number;
   recentlyPlayedCount?: number;
-  recentlyPlayedUnplayed?: number;
   cleanStreakMetadata?: CleanStreakMetadata;
 }
 
@@ -23,7 +23,6 @@ const CleanScoreBreakdown = ({
   breakdown, 
   cleanStreak = 0, 
   recentlyPlayedCount = 0,
-  recentlyPlayedUnplayed = 0,
   cleanStreakMetadata
 }: CleanScoreBreakdownProps) => {
   // If no breakdown data is available, show placeholder
@@ -211,7 +210,7 @@ const CleanScoreBreakdown = ({
               </ul>
             </div>
 
-            {/* Enhanced Clean Streak Section */}
+            {/* Simplified Clean Streak Section */}
             <div className="space-y-3">
               <div className="bg-black/20 rounded-lg p-4">
                 <div className="flex items-center mb-2">
@@ -227,9 +226,6 @@ const CleanScoreBreakdown = ({
                           <p><strong>Grace Period:</strong> 1-2 day breaks won't reset your streak - life happens!</p>
                           <p><strong>Minimum Sessions:</strong> Play for 30+ minutes to count towards streak</p>
                           <p><strong>Streak Decay:</strong> Long breaks gradually reduce streak instead of instant reset</p>
-                          {cleanStreakMetadata?.averageSessionLength && (
-                            <p><strong>Your Average:</strong> {cleanStreakMetadata.averageSessionLength} min/session</p>
-                          )}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -246,9 +242,6 @@ const CleanScoreBreakdown = ({
                   {cleanStreakMetadata?.gracePeriodUsed && (
                     <p className="text-yellow-400">Grace period active - keep it up!</p>
                   )}
-                  {cleanStreakMetadata?.lastPlayDate && (
-                    <p>Last played: {new Date(cleanStreakMetadata.lastPlayDate).toLocaleDateString()}</p>
-                  )}
                 </div>
               </div>
               
@@ -259,30 +252,6 @@ const CleanScoreBreakdown = ({
                   <span className="ml-auto text-green-400 font-bold">{recentlyPlayedCount}</span>
                 </div>
                 <p className="text-xs text-gray-400">Games played in the last 30 days</p>
-              </div>
-
-              {/* New Recently Played Unplayed Section */}
-              <div className="bg-black/20 rounded-lg p-3">
-                <div className="flex items-center mb-1">
-                  <Zap className="h-4 w-4 mr-2 text-purple-400" />
-                  <span className="text-gray-300 font-medium">Backlog Progress</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help ml-1" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p>Games that had zero playtime when you signed up but you've since started playing. This shows your progress in tackling your backlog!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <span className="ml-auto text-purple-400 font-bold">{recentlyPlayedUnplayed}</span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  {recentlyPlayedUnplayed > 0 
-                    ? "Great progress conquering your backlog!" 
-                    : "Start playing some unplayed games to see progress here"}
-                </p>
               </div>
             </div>
           </div>

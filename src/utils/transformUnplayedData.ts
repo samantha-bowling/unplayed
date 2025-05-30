@@ -119,7 +119,6 @@ export const transformUserGameData = (
     breakdown: cleanScoreBreakdown, 
     tier: cleanTier, 
     cleanStreak,
-    recentlyPlayedUnplayed,
     streakMetadata
   } = calculateCleanScore(
     playedGames, 
@@ -146,7 +145,6 @@ export const transformUserGameData = (
     cleanTier,
     cleanStreak,
     recentlyPlayedCount,
-    recentlyPlayedUnplayed,
     cleanStreakMetadata: streakMetadata
   };
 };

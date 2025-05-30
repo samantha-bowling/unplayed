@@ -161,7 +161,6 @@ const DustPage = () => {
                     breakdown={data?.cleanScoreBreakdown}
                     cleanStreak={data?.cleanStreak || 0}
                     recentlyPlayedCount={data?.recentlyPlayedCount || 0}
-                    recentlyPlayedUnplayed={0}
                     cleanStreakMetadata={data?.cleanStreakMetadata || {
                       streakQuality: 'bronze',
                       gracePeriodUsed: false
