@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -54,6 +53,10 @@ export interface TopSpendingGame {
   priceDataSource: 'games_table' | 'price_table' | 'estimated';
 }
 
+/**
+ * Enhanced spending data hook - ONLY handles price calculations
+ * Gets game list from useUnifiedLibraryData, focuses on price data only
+ */
 export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
@@ -73,8 +76,10 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   const queryResult = useQuery({
     queryKey: queryKeys.enhancedSpendingData(user?.id, onlyUnplayed),
     queryFn: async (): Promise<EnhancedSpendingData> => {
+      console.log('🔍 [EnhancedSpendingData] Starting price calculation fetch');
+      
       if (isDemo) {
-        // Return demo data structure
+        console.log('🎭 [EnhancedSpendingData] Using demo data');
         return {
           totalSpent: demoData.unplayedSpent || 0,
           totalSaved: null,
@@ -118,7 +123,9 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
         throw new Error('User not authenticated');
       }
 
-      // Fetch user games with game details and price information
+      console.log('📊 [EnhancedSpendingData] Fetching user games for price calculations');
+
+      // Fetch user games with basic game details - simplified query
       const { data: userGames, error: userGamesError } = await supabase
         .from('user_games')
         .select(`
@@ -135,29 +142,35 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
         .eq('user_id', user.id);
 
       if (userGamesError) {
-        console.error('Error fetching user games for spending:', userGamesError);
+        console.error('❌ [EnhancedSpendingData] Error fetching user games:', userGamesError);
         throw userGamesError;
       }
 
-      // Fetch enhanced price data
+      console.log(`✅ [EnhancedSpendingData] Found ${userGames?.length || 0} user games`);
+
+      // Fetch enhanced price data from game_prices table
       const gameIds = userGames?.map(ug => ug.game_id) || [];
       let priceDataMap = new Map<number, GamePriceInfo>();
 
       if (gameIds.length > 0) {
+        console.log(`💰 [EnhancedSpendingData] Fetching enhanced price data for ${gameIds.length} games`);
+        
         const { data: priceData, error: priceError } = await supabase
           .from('game_prices')
           .select('*')
           .in('app_id', gameIds);
 
         if (priceError) {
-          console.warn('Could not fetch enhanced price data:', priceError);
+          console.warn('⚠️ [EnhancedSpendingData] Could not fetch enhanced price data:', priceError);
         } else {
           priceDataMap = new Map(
             priceData?.map(price => [price.app_id, price]) || []
           );
+          console.log(`💰 [EnhancedSpendingData] Found enhanced prices for ${priceDataMap.size} games`);
         }
       }
 
+      // Transform to spending calculation format
       const gamesWithPrices: GameWithPrice[] = userGames
         ?.filter(ug => ug.games)
         .map(ug => ({
@@ -169,7 +182,7 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
           header_image: ug.games.header_image,
         })) || [];
 
-      console.log(`Processing spending for ${gamesWithPrices.length} games, ${onlyUnplayed ? 'unplayed only' : 'all games'}`);
+      console.log(`🎯 [EnhancedSpendingData] Processing spending for ${gamesWithPrices.length} games, ${onlyUnplayed ? 'unplayed only' : 'all games'}`);
 
       // Log validation statistics
       let validatedGames = 0;
@@ -190,15 +203,16 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
 
       console.log(`Price validation: ${validatedGames} valid, ${rejectedGames} rejected games (${(totalRejectedValue / 100).toFixed(2)} value rejected)`);
 
+      // Calculate spending using the centralized utility
       const breakdown = calculateSpending(gamesWithPrices, priceDataMap, onlyUnplayed);
       const topSpendingGames = generateTopSpendingGames(gamesWithPrices, priceDataMap, onlyUnplayed, 50);
       const displayInfo = formatSpendingDisplay(breakdown);
 
-      console.log('Enhanced spending calculation complete:', {
+      console.log('✅ [EnhancedSpendingData] Enhanced spending calculation complete:', {
         totalSpent: breakdown.totalSpent,
         confidence: breakdown.confidence,
-        rejectedValue: breakdown.dataQuality.totalRejectedValueDollars,
-        topGamePrice: topSpendingGames[0]?.price || 0
+        gamesProcessed: gamesWithPrices.length,
+        rejectedValue: breakdown.dataQuality.totalRejectedValueDollars
       });
 
       return {
@@ -216,7 +230,7 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
       };
     },
     enabled: !!user || isDemo,
-    staleTime: 10 * 60 * 1000, // 10 minutes - spending data changes less frequently
+    staleTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
   });
 
@@ -233,6 +247,8 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
     let refreshLog: any = null;
     
     try {
+      console.log('🔄 [EnhancedSpendingData] Starting price refresh...');
+      
       // Get user's game IDs
       const { data: userGames } = await supabase
         .from('user_games')
@@ -283,8 +299,10 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
         description: `Updated ${updatedCount} game prices with the latest information.`
       });
 
+      console.log('✅ [EnhancedSpendingData] Price refresh completed successfully');
+
     } catch (error) {
-      console.error('Error refreshing prices:', error);
+      console.error('❌ [EnhancedSpendingData] Error refreshing prices:', error);
       
       // Update refresh log with failure
       if (refreshLog) {
@@ -318,4 +336,5 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   };
 };
 
+// Keep backward compatibility
 export const useSpendingData = useEnhancedSpendingData;
