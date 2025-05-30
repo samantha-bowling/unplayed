@@ -46,7 +46,7 @@ const SpendPage = () => {
 
   // Create price distribution data for charts
   const priceDistribution = [
-    { range: 'Free', count: unplayedSpendingData.freeGamesCount, totalValue: 0 },
+    { range: 'Free', count: unplayedSpendingData?.freeGamesCount || 0, totalValue: 0 },
     { range: '$0.01-$4.99', count: 0, totalValue: 0 },
     { range: '$5-$9.99', count: 0, totalValue: 0 },
     { range: '$10-$19.99', count: 0, totalValue: 0 },
@@ -56,7 +56,7 @@ const SpendPage = () => {
   ];
 
   // Calculate distribution from top spending games
-  unplayedSpendingData.topSpendingGames.forEach(game => {
+  unplayedSpendingData?.topSpendingGames?.forEach(game => {
     const price = game.price;
     if (price === 0) {
       priceDistribution[0].count++;
@@ -154,7 +154,7 @@ const SpendPage = () => {
                           </CardDescription>
                         </div>
                         <Button 
-                          onClick={() => refreshPrices()} 
+                          onClick={() => refreshPrices?.()} 
                           variant="outline"
                           size="sm"
                           disabled={isRefreshing}
@@ -170,20 +170,20 @@ const SpendPage = () => {
                           <div className="flex flex-col items-center p-8 bg-black/20 rounded-lg">
                             <span className="text-xs uppercase text-gray-400 mb-2">Total Library Value</span>
                             <span className="text-4xl font-bold mb-2">
-                              <CurrencyAmount amount={totalLibraryData.totalLibraryValue} currency={totalLibraryData.currency} />
+                              <CurrencyAmount amount={totalLibraryData?.totalLibraryValue || 0} currency={totalLibraryData?.currency || 'USD'} />
                             </span>
                             <span className="text-sm text-gray-400">
-                              {totalLibraryData.totalGames} games total
+                              {totalLibraryData?.totalGames || 0} games total
                             </span>
                           </div>
                           
                           <div className="flex flex-col items-center p-6 bg-unplayed-red/10 border border-unplayed-red/20 rounded-lg">
                             <span className="text-xs uppercase text-gray-400 mb-2">Unplayed Games Value</span>
                             <span className="text-3xl font-bold mb-2 text-unplayed-red">
-                              <CurrencyAmount amount={unplayedSpendingData.totalSpent} currency={unplayedSpendingData.currency} />
+                              <CurrencyAmount amount={unplayedSpendingData?.totalSpent || 0} currency={unplayedSpendingData?.currency || 'USD'} />
                             </span>
                             <span className="text-sm text-gray-400">
-                              {unplayedSpendingData.paidGamesCount} unplayed paid games
+                              {unplayedSpendingData?.paidGamesCount || 0} unplayed paid games
                             </span>
                           </div>
                         </div>
@@ -192,15 +192,15 @@ const SpendPage = () => {
                           <div className="p-4 bg-black/20 rounded-lg">
                             <h3 className="text-sm uppercase text-gray-400 mb-1">Free Games</h3>
                             <p className="text-2xl font-bold text-unplayed-mint">
-                              {unplayedSpendingData.freeGamesCount}
+                              {unplayedSpendingData?.freeGamesCount || 0}
                             </p>
                           </div>
                           
-                          {totalLibraryData.totalSaved && totalLibraryData.totalSaved > 0 && (
+                          {totalLibraryData?.totalSaved && totalLibraryData.totalSaved > 0 && (
                             <div className="p-4 bg-black/20 rounded-lg">
                               <h3 className="text-sm uppercase text-gray-400 mb-1">Money Saved From Sales</h3>
                               <p className="text-2xl font-bold text-unplayed-mint">
-                                <CurrencyAmount amount={totalLibraryData.totalSaved} currency={totalLibraryData.currency} />
+                                <CurrencyAmount amount={totalLibraryData.totalSaved} currency={totalLibraryData.currency || 'USD'} />
                               </p>
                             </div>
                           )}
@@ -209,11 +209,11 @@ const SpendPage = () => {
                             <h3 className="text-sm uppercase text-gray-400 mb-1">Average Price Per Game</h3>
                             <p className="text-2xl font-bold">
                               <CurrencyAmount 
-                                amount={totalLibraryData.totalGames > 0 ? 
+                                amount={totalLibraryData && totalLibraryData.totalGames > 0 ? 
                                   totalLibraryData.totalLibraryValue / totalLibraryData.totalGames : 
                                   0
                                 } 
-                                currency={totalLibraryData.currency} 
+                                currency={totalLibraryData?.currency || 'USD'} 
                               />
                             </p>
                           </div>
@@ -230,35 +230,35 @@ const SpendPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <div className="flex items-center gap-2">
                             <div className={`w-3 h-3 rounded-full ${
-                              unplayedSpendingData.confidence === 'high' ? 'bg-green-500' :
-                              unplayedSpendingData.confidence === 'medium' ? 'bg-yellow-500' :
+                              unplayedSpendingData?.confidence === 'high' ? 'bg-green-500' :
+                              unplayedSpendingData?.confidence === 'medium' ? 'bg-yellow-500' :
                               'bg-red-500'
                             }`} />
                             <span className="text-sm text-gray-300">
-                              {unplayedSpendingData.confidence.charAt(0).toUpperCase() + unplayedSpendingData.confidence.slice(1)} Confidence
+                              {unplayedSpendingData?.confidence ? unplayedSpendingData.confidence.charAt(0).toUpperCase() + unplayedSpendingData.confidence.slice(1) : 'Unknown'} Confidence
                             </span>
                           </div>
                           
                           <div className="text-sm text-gray-400">
-                            <span className="text-white">{unplayedSpendingData.dataQuality.gamesWithPriceData}</span> games with price data
+                            <span className="text-white">{unplayedSpendingData?.dataQuality?.gamesWithPriceData || 0}</span> games with price data
                           </div>
                           
                           <div className="text-sm text-gray-400">
-                            <span className="text-white">{unplayedSpendingData.dataQuality.gamesWithMissingData}</span> games missing data
+                            <span className="text-white">{unplayedSpendingData?.dataQuality?.gamesWithMissingData || 0}</span> games missing data
                           </div>
                         </div>
                         
                         <div className="text-sm text-gray-400 space-y-2">
                           <p>
-                            <strong>Pricing Data:</strong> {unplayedSpendingData.displayInfo.displayText}
+                            <strong>Pricing Data:</strong> {unplayedSpendingData?.displayInfo?.displayText || 'No data available'}
                           </p>
-                          {unplayedSpendingData.displayInfo.warningText && (
+                          {unplayedSpendingData?.displayInfo?.warningText && (
                             <p className="text-yellow-400">
                               <strong>Note:</strong> {unplayedSpendingData.displayInfo.warningText}
                             </p>
                           )}
                           <p>
-                            <strong>Last Updated:</strong> {formatRefreshDate(unplayedSpendingData.refreshedAt)}
+                            <strong>Last Updated:</strong> {formatRefreshDate(unplayedSpendingData?.refreshedAt || null)}
                           </p>
                           <p className="text-xs">
                             Prices are current Steam store prices and may differ from what you actually paid due to sales, bundles, or regional pricing.
@@ -293,7 +293,7 @@ const SpendPage = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {unplayedSpendingData.topSpendingGames.slice(0, 20).map((game) => (
+                            {unplayedSpendingData?.topSpendingGames?.slice(0, 20).map((game) => (
                               <tr key={game.id} className="border-b border-gray-800 hover:bg-gray-900/20">
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-3">
@@ -357,11 +357,11 @@ const SpendPage = () => {
                                   </TooltipProvider>
                                 </td>
                               </tr>
-                            ))}
+                            )) || []}
                           </tbody>
                         </table>
                         
-                        {unplayedSpendingData.topSpendingGames.length === 0 && (
+                        {(!unplayedSpendingData?.topSpendingGames || unplayedSpendingData.topSpendingGames.length === 0) && (
                           <div className="text-center py-12 text-gray-400">
                             <p>No unplayed games found in your library.</p>
                           </div>

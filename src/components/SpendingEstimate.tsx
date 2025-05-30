@@ -21,17 +21,17 @@ const SpendingEstimate = ({
   const [isVisible, setIsVisible] = useState(false);
   
   // Use unplayed spending data from enhanced hook
-  const spendingAmount = spendingData.totalSpent;
+  const spendingAmount = spendingData?.totalSpent || 0;
 
   console.log('SpendingEstimate - Using unplayed spending data:', {
-    totalSpent: spendingData.totalSpent,
-    confidence: spendingData.confidence,
-    dataQuality: spendingData.dataQuality,
+    totalSpent: spendingData?.totalSpent,
+    confidence: spendingData?.confidence,
+    dataQuality: spendingData?.dataQuality,
     finalAmount: spendingAmount
   });
 
   const handleRefresh = async () => {
-    if (!isRefreshing) {
+    if (!isRefreshing && refreshPrices) {
       await refreshPrices();
     }
   };
@@ -81,7 +81,7 @@ const SpendingEstimate = ({
             isLoading={dataLoading || authLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
-            totalSaved={spendingData.totalSaved}
+            totalSaved={spendingData?.totalSaved || null}
             isDemo={isDemo}
             hasUser={!!user}
           />

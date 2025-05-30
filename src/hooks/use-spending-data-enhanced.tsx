@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -11,9 +12,16 @@ import {
   type SpendingBreakdown
 } from '@/utils/spending-calculations';
 import { validateGamePrice } from '@/utils/price-validation';
+import { callSupabaseFunction } from '@/utils/supabase-functions';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 export interface EnhancedSpendingData {
   totalSpent: number;
+  totalSaved: number | null;
+  freeGamesCount: number;
+  paidGamesCount: number;
+  currency: string;
   confidence: 'high' | 'medium' | 'low';
   dataQuality: {
     gamesWithPriceData: number;
@@ -47,14 +55,19 @@ export interface TopSpendingGame {
 export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  return useQuery({
+  const queryResult = useQuery({
     queryKey: ['enhancedSpendingData', user?.id, onlyUnplayed],
     queryFn: async (): Promise<EnhancedSpendingData> => {
       if (isDemo) {
         // Return demo data structure
         return {
           totalSpent: demoData.unplayedSpent || 0,
+          totalSaved: null,
+          freeGamesCount: 20,
+          paidGamesCount: 80,
+          currency: 'USD',
           confidence: 'high' as const,
           dataQuality: {
             gamesWithPriceData: 100,
@@ -183,6 +196,10 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
 
       return {
         totalSpent: breakdown.totalSpent,
+        totalSaved: breakdown.totalSaved,
+        freeGamesCount: breakdown.freeGamesCount,
+        paidGamesCount: breakdown.paidGamesCount,
+        currency: breakdown.currency,
         confidence: breakdown.confidence,
         dataQuality: breakdown.dataQuality,
         topSpendingGames,
@@ -195,6 +212,42 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
     staleTime: 10 * 60 * 1000, // 10 minutes - spending data changes less frequently
     refetchOnWindowFocus: false,
   });
+
+  const refreshPrices = async () => {
+    if (!user || isDemo) return;
+    
+    setIsRefreshing(true);
+    try {
+      toast.info("Refreshing price data from Steam...", {
+        description: "This may take a moment to update all pricing information."
+      });
+
+      // Call the refresh-game-price function for user's games
+      await callSupabaseFunction('refresh-game-price', {
+        userId: user.id
+      });
+
+      // Refetch the query data
+      await queryResult.refetch();
+      
+      toast.success("Price data refreshed successfully!", {
+        description: "Your spending calculations have been updated with the latest prices."
+      });
+    } catch (error) {
+      console.error('Error refreshing prices:', error);
+      toast.error("Failed to refresh prices", {
+        description: "Please try again later or check your connection."
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  return {
+    ...queryResult,
+    refreshPrices,
+    isRefreshing
+  };
 };
 
 export const useSpendingData = useEnhancedSpendingData;
