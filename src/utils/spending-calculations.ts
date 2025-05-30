@@ -1,7 +1,8 @@
 
 /**
  * Centralized spending calculations utility
- * Simplified price logic with clear fallback system
+ * Handles price data properly and distinguishes between free games and missing price data
+ * Now includes price validation to filter out unrealistic prices
  */
 
 import { validateGamePrice, getPricingValidationStats } from './price-validation';
@@ -49,76 +50,86 @@ export interface TopSpendingGame {
   discount: number | null;
   imageUrl: string | null;
   currency: string;
-  priceDataSource: 'enhanced' | 'basic' | 'unknown';
+  priceDataSource: 'games_table' | 'price_table' | 'estimated';
 }
 
 /**
- * SIMPLIFIED: Get the best available price for a game using clear fallback
+ * Determines if a game is actually free vs has missing price data
+ * Now includes price validation to reject unrealistic prices
  */
-function getBestPrice(
-  gameId: number,
-  basicPriceCents: number | null | undefined,
-  enhancedPriceData: GamePriceInfo | null,
+export function categorizeGamePrice(
+  gamePrice: number | null | undefined,
+  priceTableData: GamePriceInfo | null,
   gameName?: string
 ): {
-  finalPrice: number | null;
-  originalPrice: number | null;
-  discount: number | null;
-  source: 'enhanced' | 'basic' | 'unknown';
-  isValid: boolean;
+  category: 'free' | 'paid' | 'unknown' | 'invalid';
+  price: number;
+  confidence: 'high' | 'medium' | 'low';
+  source: 'games_table' | 'price_table' | 'estimated';
+  validationReason?: string;
 } {
-  // Try enhanced price data first (from game_prices table)
-  if (enhancedPriceData?.final_price_cents !== null && enhancedPriceData?.final_price_cents !== undefined) {
-    const validation = validateGamePrice(enhancedPriceData.final_price_cents, gameName);
-    if (validation.isValid) {
-      const originalValidation = enhancedPriceData.initial_price_cents 
-        ? validateGamePrice(enhancedPriceData.initial_price_cents, gameName)
-        : { isValid: false, validatedPrice: 0 };
-      
+  // Check price table data first (more recent and accurate)
+  if (priceTableData?.final_price_cents !== null && priceTableData?.final_price_cents !== undefined) {
+    const validation = validateGamePrice(priceTableData.final_price_cents, gameName);
+    
+    if (!validation.isValid) {
       return {
-        finalPrice: validation.validatedPrice,
-        originalPrice: originalValidation.isValid ? originalValidation.validatedPrice : validation.validatedPrice,
-        discount: enhancedPriceData.discount_percent,
-        source: 'enhanced',
-        isValid: true
+        category: 'invalid',
+        price: 0,
+        confidence: 'low',
+        source: 'price_table',
+        validationReason: validation.reason
       };
     }
+    
+    return {
+      category: validation.validatedPrice === 0 ? 'free' : 'paid',
+      price: validation.validatedPrice / 100,
+      confidence: validation.confidence,
+      source: 'price_table'
+    };
   }
 
-  // Fall back to basic price data (from games table)
-  if (basicPriceCents !== null && basicPriceCents !== undefined) {
-    const validation = validateGamePrice(basicPriceCents, gameName);
-    if (validation.isValid) {
+  // Fall back to games table data
+  if (gamePrice !== null && gamePrice !== undefined) {
+    const validation = validateGamePrice(gamePrice, gameName);
+    
+    if (!validation.isValid) {
       return {
-        finalPrice: validation.validatedPrice,
-        originalPrice: validation.validatedPrice,
-        discount: null,
-        source: 'basic',
-        isValid: true
+        category: 'invalid',
+        price: 0,
+        confidence: 'low',
+        source: 'games_table',
+        validationReason: validation.reason
       };
     }
+    
+    const priceInDollars = validation.validatedPrice / 100;
+    return {
+      category: priceInDollars === 0 ? 'free' : 'paid',
+      price: priceInDollars,
+      confidence: validation.confidence,
+      source: 'games_table'
+    };
   }
 
-  // No valid price data available
+  // No price data available - this is unknown, not free
   return {
-    finalPrice: null,
-    originalPrice: null,
-    discount: null,
-    source: 'unknown',
-    isValid: false
+    category: 'unknown',
+    price: 0,
+    confidence: 'low',
+    source: 'estimated'
   };
 }
 
 /**
- * Calculate spending for a collection of games with simplified price logic
+ * Calculate spending for a collection of games with proper categorization and price validation
  */
 export function calculateSpending(
   games: GameWithPrice[],
   priceData: Map<number, GamePriceInfo> = new Map(),
   onlyUnplayed: boolean = false
 ): SpendingBreakdown {
-  console.log(`💰 [SpendingCalculations] Starting calculation for ${games.length} games, onlyUnplayed: ${onlyUnplayed}`);
-  
   let totalSpent = 0;
   let totalOriginalPrice = 0;
   let freeGamesCount = 0;
@@ -134,42 +145,50 @@ export function calculateSpending(
     ? games.filter(game => (game.playtime_minutes || 0) === 0)
     : games;
 
-  console.log(`💰 [SpendingCalculations] Processing ${relevantGames.length} relevant games`);
-
   // Get pricing validation stats for logging
   const validationStats = getPricingValidationStats(relevantGames);
-  console.log('💰 [SpendingCalculations] Price validation stats:', validationStats);
+  console.log('Price validation stats:', validationStats);
 
   relevantGames.forEach(game => {
-    const enhancedData = priceData.get(game.id);
-    const priceResult = getBestPrice(game.id, game.price_cents, enhancedData, game.name);
+    const priceInfo = priceData.get(game.id);
+    const priceCategory = categorizeGamePrice(game.price_cents, priceInfo, game.name);
 
-    if (!priceResult.isValid) {
-      unknownPriceGamesCount++;
-      gamesWithMissingData++;
-      
-      // Track rejected value if we had invalid price data
-      if (game.price_cents && game.price_cents > 0) {
-        const validation = validateGamePrice(game.price_cents, game.name);
-        if (!validation.isValid) {
-          invalidPricesRejected++;
+    switch (priceCategory.category) {
+      case 'free':
+        freeGamesCount++;
+        gamesActuallyFree++;
+        gamesWithPriceData++;
+        break;
+      case 'paid':
+        paidGamesCount++;
+        totalSpent += priceCategory.price;
+        gamesWithPriceData++;
+        
+        // Add to original price if we have discount data
+        if (priceInfo?.initial_price_cents) {
+          const originalValidation = validateGamePrice(priceInfo.initial_price_cents, game.name);
+          if (originalValidation.isValid) {
+            totalOriginalPrice += originalValidation.validatedPrice / 100;
+          } else {
+            totalOriginalPrice += priceCategory.price;
+          }
+        } else {
+          totalOriginalPrice += priceCategory.price;
+        }
+        break;
+      case 'unknown':
+        unknownPriceGamesCount++;
+        gamesWithMissingData++;
+        break;
+      case 'invalid':
+        invalidPricesRejected++;
+        gamesWithMissingData++;
+        // Track rejected value for reporting
+        if (game.price_cents && game.price_cents > 0) {
           totalRejectedValueDollars += game.price_cents / 100;
         }
-      }
-      return;
-    }
-
-    gamesWithPriceData++;
-    const finalPriceDollars = (priceResult.finalPrice || 0) / 100;
-    const originalPriceDollars = (priceResult.originalPrice || 0) / 100;
-
-    if (finalPriceDollars === 0) {
-      freeGamesCount++;
-      gamesActuallyFree++;
-    } else {
-      paidGamesCount++;
-      totalSpent += finalPriceDollars;
-      totalOriginalPrice += originalPriceDollars;
+        console.log(`Rejected invalid price for "${game.name}": ${priceCategory.validationReason}`);
+        break;
     }
   });
 
@@ -187,7 +206,7 @@ export function calculateSpending(
 
   const totalSaved = totalOriginalPrice > totalSpent ? totalOriginalPrice - totalSpent : null;
 
-  console.log(`💰 [SpendingCalculations] Results: $${totalSpent.toFixed(2)} spent, ${invalidPricesRejected} invalid prices rejected ($${totalRejectedValueDollars.toFixed(2)} value), confidence: ${confidence}`);
+  console.log(`Spending calculation: $${totalSpent.toFixed(2)} spent, ${invalidPricesRejected} invalid prices rejected (${totalRejectedValueDollars.toFixed(2)} value)`);
 
   return {
     totalSpent: parseFloat(totalSpent.toFixed(2)),
@@ -208,7 +227,7 @@ export function calculateSpending(
 }
 
 /**
- * Generate top spending games list with simplified price logic
+ * Generate top spending games list with proper price categorization and validation
  */
 export function generateTopSpendingGames(
   games: GameWithPrice[],
@@ -222,29 +241,26 @@ export function generateTopSpendingGames(
 
   const gamesWithPrices = relevantGames
     .map(game => {
-      const enhancedData = priceData.get(game.id);
-      const priceResult = getBestPrice(game.id, game.price_cents, enhancedData, game.name);
+      const priceInfo = priceData.get(game.id);
+      const priceCategory = categorizeGamePrice(game.price_cents, priceInfo, game.name);
       
-      if (!priceResult.isValid || !priceResult.finalPrice || priceResult.finalPrice === 0) {
-        return null;
-      }
-
       return {
         id: game.id,
         title: game.name,
-        price: priceResult.finalPrice / 100,
-        originalPrice: priceResult.originalPrice ? priceResult.originalPrice / 100 : null,
-        discount: priceResult.discount,
+        price: priceCategory.price,
+        originalPrice: priceInfo?.initial_price_cents ? priceInfo.initial_price_cents / 100 : null,
+        discount: priceInfo?.discount_percent || null,
         imageUrl: game.header_image || game.image_url,
         currency: 'USD',
-        priceDataSource: priceResult.source
+        priceDataSource: priceCategory.source,
+        category: priceCategory.category
       };
     })
-    .filter((game): game is TopSpendingGame => game !== null)
-    .sort((a, b) => b.price - a.price)
+    .filter(game => game.price > 0 && game.category === 'paid') // Only include games with valid, paid prices
+    .sort((a, b) => b.price - a.price) // Sort by price descending
     .slice(0, limit);
 
-  console.log(`💰 [SpendingCalculations] Generated ${gamesWithPrices.length} top spending games`);
+  console.log(`Generated top spending games: ${gamesWithPrices.length} games with valid prices`);
 
   return gamesWithPrices;
 }
