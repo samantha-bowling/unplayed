@@ -169,30 +169,16 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
           </div>
         </div>
 
-        {/* Give me a reason to play button - only for authenticated users */}
-        {!isDemo && (
-          <div className="pt-2">
-            <button 
-              className="btn-amber-outline w-full"
-              onClick={handleGetReview}
-              disabled={isLoadingReview}
-            >
-              {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
-            </button>
-          </div>
-        )}
-
-        {/* Review Display - only for authenticated users */}
-        {!isDemo && (
-          <GameReviewCard
-            review={review}
-            isLoading={isLoadingReview}
-            hasFetched={hasFetched}
-            onGetReview={handleGetReview}
-            onGetAnotherReview={cycleNextReview}
-            gameId={recentPick.game_id}
-          />
-        )}
+        {/* Review Display - for both demo and authenticated users */}
+        <GameReviewCard
+          review={review}
+          isLoading={isLoadingReview}
+          hasFetched={hasFetched}
+          onGetReview={handleGetReview}
+          onGetAnotherReview={cycleNextReview}
+          gameId={recentPick.game_id}
+          isDemo={isDemo}
+        />
       </CardContent>
     </Card>
   );
