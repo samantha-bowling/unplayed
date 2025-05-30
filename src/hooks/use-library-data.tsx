@@ -13,6 +13,7 @@ type Game = {
   metacritic_score: number | null;
   genres: string[] | null;
   categories: string[] | null;
+  price_cents: number | null;
 };
 
 type UserGame = {
@@ -115,7 +116,8 @@ export function useLibraryData() {
             release_date,
             metacritic_score,
             genres,
-            categories
+            categories,
+            price_cents
           )
         `)
         .eq('user_id', user.id);
