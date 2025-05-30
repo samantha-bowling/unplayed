@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import useDustScoreData from '@/hooks/use-dust-score-data';
+import { CLEAN_SCORE_TIERS } from '@/utils/clean-score-utils';
 import {
   Tooltip,
   TooltipContent,
@@ -36,7 +37,12 @@ const CleanScoreMeter = ({
   };
 
   const actualScore = score ?? dashboardMetrics.cleanScore ?? 0;
-  const cleanTier = data.cleanTier;
+  
+  // Simple fallback: find tier directly from score if data.cleanTier is missing
+  const cleanTier = data.cleanTier || CLEAN_SCORE_TIERS.find(
+    tier => actualScore >= tier.range[0] && actualScore <= tier.range[1]
+  ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1];
+  
   const [animatedScore, setAnimatedScore] = useState(0);
   const { user } = useAuth();
 
