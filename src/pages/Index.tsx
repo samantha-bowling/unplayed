@@ -22,7 +22,8 @@ import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
 import { Button } from "@/components/ui/button";
-import { useUnplayedData } from "@/hooks/useUnplayedData";
+import { useUnifiedLibraryData } from "@/hooks/useUnifiedLibraryData";
+import { transformToDashboardMetrics } from "@/utils/data-transforms";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,7 +42,7 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
+  const { data: unifiedData, stats: unifiedStats, isLoading: dataLoading, refetch } = useUnifiedLibraryData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useCacheManagement();
@@ -49,21 +50,20 @@ const Index = () => {
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
 
-  // Safe data access with fallbacks
-  const safeData = {
-    unplayedGames: unplayedData?.unplayedGames || 0,
-    totalGames: unplayedData?.totalGames || 0,
-    dustScore: unplayedData?.dustScore || 0,
-    unplayedSpent: unplayedData?.unplayedSpent || 0,
-    cleanScore: unplayedData?.cleanScore || 0,
-    cleanTier: unplayedData?.cleanTier || null
+  // Transform unified data to dashboard metrics
+  const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
+    unplayedGames: 0,
+    totalGames: 0,
+    dustScore: 0,
+    totalPlaytime: 0,
+    cleanScore: 0,
+    recentlyPlayedCount: 0,
+    playedGames: 0,
   };
 
-  // Optimized function to update data after import using consolidated cache management
+  // Optimized function to update data after import
   const refreshAllData = () => {
-    // Set a slight delay to ensure backend processing completes
     setTimeout(() => {
-      // Show toast notification
       toast.info("Refreshing your data...", {
         description: "This may take a moment to update all your stats."
       });
@@ -72,7 +72,7 @@ const Index = () => {
       const keysToInvalidate = [
         ...utils.invalidateUnplayed(user?.id),
         ...utils.invalidateProfile(user?.id),
-        // Invalidate specific dashboard-related queries
+        queryKeys.unifiedLibrary.data(user?.id),
         queryKeys.detailedDustData(user?.id),
         queryKeys.libraryGames(user?.id),
         queryKeys.paginatedLibraryGames(user?.id),
@@ -81,18 +81,13 @@ const Index = () => {
         queryKeys.spendingData(user?.id)
       ];
       
-      // Efficiently invalidate only necessary queries
       keysToInvalidate.forEach(queryKey => {
         queryClient.invalidateQueries({ queryKey });
       });
       
-      // Explicit refetch of dashboard data
       refetch?.();
-      
-      // Refresh profile as well
       refreshProfile(true);
       
-      // Notify success after a short delay
       setTimeout(() => {
         toast.success("Data refresh complete!", { 
           description: "Your dashboard has been updated with the latest information."
@@ -230,11 +225,10 @@ const Index = () => {
       );
     } else if (user && !profile?.steam_id) {
       // Authenticated but no Steam account linked
-      return (
-        <LinkSteamAccount />
-      );
+      return <LinkSteamAccount />;
     } else if (profile?.steam_id) {
-      // Fully authenticated with Steam
+      const lastRefreshed = profile?.last_sync ? new Date(profile.last_sync) : null;
+      
       return (
         <>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
@@ -341,8 +335,8 @@ const Index = () => {
             ) : (
               <>
                 <div className="dashboard-grid">
-                  <UnplayedCounter count={safeData.unplayedGames} />
-                  <DustScoreMeter score={safeData.dustScore} />
+                  <UnplayedCounter count={dashboardMetrics.unplayedGames} />
+                  <DustScoreMeter score={dashboardMetrics.dustScore} />
                   <SpendingEstimate />
                 </div>
                 <div className="mt-4">
