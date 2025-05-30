@@ -55,7 +55,7 @@ const ShelfLifeGameItem: React.FC<ShelfLifeGameItemProps> = ({
       </div>
       
       <div className="ml-4 flex-grow min-w-0">
-        <h4 className="text-white font-medium text-sm leading-5 mb-1 line-clamp-2">
+        <h4 className="text-white font-medium text-sm leading-5 mb-1 text-left line-clamp-2">
           {game.name || 'Unknown Game'}
         </h4>
         
