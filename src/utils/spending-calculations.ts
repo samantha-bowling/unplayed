@@ -252,7 +252,7 @@ export function generateTopSpendingGames(
         discount: priceInfo?.discount_percent || null,
         imageUrl: game.header_image || game.image_url,
         currency: 'USD',
-        priceDataSource: priceCategory.source,
+        priceDataSource: priceCategory.source, // This now returns 'price_table', 'games_table', or 'estimated'
         category: priceCategory.category
       };
     })
