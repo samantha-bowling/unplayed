@@ -6,7 +6,7 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
-import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
+import { useCacheManagement } from '@/hooks/use-query-keys';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -44,7 +44,7 @@ const Index = () => {
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
-  const { queryKeys, utils } = useOptimizedCacheManagement();
+  const { queryKeys, utils } = useCacheManagement();
 
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
@@ -59,7 +59,7 @@ const Index = () => {
     cleanTier: unplayedData?.cleanTier || null
   };
 
-  // Optimized function to update data after import using optimized cache management
+  // Optimized function to update data after import using consolidated cache management
   const refreshAllData = () => {
     // Set a slight delay to ensure backend processing completes
     setTimeout(() => {
@@ -68,17 +68,17 @@ const Index = () => {
         description: "This may take a moment to update all your stats."
       });
       
-      // Use optimized cache invalidation
+      // Use consolidated cache invalidation
       const keysToInvalidate = [
         ...utils.invalidateUnplayed(user?.id),
         ...utils.invalidateProfile(user?.id),
         // Invalidate specific dashboard-related queries
-        ['detailedDustData', user?.id],
-        ['libraryGames', user?.id],
-        ['paginatedLibraryGames', user?.id],
-        ['libraryGamesCount', user?.id],
-        ['pickerGames', user?.id],
-        ['spendingData', user?.id]
+        queryKeys.detailedDustData(user?.id),
+        queryKeys.libraryGames(user?.id),
+        queryKeys.paginatedLibraryGames(user?.id),
+        queryKeys.libraryGamesCount(user?.id),
+        queryKeys.pickerGames(user?.id),
+        queryKeys.spendingData(user?.id)
       ];
       
       // Efficiently invalidate only necessary queries
