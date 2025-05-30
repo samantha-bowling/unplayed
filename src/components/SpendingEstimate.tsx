@@ -43,7 +43,7 @@ const SpendingEstimate = ({
     <div className="terminal-container equal-height-container">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="terminal-header text-2xl">Unplayed Games Value</h3>
+          <h3 className="terminal-header text-2xl">unplayed Value</h3>
           <p className="text-sm text-gray-400">
             How much your unplayed games cost
           </p>
