@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 // Generate positions for floating game names
 const generateGameNamePositions = (gameNames: string[], count: number) => {
   const positions = [];
-  const actualCount = Math.min(count, gameNames.length, 10); // Maximum 10 names
+  const actualCount = Math.min(count, gameNames.length); // Removed hardcoded 10 limit
   const gridSize = Math.ceil(Math.sqrt(actualCount * 1.5)); // Less dense grid
   const cellWidth = 100 / gridSize;
   const cellHeight = 100 / gridSize;

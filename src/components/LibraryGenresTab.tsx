@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { PcCase, TrendingUp, Award, Pizza } from 'lucide-react';
+import { BookMarked, TrendingUp, Award, SquarePlus, Pyramid } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts';
@@ -104,7 +103,7 @@ const LibraryGenresTab = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center space-x-2 cursor-help">
-                    <PcCase className="h-5 w-5 text-unplayed-mint" />
+                    <BookMarked className="h-5 w-5 text-unplayed-mint" />
                     <div>
                       <p className="text-2xl font-bold text-white">{genreStats.length}</p>
                       <p className="text-sm text-gray-400">Total Genres</p>
@@ -161,7 +160,7 @@ const LibraryGenresTab = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center space-x-2 cursor-help">
-                    <Pizza className="h-5 w-5 text-unplayed-red" />
+                    <SquarePlus className="h-5 w-5 text-unplayed-red" />
                     <div>
                       <p className="text-2xl font-bold text-white">
                         {mostOwnedGenre?.total || 0}
@@ -184,7 +183,7 @@ const LibraryGenresTab = () => {
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <PcCase className="h-5 w-5 text-unplayed-mint" />
+                <BookMarked className="h-5 w-5 text-unplayed-mint" />
                 <span>Top Genres Distribution</span>
                 <Tooltip>
                   <TooltipTrigger>
@@ -227,7 +226,7 @@ const LibraryGenresTab = () => {
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Pizza className="h-5 w-5 text-orange-500" />
+                <SquarePlus className="h-5 w-5 text-orange-500" />
                 <span>unplayed Pizza</span>
                 <Tooltip>
                   <TooltipTrigger>
@@ -276,7 +275,7 @@ const LibraryGenresTab = () => {
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Pizza className="h-5 w-5 text-unplayed-red" />
+                <Pyramid className="h-5 w-5 text-unplayed-red" />
                 <span>Top unplayed Genres</span>
                 <Tooltip>
                   <TooltipTrigger>
