@@ -333,18 +333,18 @@ const IndexOptimized = () => {
 
   return (
     <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col bg-black">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
 
         {/* Hero */}
-        <section className="w-full navbar-offset pb-8 px-4 bg-black">
+        <section className="w-full navbar-offset pb-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto text-center">
             {heroContent}
           </div>
         </section>
 
         {/* Dashboard */}
-        <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
+        <section id="dashboard" className="w-full py-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-mint">Dashboard</span>
@@ -367,7 +367,7 @@ const IndexOptimized = () => {
         </section>
 
         {/* Picker */}
-        <section id="picker" className="w-full py-8 px-4 bg-black">
+        <section id="picker" className="w-full py-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-amber">Picker</span>
@@ -380,7 +380,7 @@ const IndexOptimized = () => {
         </section>
 
         {/* Library */}
-        <section id="library" className="w-full py-8 px-4 bg-black/30">
+        <section id="library" className="w-full py-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-pink">Library</span>
@@ -394,7 +394,7 @@ const IndexOptimized = () => {
 
         {/* CTA */}
         {!user && (
-          <section className="w-full py-10 px-4 bg-black">
+          <section className="w-full py-10 px-4 bg-background">
             <div className="max-w-7xl mx-auto text-center">
               <h2 className="text-3xl font-bold font-space mb-4 text-white">
                 Ready to confront your backlog?

@@ -1,4 +1,3 @@
-// src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -316,18 +315,18 @@ const Index = () => {
 
   return (
     <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col bg-black">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
 
         {/* Hero */}
-        <section className="w-full navbar-offset pb-8 px-4 bg-black">
+        <section className="w-full navbar-offset pb-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto text-center">
             {renderHeroSection()}
           </div>
         </section>
 
         {/* Dashboard */}
-        <section id="dashboard" className="w-full py-8 px-4 bg-black/30">
+        <section id="dashboard" className="w-full py-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-mint">Dashboard</span>
@@ -358,7 +357,7 @@ const Index = () => {
         </section>
 
         {/* Picker - Moved before Library */}
-        <section id="picker" className="w-full py-8 px-4 bg-black">
+        <section id="picker" className="w-full py-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-amber">Picker</span>
@@ -369,7 +368,7 @@ const Index = () => {
         </section>
 
         {/* Library - Moved after Picker */}
-        <section id="library" className="w-full py-8 px-4 bg-black/30">
+        <section id="library" className="w-full py-8 px-4 bg-background">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-pink">Library</span>
@@ -381,7 +380,7 @@ const Index = () => {
 
         {/* CTA */}
         {!user && (
-          <section className="w-full py-10 px-4 bg-black">
+          <section className="w-full py-10 px-4 bg-background">
             <div className="max-w-7xl mx-auto text-center">
               <h2 className="text-3xl font-bold font-space mb-4 text-white">
                 Ready to confront your backlog?
