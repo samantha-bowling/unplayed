@@ -11,7 +11,6 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
 import { toast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RecentPickProps {
   recentPick: GamePick | null;
@@ -170,26 +169,9 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
           </div>
         </div>
 
-        {/* Give me a reason to play button - only one button now */}
-        <div className="pt-2">
-          {isDemo ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    className="btn-amber-outline w-full"
-                    onClick={handleGetReview}
-                    disabled={isLoadingReview}
-                  >
-                    {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Fetch a positive Steam review to give you motivation to play this game!</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
+        {/* Give me a reason to play button - only for authenticated users */}
+        {!isDemo && (
+          <div className="pt-2">
             <button 
               className="btn-amber-outline w-full"
               onClick={handleGetReview}
@@ -197,10 +179,10 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
             >
               {isLoadingReview ? 'Finding reasons...' : hasReviews ? 'Show another reason' : 'Give me a reason to play'}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Review Display */}
+        {/* Review Display - only for authenticated users */}
         {!isDemo && (
           <GameReviewCard
             review={review}

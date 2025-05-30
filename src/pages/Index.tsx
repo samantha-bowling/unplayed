@@ -24,7 +24,7 @@ import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
 import { Button } from "@/components/ui/button";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { useUnplayedData } from "@/hooks/useUnplayedData";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,7 +43,7 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: dashboardData, isLoading: dataLoading, lastRefreshed, refetch } = useDashboardData();
+  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
@@ -53,12 +53,12 @@ const Index = () => {
 
   // Safe data access with fallbacks
   const safeData = {
-    unplayedGames: dashboardData?.unplayedGames || 0,
-    totalGames: dashboardData?.totalGames || 0,
-    dustScore: dashboardData?.dustScore || 0,
-    totalSpent: dashboardData?.totalSpent || 0,
-    cleanScore: dashboardData?.cleanScore || 0,
-    cleanTier: dashboardData?.cleanTier || null
+    unplayedGames: unplayedData?.unplayedGames || 0,
+    totalGames: unplayedData?.totalGames || 0,
+    dustScore: unplayedData?.dustScore || 0,
+    unplayedSpent: unplayedData?.unplayedSpent || 0,
+    cleanScore: unplayedData?.cleanScore || 0,
+    cleanTier: unplayedData?.cleanTier || null
   };
 
   // Optimized function to update data after import using optimized cache management
@@ -345,7 +345,7 @@ const Index = () => {
                 <div className="dashboard-grid">
                   <UnplayedCounter count={safeData.unplayedGames} />
                   <DustScoreMeter score={safeData.dustScore} />
-                  <SpendingEstimate amount={safeData.totalSpent} />
+                  <SpendingEstimate />
                 </div>
                 <div className="mt-4">
                   <GenreHoarding />

@@ -9,12 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import SpendingMeter from './SpendingMeter';
 
 interface SpendingEstimateProps {
-  amount?: number;
   showMoreDetailsLink?: boolean;
 }
 
 const SpendingEstimate = ({ 
-  amount, 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
@@ -22,8 +20,8 @@ const SpendingEstimate = ({
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
-  // FIXED: Always use unplayed spending data from enhanced hook
-  const spendingAmount = amount !== undefined ? amount : spendingData.totalSpent;
+  // Use unplayed spending data from enhanced hook
+  const spendingAmount = spendingData.totalSpent;
 
   console.log('SpendingEstimate - Using unplayed spending data:', {
     totalSpent: spendingData.totalSpent,
@@ -95,10 +93,10 @@ const SpendingEstimate = ({
             
             <button 
               onClick={() => setIsVisible(true)}
-              className="btn-primary"
+              className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
               disabled={dataLoading || authLoading}
             >
-              {dataLoading || authLoading ? 'Loading...' : 'Show Me The Value'}
+              {dataLoading || authLoading ? 'Loading...' : 'Show me the damage'}
             </button>
           </div>
         )}

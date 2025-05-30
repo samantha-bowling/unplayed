@@ -1,570 +1,317 @@
-import { useState, useEffect, useRef } from 'react';
-import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
-import { useAuth } from '@/context/AuthContext';
-import { useFullScreenMode } from '@/context/FullScreenModeContext';
-import useUnplayedData from '@/hooks/useUnplayedData';
-import FullScreenModeToggle from './FullScreenModeToggle';
-import { Maximize, LayoutGrid, List, Loader2, ChevronRight } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { LibraryGame } from '@/hooks/use-library-data';
-import FloatingIcons from '@/components/FloatingIcons';
-import { getBestGameImageFromDbData } from '@/utils/image-utils';
-import { Link } from 'react-router-dom';
-import { useDemoMode } from '@/context/DemoModeContext';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface LibraryPreviewProps extends WithDemoProps {
+import React, { useState, useMemo } from 'react';
+import { Play, Grid, List, Maximize, Eye, EyeOff, Search, SortAsc, SortDesc, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import { useLibraryData } from '@/hooks/use-library-data';
+import { getBestGameImageFromDbData } from '@/utils/image-utils';
+import SteamLoader from './SteamLoader';
+import GameCard from './GameCard';
+import ZenLayout from '@/layouts/ZenLayout';
+
+interface LibraryPreviewProps {
   zenModeFullScreen?: boolean;
-  viewMode?: 'grid' | 'zen';
-  onViewModeChange?: (mode: 'grid' | 'zen') => void;
-  games?: LibraryGame[];
-  isLoading?: boolean;
 }
 
-// Helper function to generate positions based on grid with stable animations
-const generateZenPositions = (count: number, isFullScreen: boolean) => {
-  const positions = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 1.5)); // Create a grid with enough cells
-  const cellWidth = 100 / gridSize;
-  const cellHeight = 100 / gridSize;
+const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = false }) => {
+  const { user } = useAuth();
+  const { isDemo, demoData } = useDemoMode();
+  const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
+  const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [hideIgnored, setHideIgnored] = useState(false);
+  const [onlyUnplayed, setOnlyUnplayed] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'dust_score' | 'playtime'>('dust_score');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [limit, setLimit] = useState<number>(12);
 
-  // Create a grid of possible positions
-  const grid = [];
-  for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-      grid.push({
-        x: j * cellWidth + cellWidth * 0.5,
-        y: i * cellHeight + cellHeight * 0.5
-      });
-    }
-  }
-
-  // Shuffle the grid to get random positions
-  const shuffledGrid = [...grid].sort(() => Math.random() - 0.5);
-
-  // Take the positions we need
-  for (let i = 0; i < count; i++) {
-    if (i < shuffledGrid.length) {
-      // Use more predictable positions with smaller random variations
-      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.3 - cellWidth * 0.15);
-      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.3 - cellHeight * 0.15);
-      
-      // Create more stable animation patterns
-      const animationDirectionX = Math.random() > 0.5 ? 1 : -1;
-      const animationDirectionY = Math.random() > 0.5 ? 1 : -1;
-      const animationDistance = 1 + Math.random() * 1.5; // Reduced movement range (1-2.5%)
-      
-      positions.push({
-        left: `${randX}%`,
-        top: `${randY}%`,
-        delay: i * 0.5, // Reduced delay for smoother appearance
-        // Stagger the animations with more predictable durations
-        duration: 4 + Math.random() * 2, // 4-6s duration for smoother motion
-        // Font size adjustments based on screen mode
-        fontSize: isFullScreen ? `${0.9 + Math.random() * 0.4}rem` : // Fullscreen: 0.9-1.3rem
-          `${0.7 + Math.random() * 0.3}rem`, // Normal size: 0.7-1rem
-        animDirectionX: animationDirectionX,
-        animDirectionY: animationDirectionY,
-        animDistance: animationDistance,
-        initialRotation: Math.random() * 4 - 2, // Reduced rotation between -2 and 2 degrees
-        hoverColor: Math.random() > 0.5 ? 'hover:text-unplayed-pink' : 'hover:text-unplayed-amber',
-        uniqueId: `zen-${i}-${Math.random().toString(36).substring(2, 9)}` // Add unique ID for stability
-      });
-    }
-  }
-  return positions;
-};
-
-const LibraryPreview = ({
-  isDemo = false,
-  zenModeFullScreen = false,
-  viewMode: propViewMode,
-  onViewModeChange,
-  games: propGames,
-  isLoading = false
-}: LibraryPreviewProps) => {
-  const { 
-    user 
-  } = useAuth();
   const {
-    data: unplayedData
-  } = useUnplayedData();
-  const { isDemo: contextIsDemo } = useDemoMode();
-  const {
-    isFullScreenMode,
-    enterFullScreenMode,
-    focusedComponent,
-    componentSettings,
-    updateComponentSettings
-  } = useFullScreenMode();
-
-  // Initialize viewMode from props if available, otherwise from FullScreenMode context, or default to 'grid'
-  const [viewMode, setViewMode] = useState<'grid' | 'zen'>(
-    propViewMode || (focusedComponent === 'library' && componentSettings.library?.viewMode) || 'grid'
-  );
-  const [hoveredGame, setHoveredGame] = useState<number | null>(null);
-  const [zenPositions, setZenPositions] = useState<any[]>([]);
-  const [iconCount, setIconCount] = useState(0);
-  const [displayCount, setDisplayCount] = useState<number>(8);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-
-  // Ref to track if positions have been generated
-  const positionsGeneratedRef = useRef(false);
-  // Ref to track animation frame for cleanup
-  const animationFrameRef = useRef<number | null>(null);
-
-  // Determine if we should show in full screen mode
-  const showFullScreenMode = zenModeFullScreen && isFullScreenMode;
-
-  // Handle data source based on demo mode or prop games
-  const displayGames = (() => {
-    // If games are passed as props, use those (for library page)
-    if (propGames) {
-      return propGames;
-    }
-    
-    // If in demo mode, use the demo library data
-    if (isDemo || contextIsDemo) {
-      return unplayedData.library || [];
-    }
-    
-    // For live mode, filter all games to get unplayed ones
-    return unplayedData.gamesList?.filter(game => 
-      !game.playtimeMinutes || game.playtimeMinutes === 0
-    ) || [];
-  })();
-  
-  console.log('LibraryPreview data:', {
-    isDemo: isDemo || contextIsDemo,
-    propGames: !!propGames,
-    totalGamesFromData: unplayedData.totalGames,
-    unplayedGamesFromData: unplayedData.unplayedGames,
-    displayGamesLength: displayGames.length,
-    usingDemoLibrary: isDemo || contextIsDemo ? 'Yes' : 'No'
+    data: libraryData,
+    isLoading,
+    error
+  } = useLibraryData({
+    search: searchFilter,
+    hideIgnored,
+    onlyUnplayed,
+    sortBy,
+    sortDirection,
+    limit: viewMode === 'zen' ? 100 : limit
   });
-  
-  // Calculate the total number of pages
-  const totalPages = Math.ceil(displayGames.length / displayCount);
-  
-  // Get current games based on pagination
-  const startIndex = (currentPage - 1) * displayCount;
-  const endIndex = Math.min(startIndex + displayCount, displayGames.length);
-  const currentGames = displayGames.slice(startIndex, endIndex);
 
-  // Calculate dynamic container height based on display count
-  const getContainerHeight = () => {
-    if (showFullScreenMode) {
-      return 'h-[calc(100vh-250px)]';
-    }
+  // Memoize filtered and processed games for performance
+  const processedGames = useMemo(() => {
+    if (!libraryData?.games) return [];
     
-    // For grid view, use a fixed height to prevent expansion
-    if (viewMode === 'grid') {
-      return 'h-96'; // Fixed height of 384px (24rem)
-    }
-    
-    // For zen view, use fixed height
-    return 'h-64';
+    return libraryData.games.map(game => ({
+      ...game,
+      imageUrl: getBestGameImageFromDbData(game, game.id)
+    }));
+  }, [libraryData?.games]);
+
+  const handleMarkAsPlayed = async (userGameId: string) => {
+    // Implementation for marking as played
+    console.log('Mark as played:', userGameId);
   };
 
-  // Update the context whenever viewMode changes
-  useEffect(() => {
-    if (focusedComponent === 'library') {
-      updateComponentSettings('library', {
-        viewMode
-      });
-    }
-    
-    // Also update the parent component if onViewModeChange is provided
-    if (onViewModeChange) {
-      onViewModeChange(viewMode);
-    }
-  }, [viewMode, focusedComponent, updateComponentSettings, onViewModeChange]);
+  const handleToggleHidden = async (userGameId: string, currentHidden: boolean) => {
+    // Implementation for toggling hidden
+    console.log('Toggle hidden:', userGameId, !currentHidden);
+  };
 
-  // Generate new positions when:
-  // 1. Switching to zen mode
-  // 2. Full screen state changes
-  // 3. Display count changes
-  // 4. Current games length changes (pagination)
-  useEffect(() => {
-    if (viewMode === 'zen') {
-      const newPositions = generateZenPositions(currentGames.length, isFullScreenMode);
-      setZenPositions(newPositions);
-      positionsGeneratedRef.current = true;
-      
-      // Set icon count - about 20% of game count in zen mode, with reasonable limits
-      const gameCount = currentGames.length;
-      const newIconCount = Math.min(15, Math.max(5, Math.floor(gameCount * 0.2)));
-      setIconCount(newIconCount);
+  const handleSaveNote = async (userGameId: string, note: string) => {
+    // Implementation for saving note
+    console.log('Save note:', userGameId, note);
+  };
+
+  const handleSortChange = (newSortBy: string) => {
+    if (sortBy === newSortBy) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
-      setIconCount(0); // No icons in grid mode
-    }
-    
-    // Clean up any animation frames on component unmount or when dependencies change
-    return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [viewMode, isFullScreenMode, currentGames.length, displayCount]);
-
-  // When entering full screen, make sure the context has the current view mode
-  const handleEnterFullScreen = () => {
-    enterFullScreenMode('library', {
-      viewMode
-    });
-
-    // Regenerate positions for zen mode when entering fullscreen
-    if (viewMode === 'zen') {
-      const newPositions = generateZenPositions(currentGames.length, true);
-      setZenPositions(newPositions);
+      setSortBy(newSortBy as 'name' | 'dust_score' | 'playtime');
+      setSortDirection('desc');
     }
   };
 
-  // Handle view mode change
-  const handleViewModeChange = (newMode: 'grid' | 'zen') => {
-    setViewMode(newMode);
-    if (focusedComponent === 'library') {
-      updateComponentSettings('library', {
-        viewMode: newMode
-      });
-    }
-
-    // Regenerate positions when switching to zen mode
-    if (newMode === 'zen') {
-      const newPositions = generateZenPositions(currentGames.length, isFullScreenMode);
-      setZenPositions(newPositions);
-      
-      // Set icon count for FloatingIcons when switching to zen mode
-      const gameCount = currentGames.length;
-      const newIconCount = Math.min(15, Math.max(5, Math.floor(gameCount * 0.2)));
-      setIconCount(newIconCount);
-    } else {
-      setIconCount(0); // No icons in grid mode
-    }
-    
-    // Update the parent component if onViewModeChange is provided
-    if (onViewModeChange) {
-      onViewModeChange(newMode);
-    }
+  const resetFilters = () => {
+    setSearchFilter('');
+    setHideIgnored(false);
+    setOnlyUnplayed(false);
+    setSortBy('dust_score');
+    setSortDirection('desc');
   };
 
-  // Handle display count change - reset to page 1 when changing count
-  const handleDisplayCountChange = (value: string) => {
-    const newDisplayCount = parseInt(value);
-    setDisplayCount(newDisplayCount);
-    setCurrentPage(1); // Reset to first page when changing display count
-    
-    // Regenerate zen positions if in zen mode
-    if (viewMode === 'zen') {
-      // Use the new display count to calculate how many games will be shown
-      const newTotalPages = Math.ceil(displayGames.length / newDisplayCount);
-      const newCurrentGames = displayGames.slice(0, newDisplayCount); // Show first page
-      const newPositions = generateZenPositions(newCurrentGames.length, isFullScreenMode);
-      setZenPositions(newPositions);
-      
-      // Update icon count
-      const newIconCount = Math.min(15, Math.max(5, Math.floor(newCurrentGames.length * 0.2)));
-      setIconCount(newIconCount);
-    }
-  };
-
-  // Handle page change
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-    
-    // Regenerate zen positions when changing pages in zen mode
-    if (viewMode === 'zen') {
-      const newStartIndex = (pageNumber - 1) * displayCount;
-      const newEndIndex = Math.min(newStartIndex + displayCount, displayGames.length);
-      const newCurrentGames = displayGames.slice(newStartIndex, newEndIndex);
-      const newPositions = generateZenPositions(newCurrentGames.length, isFullScreenMode);
-      setZenPositions(newPositions);
-    }
-  };
-
-  // Get the appropriate game count for messaging
-  const totalUnplayedCount = (() => {
-    if (propGames) {
-      return propGames.length;
-    }
-    if (isDemo || contextIsDemo) {
-      return unplayedData.library?.length || 0;
-    }
-    return displayGames.length;
-  })();
-
-  // Loading state
-  if (isLoading) {
+  if (zenModeFullScreen || viewMode === 'zen') {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-unplayed-mint mb-4" />
-        <p className="text-gray-400">Loading your game collection...</p>
-      </div>
+      <ZenLayout>
+        <div className="w-full max-w-7xl mx-auto p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Zen Mode - Library</h2>
+            <div className="flex gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleFullScreenMode}
+                    >
+                      <Maximize className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Toggle Full Screen Mode</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                Exit Zen
+              </Button>
+            </div>
+          </div>
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <SteamLoader message="Loading your library..." size="md" variant="secondary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {processedGames.map(game => (
+                <GameCard
+                  key={game.userGame.id}
+                  id={game.userGame.id}
+                  gameId={game.id}
+                  title={game.name}
+                  imageUrl={game.imageUrl}
+                  headerImage={game.header_image}
+                  dustScore={game.userGame.dust_score}
+                  playtimeMinutes={game.userGame.playtime_minutes}
+                  isHidden={game.userGame.hidden}
+                  notes={game.userGame.notes}
+                  onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
+                  onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
+                  onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </ZenLayout>
     );
   }
 
   return (
-    <div className={`${showFullScreenMode ? 'library-fullscreen' : 'terminal-container w-full'} ${isDemo ? 'relative' : ''}`}>
-      {/* Show the full screen mode toggle in the corner when in full screen mode */}
-      {showFullScreenMode && (
-        <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
-          <FullScreenModeToggle />
-        </div>
-      )}
-      
-      {/* View mode controls - show in both regular and full screen mode */}
-      <div className={`flex justify-between items-center mb-4 ${showFullScreenMode ? 'px-8 pt-8' : ''}`}>
-        <h3 className="terminal-header text-2xl">Your Unplayed Library</h3>
-        
-        <div className="flex space-x-2">
-          <Select value={displayCount.toString()} onValueChange={handleDisplayCountChange}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Show" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="8">8 Games</SelectItem>
-              <SelectItem value="12">12 Games</SelectItem>
-              <SelectItem value="24">24 Games</SelectItem>
-              <SelectItem value="48">48 Games</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="terminal-container">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="terminal-header text-2xl">Library Preview</h3>
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6</SelectItem>
+                    <SelectItem value="12">12</SelectItem>
+                    <SelectItem value="24">24</SelectItem>
+                    <SelectItem value="48">48</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Games to show</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <ToggleGroup type="single" value={viewMode} onValueChange={value => value && handleViewModeChange(value as 'grid' | 'zen')}>
-            <ToggleGroupItem value="grid" aria-label="Grid View" className="px-3 py-1">
-              <LayoutGrid className="h-4 w-4 mr-1" />
-              Grid
+          <ToggleGroup type="single" value={viewMode} onValueChange={value => value && setViewMode(value as 'grid' | 'zen')}>
+            <ToggleGroupItem value="grid" aria-label="Grid View">
+              <Grid className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="zen" aria-label="Zen View" className="px-3 py-1">
-              <List className="h-4 w-4 mr-1" />
-              Zen
+            <ToggleGroupItem value="zen" aria-label="Zen View">
+              <Eye className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
+        </div>
+      </div>
+
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search games..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           
-          {!showFullScreenMode && (
-            <button 
-              onClick={handleEnterFullScreen} 
-              className="px-3 py-1 bg-black/30 border border-unplayed-mint/30 rounded-md hover:bg-black/50 transition-colors duration-200 flex items-center"
-              title="Enter full-screen mode"
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Select value={sortBy} onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="dust_score">Dust Score</SelectItem>
+                    <SelectItem value="playtime">Playtime</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sort games by different criteria</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSortChange(sortBy)}
+          >
+            {sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {/* Filter Toggles */}
+        <div className="flex gap-2">
+          <Button
+            variant={onlyUnplayed ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyUnplayed(!onlyUnplayed)}
+          >
+            Only Unplayed
+          </Button>
+          <Button
+            variant={hideIgnored ? "default" : "outline"}
+            size="sm"
+            onClick={() => setHideIgnored(!hideIgnored)}
+          >
+            Hide Ignored
+          </Button>
+          {(searchFilter || onlyUnplayed || hideIgnored) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
             >
-              <Maximize className="h-4 w-4" />
-            </button>
+              Clear Filters
+            </Button>
           )}
         </div>
       </div>
-      
-      {/* Fixed height container that doesn't expand */}
-      <div className={`${getContainerHeight()} relative w-full`}>
-        {/* Grid view mode */}
-        {viewMode === 'grid' ? (
-          <ScrollArea className="h-full w-full">
-            <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-2 ${showFullScreenMode ? 'lg:grid-cols-6 xl:grid-cols-8' : ''}`}>
-              {currentGames.map(game => {
-                // Handle both LibraryGame and GameListItem types, plus demo data
-                const gameId = 'id' in game ? game.id : ('gameId' in game ? game.gameId : game.id);
-                const title = 'name' in game ? game.name : ('title' in game ? game.title : game.name);
-                
-                // FIXED: Proper image handling for both demo and live data
-                let image;
-                if (isDemo || contextIsDemo) {
-                  // For demo mode, use the image directly from demo data
-                  image = game.image || '/placeholder.svg';
-                } else {
-                  // For live data, use the enhanced image utility with the full game object
-                  image = getBestGameImageFromDbData(game, gameId) || '/placeholder.svg';
-                }
-                
-                console.log('Grid game image processing:', { 
-                  gameId, 
-                  title, 
-                  image, 
-                  isDemo: isDemo || contextIsDemo,
-                  hasHeaderImage: !!(game.header_image || (game as any).games?.header_image),
-                  hasImageUrl: !!(game.image_url || (game as any).games?.image_url),
-                  originalGame: game 
-                });
-                
-                return (
-                  <div 
-                    key={gameId}
-                    className={`relative overflow-hidden rounded-md transition-transform duration-300 hover:scale-105 ${showFullScreenMode ? 'library-game-fullscreen' : ''}`}
-                    onMouseEnter={() => setHoveredGame(gameId)}
-                    onMouseLeave={() => setHoveredGame(null)}
-                  >
-                    <div className="aspect-[460/215] w-full">
-                      <img 
-                        src={image} 
-                        alt={title} 
-                        className="w-full h-full object-cover" 
-                        loading="lazy"
-                        onError={(e) => {
-                          console.log('Image failed to load:', image, 'for game:', title);
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    </div>
-                    
-                    <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex flex-col justify-end transition-opacity duration-300 ${hoveredGame === gameId || showFullScreenMode ? 'opacity-100' : 'opacity-0'}`}>
-                      <p className="text-white text-xs font-medium truncate">{title}</p>
-                      <p className="text-unplayed-mint text-xs">Never played</p>
-                    </div>
-                    
-                    <div 
-                      className="absolute top-1 right-1 bg-unplayed-red/80 rounded-full w-3 h-3" 
-                      title="Unplayed"
-                    ></div>
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
+
+      <div className="terminal-content">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <SteamLoader message="Loading your library..." size="md" variant="secondary" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-400">
+            <p>Error loading library: {error.message}</p>
+          </div>
+        ) : processedGames.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <p>No games found matching your criteria.</p>
+          </div>
         ) : (
-          // Enhanced Zen view mode with more stable animations
-          <div className={`${showFullScreenMode ? 'h-[calc(100vh-250px)]' : 'h-64'} overflow-hidden relative w-full`}>
-            {/* Add floating icons in zen mode */}
-            {viewMode === 'zen' && iconCount > 0 && (
-              <div className="absolute inset-0 pointer-events-none opacity-40">
-                <FloatingIcons count={iconCount} />
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {processedGames.map(game => (
+                <GameCard
+                  key={game.userGame.id}
+                  id={game.userGame.id}
+                  gameId={game.id}
+                  title={game.name}
+                  imageUrl={game.imageUrl}
+                  headerImage={game.header_image}
+                  dustScore={game.userGame.dust_score}
+                  playtimeMinutes={game.userGame.playtime_minutes}
+                  isHidden={game.userGame.hidden}
+                  notes={game.userGame.notes}
+                  onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
+                  onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
+                  onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
+                />
+              ))}
+            </div>
+            
+            {libraryData?.totalCount && libraryData.totalCount > limit && (
+              <div className="mt-6 text-center">
+                <p className="text-gray-400 text-sm mb-3">
+                  Showing {processedGames.length} of {libraryData.totalCount} games
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setViewMode('zen')}
+                  className="bg-unplayed-pink/20 text-unplayed-pink hover:bg-unplayed-pink/30 border-unplayed-pink/30"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View All Games
+                </Button>
               </div>
             )}
-            
-            {currentGames.map((game, index) => {
-              // Handle both LibraryGame and GameListItem types, plus demo data
-              const gameId = 'id' in game ? game.id : ('gameId' in game ? game.gameId : game.id);
-              const title = 'name' in game ? game.name : ('title' in game ? game.title : game.name);
-              
-              // Only render if we have position data for this index
-              if (!zenPositions[index]) return null;
-              
-              const position = zenPositions[index];
-              
-              return (
-                <div 
-                  key={`${gameId}-${position.uniqueId}`}
-                  className="absolute transition-all zen-game-item"
-                  style={{
-                    top: position.top || '50%',
-                    left: position.left || '50%',
-                    transform: `translate(-50%, -50%) rotate(${position.initialRotation || 0}deg)`,
-                    opacity: 0.8,
-                    animation: `
-                      zen-float-stable ${position.duration || 4}s ease-in-out infinite alternate, 
-                      zen-fade-in 1.5s ease-out forwards
-                    `,
-                    // Define custom animation properties in style
-                    '--anim-x': `${position.animDirectionX * position.animDistance || 1}%`,
-                    '--anim-y': `${position.animDirectionY * position.animDistance || 1}%`,
-                    fontSize: position.fontSize || '1rem',
-                    zIndex: 5,
-                    transition: 'transform 0.3s ease, text-shadow 0.3s ease, color 0.3s ease',
-                  } as React.CSSProperties}
-                >
-                  <p 
-                    className={`text-unplayed-mint whitespace-nowrap text-glow transition-colors duration-300 ${position.hoverColor || ''}`}
-                  >
-                    {title}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+          </>
         )}
       </div>
-      
-      {/* Pagination controls - display if we have more than one page */}
-      {totalPages > 1 && (
-        <div className="mt-6 mb-6">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))} 
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Logic to show correct page numbers
-                let pageNum = i + 1;
-                
-                // If more than 5 pages, adjust the displayed page numbers
-                if (totalPages > 5) {
-                  if (currentPage <= 3) {
-                    // Near the start
-                    pageNum = i + 1;
-                    if (i === 4) pageNum = totalPages;
-                  } else if (currentPage >= totalPages - 2) {
-                    // Near the end
-                    pageNum = totalPages - 4 + i;
-                    if (i === 0) pageNum = 1;
-                  } else {
-                    // In the middle
-                    pageNum = currentPage - 2 + i;
-                    if (i === 0) pageNum = 1;
-                    if (i === 4) pageNum = totalPages;
-                  }
-                }
-                
-                return (
-                  <PaginationItem key={pageNum}>
-                    <PaginationLink 
-                      isActive={currentPage === pageNum} 
-                      onClick={() => handlePageChange(pageNum)}
-                    >
-                      {pageNum}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
-      
-      {/* Only show these controls when not in full screen mode and when not using as a view mode in library page */}
-      {!showFullScreenMode && !propGames && (
-        <div className="text-center mt-6 flex flex-col items-center">
-          <p className="text-gray-400">
-            Showing {currentGames.length} of {totalUnplayedCount} unplayed games
-          </p>
-          
-          {isDemo ? (
-            <div className="mt-auto pt-4 text-center flex justify-center">
-              <p className="text-sm text-unplayed-mint">
-                You're in Demo Mode. Sign in to track your Unplayed Library.
-              </p>
-            </div>
-          ) : (
-            <Link to="/library" className="btn-secondary mt-4 inline-flex items-center gap-2">
-              View Full Library
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          )}
-        </div>
-      )}
     </div>
   );
 };
 
-export default withDemoIndicator(LibraryPreview);
+export default LibraryPreview;
