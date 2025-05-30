@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, SortAsc, SortDesc, Grid, List, Maximize, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -45,6 +44,11 @@ const LibraryGamesTab = () => {
     return paginatedGames.map(game => game.name);
   }, [paginatedGames]);
 
+  // Dynamic count for zen mode - show all visible games up to 10
+  const zenModeCount = useMemo(() => {
+    return Math.min(gameNames.length, 10);
+  }, [gameNames.length]);
+
   const handlePageSizeChange = (newSize: string) => {
     const size = parseInt(newSize);
     setPageSize(size);
@@ -81,7 +85,7 @@ const LibraryGamesTab = () => {
           
           <div className="absolute inset-0 overflow-hidden">
             <FloatingIcons count={5} />
-            <FloatingGameNames gameNames={gameNames} count={Math.min(8, gameNames.length)} />
+            <FloatingGameNames gameNames={gameNames} count={zenModeCount} />
           </div>
         </div>
       </div>
