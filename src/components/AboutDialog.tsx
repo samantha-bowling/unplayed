@@ -116,7 +116,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p>
-                  We use Steam's public Web APIs and some community-powered sources to give you a birds-eye view of your library. It's not 100% precise, but it's shockingly close—and frankly, close enough to guilt you into action.
+                  We use Steam's public Web APIs to give you a birds-eye view of your library. It's not 100% precise, but it's shockingly close—and frankly, good enough to guilt you into action.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -141,7 +141,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p>
-                  If you're Steam-shy or just peeking around, Demo Mode lets you experience unplayed with some fake-but-familiar data. Think of it as New Game+ for curiosity.
+                  If you're Steam-shy or just peeking around, Demo Mode lets you experience unplayed with some fake-but-familiar data.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -152,7 +152,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p>
-                  We use Supabase for our database and authentication. I don't know how it all works exactly. Maybe magic. Please don't ask me any more technical questions.
+                  We use Supabase for our database and authentication. We don't know how it all works exactly. Maybe magic.
                 </p>
               </AccordionContent>
             </AccordionItem>
