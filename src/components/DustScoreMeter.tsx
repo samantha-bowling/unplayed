@@ -4,7 +4,7 @@ import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
-import DustThermometer from './dust/DustThermometer';
+import DustScoreIcon from './dust/DustScoreIcon';
 import {
   Tooltip,
   TooltipContent,
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { InfoIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import CleanScoreMeterSmall from './dust/CleanScoreMeterSmall';
+import CleanScoreSimple from './dust/CleanScoreSimple';
 
 interface DustScoreProps extends WithDemoProps {
   score?: number;
@@ -42,8 +42,8 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
         <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
         <div className="terminal-content flex flex-col items-center justify-center p-8">
           <div className="animate-pulse">
-            <div className="w-16 h-64 rounded-full bg-gray-700 mb-4"></div>
-            <div className="w-32 h-8 bg-gray-700 rounded"></div>
+            <div className="w-16 h-16 rounded-full bg-gray-700 mb-4 mx-auto"></div>
+            <div className="w-32 h-8 bg-gray-700 rounded mx-auto"></div>
           </div>
           <p className="text-gray-400 mt-4">Calculating dust...</p>
         </div>
@@ -76,24 +76,25 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
         </TooltipProvider>
       </div>
 
-      <div className="terminal-content flex flex-col items-center py-4">
-        {/* New Thermometer Visualization */}
-        <DustThermometer score={actualScore} isDemo={isDemoMode} />
+      <div className="terminal-content flex flex-col py-4">
+        {/* New Icon-Based Visualization */}
+        <DustScoreIcon score={actualScore} isDemo={isDemoMode} />
 
         {showCleanScore && (
-          <div className="mt-8 pt-4 border-t border-gray-700 w-full flex justify-center">
-            <CleanScoreMeterSmall 
+          <>
+            <div className="my-4 border-t border-gray-700 w-full"></div>
+            <CleanScoreSimple 
               score={unplayedData.cleanScore || 0} 
               tier={unplayedData.cleanTier}
             />
-          </div>
+          </>
         )}
 
         {user && !isDemoMode && (
-          <div className="mt-6">
+          <div className="mt-6 flex justify-center">
             <Link
               to="/dust"
-              className="px-4 py-2 bg-unplayed-mint/20 hover:bg-unplayed-mint/30 text-unplayed-mint text-sm rounded-md transition-colors"
+              className="px-4 py-2 bg-unplayed-pink/20 hover:bg-unplayed-pink/30 text-unplayed-pink text-sm rounded-md transition-colors font-medium"
             >
               View Detailed Report
             </Link>
