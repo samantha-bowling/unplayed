@@ -69,7 +69,6 @@ const CleanScoreMeter = ({
   const getTierName = () => cleanTier?.name || 'Calculating...';
 
   const cleanStreak = data?.cleanStreak || 0;
-  const recentlyPlayedUnplayed = data?.recentlyPlayedUnplayed || 0;
   const cleanStreakMetadata = data?.cleanStreakMetadata || {
     streakQuality: 'bronze',
     gracePeriodUsed: false
@@ -159,7 +158,7 @@ const CleanScoreMeter = ({
         <div className="text-center mt-2">
           <p className="text-xl font-medium" style={{ color: getTierColor() }}>{getTierName()}</p>
           
-          {/* Enhanced Clean Streak Display */}
+          {/* Clean Streak Display */}
           {hasCleanStreak && (
             <div className="flex items-center justify-center gap-2 mt-3 p-2 bg-black/20 rounded-lg">
               <streakQuality.icon 
@@ -179,21 +178,6 @@ const CleanScoreMeter = ({
                 {cleanStreakMetadata?.gracePeriodUsed && (
                   <span className="text-xs text-yellow-400">Grace period active</span>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Recently Played Unplayed Games */}
-          {recentlyPlayedUnplayed > 0 && (
-            <div className="flex items-center justify-center gap-2 mt-2 p-2 bg-black/20 rounded-lg">
-              <span className="text-purple-400">⚡</span>
-              <div className="text-left">
-                <div className="text-sm font-medium text-purple-400">
-                  Backlog Progress: {recentlyPlayedUnplayed}
-                </div>
-                <div className="text-xs text-gray-400">
-                  Games conquered from your backlog
-                </div>
               </div>
             </div>
           )}

@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics, transformToUnplayedData } from '@/utils/data-transforms';
@@ -105,7 +106,11 @@ const useDustScoreData = () => {
           cleanScoreBreakdown: { completionRate: 0, engagementFactor: 0, recencyFactor: 0 },
           cleanTier: CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
           cleanStreak: 0,
-          recentlyPlayedCount: 0
+          recentlyPlayedCount: 0,
+          cleanStreakMetadata: {
+            gracePeriodUsed: false,
+            streakQuality: 'bronze' as const
+          }
         };
       }
 
@@ -193,7 +198,7 @@ const useDustScoreData = () => {
         return lastPlayed >= thirtyDaysAgo;
       }).length;
 
-      // Calculate clean score using our enhanced calculation
+      // Calculate clean score using our simplified calculation
       const gamesList = userGamesWithDust.map(game => ({
         id: game.game_id,
         name: game.games?.name || '',
@@ -216,7 +221,7 @@ const useDustScoreData = () => {
         howLongToBeatId: null,
       }));
 
-      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
+      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak, streakMetadata } =
         calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
 
       return {
@@ -234,10 +239,9 @@ const useDustScoreData = () => {
         cleanTier,
         cleanStreak,
         recentlyPlayedCount,
-        recentlyPlayedUnplayed: 0,
-        cleanStreakMetadata: {
-          streakQuality: 'bronze',
-          gracePeriodUsed: false
+        cleanStreakMetadata: streakMetadata || {
+          gracePeriodUsed: false,
+          streakQuality: 'bronze' as const
         },
         totalGames,
         unplayedGames: totalGames - playedGames
@@ -283,8 +287,8 @@ const useDustScoreData = () => {
   ) || CLEAN_SCORE_TIERS[2];
 
   const demoCleanStreakMetadata = {
-    streakQuality: 'silver' as const,
-    gracePeriodUsed: false
+    gracePeriodUsed: false,
+    streakQuality: 'silver' as const
   };
 
   if (isDemo) {
@@ -299,7 +303,6 @@ const useDustScoreData = () => {
       cleanTier: demoCleanTier,
       cleanStreak: 4,
       recentlyPlayedCount: 5,
-      recentlyPlayedUnplayed: 2,
       cleanStreakMetadata: demoCleanStreakMetadata
     };
 

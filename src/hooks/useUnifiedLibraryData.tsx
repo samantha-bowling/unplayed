@@ -178,12 +178,12 @@ export const useUnifiedLibraryData = () => {
       totalGamesInDB: demoData.library.length,
       unplayedGamesInDB: demoData.library.filter(game => game.playtime === 0).length,
       playedGamesInDB: demoData.library.filter(game => game.playtime > 0).length,
-      totalDustScoreInDB: demoData.library.reduce((sum, game) => sum + (game.dustScore || 0), 0),
+      totalDustScoreInDB: demoData.library.reduce((sum, game) => sum + 25, 0), // Simple calculation
       totalPlaytimeInDB: demoData.library.reduce((sum, game) => sum + game.playtime, 0),
       totalGames: demoData.library.length,
       unplayedGames: demoData.library.filter(game => game.playtime === 0).length,
       playedGames: demoData.library.filter(game => game.playtime > 0).length,
-      totalDustScore: demoData.library.reduce((sum, game) => sum + (game.dustScore || 0), 0),
+      totalDustScore: demoData.library.reduce((sum, game) => sum + 25, 0), // Simple calculation
       totalPlaytime: demoData.library.reduce((sum, game) => sum + game.playtime, 0),
       recentlyPlayedCount: 3,
       metadataCompletionPercentage: 100,
@@ -196,7 +196,7 @@ export const useUnifiedLibraryData = () => {
         game_id: game.id,
         playtime_minutes: game.playtime,
         hidden: false,
-        dust_score: game.dustScore || 0,
+        dust_score: 25, // Simple demo dust score
         last_played_date: null,
         acquisition_date: null,
         notes: null,

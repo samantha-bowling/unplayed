@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -27,8 +28,8 @@ const DustPage = () => {
   // Debug logging
   useEffect(() => {
     console.log("DustPage data:", data);
-    console.log("DustPage dust score:", data.dustScore);
-    console.log("DustPage dust score breakdown:", data.dustScoreBreakdown);
+    console.log("DustPage dust score:", data?.dustScore);
+    console.log("DustPage dust score breakdown:", data?.dustScoreBreakdown);
   }, [data]);
 
   const refreshData = async () => {
@@ -149,8 +150,8 @@ const DustPage = () => {
                 
                 <TabsContent value="breakdown" className="space-y-4">
                   <DustScoreBreakdown 
-                    totalScore={data.dustScore}
-                    breakdown={data.dustScoreBreakdown}
+                    totalScore={data?.dustScore || 0}
+                    breakdown={data?.dustScoreBreakdown}
                   />
                 </TabsContent>
                 
@@ -160,7 +161,7 @@ const DustPage = () => {
                     breakdown={data?.cleanScoreBreakdown}
                     cleanStreak={data?.cleanStreak || 0}
                     recentlyPlayedCount={data?.recentlyPlayedCount || 0}
-                    recentlyPlayedUnplayed={data?.recentlyPlayedUnplayed || 0}
+                    recentlyPlayedUnplayed={0}
                     cleanStreakMetadata={data?.cleanStreakMetadata || {
                       streakQuality: 'bronze',
                       gracePeriodUsed: false

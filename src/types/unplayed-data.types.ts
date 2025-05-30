@@ -81,13 +81,10 @@ export interface CleanScoreBreakdown {
 }
 
 /**
- * Enhanced clean streak metadata
+ * Simplified clean streak metadata - only what we actually use
  */
 export interface CleanStreakMetadata {
   gracePeriodUsed: boolean;
-  lastPlayDate: string | null;
-  averageSessionLength: number;
-  streakStartDate: string | null;
   streakQuality: 'bronze' | 'silver' | 'gold';
 }
 
@@ -162,7 +159,6 @@ export interface UnplayedDataType {
   cleanStreak?: number;
   recentlyPlayedCount?: number;
   
-  // New enhanced features
-  recentlyPlayedUnplayed?: number; // Games that went from 0 to >0 playtime
-  cleanStreakMetadata?: CleanStreakMetadata; // Enhanced streak information
+  // Simplified metadata
+  cleanStreakMetadata?: CleanStreakMetadata;
 }
