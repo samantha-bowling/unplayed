@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import { useMemo } from 'react';
 import { queryKeys } from './use-query-keys';
 
@@ -43,6 +44,7 @@ export interface UnifiedLibraryStats {
  */
 export const useUnifiedLibraryData = () => {
   const { user } = useAuth();
+  const { isDemo, demoData } = useDemoMode();
   
   // Main query for all user games - this is the single source of truth
   const { 
@@ -92,14 +94,45 @@ export const useUnifiedLibraryData = () => {
       
       return userGamesData as UnifiedGameData[];
     },
-    enabled: !!user,
+    enabled: !isDemo && !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
 
-  // Calculate statistics from the unified data
+  // Transform demo data to unified format when in demo mode
+  const demoUnifiedData = useMemo((): UnifiedGameData[] => {
+    if (!isDemo || !demoData.gamesList) return [];
+    
+    console.log('Transforming demo data to unified format');
+    
+    return demoData.gamesList.map((game, index) => ({
+      id: `demo-${game.id}`,
+      game_id: game.id,
+      playtime_minutes: game.playtimeMinutes,
+      hidden: false,
+      dust_score: game.dustScore || 0,
+      last_played_date: game.lastPlayed || null,
+      acquisition_date: game.added || null,
+      notes: game.notes || null,
+      games: {
+        id: game.id,
+        name: game.name,
+        image_url: game.image,
+        header_image: game.image,
+        release_date: game.releaseDate || null,
+        metacritic_score: game.metacritic || null,
+        genres: game.genres || [],
+        categories: game.categories || [],
+        price_cents: typeof game.price === 'number' ? Math.round(game.price * 100) : (game.price_cents || null),
+      }
+    }));
+  }, [isDemo, demoData]);
+
+  // Calculate statistics from the unified data (demo or real)
   const stats = useMemo((): UnifiedLibraryStats => {
-    if (!rawGameData) {
+    const dataToUse = isDemo ? demoUnifiedData : (rawGameData || []);
+    
+    if (!dataToUse.length) {
       return {
         totalGames: 0,
         unplayedGames: 0,
@@ -112,7 +145,7 @@ export const useUnifiedLibraryData = () => {
     }
 
     // Filter out games without valid game data
-    const validGames = rawGameData.filter(game => game.games && game.games.name);
+    const validGames = dataToUse.filter(game => game.games && game.games.name);
     
     const unplayedGames = validGames.filter(game => 
       !game.playtime_minutes || game.playtime_minutes === 0
@@ -140,24 +173,38 @@ export const useUnifiedLibraryData = () => {
       return lastPlayedDate >= thirtyDaysAgo;
     }).length;
 
-    // Calculate shelf life - get oldest unplayed games by RELEASE DATE
-    const unplayedGamesList = unplayedGames.filter(game => game.games?.release_date);
-    const shelfLife = unplayedGamesList
-      .sort((a, b) => {
-        const dateA = new Date(a.games!.release_date!).getTime();
-        const dateB = new Date(b.games!.release_date!).getTime();
-        return dateA - dateB;
-      })
-      .slice(0, 50)
-      .map(game => ({
-        id: game.game_id,
-        name: game.games!.name,
-        image: game.games!.image_url || game.games!.header_image,
-        addedDate: game.acquisition_date,
-        releaseDate: game.games!.release_date,
-        price: game.games!.price_cents ? game.games!.price_cents / 100 : 0,
-        genres: game.games!.genres || []
+    // Calculate shelf life - for demo mode, use the existing demo shelf life data
+    let shelfLife;
+    if (isDemo && demoData.shelfLife) {
+      shelfLife = demoData.shelfLife.map(game => ({
+        id: game.id,
+        name: game.name,
+        image: game.image,
+        addedDate: game.addedDate,
+        releaseDate: game.releaseDate,
+        price: 0, // Demo data doesn't have prices in shelf life
+        genres: []
       }));
+    } else {
+      // Calculate shelf life for real data - get oldest unplayed games by RELEASE DATE
+      const unplayedGamesList = unplayedGames.filter(game => game.games?.release_date);
+      shelfLife = unplayedGamesList
+        .sort((a, b) => {
+          const dateA = new Date(a.games!.release_date!).getTime();
+          const dateB = new Date(b.games!.release_date!).getTime();
+          return dateA - dateB;
+        })
+        .slice(0, 50)
+        .map(game => ({
+          id: game.game_id,
+          name: game.games!.name,
+          image: game.games!.image_url || game.games!.header_image,
+          addedDate: game.acquisition_date,
+          releaseDate: game.games!.release_date,
+          price: game.games!.price_cents ? game.games!.price_cents / 100 : 0,
+          genres: game.games!.genres || []
+        }));
+    }
 
     const result = {
       totalGames: validGames.length,
@@ -170,14 +217,19 @@ export const useUnifiedLibraryData = () => {
     };
 
     console.log('Unified library stats:', result);
+    console.log('Demo mode:', isDemo);
     
     return result;
-  }, [rawGameData]);
+  }, [isDemo, demoUnifiedData, rawGameData, demoData]);
+
+  // Return appropriate data based on demo mode
+  const data = isDemo ? demoUnifiedData : (rawGameData || []);
+  const loading = isDemo ? false : isLoading;
 
   return {
-    data: rawGameData || [],
+    data,
     stats,
-    isLoading,
+    isLoading: loading,
     error,
     refetch,
   };
