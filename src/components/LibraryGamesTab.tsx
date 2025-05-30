@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, SortAsc, SortDesc, Grid, List, Maximize, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useLibraryData } from '@/hooks/use-library-data';
 import { usePaginatedLibrary } from '@/hooks/use-paginated-library';
 import GameCard from '@/components/GameCard';
+import FloatingIcons from '@/components/FloatingIcons';
+import FloatingGameNames from '@/components/FloatingGameNames';
 import ZenLayout from '@/layouts/ZenLayout';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 
@@ -38,6 +41,11 @@ const LibraryGamesTab = () => {
     saveGameNote,
   } = usePaginatedLibrary();
 
+  // Extract game names for zen mode
+  const gameNames = useMemo(() => {
+    return paginatedGames.map(game => game.name);
+  }, [paginatedGames]);
+
   const handlePageSizeChange = (newSize: string) => {
     const size = parseInt(newSize);
     setPageSize(size);
@@ -59,8 +67,8 @@ const LibraryGamesTab = () => {
   if (viewMode === 'zen') {
     return (
       <ZenLayout>
-        <div className="w-full max-w-7xl mx-auto p-4">
-          <div className="flex justify-between items-center mb-6">
+        <div className="w-full h-full relative">
+          <div className="flex justify-between items-center mb-6 relative z-10">
             <h2 className="text-2xl font-bold text-white">Zen Mode - Library Games</h2>
             <div className="flex gap-2">
               <TooltipProvider>
@@ -89,24 +97,9 @@ const LibraryGamesTab = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {paginatedGames.map(game => (
-              <GameCard
-                key={game.userGame.id}
-                id={game.userGame.id}
-                gameId={game.id}
-                title={game.name}
-                imageUrl={game.image_url}
-                headerImage={game.header_image}
-                dustScore={game.userGame.dust_score}
-                playtimeMinutes={game.userGame.playtime_minutes}
-                isHidden={game.userGame.hidden}
-                notes={game.userGame.notes}
-                onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
-                onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
-                onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
-              />
-            ))}
+          <div className="absolute inset-0 overflow-hidden">
+            <FloatingIcons count={30} />
+            <FloatingGameNames gameNames={gameNames} count={Math.min(20, gameNames.length)} />
           </div>
         </div>
       </ZenLayout>
