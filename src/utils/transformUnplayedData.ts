@@ -5,8 +5,7 @@ import { processGenres, countGenres } from './genre-processing';
 
 /**
  * Transforms user game data into a structured format for the dashboard.
- * Aggregates playtime, spending, and other relevant metrics.
- * Note: Removed acquisition_date dependencies as this data is unreliable.
+ * Uses enhanced dust score and clean score calculations.
  */
 export const transformUserGameData = (
   userGamesData: any[],
@@ -15,7 +14,7 @@ export const transformUserGameData = (
   // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
-  let totalDustScore = 0; // Add dust score accumulator
+  let totalDustScore = 0; // Sum of all dust scores
   const gamesList: GameListItem[] = [];
 
   // Process each game
@@ -27,7 +26,7 @@ export const transformUserGameData = (
 
     const price = gameData.price_cents ? (gameData.price_cents / 100) : 0;
     const playtimeMinutes = game.playtime_minutes || 0;
-    const dustScore = game.dust_score || 0;
+    const dustScore = game.dust_score || 0; // Use the dust score from database (enhanced calculation)
 
     // Accumulate total playtime
     totalPlaytime += playtimeMinutes;
@@ -35,17 +34,17 @@ export const transformUserGameData = (
     // Accumulate total spent
     totalSpent += price;
 
-    // Accumulate total dust score
+    // Accumulate total dust score (sum, not average)
     totalDustScore += dustScore;
 
-    // Populate games list (removed acquisition_date reference)
+    // Populate games list
     gamesList.push({
       id: game.game_id,
       name: gameData.name,
       image: gameData.image_url || gameData.header_image || '',
       playtimeMinutes: playtimeMinutes,
       lastPlayed: game.last_played_date || null,
-      added: null, // Removed acquisition_date dependency
+      added: null, // No longer using acquisition_date
       price: price,
       genres: gameData.genres || [],
       notes: game.notes || null,
@@ -64,7 +63,7 @@ export const transformUserGameData = (
   // Calculate unplayed games count
   const unplayedGames = gamesList.filter(game => game.playtimeMinutes === 0).length;
 
-  // Process genres using new consolidation logic
+  // Process genres using consolidated logic
   const genreCounts = countGenres(userGamesData);
   const genresArray = processGenres(genreCounts);
 
@@ -82,7 +81,7 @@ export const transformUserGameData = (
       id: game.id,
       name: game.name,
       image: game.image || '',
-      addedDate: null, // Removed acquisition_date dependency
+      addedDate: null, // No longer using acquisition_date
       releaseDate: game.releaseDate,
       price: game.price,
       genres: game.genres
@@ -114,7 +113,7 @@ export const transformUserGameData = (
   const playedGames = gamesList.filter(game => game.playtimeMinutes > 0).length;
   const totalPlaytimeHours = totalPlaytime / 60;
 
-  // Calculate clean score using enhanced calculation
+  // Calculate enhanced clean score using the same algorithm as the leaderboard
   const { 
     cleanScore, 
     breakdown: cleanScoreBreakdown, 
@@ -133,13 +132,13 @@ export const transformUserGameData = (
   return {
     unplayedGames,
     totalGames: userGamesData.length,
-    dustScore: totalDustScore, // Use accumulated dust score
+    dustScore: totalDustScore, // Use sum of all dust scores (not average)
     totalPlaytime: totalPlaytimeHours,
     totalSpent,
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: shelfLife, // Now properly sorted by oldest release date only
+    shelfLife: shelfLife,
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,

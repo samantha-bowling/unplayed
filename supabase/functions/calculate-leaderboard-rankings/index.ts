@@ -15,6 +15,49 @@ const corsHeaders = {
 // Constants
 const BATCH_SIZE = 50; // Process 50 users at a time to avoid memory issues
 
+// Enhanced clean score calculation (matches frontend utils/clean-score-utils.ts)
+const calculateEnhancedCleanScore = (
+  playedGames: number,
+  totalGames: number,
+  totalPlaytimeHours: number,
+  recentlyPlayedCount: number
+): { cleanScore: number; breakdown: any } => {
+  if (totalGames === 0) {
+    return {
+      cleanScore: 0,
+      breakdown: { completionRate: 0, engagementFactor: 0, recencyFactor: 0 }
+    };
+  }
+
+  // Small library bonus (libraries under 10 games get a boost)
+  let adjustedPlayedGames = playedGames;
+  if (totalGames < 10) {
+    adjustedPlayedGames = Math.min(playedGames * 1.2, totalGames);
+  }
+
+  // 1. Completion Rate (40% weight)
+  const completionRate = adjustedPlayedGames / totalGames;
+
+  // 2. Engagement Factor (30% weight)
+  const avgPlaytimePerGame = playedGames > 0 ? totalPlaytimeHours / playedGames : 0;
+  const engagementFactor = Math.min(avgPlaytimePerGame / 10, 1); // 10 hours as benchmark
+
+  // 3. Recency Factor (30% weight)
+  const recencyFactor = Math.min(recentlyPlayedCount / totalGames, 1);
+
+  // Calculate final clean score
+  const cleanScore = Math.round((completionRate * 0.4 + engagementFactor * 0.3 + recencyFactor * 0.3) * 100);
+
+  return {
+    cleanScore,
+    breakdown: {
+      completionRate: Math.round(completionRate * 100),
+      engagementFactor: Math.round(engagementFactor * 100),
+      recencyFactor: Math.round(recencyFactor * 100)
+    }
+  };
+};
+
 // Handle requests
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -68,7 +111,7 @@ Deno.serve(async (req) => {
       
       for (const user of userBatch) {
         try {
-          // Get user's games
+          // Get user's games with enhanced data for clean score calculation
           const { data: userGames, error: gamesError } = await supabase
             .from('user_games')
             .select(`
@@ -76,6 +119,7 @@ Deno.serve(async (req) => {
               playtime_minutes, 
               dust_score,
               hidden,
+              last_played_date,
               games:game_id (
                 id, 
                 price_cents
@@ -94,11 +138,31 @@ Deno.serve(async (req) => {
             return sum + (game.games?.price_cents || 0);
           }, 0);
 
-          // Calculate average dust score (dust score / game)
+          // Calculate total dust score (sum of all game dust scores)
           const dustScore = userGames.reduce((sum, game) => sum + (game.dust_score || 0), 0);
           
-          // Calculate clean score (percentage of games played)
-          const cleanScore = totalGames > 0 ? Math.round((playedGames / totalGames) * 100) : 0;
+          // Calculate total playtime in hours
+          const totalPlaytimeHours = userGames.reduce((sum, game) => {
+            return sum + ((game.playtime_minutes || 0) / 60);
+          }, 0);
+
+          // Calculate recently played games count (last 30 days)
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          
+          const recentlyPlayedCount = userGames.filter(game => {
+            if (!game.last_played_date) return false;
+            const lastPlayedDate = new Date(game.last_played_date);
+            return lastPlayedDate >= thirtyDaysAgo;
+          }).length;
+
+          // Calculate enhanced clean score using the same algorithm as frontend
+          const { cleanScore } = calculateEnhancedCleanScore(
+            playedGames,
+            totalGames,
+            totalPlaytimeHours,
+            recentlyPlayedCount
+          );
 
           // Get previous rankings for this user
           const { data: previousEntry } = await supabase
