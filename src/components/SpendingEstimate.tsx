@@ -22,7 +22,7 @@ const SpendingEstimate = ({
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
-  // Use amount from props if provided, otherwise use enhanced spending data
+  // Use amount from props if provided, otherwise use enhanced spending data (unplayed only)
   const spendingAmount = amount !== undefined ? amount : spendingData.totalSpent;
 
   console.log('SpendingEstimate - Enhanced data:', {
@@ -60,34 +60,6 @@ const SpendingEstimate = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          
-          {/* Data quality indicator for authenticated users */}
-          {!isDemo && user && spendingData && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className={`w-2 h-2 rounded-full ${
-                      spendingData.confidence === 'high' ? 'bg-green-500' :
-                      spendingData.confidence === 'medium' ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`} />
-                    <span className="text-xs text-gray-500">
-                      {spendingData.confidence} confidence
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-sm">
-                  <div className="text-sm space-y-1">
-                    <p>{spendingData.displayInfo.confidenceText}</p>
-                    {spendingData.displayInfo.warningText && (
-                      <p className="text-yellow-400">⚠️ {spendingData.displayInfo.warningText}</p>
-                    )}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
         </div>
         {showRefresh && (
           <TooltipProvider>
@@ -131,18 +103,6 @@ const SpendingEstimate = ({
             <p className="text-gray-300 mb-6">
               Do you really want to see how much money you've spent on games you've never played?
             </p>
-            
-            {/* Show data quality summary for authenticated users */}
-            {!isDemo && user && spendingData && (
-              <div className="mb-4 text-sm text-gray-400 space-y-1">
-                <p>{spendingData.displayInfo.displayText}</p>
-                {spendingData.displayInfo.warningText && (
-                  <p className="text-yellow-400 text-xs">
-                    ⚠️ {spendingData.displayInfo.warningText}
-                  </p>
-                )}
-              </div>
-            )}
             
             <button 
               onClick={() => setIsVisible(true)}
