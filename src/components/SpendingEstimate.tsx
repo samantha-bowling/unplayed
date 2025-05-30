@@ -45,7 +45,7 @@ const SpendingEstimate = ({
         <div>
           <h3 className="terminal-header text-2xl">unplayed Value</h3>
           <p className="text-sm text-gray-400">
-            How much your unplayed games cost
+            How much your unplayed games are worth
           </p>
         </div>
         {showRefresh && (
