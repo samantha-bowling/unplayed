@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/tooltip";
 import { InfoIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import CleanScoreSimple from './dust/CleanScoreSimple';
 
 interface DustScoreProps extends WithDemoProps {
   score?: number;
@@ -42,12 +41,6 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
   
   const actualScore = score ?? dashboardMetrics.dustScore;
   const isDemoMode = isDemo || contextIsDemo;
-  
-  // Memoized clean score display
-  const showCleanScore = useMemo(() => 
-    dashboardMetrics.cleanScore !== undefined && user,
-    [dashboardMetrics.cleanScore, user]
-  );
 
   if (isLoading) {
     return (
@@ -90,20 +83,8 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
       </div>
 
       <div className="terminal-content flex flex-col py-4">
-        {/* New Icon-Based Visualization */}
+        {/* Icon-Based Visualization */}
         <DustScoreIcon score={actualScore} isDemo={isDemoMode} />
-
-        {showCleanScore && (
-          <>
-            <div className="my-4 border-t border-gray-700 w-full"></div>
-            <div className="flex flex-col items-center text-center">
-              <CleanScoreSimple 
-                score={dashboardMetrics.cleanScore || 0} 
-                tier={null}
-              />
-            </div>
-          </>
-        )}
 
         {user && !isDemoMode && (
           <div className="mt-6 flex justify-center">
