@@ -28,35 +28,80 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
   const [limit, setLimit] = useState<number>(12);
+  const [searchFilter, setSearchFilter] = useState<string>('');
+  const [hideIgnored, setHideIgnored] = useState<boolean>(false);
+  const [onlyUnplayed, setOnlyUnplayed] = useState<boolean>(false);
 
-  // Use the library data hook without any parameters
+  // Use the library data hook only when not in demo mode
   const libraryDataResult = useLibraryData();
 
-  const {
-    games: libraryGames,
-    isLoading,
-    error,
-    filters,
-    updateSearchFilter,
-    toggleHideIgnored,
-    toggleOnlyUnplayed,
-    sortBy,
-    sortDirection,
-    updateSort,
-    resetFilters
-  } = libraryDataResult;
+  // In demo mode, use demo library data; otherwise use real data
+  const libraryGames = useMemo(() => {
+    if (isDemo) {
+      // Convert demo data to the expected format
+      return demoData.library.map(game => ({
+        id: game.id,
+        name: game.name,
+        image_url: game.image,
+        header_image: game.image,
+        release_date: null,
+        metacritic_score: null,
+        genres: [],
+        categories: [],
+        userGame: {
+          id: `demo-${game.id}`,
+          game_id: game.id,
+          playtime_minutes: game.playtime,
+          hidden: false,
+          dust_score: Math.floor(Math.random() * 50) + 10, // Random dust score for demo
+          last_played_date: null,
+          acquisition_date: null,
+          notes: null,
+        }
+      }));
+    }
+    return libraryDataResult.games || [];
+  }, [isDemo, demoData.library, libraryDataResult.games]);
 
-  // Memoize filtered and processed games for performance
-  const processedGames = useMemo(() => {
-    if (!libraryGames) return [];
+  const isLoading = isDemo ? false : libraryDataResult.isLoading;
+  const error = isDemo ? null : libraryDataResult.error;
+
+  // Apply filters to the games
+  const filteredGames = useMemo(() => {
+    let filtered = [...libraryGames];
     
-    const limitedGames = viewMode === 'zen' ? libraryGames : libraryGames.slice(0, limit);
+    // Apply search filter
+    if (searchFilter) {
+      const searchLower = searchFilter.toLowerCase();
+      filtered = filtered.filter(game => 
+        game.name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter out ignored games if hideIgnored is true
+    if (hideIgnored) {
+      filtered = filtered.filter(game => !game.userGame.hidden);
+    }
+
+    // Filter to only unplayed games if onlyUnplayed is true
+    if (onlyUnplayed) {
+      filtered = filtered.filter(game => 
+        !game.userGame.playtime_minutes || game.userGame.playtime_minutes === 0
+      );
+    }
+
+    return filtered;
+  }, [libraryGames, searchFilter, hideIgnored, onlyUnplayed]);
+
+  // Memoize processed games for performance
+  const processedGames = useMemo(() => {
+    const limitedGames = viewMode === 'zen' ? filteredGames : filteredGames.slice(0, limit);
     
     return limitedGames.map(game => ({
       ...game,
       imageUrl: getBestGameImageFromDbData(game, game.id)
     }));
-  }, [libraryGames, limit, viewMode]);
+  }, [filteredGames, limit, viewMode]);
 
   // Extract game names for zen mode
   const gameNames = useMemo(() => {
@@ -64,26 +109,36 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   }, [processedGames]);
 
   const handleMarkAsPlayed = async (userGameId: string) => {
+    if (isDemo) {
+      console.log('Demo mode: Mark as played:', userGameId);
+      return;
+    }
     // Implementation for marking as played
     console.log('Mark as played:', userGameId);
   };
 
   const handleToggleHidden = async (userGameId: string, currentHidden: boolean) => {
+    if (isDemo) {
+      console.log('Demo mode: Toggle hidden:', userGameId, !currentHidden);
+      return;
+    }
     // Implementation for toggling hidden
     console.log('Toggle hidden:', userGameId, !currentHidden);
   };
 
   const handleSaveNote = async (userGameId: string, note: string) => {
+    if (isDemo) {
+      console.log('Demo mode: Save note:', userGameId, note);
+      return;
+    }
     // Implementation for saving note
     console.log('Save note:', userGameId, note);
   };
 
-  const handleSortChange = (newSortBy: string) => {
-    if (sortBy === newSortBy) {
-      updateSort(sortBy, sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      updateSort(newSortBy as any, 'desc');
-    }
+  const resetFilters = () => {
+    setSearchFilter('');
+    setHideIgnored(false);
+    setOnlyUnplayed(false);
   };
 
   if (zenModeFullScreen || viewMode === 'zen') {
@@ -178,58 +233,30 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search games..."
-              value={filters.search}
-              onChange={(e) => updateSearchFilter(e.target.value)}
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
               className="pl-10"
             />
           </div>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Select value={sortBy} onValueChange={handleSortChange}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="dust_score">Dust Score</SelectItem>
-                    <SelectItem value="playtime_minutes">Playtime</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Sort games by different criteria</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleSortChange(sortBy)}
-          >
-            {sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-          </Button>
         </div>
 
         {/* Filter Toggles */}
         <div className="flex gap-2">
           <Button
-            variant={filters.onlyUnplayed ? "default" : "outline"}
+            variant={onlyUnplayed ? "default" : "outline"}
             size="sm"
-            onClick={toggleOnlyUnplayed}
+            onClick={() => setOnlyUnplayed(!onlyUnplayed)}
           >
             Only Unplayed
           </Button>
           <Button
-            variant={filters.hideIgnored ? "default" : "outline"}
+            variant={hideIgnored ? "default" : "outline"}
             size="sm"
-            onClick={toggleHideIgnored}
+            onClick={() => setHideIgnored(!hideIgnored)}
           >
             Hide Ignored
           </Button>
-          {(filters.search || filters.onlyUnplayed || filters.hideIgnored) && (
+          {(searchFilter || onlyUnplayed || hideIgnored) && (
             <Button
               variant="ghost"
               size="sm"
