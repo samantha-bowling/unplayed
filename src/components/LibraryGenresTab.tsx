@@ -3,7 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Gamepad2, TrendingUp, Award, Zap } from 'lucide-react';
+import { PcCase, TrendingUp, Award, Zap } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts';
 
@@ -78,189 +79,295 @@ const LibraryGenresTab = () => {
     ][index % 6]
   }));
 
-  const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-
   return (
-    <div className="space-y-6">
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-black/20 border border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Gamepad2 className="h-5 w-5 text-unplayed-mint" />
-              <div>
-                <p className="text-2xl font-bold text-white">{genreStats.length}</p>
-                <p className="text-sm text-gray-400">Total Genres</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Info Banner */}
+        <div className="bg-unplayed-mint/10 border border-unplayed-mint/20 rounded-lg p-4">
+          <p className="text-sm text-unplayed-mint">
+            📊 Note: Games can belong to multiple genres, so totals may exceed your library size. Genre data comes from Steam's classification system.
+          </p>
+        </div>
 
+        {/* Overview Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-black/20 border border-gray-700">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <PcCase className="h-5 w-5 text-unplayed-mint" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">{genreStats.length}</p>
+                      <p className="text-sm text-gray-400">Total Genres</p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Number of different genres in your library</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/20 border border-gray-700">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <TrendingUp className="h-5 w-5 text-blue-400" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">{topGenres[0]?.genre || 'N/A'}</p>
+                      <p className="text-sm text-gray-400">Most Popular</p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Genre with the most games in your library</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/20 border border-gray-700">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <Award className="h-5 w-5 text-unplayed-amber" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">{nicheGenres[0]?.genre || 'N/A'}</p>
+                      <p className="text-sm text-gray-400">Most Niche</p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Genre with the fewest games (minimum 2 games)</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/20 border border-gray-700">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <Zap className="h-5 w-5 text-unplayed-red" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">
+                        {Math.round(highestUnplayedRate[0]?.unplayedPercentage || 0)}%
+                      </p>
+                      <p className="text-sm text-gray-400">Highest Unplayed</p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Percentage of unplayed games in the genre with the highest unplayed rate</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Genre Distribution Bar Chart */}
+          <Card className="bg-black/20 border border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <PcCase className="h-5 w-5 text-unplayed-mint" />
+                <span>Top Genres Distribution</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Shows played vs unplayed games for your top 10 genres</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fill: '#9ca3af', fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fill: '#9ca3af' }} />
+                    <RechartsTooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1e1e1e', 
+                        borderColor: '#374151',
+                        borderRadius: '0.5rem' 
+                      }}
+                    />
+                    <Bar dataKey="unplayed" stackId="a" fill="#ef4444" name="Unplayed" />
+                    <Bar dataKey="played" stackId="a" fill="#22c55e" name="Played" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Unplayed Games by Genre Pie Chart */}
+          <Card className="bg-black/20 border border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-unplayed-red" />
+                <span>Unplayed Games by Genre</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Distribution of your unplayed games across top genres</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1e1e1e', 
+                        borderColor: '#374151',
+                        borderRadius: '0.5rem' 
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Genre Lists */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Unplayed Genres */}
+          <Card className="bg-black/20 border border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-unplayed-red" />
+                <span>Top Unplayed Genres</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Genres with the most unplayed games in your library</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topUnplayedGenres.map((genre, index) => (
+                  <div key={genre.genre} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Badge variant="outline" className="text-xs">
+                        #{index + 1}
+                      </Badge>
+                      <span className="text-white">{genre.genre}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-unplayed-red font-mono">{genre.unplayed}</span>
+                      <span className="text-gray-400 text-sm">/{genre.total}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Most Niche Genres */}
+          <Card className="bg-black/20 border border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Award className="h-5 w-5 text-unplayed-amber" />
+                <span>Most Niche Genres</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Genres with the smallest representation in your library</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {nicheGenres.map((genre, index) => (
+                  <div key={genre.genre} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Badge variant="outline" className="text-xs">
+                        #{index + 1}
+                      </Badge>
+                      <span className="text-white">{genre.genre}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-unplayed-amber font-mono">{genre.total}</span>
+                      <span className="text-gray-400 text-sm"> games</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Genres with Highest Unplayed Rate */}
         <Card className="bg-black/20 border border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
               <TrendingUp className="h-5 w-5 text-blue-400" />
-              <div>
-                <p className="text-2xl font-bold text-white">{topGenres[0]?.genre || 'N/A'}</p>
-                <p className="text-sm text-gray-400">Most Popular</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-black/20 border border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Award className="h-5 w-5 text-unplayed-amber" />
-              <div>
-                <p className="text-2xl font-bold text-white">{nicheGenres[0]?.genre || 'N/A'}</p>
-                <p className="text-sm text-gray-400">Most Niche</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-black/20 border border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Zap className="h-5 w-5 text-unplayed-red" />
-              <div>
-                <p className="text-2xl font-bold text-white">
-                  {Math.round(highestUnplayedRate[0]?.unplayedPercentage || 0)}%
-                </p>
-                <p className="text-sm text-gray-400">Highest Unplayed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Genre Distribution Bar Chart */}
-        <Card className="bg-black/20 border border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Gamepad2 className="h-5 w-5 text-unplayed-mint" />
-              <span>Top Genres Distribution</span>
+              <span>Genres with Highest Unplayed Percentage</span>
+              <Tooltip>
+                <TooltipTrigger>
+                  <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Genres where you have the highest percentage of unplayed games (minimum 3 games)</p>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis tick={{ fill: '#9ca3af' }} />
-                  <RechartsTooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1e1e1e', 
-                      borderColor: '#374151',
-                      borderRadius: '0.5rem' 
-                    }}
-                  />
-                  <Bar dataKey="unplayed" stackId="a" fill="#ef4444" name="Unplayed" />
-                  <Bar dataKey="played" stackId="a" fill="#22c55e" name="Played" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Unplayed Games by Genre Pie Chart */}
-        <Card className="bg-black/20 border border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Zap className="h-5 w-5 text-unplayed-red" />
-              <span>Unplayed Games by Genre</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1e1e1e', 
-                      borderColor: '#374151',
-                      borderRadius: '0.5rem' 
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Genre Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Unplayed Genres */}
-        <Card className="bg-black/20 border border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Zap className="h-5 w-5 text-unplayed-red" />
-              <span>Top Unplayed Genres</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {topUnplayedGenres.map((genre, index) => (
-                <div key={genre.genre} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Badge variant="outline" className="text-xs">
-                      #{index + 1}
-                    </Badge>
-                    <span className="text-white">{genre.genre}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {highestUnplayedRate.map((genre) => (
+                <div key={genre.genre} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-medium">{genre.genre}</span>
+                    <span className="text-sm text-gray-400">
+                      {Math.round(genre.unplayedPercentage)}% unplayed
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-unplayed-red font-mono">{genre.unplayed}</span>
-                    <span className="text-gray-400 text-sm">/{genre.total}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Most Niche Genres */}
-        <Card className="bg-black/20 border border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Award className="h-5 w-5 text-unplayed-amber" />
-              <span>Most Niche Genres</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {nicheGenres.map((genre, index) => (
-                <div key={genre.genre} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Badge variant="outline" className="text-xs">
-                      #{index + 1}
-                    </Badge>
-                    <span className="text-white">{genre.genre}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-unplayed-amber font-mono">{genre.total}</span>
-                    <span className="text-gray-400 text-sm"> games</span>
+                  <Progress 
+                    value={genre.unplayedPercentage} 
+                    className="h-2"
+                  />
+                  <div className="text-xs text-gray-500">
+                    {genre.unplayed} unplayed of {genre.total} total games
                   </div>
                 </div>
               ))}
@@ -268,38 +375,7 @@ const LibraryGenresTab = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Genres with Highest Unplayed Rate */}
-      <Card className="bg-black/20 border border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-blue-400" />
-            <span>Genres with Highest Unplayed Rate</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {highestUnplayedRate.map((genre) => (
-              <div key={genre.genre} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">{genre.genre}</span>
-                  <span className="text-sm text-gray-400">
-                    {Math.round(genre.unplayedPercentage)}% unplayed
-                  </span>
-                </div>
-                <Progress 
-                  value={genre.unplayedPercentage} 
-                  className="h-2"
-                />
-                <div className="text-xs text-gray-500">
-                  {genre.unplayed} unplayed of {genre.total} total games
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </TooltipProvider>
   );
 };
 

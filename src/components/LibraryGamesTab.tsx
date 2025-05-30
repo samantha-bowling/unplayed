@@ -1,253 +1,316 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, SortAsc, SortDesc, Grid, List } from 'lucide-react';
+import { Search, Filter, SortAsc, SortDesc, Grid, List, Maximize, Eye2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
-import { getBestGameImageFromDbData } from '@/utils/image-utils';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { usePaginatedLibrary } from '@/hooks/use-paginated-library';
+import GameCard from '@/components/GameCard';
+import ZenLayout from '@/layouts/ZenLayout';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
 
 const LibraryGamesTab = () => {
-  const { games: libraryGames } = useLibraryData();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [filterBy, setFilterBy] = useState('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
+  const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
+  const [pageSize, setPageSize] = useState(24);
+  
+  const {
+    games: paginatedGames,
+    isLoading,
+    pagination,
+    filters,
+    sortBy,
+    sortDirection,
+    updateSearchFilter,
+    toggleHideIgnored,
+    toggleOnlyUnplayed,
+    resetFilters,
+    goToPage,
+    nextPage,
+    previousPage,
+    setPageSize: updatePageSize,
+    updateSort,
+    markAsPlayed,
+    toggleGameHidden,
+    saveGameNote,
+  } = usePaginatedLibrary();
 
-  // Filter and sort games
-  const filteredAndSortedGames = useMemo(() => {
-    let filtered = libraryGames;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(game =>
-        game.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply category filter
-    if (filterBy !== 'all') {
-      filtered = filtered.filter(game => {
-        const playtime = game.userGame?.playtime_minutes || 0;
-        if (filterBy === 'unplayed') return playtime === 0;
-        if (filterBy === 'played') return playtime > 0;
-        return true;
-      });
-    }
-
-    // Apply sorting
-    return filtered.sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'playtime':
-          aValue = a.userGame?.playtime_minutes || 0;
-          bValue = b.userGame?.playtime_minutes || 0;
-          break;
-        case 'acquisition':
-          aValue = a.userGame?.acquisition_date ? new Date(a.userGame.acquisition_date).getTime() : 0;
-          bValue = b.userGame?.acquisition_date ? new Date(b.userGame.acquisition_date).getTime() : 0;
-          break;
-        case 'release':
-          aValue = a.release_date ? new Date(a.release_date).getTime() : 0;
-          bValue = b.release_date ? new Date(b.release_date).getTime() : 0;
-          break;
-        default:
-          return 0;
-      }
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      
-      return sortDirection === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
-    });
-  }, [libraryGames, searchTerm, sortBy, sortDirection, filterBy]);
-
-  const formatPlaytime = (minutes: number) => {
-    if (minutes === 0) return 'Never played';
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.round(minutes / 60);
-    return `${hours}h`;
+  const handlePageSizeChange = (newSize: string) => {
+    const size = parseInt(newSize);
+    setPageSize(size);
+    updatePageSize(size);
   };
+
+  const handleMarkAsPlayed = async (userGameId: string) => {
+    await markAsPlayed(userGameId);
+  };
+
+  const handleToggleHidden = async (userGameId: string, currentHidden: boolean) => {
+    await toggleGameHidden(userGameId, !currentHidden);
+  };
+
+  const handleSaveNote = async (userGameId: string, note: string) => {
+    await saveGameNote(userGameId, note);
+  };
+
+  if (viewMode === 'zen') {
+    return (
+      <ZenLayout>
+        <div className="w-full max-w-7xl mx-auto p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Zen Mode - Library Games</h2>
+            <div className="flex gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleFullScreenMode}
+                    >
+                      <Maximize className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Toggle Full Screen Mode</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                Exit Zen
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {paginatedGames.map(game => (
+              <GameCard
+                key={game.userGame.id}
+                id={game.userGame.id}
+                gameId={game.id}
+                title={game.name}
+                imageUrl={game.image_url}
+                headerImage={game.header_image}
+                dustScore={game.userGame.dust_score}
+                playtimeMinutes={game.userGame.playtime_minutes}
+                isHidden={game.userGame.hidden}
+                notes={game.userGame.notes}
+                onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
+                onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
+                onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
+              />
+            ))}
+          </div>
+        </div>
+      </ZenLayout>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Search and Filter Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search games..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search games..."
+                    value={filters.search}
+                    onChange={(e) => updateSearchFilter(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Search games by name</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Select value={filterBy} onValueChange={setFilterBy}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Games</SelectItem>
-              <SelectItem value="unplayed">Unplayed</SelectItem>
-              <SelectItem value="played">Played</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="playtime">Playtime</SelectItem>
-              <SelectItem value="acquisition">Date Added</SelectItem>
-              <SelectItem value="release">Release Date</SelectItem>
-            </SelectContent>
-          </Select>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Select value={sortBy} onValueChange={updateSort}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="dust_score">Dust Score</SelectItem>
+                    <SelectItem value="playtime_minutes">Playtime</SelectItem>
+                    <SelectItem value="last_played_date">Last Played</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sort games by different criteria</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+            onClick={() => updateSort(sortBy)}
           >
             {sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
           </Button>
         </div>
         
-        <ToggleGroup type="single" value={viewMode} onValueChange={value => value && setViewMode(value as 'grid' | 'list')}>
-          <ToggleGroupItem value="grid" aria-label="Grid View">
-            <Grid className="h-4 w-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="list" aria-label="List View">
-            <List className="h-4 w-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="flex gap-2 items-center">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="8">8</SelectItem>
+                    <SelectItem value="16">16</SelectItem>
+                    <SelectItem value="24">24</SelectItem>
+                    <SelectItem value="48">48</SelectItem>
+                    <SelectItem value="96">96</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Games per page</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <ToggleGroup type="single" value={viewMode} onValueChange={value => value && setViewMode(value as 'grid' | 'zen')}>
+            <ToggleGroupItem value="grid" aria-label="Grid View">
+              <Grid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="zen" aria-label="Zen View">
+              <Eye2 className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </div>
+
+      {/* Filter Toggles */}
+      <div className="flex gap-2">
+        <Button
+          variant={filters.onlyUnplayed ? "default" : "outline"}
+          size="sm"
+          onClick={toggleOnlyUnplayed}
+        >
+          Only Unplayed
+        </Button>
+        <Button
+          variant={filters.hideIgnored ? "default" : "outline"}
+          size="sm"
+          onClick={toggleHideIgnored}
+        >
+          Hide Ignored
+        </Button>
+        {(filters.search || filters.onlyUnplayed || filters.hideIgnored) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetFilters}
+          >
+            Clear Filters
+          </Button>
+        )}
       </div>
 
       {/* Results Summary */}
       <div className="flex items-center justify-between text-sm text-gray-400">
         <span>
-          Showing {filteredAndSortedGames.length} of {libraryGames.length} games
+          Showing {paginatedGames.length} of {pagination.totalItems} games
         </span>
-        {searchTerm && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSearchTerm('')}
-            className="text-unplayed-mint hover:text-unplayed-mint/80"
-          >
-            Clear search
-          </Button>
-        )}
+        <span>
+          Page {pagination.currentPage} of {pagination.totalPages}
+        </span>
       </div>
 
-      {/* Games Display */}
-      <ScrollArea className="h-[600px]">
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredAndSortedGames.map(game => {
-              const playtime = game.userGame?.playtime_minutes || 0;
-              const isUnplayed = playtime === 0;
-              const gameImage = getBestGameImageFromDbData(game, game.id);
-              
+      {/* Games Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array.from({ length: pageSize }).map((_, i) => (
+            <div key={i} className="aspect-video bg-gray-800 animate-pulse rounded-lg" />
+          ))}
+        </div>
+      ) : paginatedGames.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {paginatedGames.map(game => (
+            <GameCard
+              key={game.userGame.id}
+              id={game.userGame.id}
+              gameId={game.id}
+              title={game.name}
+              imageUrl={game.image_url}
+              headerImage={game.header_image}
+              dustScore={game.userGame.dust_score}
+              playtimeMinutes={game.userGame.playtime_minutes}
+              isHidden={game.userGame.hidden}
+              notes={game.userGame.notes}
+              onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
+              onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
+              onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-400">
+          <p>No games found matching your criteria.</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={previousPage}
+            disabled={!pagination.hasPreviousPage}
+          >
+            Previous
+          </Button>
+          
+          <div className="flex gap-1">
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              const page = i + 1;
               return (
-                <div key={game.id} className="group relative">
-                  <div className="aspect-[460/215] w-full overflow-hidden rounded-md">
-                    <img 
-                      src={gameImage || '/placeholder.svg'} 
-                      alt={game.name}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
-                    <p className="text-white text-sm font-medium truncate">{game.name}</p>
-                    <p className={`text-xs ${isUnplayed ? 'text-unplayed-red' : 'text-unplayed-mint'}`}>
-                      {formatPlaytime(playtime)}
-                    </p>
-                  </div>
-                  
-                  {isUnplayed && (
-                    <div className="absolute top-2 right-2 bg-unplayed-red rounded-full w-3 h-3" />
-                  )}
-                </div>
+                <Button
+                  key={page}
+                  variant={pagination.currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => goToPage(page)}
+                  className="w-8 h-8 p-0"
+                >
+                  {page}
+                </Button>
               );
             })}
           </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredAndSortedGames.map(game => {
-              const playtime = game.userGame?.playtime_minutes || 0;
-              const isUnplayed = playtime === 0;
-              const gameImage = getBestGameImageFromDbData(game, game.id);
-              
-              return (
-                <div key={game.id} className="flex items-center gap-4 p-3 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
-                  <div className="w-16 h-9 flex-shrink-0">
-                    <AspectRatio ratio={16 / 9}>
-                      <img 
-                        src={gameImage || '/placeholder.svg'} 
-                        alt={game.name}
-                        className="w-full h-full object-cover rounded"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    </AspectRatio>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-white truncate">{game.name}</h3>
-                    <p className="text-sm text-gray-400">
-                      {game.release_date ? new Date(game.release_date).getFullYear() : 'Unknown year'}
-                    </p>
-                  </div>
-                  
-                  <div className="text-right">
-                    <Badge variant={isUnplayed ? "destructive" : "default"} className="mb-1">
-                      {formatPlaytime(playtime)}
-                    </Badge>
-                    {game.genres && game.genres.length > 0 && (
-                      <p className="text-xs text-gray-500">{game.genres.slice(0, 2).join(', ')}</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        
-        {filteredAndSortedGames.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            <p>No games found matching your criteria.</p>
-            {searchTerm && (
-              <Button
-                variant="outline"
-                onClick={() => setSearchTerm('')}
-                className="mt-4"
-              >
-                Clear search
-              </Button>
-            )}
-          </div>
-        )}
-      </ScrollArea>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={nextPage}
+            disabled={!pagination.hasNextPage}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
