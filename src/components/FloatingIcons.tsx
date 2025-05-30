@@ -31,7 +31,7 @@ const ICONS = [
 // Generate positions for floating icons
 const generateIconPositions = (count: number) => {
   const positions = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 3)); // More sparse grid than donor names
+  const gridSize = Math.ceil(Math.sqrt(count * 3)); // More sparse grid than game names
   const cellWidth = 100 / gridSize;
   const cellHeight = 100 / gridSize;
 

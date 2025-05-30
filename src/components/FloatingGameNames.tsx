@@ -39,7 +39,7 @@ const generateGameNamePositions = (gameNames: string[], count: number) => {
         delay: i * 0.4 + Math.random() * 3, // Varied delays
         duration: 6 + Math.random() * 8, // Random duration between 6-14s
         fontSize: 12 + Math.floor(Math.random() * 8), // Random size between 12-20px
-        opacity: 0.3 + Math.random() * 0.4, // Random opacity between 0.3-0.7
+        opacity: 0.5 + Math.random() * 0.4, // Random opacity between 0.5-0.9
       });
     }
   }
@@ -83,10 +83,13 @@ const FloatingGameNames: React.FC<FloatingGameNamesProps> = ({ gameNames, count 
           >
             <span 
               className={cn(
-                "text-gray-300 font-medium transition-all duration-300",
-                "hover:text-gray-100 whitespace-nowrap"
+                "text-unplayed-mint font-medium transition-all duration-300",
+                "hover:text-unplayed-mint whitespace-nowrap"
               )}
-              style={{ fontSize: `${fontSize}px` }}
+              style={{ 
+                fontSize: `${fontSize}px`,
+                textShadow: '0 0 15px rgba(163, 247, 191, 0.8), 0 0 5px rgba(163, 247, 191, 0.6)'
+              }}
             >
               {name}
             </span>

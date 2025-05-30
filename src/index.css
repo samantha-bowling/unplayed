@@ -201,13 +201,40 @@ body.fullscreen-mode {
   to { opacity: 1; }
 }
 
-/* Updated Zen view animations with more stability */
-@keyframes zen-float-stable {
+/* Fixed Zen view animations with proper random movement */
+@keyframes zen-float {
   0% {
-    transform: translate(calc(-50%), calc(-50%));
+    transform: translate(-50%, -50%) translateX(0px) translateY(0px);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(20px) translateY(-15px);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(-10px) translateY(25px);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(15px) translateY(10px);
   }
   100% {
-    transform: translate(calc(-50% + var(--anim-x, 1%)), calc(-50% + var(--anim-y, 1%)));
+    transform: translate(-50%, -50%) translateX(-5px) translateY(-20px);
+  }
+}
+
+@keyframes zen-float-stable {
+  0% {
+    transform: translate(-50%, -50%) translateX(0px) translateY(0px);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(8px) translateY(-6px);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(-4px) translateY(10px);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(6px) translateY(4px);
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(-2px) translateY(-8px);
   }
 }
 
@@ -254,7 +281,7 @@ body.fullscreen-mode {
   animation: cursor-blink 1s infinite;
 }
 
-/* Zen view game items with improved hover */
+/* Zen view game items with improved hover and green glow */
 .zen-game-item {
   transition: all 0.3s ease-out;
   will-change: transform, text-shadow;
@@ -266,7 +293,7 @@ body.fullscreen-mode {
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1.05) !important;
   z-index: 50 !important;
-  text-shadow: 0 0 15px rgba(163, 247, 191, 0.8), 0 0 5px rgba(163, 247, 191, 0.6) !important;
+  text-shadow: 0 0 15px rgba(163, 247, 191, 0.8), 0 0 25px rgba(163, 247, 191, 0.6) !important;
 }
 
 /* Zen view icon items - similar to game items but with some differences */

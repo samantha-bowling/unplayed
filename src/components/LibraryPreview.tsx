@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Play, Grid, List, Maximize, Eye, EyeOff, Search, SortAsc, SortDesc, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -103,10 +102,10 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     }));
   }, [filteredGames, limit, viewMode]);
 
-  // Extract game names for zen mode
+  // Extract game names for zen mode - use ALL games, not filtered ones
   const gameNames = useMemo(() => {
-    return processedGames.map(game => game.name);
-  }, [processedGames]);
+    return libraryGames.map(game => game.name);
+  }, [libraryGames]);
 
   const handleMarkAsPlayed = async (userGameId: string) => {
     if (isDemo) {
@@ -145,34 +144,37 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     return (
       <ZenLayout>
         <div className="w-full h-full relative">
-          <div className="flex justify-between items-center mb-6 relative z-10">
-            <h2 className="text-2xl font-bold text-white">Zen Mode - Library</h2>
-            <div className="flex gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleFullScreenMode}
-                    >
-                      <Maximize className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Toggle Full Screen Mode</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                Exit Zen
-              </Button>
+          {/* Only show header and controls when NOT in full screen mode */}
+          {!isFullScreenMode && (
+            <div className="flex justify-between items-center mb-6 relative z-10">
+              <h2 className="text-2xl font-bold text-white">Zen Mode - Library</h2>
+              <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleFullScreenMode}
+                      >
+                        <Maximize className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Toggle Full Screen Mode</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                >
+                  Exit Zen
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
           
           {isLoading ? (
             <div className="flex items-center justify-center py-12 relative z-10">
