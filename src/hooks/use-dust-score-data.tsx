@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics, transformToUnplayedData } from '@/utils/data-transforms';
@@ -110,7 +109,9 @@ const useDustScoreData = () => {
           cleanStreakMetadata: {
             gracePeriodUsed: false,
             streakQuality: 'bronze' as const
-          }
+          },
+          totalGames: 0,
+          unplayedGames: 0
         };
       }
 
@@ -185,10 +186,8 @@ const useDustScoreData = () => {
       const playedGames = userGamesWithDust.filter(game =>
         (game.playtime_minutes || 0) > 0
       ).length;
-      const totalPlaytimeHours = userGamesWithDust.reduce((sum, game) =>
-        sum + ((game.playtime_minutes || 0) / 60), 0
-      );
-
+      const unplayedGameCount = totalGames - playedGames; // Ensure this is a number
+      
       // Count recently played games
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -244,7 +243,7 @@ const useDustScoreData = () => {
           streakQuality: 'bronze' as const
         },
         totalGames,
-        unplayedGames: totalGames - playedGames
+        unplayedGames: unplayedGameCount // Ensure this is always a number
       };
     },
     enabled: !!user && !isDemo,
@@ -314,10 +313,17 @@ const useDustScoreData = () => {
     };
   }
 
+  // Combine basic data with detailed data, ensuring unplayedGames is always a number
+  const combinedData = basicData && detailedDustData ? {
+    ...basicData,
+    ...detailedDustData,
+    unplayedGames: typeof detailedDustData.unplayedGames === 'number' 
+      ? detailedDustData.unplayedGames 
+      : basicData.unplayedGames
+  } : (basicData || detailedDustData);
+
   return {
-    data: isDemo
-      ? normalizeDemoGames(demoData)
-      : { ...basicData, ...detailedDustData },
+    data: combinedData,
     isLoading: isBasicDataLoading || isDetailedDataLoading,
     error: basicDataError || detailedDataError,
     refetch: async () => {

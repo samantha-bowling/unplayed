@@ -178,7 +178,7 @@ const DustPage = () => {
                   <DustScorePerGame 
                     avgDustScore={data?.avgDustScore || 0}
                     totalGames={data?.totalGames || 0}
-                    unplayedGames={data?.unplayedGames || 0}
+                    unplayedGames={typeof data?.unplayedGames === 'number' ? data.unplayedGames : 0}
                   />
                 </TabsContent>
               </Tabs>

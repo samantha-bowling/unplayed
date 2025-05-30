@@ -129,7 +129,7 @@ export const transformUserGameData = (
   );
 
   return {
-    unplayedGames,
+    unplayedGames, // This is a number - count of unplayed games
     totalGames: userGamesData.length,
     dustScore: totalDustScore, // Use sum of all dust scores (not average)
     totalPlaytime: totalPlaytimeHours,
