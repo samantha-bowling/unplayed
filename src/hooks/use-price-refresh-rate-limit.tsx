@@ -37,7 +37,7 @@ export const usePriceRefreshRateLimit = () => {
         .rpc('can_user_refresh_prices', { p_user_id: user.id });
       
       if (error) throw error;
-      return data as RefreshStatus;
+      return data as unknown as RefreshStatus;
     },
     enabled: !!user,
     refetchInterval: countdown > 0 ? 1000 : false, // Refetch every second when on cooldown
@@ -57,7 +57,7 @@ export const usePriceRefreshRateLimit = () => {
         .limit(10);
       
       if (error) throw error;
-      return data as RefreshLog[];
+      return data as unknown as RefreshLog[];
     },
     enabled: !!user,
   });

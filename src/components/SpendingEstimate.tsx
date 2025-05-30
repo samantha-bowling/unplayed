@@ -78,7 +78,6 @@ const SpendingEstimate = ({
           <SpendingMeter
             onlyUnplayed={true}
             showRefreshButton={false}
-            isDemo={isDemo}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
