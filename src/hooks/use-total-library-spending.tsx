@@ -10,7 +10,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 export const useTotalLibrarySpending = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: unifiedData, isLoading } = useUnifiedLibraryData();
+  const { data, isLoading } = useUnifiedLibraryData();
 
   // Transform unified data and calculate spending
   const totalSpending = useMemo(() => {
@@ -22,7 +22,7 @@ export const useTotalLibrarySpending = () => {
       };
     }
 
-    if (!unifiedData?.data) {
+    if (!data) {
       return {
         totalSpent: 0,
         totalGames: 0,
@@ -31,17 +31,17 @@ export const useTotalLibrarySpending = () => {
     }
 
     // Fix the reduce function - correct parameter order: (accumulator, currentValue)
-    const totalSpent = unifiedData.data.reduce((sum, gameItem) => {
+    const totalSpent = data.reduce((sum, gameItem) => {
       const price = gameItem.games?.price_cents ? gameItem.games.price_cents / 100 : 0;
       return sum + price;
     }, 0); // Initial value of 0
 
     return {
       totalSpent,
-      totalGames: unifiedData.data.length,
+      totalGames: data.length,
       currency: 'USD'
     };
-  }, [isDemo, demoData, unifiedData]);
+  }, [isDemo, demoData, data]);
 
   return {
     data: totalSpending,
