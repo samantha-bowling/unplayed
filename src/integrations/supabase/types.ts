@@ -464,6 +464,16 @@ export type Database = {
         }
         Returns: number
       }
+      calculate_enhanced_dust_score: {
+        Args: {
+          release_date: string
+          playtime_minutes: number
+          price_cents?: number
+          genres?: string[]
+          metacritic_score?: number
+        }
+        Returns: Json
+      }
       get_dust_score_breakdown: {
         Args: {
           game_id: number
@@ -488,6 +498,14 @@ export type Database = {
       mark_onboarding_complete: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      recalculate_all_dust_scores: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          updated_count: number
+          total_count: number
+          message: string
+        }[]
       }
       update_leaderboard_clean_rankings: {
         Args: { snapshot_timestamp: string }
