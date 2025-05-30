@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics, transformToUnplayedData } from '@/utils/data-transforms';
@@ -235,6 +234,11 @@ const useDustScoreData = () => {
         cleanTier,
         cleanStreak,
         recentlyPlayedCount,
+        recentlyPlayedUnplayed: 0,
+        cleanStreakMetadata: {
+          streakQuality: 'bronze',
+          gracePeriodUsed: false
+        },
         totalGames,
         unplayedGames: totalGames - playedGames
       };
@@ -278,6 +282,11 @@ const useDustScoreData = () => {
     tier => demoCleanScore >= tier.range[0] && demoCleanScore <= tier.range[1]
   ) || CLEAN_SCORE_TIERS[2];
 
+  const demoCleanStreakMetadata = {
+    streakQuality: 'silver' as const,
+    gracePeriodUsed: false
+  };
+
   if (isDemo) {
     const normalizedDemoData = normalizeDemoGames(demoData);
     const enhancedDemoData: UnplayedDataType = {
@@ -289,7 +298,9 @@ const useDustScoreData = () => {
       cleanScoreBreakdown: demoCleanScoreBreakdown,
       cleanTier: demoCleanTier,
       cleanStreak: 4,
-      recentlyPlayedCount: 5
+      recentlyPlayedCount: 5,
+      recentlyPlayedUnplayed: 2,
+      cleanStreakMetadata: demoCleanStreakMetadata
     };
 
     return {

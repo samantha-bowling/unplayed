@@ -32,7 +32,7 @@ export const useUnifiedLibraryData = () => {
   const { isDemo, demoData } = useDemoMode();
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeys.unifiedLibraryData(user?.id),
+    queryKey: queryKeys.unifiedLibrary.data(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 

@@ -30,8 +30,8 @@ export const useTotalLibrarySpending = () => {
       };
     }
 
-    const totalSpent = unifiedData.reduce((sum, game) => {
-      const price = game.games.price_cents ? game.games.price_cents / 100 : 0;
+    const totalSpent = unifiedData.reduce((sum, gameItem) => {
+      const price = gameItem.games?.price_cents ? gameItem.games.price_cents / 100 : 0;
       return sum + price;
     }, 0);
 

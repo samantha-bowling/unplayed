@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -157,26 +156,29 @@ const DustPage = () => {
                 
                 <TabsContent value="clean" className="space-y-4">
                   <CleanScoreBreakdown
-                    cleanScore={data.cleanScore || 0}
-                    breakdown={data.cleanScoreBreakdown}
-                    cleanStreak={data.cleanStreak}
-                    recentlyPlayedCount={data.recentlyPlayedCount}
-                    recentlyPlayedUnplayed={data.recentlyPlayedUnplayed}
-                    cleanStreakMetadata={data.cleanStreakMetadata}
+                    cleanScore={data?.cleanScore || 0}
+                    breakdown={data?.cleanScoreBreakdown}
+                    cleanStreak={data?.cleanStreak || 0}
+                    recentlyPlayedCount={data?.recentlyPlayedCount || 0}
+                    recentlyPlayedUnplayed={data?.recentlyPlayedUnplayed || 0}
+                    cleanStreakMetadata={data?.cleanStreakMetadata || {
+                      streakQuality: 'bronze',
+                      gracePeriodUsed: false
+                    }}
                   />
                 </TabsContent>
                 
                 <TabsContent value="contributors" className="space-y-4">
                   <TopDustContributors 
-                    contributors={data.topDustContributors || []}
+                    contributors={data?.topDustContributors || []}
                   />
                 </TabsContent>
                 
                 <TabsContent value="analysis" className="space-y-4">
                   <DustScorePerGame 
-                    avgDustScore={data.avgDustScore || 0}
-                    totalGames={data.totalGames}
-                    unplayedGames={data.unplayedGames}
+                    avgDustScore={data?.avgDustScore || 0}
+                    totalGames={data?.totalGames || 0}
+                    unplayedGames={data?.unplayedGames || 0}
                   />
                 </TabsContent>
               </Tabs>
