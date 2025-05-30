@@ -5,18 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Clock, Trophy, TrendingUp, Calendar, Users, Gamepad2, Star, Target } from 'lucide-react';
 import { useLibraryData } from '@/hooks/use-library-data';
-import { useDemoMode } from '@/context/DemoModeContext';
-import { DEMO_DATA } from '@/lib/demo-data';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
 
 const LibraryOverview = () => {
   const { games: libraryGames, isLoading } = useLibraryData();
-  const { isDemo } = useDemoMode();
 
-  // Use demo data if in demo mode, otherwise use real library data
-  const games = isDemo ? DEMO_DATA.gamesList || [] : libraryGames;
-
-  if (isLoading && !isDemo) {
+  if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -33,10 +27,10 @@ const LibraryOverview = () => {
     );
   }
 
-  // Calculate all statistics from real data
-  const totalGames = games.length;
-  const playedGames = games.filter(game => {
-    const playtime = isDemo ? game.playtime : (game.userGame?.playtime_minutes || 0);
+  // Calculate all statistics from real library data
+  const totalGames = libraryGames.length;
+  const playedGames = libraryGames.filter(game => {
+    const playtime = game.userGame?.playtime_minutes || 0;
     return playtime > 0;
   });
   const unplayedGames = totalGames - playedGames.length;
@@ -47,15 +41,15 @@ const LibraryOverview = () => {
   // Get top 3 most played games
   const topPlayedGames = [...playedGames]
     .sort((a, b) => {
-      const playtimeA = isDemo ? (a.playtime || 0) : (a.userGame?.playtime_minutes || 0);
-      const playtimeB = isDemo ? (b.playtime || 0) : (b.userGame?.playtime_minutes || 0);
+      const playtimeA = a.userGame?.playtime_minutes || 0;
+      const playtimeB = b.userGame?.playtime_minutes || 0;
       return playtimeB - playtimeA;
     })
     .slice(0, 3);
 
   // Calculate total playtime
-  const totalPlaytimeMinutes = games.reduce((total, game) => {
-    const playtime = isDemo ? (game.playtime || 0) : (game.userGame?.playtime_minutes || 0);
+  const totalPlaytimeMinutes = libraryGames.reduce((total, game) => {
+    const playtime = game.userGame?.playtime_minutes || 0;
     return total + playtime;
   }, 0);
   const totalPlaytimeHours = Math.round(totalPlaytimeMinutes / 60);
@@ -64,8 +58,8 @@ const LibraryOverview = () => {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
-  const recentlyActiveGames = games.filter(game => {
-    const lastPlayed = isDemo ? null : game.userGame?.last_played_date;
+  const recentlyActiveGames = libraryGames.filter(game => {
+    const lastPlayed = game.userGame?.last_played_date;
     if (!lastPlayed) return false;
     return new Date(lastPlayed) >= thirtyDaysAgo;
   }).length;
@@ -74,22 +68,22 @@ const LibraryOverview = () => {
   const playtimeDistribution = {
     unplayed: unplayedGames,
     light: playedGames.filter(game => {
-      const playtime = isDemo ? (game.playtime || 0) : (game.userGame?.playtime_minutes || 0);
+      const playtime = game.userGame?.playtime_minutes || 0;
       return playtime > 0 && playtime < 120; // Less than 2 hours
     }).length,
     moderate: playedGames.filter(game => {
-      const playtime = isDemo ? (game.playtime || 0) : (game.userGame?.playtime_minutes || 0);
+      const playtime = game.userGame?.playtime_minutes || 0;
       return playtime >= 120 && playtime < 600; // 2-10 hours
     }).length,
     heavy: playedGames.filter(game => {
-      const playtime = isDemo ? (game.playtime || 0) : (game.userGame?.playtime_minutes || 0);
+      const playtime = game.userGame?.playtime_minutes || 0;
       return playtime >= 600; // 10+ hours
     }).length
   };
 
   // Get top genres
   const genreCount: Record<string, number> = {};
-  games.forEach(game => {
+  libraryGames.forEach(game => {
     const genres = game.genres || [];
     genres.forEach(genre => {
       genreCount[genre] = (genreCount[genre] || 0) + 1;
@@ -178,16 +172,15 @@ const LibraryOverview = () => {
           <CardContent className="space-y-4">
             {topPlayedGames.length > 0 ? (
               topPlayedGames.map((game, index) => {
-                const playtime = isDemo ? (game.playtime || 0) : (game.userGame?.playtime_minutes || 0);
-                const gameName = game.name;
-                const gameImage = isDemo ? game.image : getBestGameImageFromDbData(game, game.id);
+                const playtime = game.userGame?.playtime_minutes || 0;
+                const gameImage = getBestGameImageFromDbData(game, game.id);
                 
                 return (
                   <div key={game.id} className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
                       <img 
                         src={gameImage || '/placeholder.svg'} 
-                        alt={gameName}
+                        alt={game.name}
                         className="w-12 h-12 rounded object-cover"
                         onError={(e) => {
                           e.currentTarget.src = '/placeholder.svg';
@@ -195,7 +188,7 @@ const LibraryOverview = () => {
                       />
                     </div>
                     <div className="flex-grow min-w-0">
-                      <p className="text-white font-medium truncate">{gameName}</p>
+                      <p className="text-white font-medium truncate">{game.name}</p>
                       <p className="text-sm text-gray-400">{formatPlaytime(playtime)}</p>
                     </div>
                     <Badge variant="outline" className="text-xs">
@@ -290,16 +283,14 @@ const LibraryOverview = () => {
               <Clock className="h-6 w-6 text-blue-400" />
             </div>
             
-            {!isDemo && (
-              <div className="mt-4 p-3 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded">
-                <p className="text-sm text-unplayed-mint">
-                  {recentlyActiveGames > 0 
-                    ? `You've been active with ${recentlyActiveGames} games in the last 30 days. Keep it up!`
-                    : "No recent activity detected. Time to dive into your library!"
-                  }
-                </p>
-              </div>
-            )}
+            <div className="mt-4 p-3 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded">
+              <p className="text-sm text-unplayed-mint">
+                {recentlyActiveGames > 0 
+                  ? `You've been active with ${recentlyActiveGames} games in the last 30 days. Keep it up!`
+                  : "No recent activity detected. Time to dive into your library!"
+                }
+              </p>
+            </div>
           </CardContent>
         </Card>
 
