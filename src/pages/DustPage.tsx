@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wind, Medal, RefreshCw } from "lucide-react";
+import { Loader2, Wind, RefreshCw } from "lucide-react";
 import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
 import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
@@ -178,7 +178,7 @@ const DustPage = () => {
                   <DustScorePerGame 
                     avgDustScore={data?.avgDustScore || 0}
                     totalGames={data?.totalGames || 0}
-                    unplayedGames={typeof data?.unplayedGames === 'number' ? data.unplayedGames : 0}
+                    unplayedGames={data?.unplayedGames || 0}
                   />
                 </TabsContent>
               </Tabs>
