@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +14,7 @@ import { validateGamePrice } from '@/utils/price-validation';
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { queryKeys } from './use-query-keys';
 
 export interface EnhancedSpendingData {
   totalSpent: number;
@@ -58,7 +58,7 @@ export const useEnhancedSpendingData = (onlyUnplayed: boolean = true) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const queryResult = useQuery({
-    queryKey: ['enhancedSpendingData', user?.id, onlyUnplayed],
+    queryKey: queryKeys.enhancedSpendingData(user?.id, onlyUnplayed),
     queryFn: async (): Promise<EnhancedSpendingData> => {
       if (isDemo) {
         // Return demo data structure

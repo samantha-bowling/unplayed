@@ -7,7 +7,7 @@ import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
+import { useCacheManagement } from '@/hooks/use-query-keys';
 import DataErrorBoundary from '@/components/DataErrorBoundary';
 
 import Header from "../components/Header";
@@ -58,7 +58,7 @@ const IndexOptimized = () => {
   const { data: dashboardData, isLoading: dataLoading, lastRefreshed, refetch } = useDashboardData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
-  const { queryKeys, utils } = useOptimizedCacheManagement();
+  const { queryKeys } = useCacheManagement();
 
   // Memoized loading state
   const isLoading = useMemo(() => profileLoading && user, [profileLoading, user]);
@@ -75,9 +75,9 @@ const IndexOptimized = () => {
         description: "This may take a moment to update all your stats."
       });
       
-      // Use optimized cache invalidation
+      // Use original cache invalidation
       if (user?.id) {
-        const userDataKeys = queryKeys.helpers.allUserData(user.id);
+        const userDataKeys = queryKeys.allUserData(user.id);
         userDataKeys.forEach(key => {
           queryClient.invalidateQueries({ queryKey: key });
         });

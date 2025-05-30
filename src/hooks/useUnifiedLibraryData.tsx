@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useMemo } from 'react';
-import { optimizedQueryKeys } from './use-query-keys-optimized';
+import { queryKeys } from './use-query-keys';
 
 export interface UnifiedGameData {
   id: string;
@@ -49,7 +49,7 @@ export const useUnifiedLibraryData = () => {
     error,
     refetch 
   } = useQuery({
-    queryKey: optimizedQueryKeys.unifiedLibrary.data(user?.id),
+    queryKey: queryKeys.unifiedLibrary.data(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       

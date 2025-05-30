@@ -7,7 +7,7 @@ import { UnplayedDataType } from '@/types/unplayed-data.types';
 import { transformUserGameData } from '@/utils/transformUnplayedData';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { useProfile } from '@/hooks/use-profile';
-import { optimizedQueryKeys } from './use-query-keys-optimized';
+import { queryKeys } from './use-query-keys';
 import { useMemo } from 'react';
 
 /**
@@ -32,7 +32,7 @@ export const useUnplayedData = () => {
     error: userGamesError,
     refetch: refetchUserGames,
   } = useQuery({
-    queryKey: optimizedQueryKeys.unplayed.data(user?.id, profile?.steam_id),
+    queryKey: queryKeys.unplayedData(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -95,7 +95,7 @@ export const useUnplayedData = () => {
     data: gameEstimatesData,
     isLoading: isLoadingEstimates,
   } = useQuery({
-    queryKey: optimizedQueryKeys.estimates.byGameIds(gameIds),
+    queryKey: queryKeys.gameEstimates(user?.id),
     queryFn: async () => {
       if (gameIds.length === 0) return {};
       
