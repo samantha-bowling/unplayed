@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, SortAsc, SortDesc, Grid, List, Maximize, Eye2 } from 'lucide-react';
+import { Search, Filter, SortAsc, SortDesc, Grid, List, Maximize, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -196,7 +195,7 @@ const LibraryGamesTab = () => {
               <Grid className="h-4 w-4" />
             </ToggleGroupItem>
             <ToggleGroupItem value="zen" aria-label="Zen View">
-              <Eye2 className="h-4 w-4" />
+              <Eye className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
