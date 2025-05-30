@@ -27,18 +27,6 @@ import {
   calculateCleanScore 
 } from '@/utils/clean-score-utils';
 
-const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
-  const processed = processDustBreakdown(breakdown);
-  return {
-    qualityScore: processed.qualityScore,
-    priceScore: processed.priceScore,
-    ageScore: processed.ageScore,
-    genreScore: processed.genreScore,
-    playtimeFactor: processed.playtimeFactor,
-    totalScore: processed.totalScore
-  };
-};
-
 const useDustScoreData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
@@ -123,7 +111,6 @@ const useDustScoreData = () => {
         .slice(0, 20);
 
       // For now, create mock breakdowns since we haven't implemented the new database function yet
-      // This will be replaced with actual database calls once the new function is deployed
       const breakdowns = topContributorsWithIds.map((game) => {
         const gameData = game.games;
         const qualityScore = gameData?.metacritic_score ? 
@@ -188,9 +175,9 @@ const useDustScoreData = () => {
       const playedGames = userGamesWithDust.filter(game =>
         (game.playtime_minutes || 0) > 0
       ).length;
-      const unplayedGameCount = totalGames - playedGames; // Ensure this is a number
+      const unplayedGameCount = totalGames - playedGames;
       
-      // Calculate total playtime in hours - ADD THIS BACK
+      // Calculate total playtime in hours
       const totalPlaytimeHours = userGamesWithDust.reduce((sum, game) =>
         sum + ((game.playtime_minutes || 0) / 60), 0
       );
@@ -211,7 +198,6 @@ const useDustScoreData = () => {
         playtimeMinutes: game.playtime_minutes || 0,
         lastPlayed: game.last_played_date,
         added: game.acquisition_date,
-        // Add other required fields
         image: '',
         price: 0,
         genres: game.games?.genres || [],
@@ -251,78 +237,59 @@ const useDustScoreData = () => {
           streakQuality: 'bronze' as const
         },
         totalGames,
-        unplayedGames: unplayedGameCount // Ensure this is always a number
+        unplayedGames: unplayedGameCount
       };
     },
     enabled: !!user && !isDemo,
   });
 
-  // Enhanced demo mode data preparation with new 5-factor system
-  const demoDustBreakdown: DustScoreBreakdown = {
-    qualityScore: 12,    // Average quality across library
-    priceScore: 18,      // Mix of pricing tiers
-    ageScore: 15,        // Mix of old and new games
-    genreScore: 10,      // Common genres mostly
-    playtimeFactor: 0.85 // Some games played
-  };
-
-  const demoTopContributors: GameDustData[] = demoData.library.map((game, index) => ({
-    id: game.id,
-    name: game.name,
-    dustScore: 95 - index * 5,
-    addedDate: new Date(Date.now() - (index + 1) * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    releaseDate: new Date(Date.now() - (index + 5) * 90 * 24 * 60 * 60 * 1000).toISOString(),
-    playtimeMinutes: 0,
-    image: game.image,
-    breakdown: {
-      qualityScore: Math.max(5, 25 - index * 3),
-      priceScore: Math.max(5, 20 - index * 2),
-      ageScore: Math.min(25, 10 + index * 2),
-      genreScore: 8 + (index % 3) * 2,
-      playtimeFactor: 1.0
-    }
-  }));
-
-  const demoCleanScore = 68;
-  const demoCleanScoreBreakdown: CleanScoreBreakdown = {
-    completionRate: 75,
-    engagementFactor: 60,
-    recencyFactor: 65
-  };
-  const demoCleanTier = CLEAN_SCORE_TIERS.find(
-    tier => demoCleanScore >= tier.range[0] && demoCleanScore <= tier.range[1]
-  ) || CLEAN_SCORE_TIERS[2];
-
-  const demoCleanStreakMetadata = {
-    gracePeriodUsed: false,
-    streakQuality: 'silver' as const
-  };
-
+  // Simple demo mode - just hardcoded values
   if (isDemo) {
-    const normalizedDemoData = normalizeDemoGames(demoData);
-    const enhancedDemoData: UnplayedDataType = {
-      ...normalizedDemoData,
-      dustScore: 595, // Add dustScore for demo
-      dustScoreBreakdown: demoDustBreakdown,
-      topDustContributors: demoTopContributors,
+    const simpleDemoData: UnplayedDataType = {
+      unplayedGames: 15,
+      totalGames: 25,
+      dustScore: 595,
+      totalPlaytime: 120,
+      totalSpent: 450,
+      unplayedSpent: 280,
+      potentialGameplayHours: 800,
+      gamesList: [],
+      library: demoData.library,
+      shelfLife: [],
+      genres: [],
+      dustScoreBreakdown: {
+        qualityScore: 12,
+        priceScore: 18,
+        ageScore: 15,
+        genreScore: 10,
+        playtimeFactor: 0.85
+      },
+      topDustContributors: [],
       avgDustScore: 29.7,
-      cleanScore: demoCleanScore,
-      cleanScoreBreakdown: demoCleanScoreBreakdown,
-      cleanTier: demoCleanTier,
+      cleanScore: 68,
+      cleanScoreBreakdown: {
+        completionRate: 75,
+        engagementFactor: 60,
+        recencyFactor: 65
+      },
+      cleanTier: CLEAN_SCORE_TIERS[2],
       cleanStreak: 4,
       recentlyPlayedCount: 5,
-      cleanStreakMetadata: demoCleanStreakMetadata
+      cleanStreakMetadata: {
+        gracePeriodUsed: false,
+        streakQuality: 'silver'
+      }
     };
 
     return {
-      data: enhancedDemoData,
+      data: simpleDemoData,
       isLoading: false,
       error: null,
-      refetch: () => Promise.resolve(enhancedDemoData)
+      refetch: () => Promise.resolve(simpleDemoData)
     };
   }
 
-  // Combine basic data with detailed data, ensuring unplayedGames is always a number
+  // Combine basic data with detailed data for authenticated users
   const combinedData = basicData && detailedDustData ? {
     ...basicData,
     ...detailedDustData,

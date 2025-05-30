@@ -36,7 +36,7 @@ const CleanScoreMeter = ({
     playedGames: 0,
   };
 
-  const actualScore = score ?? dashboardMetrics.cleanScore ?? 0;
+  const actualScore = score ?? data?.cleanScore ?? dashboardMetrics.cleanScore ?? 0;
   
   // Simple fallback: find tier directly from score if data.cleanTier is missing
   const cleanTier = data?.cleanTier || CLEAN_SCORE_TIERS.find(

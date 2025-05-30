@@ -1,6 +1,6 @@
 
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
-import { calculateCleanScore } from './clean-score-utils';
+import { calculateCleanScore, CLEAN_SCORE_TIERS } from './clean-score-utils';
 import { processGenres, countGenres } from './genre-processing';
 
 /**
@@ -14,7 +14,7 @@ export const transformUserGameData = (
   // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
-  let totalDustScore = 0; // Sum of all dust scores
+  let totalDustScore = 0;
   const gamesList: GameListItem[] = [];
 
   // Process each game
@@ -26,7 +26,7 @@ export const transformUserGameData = (
 
     const price = gameData.price_cents ? (gameData.price_cents / 100) : 0;
     const playtimeMinutes = game.playtime_minutes || 0;
-    const dustScore = game.dust_score || 0; // Use the dust score from database (enhanced calculation)
+    const dustScore = game.dust_score || 0;
 
     // Accumulate total playtime
     totalPlaytime += playtimeMinutes;
@@ -34,7 +34,7 @@ export const transformUserGameData = (
     // Accumulate total spent
     totalSpent += price;
 
-    // Accumulate total dust score (sum, not average)
+    // Accumulate total dust score
     totalDustScore += dustScore;
 
     // Populate games list
@@ -44,7 +44,7 @@ export const transformUserGameData = (
       image: gameData.image_url || gameData.header_image || '',
       playtimeMinutes: playtimeMinutes,
       lastPlayed: game.last_played_date || null,
-      added: null, // No longer using acquisition_date
+      added: null,
       price: price,
       genres: gameData.genres || [],
       notes: game.notes || null,
@@ -70,18 +70,18 @@ export const transformUserGameData = (
   // Calculate shelf life - get oldest unplayed games by RELEASE DATE only
   const unplayedGamesList = gamesList.filter(game => game.playtimeMinutes === 0);
   const shelfLife = unplayedGamesList
-    .filter(game => game.releaseDate) // Only games with release dates
+    .filter(game => game.releaseDate)
     .sort((a, b) => {
       const dateA = new Date(a.releaseDate!).getTime();
       const dateB = new Date(b.releaseDate!).getTime();
-      return dateA - dateB; // Oldest release date first
+      return dateA - dateB;
     })
-    .slice(0, 50) // Get top 50 oldest by release date
+    .slice(0, 50)
     .map(game => ({
       id: game.id,
       name: game.name,
       image: game.image || '',
-      addedDate: null, // No longer using acquisition_date
+      addedDate: null,
       releaseDate: game.releaseDate,
       price: game.price,
       genres: game.genres
@@ -129,9 +129,9 @@ export const transformUserGameData = (
   );
 
   return {
-    unplayedGames, // This is a number - count of unplayed games
+    unplayedGames,
     totalGames: userGamesData.length,
-    dustScore: totalDustScore, // Use sum of all dust scores (not average)
+    dustScore: totalDustScore,
     totalPlaytime: totalPlaytimeHours,
     totalSpent,
     unplayedSpent: 0, // This will be populated later
@@ -145,6 +145,16 @@ export const transformUserGameData = (
     cleanTier,
     cleanStreak,
     recentlyPlayedCount,
-    cleanStreakMetadata: streakMetadata
+    cleanStreakMetadata: streakMetadata,
+    // Add missing properties for authenticated data consistency
+    dustScoreBreakdown: {
+      qualityScore: 0,
+      priceScore: 0,
+      ageScore: 0,
+      genreScore: 0,
+      playtimeFactor: 0
+    },
+    topDustContributors: [],
+    avgDustScore: 0
   };
 };
