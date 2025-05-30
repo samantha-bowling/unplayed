@@ -1,4 +1,3 @@
-
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -30,7 +29,7 @@ const CleanScoreBreakdown = ({
   // If no breakdown data is available, show placeholder
   if (!breakdown) {
     return (
-      <Card className="terminal-container">
+      <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
         <CardHeader>
           <CardTitle>Clean Score Breakdown</CardTitle>
           <CardDescription>How your clean score is calculated</CardDescription>
@@ -114,7 +113,7 @@ const CleanScoreBreakdown = ({
   const streakQuality = getStreakQuality();
   
   return (
-    <Card className="terminal-container">
+    <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
       <CardHeader className="pb-4">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div>
@@ -122,7 +121,7 @@ const CleanScoreBreakdown = ({
               <Brush className="h-5 w-5 text-cyan-400" />
               Clean Score Breakdown
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base mt-3">
               Your Clean Score of <span className="text-white font-bold">{cleanScore}</span> is calculated from these factors
             </CardDescription>
           </div>
