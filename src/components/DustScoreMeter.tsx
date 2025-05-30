@@ -94,7 +94,7 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
           <div className="mt-6 flex justify-center">
             <Link
               to="/dust"
-              className="px-4 py-2 bg-unplayed-pink hover:bg-unplayed-pink/90 text-white text-sm rounded-md transition-colors font-semibold"
+              className="px-4 py-2 bg-unplayed-pink/20 hover:bg-unplayed-pink/30 text-unplayed-pink text-sm rounded-md transition-colors font-medium"
             >
               View Detailed Report
             </Link>
