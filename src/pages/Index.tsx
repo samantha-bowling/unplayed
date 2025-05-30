@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -22,8 +21,6 @@ import Footer from "../components/Footer";
 import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
-import LoadingState from "@/components/ui/loading-state";
-import DataErrorBoundary from "@/components/DataErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { useUnifiedLibraryData } from "@/hooks/useUnifiedLibraryData";
 import { transformToDashboardMetrics } from "@/utils/data-transforms";
