@@ -1,157 +1,72 @@
-
-// src/App.tsx
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth, AuthStatus } from "@/context/AuthContext";
-import SteamLoader from "@/components/SteamLoader";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import AuthPage from "./pages/AuthPage";
-import LibraryPage from "./pages/LibraryPage";
-import AuthDebugPage from "./pages/AuthDebugPage";
-import SupportPage from "./pages/SupportPage";
-import AdminSupportPage from "./pages/AdminSupportPage";
-import AdminSteamDataPage from "./pages/AdminSteamDataPage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
-import QueueManagerPage from "./pages/QueueManagerPage";
-import AdminHltbDataPage from "./pages/AdminHltbDataPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import DustPage from "./pages/DustPage";
-import SpendPage from "./pages/SpendPage";
-import LoginErrorPage from "./pages/LoginErrorPage";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
+import { DemoModeProvider } from "@/context/DemoModeContext";
+import { FullScreenModeProvider } from "@/context/FullScreenModeContext";
+import LoadingStateProvider from "@/components/loading-state-provider";
+import Index from "@/pages/Index";
+import IndexOptimized from "@/pages/IndexOptimized";
+import AuthPage from "@/pages/AuthPage";
 import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import SteamAuthHandler from "@/pages/SteamAuthHandler";
+import LoginErrorPage from "@/pages/LoginErrorPage";
+import AuthDebugPage from "@/pages/AuthDebugPage";
+import LibraryPage from "@/pages/LibraryPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
+import DustPage from "@/pages/DustPage";
+import SpendPage from "@/pages/SpendPage";
+import SupportPage from "@/pages/SupportPage";
+import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import AdminSteamDataPage from "@/pages/AdminSteamDataPage";
+import AdminHltbDataPage from "@/pages/AdminHltbDataPage";
+import AdminSupportPage from "@/pages/AdminSupportPage";
+import AdminAccountDeletionsPage from "@/pages/AdminAccountDeletionsPage";
+import QueueManagerPage from "@/pages/QueueManagerPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useTransition, Suspense } from "react";
-import routes from "./config/routes";
+import NotFound from "@/pages/NotFound";
 
-const App = () => {
-  const { status } = useAuth();
-  const [isPending] = useTransition();
-
-  // Show central loading UI only during initial app loading
-  if (status === AuthStatus.LOADING) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <SteamLoader message="Loading application..." size="md" variant="secondary" />
-      </div>
-    );
-  }
-
+function App() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <SteamLoader message="Loading content..." size="md" variant="secondary" />
-      </div>
-    }>
-      <Routes>
-        {/* Public routes */}
-        <Route path={routes.HOME.path} element={<Index />} />
-        <Route path={routes.AUTH.path} element={<AuthPage />} />
-        <Route path={routes.AUTH_CALLBACK.path} element={<AuthCallbackHandler />} />
-        <Route path={routes.STEAM_CALLBACK.path} element={<SteamAuthHandler />} />
-        <Route path={routes.LOGIN_ERROR.path} element={<LoginErrorPage />} />
-        <Route path={routes.SUPPORT.path} element={<SupportPage />} />
-        <Route path={routes.LEADERBOARD.path} element={<LeaderboardPage />} />
-
-        {/* Admin routes with role protection */}
-        <Route
-          path={routes.AUTH_DEBUG.path}
-          element={
-            <ProtectedRoute requiredRole={routes.AUTH_DEBUG.requiredRole}>
-              <AuthDebugPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.ADMIN_DASHBOARD.path}
-          element={
-            <ProtectedRoute requiredRole={routes.ADMIN_DASHBOARD.requiredRole}>
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.ADMIN_SUPPORT.path}
-          element={
-            <ProtectedRoute requiredRole={routes.ADMIN_SUPPORT.requiredRole}>
-              <AdminSupportPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.ADMIN_ACCOUNT_DELETIONS.path}
-          element={
-            <ProtectedRoute requiredRole={routes.ADMIN_ACCOUNT_DELETIONS.requiredRole}>
-              <AdminAccountDeletionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.ADMIN_QUEUE_MANAGER.path}
-          element={
-            <ProtectedRoute requiredRole={routes.ADMIN_QUEUE_MANAGER.requiredRole}>
-              <QueueManagerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.ADMIN_HLTB_DATA.path}
-          element={
-            <ProtectedRoute requiredRole={routes.ADMIN_HLTB_DATA.requiredRole}>
-              <AdminHltbDataPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Redirects */}
-        <Route 
-          path={routes.ADMIN_STEAM_DATA.path}
-          element={<Navigate to={routes.ADMIN_STEAM_DATA.redirectPath || "/"} replace />}
-        />
-        <Route
-          path={routes.AUTH_STEAM_DATA.path}
-          element={<Navigate to={routes.AUTH_STEAM_DATA.redirectPath || "/"} replace />}
-        />
-
-        {/* Protected routes requiring authentication */}
-        <Route
-          path={routes.LIBRARY.path}
-          element={
-            <ProtectedRoute>
-              <LibraryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.DUST.path}
-          element={
-            <ProtectedRoute>
-              <DustPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.SPEND.path}
-          element={
-            <ProtectedRoute>
-              <SpendPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* 404 handler */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      
-      {/* Global transition loading indicator */}
-      {isPending && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <SteamLoader message="Processing..." size="sm" variant="secondary" />
-        </div>
-      )}
-    </Suspense>
+    <QueryClientProvider client={new QueryClient()}>
+      <BrowserRouter>
+        <Toaster />
+        <AuthProvider>
+          <DemoModeProvider>
+            <FullScreenModeProvider>
+              <LoadingStateProvider>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/index-optimized" element={<IndexOptimized />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth/callback" element={<AuthCallbackHandler />} />
+                  <Route path="/auth/steam" element={<SteamAuthHandler />} />
+                  <Route path="/auth/error" element={<LoginErrorPage />} />
+                  <Route path="/auth/debug" element={<AuthDebugPage />} />
+                  <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/leaderboard" element={<LeaderboardPage />} />
+                  <Route path="/dust" element={<DustPage />} />
+                  <Route path="/spend" element={<SpendPage />} />
+                  <Route path="/support" element={<SupportPage />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+                  <Route path="/admin/steam-data" element={<ProtectedRoute><AdminSteamDataPage /></ProtectedRoute>} />
+                  <Route path="/admin/hltb-data" element={<ProtectedRoute><AdminHltbDataPage /></ProtectedRoute>} />
+                  <Route path="/admin/support" element={<ProtectedRoute><AdminSupportPage /></ProtectedRoute>} />
+                  <Route path="/admin/account-deletions" element={<ProtectedRoute><AdminAccountDeletionsPage /></ProtectedRoute>} />
+                  <Route path="/admin/queue-manager" element={<ProtectedRoute><QueueManagerPage /></ProtectedRoute>} />
+                  
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </LoadingStateProvider>
+            </FullScreenModeProvider>
+          </DemoModeProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
-};
+}
 
 export default App;
