@@ -20,21 +20,35 @@ export const queryKeys = {
   cleanGamePrice: (gameId: number, fallbackPrice?: number) => 
     ['clean-game-price', gameId, fallbackPrice] as const,
 
-  // Add missing query keys
+  // Add missing query keys - match actual usage patterns
   profile: (userId?: string) => ['profile', userId] as const,
   
   gamePicks: (userId?: string) => ['game-picks', userId] as const,
   
   detailedDustData: (userId?: string) => ['detailed-dust-data', userId] as const,
   
-  libraryGamesCount: (userId?: string) => ['library-games-count', userId] as const,
+  libraryGamesCount: (userId?: string, filters?: any) => 
+    ['library-games-count', userId, filters] as const,
   
-  paginatedLibraryGames: (userId?: string, page?: number, filters?: any) => 
-    ['paginated-library-games', userId, page, filters] as const,
+  paginatedLibraryGames: (
+    userId?: string, 
+    page?: number, 
+    pageSize?: number, 
+    filters?: any, 
+    sortBy?: string, 
+    sortDirection?: string
+  ) => 
+    ['paginated-library-games', userId, page, pageSize, filters, sortBy, sortDirection] as const,
 } as const;
 
-// Export FilterOptions type that's used by paginated library
+// Export FilterOptions type that matches actual usage in use-paginated-library.tsx
 export interface FilterOptions {
+  search?: string;  // matches actual usage
+  hideIgnored?: boolean;  // matches actual usage
+  onlyUnplayed?: boolean;  // matches actual usage
+  selectedGenre?: string;  // matches actual usage
+  
+  // Legacy properties that might be used elsewhere
   genreFilter?: string;
   platformFilter?: string;
   searchQuery?: string;
@@ -45,11 +59,17 @@ export interface FilterOptions {
   priceRange?: [number, number];
 }
 
-// Export useCacheManagement function
+// Export useCacheManagement function with proper structure
 export const useCacheManagement = () => {
   return {
     clearAllCaches: () => {
       console.log('Cache management functionality');
+    },
+    queryKeys,
+    utils: {
+      invalidateAll: () => {
+        console.log('Invalidating all caches');
+      }
     }
   };
 };

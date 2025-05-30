@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCleanSpendingData } from '@/hooks/use-clean-spending-data';
