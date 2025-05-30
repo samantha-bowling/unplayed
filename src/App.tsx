@@ -1,10 +1,7 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
-import { DemoModeProvider } from "@/context/DemoModeContext";
-import { FullScreenModeProvider } from "@/context/FullScreenModeContext";
+import { Route, Routes } from "react-router-dom";
 import LoadingStateProvider from "@/components/loading-state-provider";
 import Index from "@/pages/Index";
 import IndexOptimized from "@/pages/IndexOptimized";
@@ -29,43 +26,35 @@ import NotFound from "@/pages/NotFound";
 
 function App() {
   return (
-    <QueryClientProvider client={new QueryClient()}>
-      <BrowserRouter>
-        <Toaster />
-        <AuthProvider>
-          <DemoModeProvider>
-            <FullScreenModeProvider>
-              <LoadingStateProvider>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/index-optimized" element={<IndexOptimized />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/auth/callback" element={<AuthCallbackHandler />} />
-                  <Route path="/auth/steam" element={<SteamAuthHandler />} />
-                  <Route path="/auth/error" element={<LoginErrorPage />} />
-                  <Route path="/auth/debug" element={<AuthDebugPage />} />
-                  <Route path="/library" element={<LibraryPage />} />
-                  <Route path="/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/dust" element={<DustPage />} />
-                  <Route path="/spend" element={<SpendPage />} />
-                  <Route path="/support" element={<SupportPage />} />
-                  
-                  {/* Admin Routes */}
-                  <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-                  <Route path="/admin/steam-data" element={<ProtectedRoute><AdminSteamDataPage /></ProtectedRoute>} />
-                  <Route path="/admin/hltb-data" element={<ProtectedRoute><AdminHltbDataPage /></ProtectedRoute>} />
-                  <Route path="/admin/support" element={<ProtectedRoute><AdminSupportPage /></ProtectedRoute>} />
-                  <Route path="/admin/account-deletions" element={<ProtectedRoute><AdminAccountDeletionsPage /></ProtectedRoute>} />
-                  <Route path="/admin/queue-manager" element={<ProtectedRoute><QueueManagerPage /></ProtectedRoute>} />
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </LoadingStateProvider>
-            </FullScreenModeProvider>
-          </DemoModeProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <TooltipProvider>
+      <Toaster />
+      <LoadingStateProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/index-optimized" element={<IndexOptimized />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackHandler />} />
+          <Route path="/auth/steam" element={<SteamAuthHandler />} />
+          <Route path="/auth/error" element={<LoginErrorPage />} />
+          <Route path="/auth/debug" element={<AuthDebugPage />} />
+          <Route path="/library" element={<LibraryPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/dust" element={<DustPage />} />
+          <Route path="/spend" element={<SpendPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path="/admin/steam-data" element={<ProtectedRoute><AdminSteamDataPage /></ProtectedRoute>} />
+          <Route path="/admin/hltb-data" element={<ProtectedRoute><AdminHltbDataPage /></ProtectedRoute>} />
+          <Route path="/admin/support" element={<ProtectedRoute><AdminSupportPage /></ProtectedRoute>} />
+          <Route path="/admin/account-deletions" element={<ProtectedRoute><AdminAccountDeletionsPage /></ProtectedRoute>} />
+          <Route path="/admin/queue-manager" element={<ProtectedRoute><QueueManagerPage /></ProtectedRoute>} />
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </LoadingStateProvider>
+    </TooltipProvider>
   );
 }
 
