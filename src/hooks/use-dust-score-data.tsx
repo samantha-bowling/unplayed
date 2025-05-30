@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics, transformToUnplayedData } from '@/utils/data-transforms';
@@ -92,6 +93,7 @@ const useDustScoreData = () => {
 
       if (!userGamesWithDust || userGamesWithDust.length === 0) {
         return {
+          dustScore: 0,
           dustScoreBreakdown: { 
             qualityScore: 0, 
             priceScore: 0, 
@@ -188,6 +190,11 @@ const useDustScoreData = () => {
       ).length;
       const unplayedGameCount = totalGames - playedGames; // Ensure this is a number
       
+      // Calculate total playtime in hours - ADD THIS BACK
+      const totalPlaytimeHours = userGamesWithDust.reduce((sum, game) =>
+        sum + ((game.playtime_minutes || 0) / 60), 0
+      );
+      
       // Count recently played games
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -224,6 +231,7 @@ const useDustScoreData = () => {
         calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
 
       return {
+        dustScore: totalDustScore,
         dustScoreBreakdown: {
           qualityScore: totalQualityScore,
           priceScore: totalPriceScore,
@@ -294,6 +302,7 @@ const useDustScoreData = () => {
     const normalizedDemoData = normalizeDemoGames(demoData);
     const enhancedDemoData: UnplayedDataType = {
       ...normalizedDemoData,
+      dustScore: 595, // Add dustScore for demo
       dustScoreBreakdown: demoDustBreakdown,
       topDustContributors: demoTopContributors,
       avgDustScore: 29.7,
