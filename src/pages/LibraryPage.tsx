@@ -32,7 +32,7 @@ const LibraryPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow w-full navbar-offset py-4 px-4">
+      <main className="flex-grow w-full navbar-offset px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <LibraryHeroSection 
             unplayedCount={unplayedGames}
