@@ -1,3 +1,4 @@
+
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -184,12 +185,31 @@ const useDustScoreData = () => {
         return lastPlayed >= thirtyDaysAgo;
       }).length;
 
-      // Generate a random clean streak (1-7) for now
-      const cleanStreak = Math.min(7, Math.max(1, Math.floor(Math.random() * 7) + 1));
+      // Calculate clean score using our enhanced calculation
+      const gamesList = userGamesWithDust.map(game => ({
+        id: game.game_id,
+        name: game.games?.name || '',
+        playtimeMinutes: game.playtime_minutes || 0,
+        lastPlayed: game.last_played_date,
+        added: game.acquisition_date,
+        // Add other required fields
+        image: '',
+        price: 0,
+        genres: game.games?.genres || [],
+        notes: null,
+        hidden: false,
+        releaseDate: game.games?.release_date,
+        metacritic: game.games?.metacritic_score,
+        categories: [],
+        completionEstimate: null,
+        mainStoryEstimate: null,
+        averageEstimate: null,
+        steamAppid: null,
+        howLongToBeatId: null,
+      }));
 
-      // Calculate clean score using our type-safe utility
-      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak: calculatedCleanStreak } =
-        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, userGamesWithDust, recentlyPlayedCount);
+      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
+        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
 
       return {
         dustScoreBreakdown: {
@@ -204,7 +224,7 @@ const useDustScoreData = () => {
         cleanScore,
         cleanScoreBreakdown,
         cleanTier,
-        cleanStreak: calculatedCleanStreak,
+        cleanStreak,
         recentlyPlayedCount,
         totalGames,
         unplayedGames: totalGames - playedGames

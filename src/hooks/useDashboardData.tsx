@@ -5,6 +5,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { calculateCleanScore } from '@/utils/clean-score-utils';
 
 export interface DashboardData {
   unplayedGames: number;
@@ -63,22 +64,37 @@ export const useDashboardData = () => {
         };
       }
 
+      // Calculate clean score using the latest calculation from clean-score-utils
+      const playedGames = unplayedData.totalGames - unplayedData.unplayedGames;
+      const totalPlaytimeHours = unplayedData.totalPlaytime;
+      const gamesList = unplayedData.gamesList || [];
+      
+      const { cleanScore } = calculateCleanScore(
+        playedGames,
+        unplayedData.totalGames,
+        totalPlaytimeHours,
+        gamesList,
+        unplayedData.recentlyPlayedCount
+      );
+
       console.log('Dashboard data compilation:', {
         unplayedGames: unplayedData.unplayedGames,
         unplayedSpent: spendingData.totalSpent,
         totalSpent: unplayedData.totalSpent,
         totalPlaytime: unplayedData.totalPlaytime,
+        dustScore: unplayedData.dustScore,
+        cleanScore: cleanScore,
         spendingConfidence: spendingData.confidence
       });
 
       return {
         unplayedGames: unplayedData.unplayedGames,
         totalGames: unplayedData.totalGames,
-        dustScore: unplayedData.dustScore,
+        dustScore: unplayedData.dustScore, // Use actual dust score from unplayed data
         totalSpent: unplayedData.totalSpent,
         unplayedSpent: spendingData.totalSpent,
         potentialGameplayHours: unplayedData.potentialGameplayHours,
-        cleanScore: unplayedData.cleanScore,
+        cleanScore: cleanScore, // Use calculated clean score
         recentlyPlayedCount: unplayedData.recentlyPlayedCount,
         totalPlaytime: unplayedData.totalPlaytime,
         genres: unplayedData.genres || [],

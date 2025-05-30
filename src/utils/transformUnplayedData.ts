@@ -15,6 +15,7 @@ export const transformUserGameData = (
   // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
+  let totalDustScore = 0; // Add dust score accumulator
   const gamesList: GameListItem[] = [];
 
   // Process each game
@@ -26,12 +27,16 @@ export const transformUserGameData = (
 
     const price = gameData.price_cents ? (gameData.price_cents / 100) : 0;
     const playtimeMinutes = game.playtime_minutes || 0;
+    const dustScore = game.dust_score || 0;
 
     // Accumulate total playtime
     totalPlaytime += playtimeMinutes;
 
     // Accumulate total spent
     totalSpent += price;
+
+    // Accumulate total dust score
+    totalDustScore += dustScore;
 
     // Populate games list (removed acquisition_date reference)
     gamesList.push({
@@ -128,7 +133,7 @@ export const transformUserGameData = (
   return {
     unplayedGames,
     totalGames: userGamesData.length,
-    dustScore: 0, // This will be populated later
+    dustScore: totalDustScore, // Use accumulated dust score
     totalPlaytime: totalPlaytimeHours,
     totalSpent,
     unplayedSpent: 0, // This will be populated later
