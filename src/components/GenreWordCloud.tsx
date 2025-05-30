@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cloud } from 'lucide-react';
+import { Worm, HelpCircle } from 'lucide-react';
 import { useLibraryData } from '@/hooks/use-library-data';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const GenreWordCloud = () => {
   const { games: libraryGames } = useLibraryData();
@@ -33,49 +34,76 @@ const GenreWordCloud = () => {
     return baseSize + (maxSize - baseSize) * ratio;
   };
 
-  // Color palette for genres
-  const colors = [
-    'text-unplayed-mint',
-    'text-blue-400',
-    'text-purple-400',
-    'text-green-400',
-    'text-unplayed-amber',
+  // Rainbow colors for the inchworm effect
+  const rainbowColors = [
     'text-red-400',
+    'text-orange-400', 
+    'text-yellow-400',
+    'text-green-400',
+    'text-blue-400',
+    'text-indigo-400',
+    'text-purple-400',
     'text-pink-400',
+    'text-rose-400',
     'text-cyan-400',
-    'text-orange-400',
-    'text-indigo-400'
+    'text-lime-400',
+    'text-emerald-400',
   ];
 
-  const getColor = (index: number) => colors[index % colors.length];
+  const getRainbowColor = (index: number) => rainbowColors[index % rainbowColors.length];
 
   return (
     <Card className="bg-black/20 border border-gray-700">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <Cloud className="h-5 w-5 text-unplayed-mint" />
-          <span>Genre Word Cloud</span>
+          <Worm className="h-5 w-5 text-unplayed-mint" />
+          <span>The Rainbow Genre Inchworm</span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="max-w-xs">
+                  <p className="font-medium mb-1">The Rainbow Genre Inchworm</p>
+                  <p className="text-sm">A colorful visualization of your genre collection! Each genre crawls across the rainbow spectrum, with size indicating how many games you own in that genre. The inchworm moves through all the colors of gaming!</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {genreStats.length > 0 ? (
-          <div className="flex flex-wrap items-center justify-center gap-3 p-4">
-            {genreStats.map((genre, index) => (
-              <span
-                key={genre.genre}
-                className={`font-semibold cursor-default transition-opacity hover:opacity-80 ${getColor(index)}`}
-                style={{
-                  fontSize: `${getFontSize(genre.count)}px`,
-                  lineHeight: '1.2'
-                }}
-                title={`${genre.genre}: ${genre.count} games`}
-              >
-                {genre.genre}
-              </span>
-            ))}
-          </div>
+          <TooltipProvider>
+            <div className="flex flex-wrap items-center justify-center gap-3 p-4">
+              {genreStats.map((genre, index) => (
+                <Tooltip key={genre.genre}>
+                  <TooltipTrigger asChild>
+                    <span
+                      className={`font-semibold cursor-help transition-all duration-300 hover:scale-110 hover:drop-shadow-lg ${getRainbowColor(index)}`}
+                      style={{
+                        fontSize: `${getFontSize(genre.count)}px`,
+                        lineHeight: '1.2',
+                        textShadow: '0 0 8px currentColor'
+                      }}
+                    >
+                      {genre.genre}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-center">
+                      <p className="font-medium">{genre.genre}</p>
+                      <p className="text-sm">{genre.count} games</p>
+                      <p className="text-xs text-gray-300">Segment #{index + 1} of the inchworm</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
         ) : (
-          <p className="text-gray-400 text-center py-8">No genre data available</p>
+          <p className="text-gray-400 text-center py-8">No genre data available - the inchworm is still growing!</p>
         )}
       </CardContent>
     </Card>

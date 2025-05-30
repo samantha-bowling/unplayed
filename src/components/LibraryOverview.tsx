@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import GenreGalaxy from './GenreGalaxy';
 
 const LibraryOverview = () => {
   const { games: libraryGames, isLoading } = useLibraryData();
@@ -154,7 +154,7 @@ const LibraryOverview = () => {
     }).length
   };
 
-  // Get top genres
+  // Get top genres for Galaxy View
   const genreCount: Record<string, number> = {};
   libraryGames.forEach(game => {
     const genres = game.genres || [];
@@ -164,8 +164,8 @@ const LibraryOverview = () => {
   });
   
   const topGenres = Object.entries(genreCount)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 5);
+    .map(([genre, count]) => ({ genre, count }))
+    .sort((a, b) => b.count - a.count);
 
   // Helper function to format playtime
   const formatPlaytime = (minutes: number) => {
@@ -415,37 +415,8 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Top Genres */}
-          <Card className="bg-black/20 border border-gray-700 flex flex-col h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Gamepad2 className="h-5 w-5 text-purple-400" />
-                <span>Top Genres</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-center">
-              {topGenres.length > 0 ? (
-                <div className="space-y-3">
-                  {topGenres.map(([genre, count]) => (
-                    <div key={genre} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-300">{genre}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-white">{count}</span>
-                        <div className="w-16 bg-gray-700 rounded-full h-2">
-                          <div 
-                            className="bg-purple-400 h-2 rounded-full" 
-                            style={{ width: `${(count / totalGames) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-center py-4">No genre data available</p>
-              )}
-            </CardContent>
-          </Card>
+          {/* Genre Galaxy - Replaces Top Genres */}
+          <GenreGalaxy genres={topGenres} totalGames={totalGames} />
         </div>
       </div>
     </TooltipProvider>
