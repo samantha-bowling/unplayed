@@ -57,7 +57,7 @@ const LeaderboardPage = () => {
       {/* Hero section - Using our header spacing utility class */}
       <section className="navbar-offset flex-grow px-4 py-12 text-center relative overflow-hidden">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-unplayed-mint">
-          Leaderboard
+          Dust Dynasty
         </h1>
         
         <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-300">
