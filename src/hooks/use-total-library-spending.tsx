@@ -30,8 +30,8 @@ export const useTotalLibrarySpending = () => {
       };
     }
 
-    // Fix the reduce function - correct parameter order: (accumulator, currentValue)
-    const totalSpent = data.reduce((accumulator, currentGame) => {
+    // Add explicit type annotation to fix TypeScript inference issue
+    const totalSpent = data.reduce<number>((accumulator, currentGame) => {
       const price = currentGame.games?.price_cents ? currentGame.games.price_cents / 100 : 0;
       return accumulator + price;
     }, 0); // Initial value of 0
