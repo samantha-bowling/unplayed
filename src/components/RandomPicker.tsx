@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MousePointer } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
@@ -12,6 +13,7 @@ import RecentPick from './RecentPick';
 import { PickerNavigationState } from '@/utils/navigation';
 import { withDemoIndicator, WithDemoProps } from '@/components/withDemoIndicator';
 import { getRandomDestinyMessage } from '@/utils/destiny-messages';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Array of quips to display during game selection
 const selectionQuips = [
@@ -81,6 +83,7 @@ const RandomPicker = ({
   const [destinyMessage, setDestinyMessage] = useState<string>("Your Random Pick");
   
   const { isFullScreenMode } = useFullScreenMode();
+  const isMobile = useIsMobile();
 
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
@@ -240,20 +243,22 @@ const RandomPicker = ({
         <div className="terminal-header mb-6">Random Game Picker</div>
         
         <div className="terminal-content">
-          {/* Controls Section - Reorganized layout */}
-          <div className="flex justify-between items-center gap-4 mb-8">
+          {/* Controls Section - Mobile responsive layout */}
+          <div className={`mb-8 ${isMobile ? 'space-y-4' : 'flex justify-between items-center gap-4'}`}>
             {/* Left side: Mood, Select Game button, Prevent Duplicates */}
-            <div className="flex items-center gap-4">
-              <MoodFilterDropdown 
-                activeMood={activeMood}
-                onSelectMood={handleFilterSelect}
-                onClearMood={handleClearMood}
-                isDropdownOpen={isDropdownOpen}
-                toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
-              />
+            <div className={`${isMobile ? 'space-y-3' : 'flex items-center gap-4'}`}>
+              <div className={isMobile ? 'w-full' : ''}>
+                <MoodFilterDropdown 
+                  activeMood={activeMood}
+                  onSelectMood={handleFilterSelect}
+                  onClearMood={handleClearMood}
+                  isDropdownOpen={isDropdownOpen}
+                  toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
+                />
+              </div>
               
               <button 
-                className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`btn-amber flex items-center ${isSpinning ? 'opacity-50 cursor-not-allowed' : ''} ${isMobile ? 'w-full justify-center' : ''}`}
                 onClick={handleSpin} 
                 disabled={isSpinning}
               >
@@ -262,7 +267,7 @@ const RandomPicker = ({
               </button>
               
               {!showFullScreenMode && !currentSessionPick && (
-                <div className="flex items-center text-sm">
+                <div className={`flex items-center text-sm ${isMobile ? 'justify-center' : ''}`}>
                   <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -286,7 +291,7 @@ const RandomPicker = ({
                 defaultValue="unplayed" 
                 value={scope}
                 onValueChange={(value) => setScope(value as 'unplayed' | 'all')}
-                className="w-[260px]"
+                className={isMobile ? 'w-full' : 'w-[260px]'}
               >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="unplayed">Unplayed Only</TabsTrigger>
