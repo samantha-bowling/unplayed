@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
+import { useCleanSpendingData } from '@/hooks/use-clean-spending-data';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
@@ -15,13 +15,11 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  // Replace the old hook with the new clean spending data hook
   const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useCleanSpendingData(true);
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
-  // Use clean spending data
   const spendingAmount = spendingData?.totalSpent || 0;
 
   console.log('SpendingEstimate - Using clean spending data:', {
@@ -37,7 +35,6 @@ const SpendingEstimate = ({
     }
   };
 
-  // Only show refresh when authenticated and not in demo mode
   const showRefresh = !isDemo && status !== 'LOADING';
 
   return (
@@ -60,7 +57,7 @@ const SpendingEstimate = ({
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                 >
-                  <RefreshCcw 
+                  <RefreshCw 
                     size={16} 
                     className={`text-gray-400 hover:text-unplayed-mint ${isRefreshing ? 'animate-spin' : ''}`} 
                   />

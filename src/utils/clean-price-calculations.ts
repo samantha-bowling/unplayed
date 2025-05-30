@@ -57,7 +57,7 @@ export async function getCleanLibraryStats(userId: string): Promise<LibraryStats
       throw error;
     }
 
-    return data as LibraryStats;
+    return data as unknown as LibraryStats;
   } catch (error) {
     console.error('Error in getCleanLibraryStats:', error);
     return null;
@@ -79,7 +79,7 @@ export async function getCleanGamePrice(gameId: number, fallbackPriceCents?: num
       throw error;
     }
 
-    return data as CleanPriceInfo;
+    return data as unknown as CleanPriceInfo;
   } catch (error) {
     console.error('Error in getCleanGamePrice:', error);
     return null;

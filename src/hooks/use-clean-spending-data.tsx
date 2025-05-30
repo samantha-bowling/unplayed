@@ -1,7 +1,7 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   getCleanLibraryStats, 
   transformToSpendingBreakdown, 
@@ -62,7 +62,6 @@ export const useCleanSpendingData = (onlyUnplayed: boolean = true) => {
     queryKey: queryKeys.cleanSpendingData(user?.id, onlyUnplayed),
     queryFn: async (): Promise<CleanSpendingData> => {
       if (isDemo) {
-        // Return demo data structure
         const totalSpent = onlyUnplayed ? (demoData.unplayedSpent || 0) : (demoData.totalSpent || 0);
         
         return {
@@ -144,7 +143,7 @@ export const useCleanSpendingData = (onlyUnplayed: boolean = true) => {
       };
     },
     enabled: !!user || isDemo,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
@@ -160,7 +159,6 @@ export const useCleanSpendingData = (onlyUnplayed: boolean = true) => {
     let refreshLog: any = null;
     
     try {
-      // Get user's game IDs that need price updates
       const { data: userGames } = await supabase
         .from('user_games')
         .select('game_id')
@@ -187,7 +185,7 @@ export const useCleanSpendingData = (onlyUnplayed: boolean = true) => {
       const response = await callSupabaseFunction('refresh-game-price', {
         app_ids: gameIds,
         force_refresh: false,
-        validate_prices: true // New flag to enable validation
+        validate_prices: true
       });
 
       const updatedCount = response?.updated_count || 0;
