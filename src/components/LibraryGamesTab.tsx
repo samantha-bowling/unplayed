@@ -44,15 +44,22 @@ const LibraryGamesTab = () => {
     return paginatedGames.map(game => game.name);
   }, [paginatedGames]);
 
-  // Dynamic count for zen mode - show all visible games up to 10
+  // Dynamic count for zen mode - show exactly the same number as grid view
   const zenModeCount = useMemo(() => {
-    return Math.min(gameNames.length, 10);
+    return gameNames.length;
   }, [gameNames.length]);
+
+  // Show zen mode button only when page size is less than 24
+  const showZenMode = pageSize < 24;
 
   const handlePageSizeChange = (newSize: string) => {
     const size = parseInt(newSize);
     setPageSize(size);
     updatePageSize(size);
+    // Reset to grid view if switching to 24+ games
+    if (size >= 24 && viewMode === 'zen') {
+      setViewMode('grid');
+    }
   };
 
   const handleMarkAsPlayed = async (userGameId: string) => {
@@ -173,9 +180,11 @@ const LibraryGamesTab = () => {
             <ToggleGroupItem value="grid" aria-label="Grid View">
               <Grid className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="zen" aria-label="Zen View">
-              <Eye className="h-4 w-4" />
-            </ToggleGroupItem>
+            {showZenMode && (
+              <ToggleGroupItem value="zen" aria-label="Zen View">
+                <Eye className="h-4 w-4" />
+              </ToggleGroupItem>
+            )}
           </ToggleGroup>
         </div>
       </div>
