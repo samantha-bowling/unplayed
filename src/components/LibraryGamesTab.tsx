@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, SortAsc, SortDesc, Grid, List, Maximize, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -40,16 +41,10 @@ const LibraryGamesTab = () => {
     saveGameNote,
   } = usePaginatedLibrary();
 
-  // Get all library data for zen mode game names (unfiltered)
-  const { games: allLibraryGames } = useLibraryData();
-
-  // Extract game names for zen mode - use ALL games, not filtered ones
+  // Extract game names for zen mode - use CURRENT PAGE games (what user sees)
   const gameNames = useMemo(() => {
-    if (allLibraryGames && allLibraryGames.length > 0) {
-      return allLibraryGames.map(game => game.name);
-    }
     return paginatedGames.map(game => game.name);
-  }, [allLibraryGames, paginatedGames]);
+  }, [paginatedGames]);
 
   const handlePageSizeChange = (newSize: string) => {
     const size = parseInt(newSize);
@@ -106,8 +101,8 @@ const LibraryGamesTab = () => {
           )}
           
           <div className="absolute inset-0 overflow-hidden">
-            <FloatingIcons count={30} />
-            <FloatingGameNames gameNames={gameNames} count={Math.min(20, gameNames.length)} />
+            <FloatingIcons count={5} />
+            <FloatingGameNames gameNames={gameNames} count={Math.min(8, gameNames.length)} />
           </div>
         </div>
       </ZenLayout>

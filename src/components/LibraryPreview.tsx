@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Play, Grid, List, Maximize, Eye, EyeOff, Search, SortAsc, SortDesc, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
   const [limit, setLimit] = useState<number>(12);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [hideIgnored, setHideIgnored] = useState<boolean>(false);
   const [onlyUnplayed, setOnlyUnplayed] = useState<boolean>(false);
@@ -92,20 +94,24 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     return filtered;
   }, [libraryGames, searchFilter, hideIgnored, onlyUnplayed]);
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredGames.length / limit);
+  const startIndex = (currentPage - 1) * limit;
+  const endIndex = startIndex + limit;
+  const currentPageGames = filteredGames.slice(startIndex, endIndex);
+
   // Memoize processed games for performance
   const processedGames = useMemo(() => {
-    const limitedGames = viewMode === 'zen' ? filteredGames : filteredGames.slice(0, limit);
-    
-    return limitedGames.map(game => ({
+    return currentPageGames.map(game => ({
       ...game,
       imageUrl: getBestGameImageFromDbData(game, game.id)
     }));
-  }, [filteredGames, limit, viewMode]);
+  }, [currentPageGames]);
 
-  // Extract game names for zen mode - use ALL games, not filtered ones
+  // Extract game names for zen mode - use current page games only
   const gameNames = useMemo(() => {
-    return libraryGames.map(game => game.name);
-  }, [libraryGames]);
+    return processedGames.map(game => game.name);
+  }, [processedGames]);
 
   const handleMarkAsPlayed = async (userGameId: string) => {
     if (isDemo) {
@@ -139,6 +145,23 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
     setHideIgnored(false);
     setOnlyUnplayed(false);
   };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const previousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchFilter, hideIgnored, onlyUnplayed, limit]);
 
   if (zenModeFullScreen || viewMode === 'zen') {
     return (
@@ -182,8 +205,8 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             </div>
           ) : (
             <div className="absolute inset-0 overflow-hidden">
-              <FloatingIcons count={25} />
-              <FloatingGameNames gameNames={gameNames} count={Math.min(15, gameNames.length)} />
+              <FloatingIcons count={5} />
+              <FloatingGameNames gameNames={gameNames} count={Math.min(8, gameNames.length)} />
             </div>
           )}
         </div>
@@ -208,6 +231,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
                     <SelectItem value="12">12</SelectItem>
                     <SelectItem value="24">24</SelectItem>
                     <SelectItem value="48">48</SelectItem>
+                    <SelectItem value="96">96</SelectItem>
                   </SelectContent>
                 </Select>
               </TooltipTrigger>
@@ -270,6 +294,18 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
         </div>
       </div>
 
+      {/* Results Summary */}
+      <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+        <span>
+          Showing {processedGames.length} of {filteredGames.length} games
+        </span>
+        {totalPages > 1 && (
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        )}
+      </div>
+
       <div className="terminal-content">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -302,6 +338,46 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
                 onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
               />
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={previousPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => goToPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
           </div>
         )}
       </div>

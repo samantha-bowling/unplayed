@@ -201,7 +201,7 @@ body.fullscreen-mode {
   to { opacity: 1; }
 }
 
-/* Fixed Zen view animations with proper random movement */
+/* Original Zen view animations */
 @keyframes zen-float {
   0% {
     transform: translate(-50%, -50%) translateX(0px) translateY(0px);
@@ -235,6 +235,43 @@ body.fullscreen-mode {
   }
   100% {
     transform: translate(-50%, -50%) translateX(-2px) translateY(-8px);
+  }
+}
+
+/* New slower animations for better zen experience */
+@keyframes zen-float-slow {
+  0% {
+    transform: translate(-50%, -50%) translateX(0px) translateY(0px);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(12px) translateY(-8px);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(-6px) translateY(15px);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(9px) translateY(6px);
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(-3px) translateY(-12px);
+  }
+}
+
+@keyframes zen-float-stable-slow {
+  0% {
+    transform: translate(-50%, -50%) translateX(0px) translateY(0px);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(5px) translateY(-4px);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(-3px) translateY(7px);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(4px) translateY(3px);
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(-2px) translateY(-5px);
   }
 }
 

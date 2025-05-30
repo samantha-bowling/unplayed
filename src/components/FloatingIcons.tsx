@@ -31,7 +31,10 @@ const ICONS = [
 // Generate positions for floating icons
 const generateIconPositions = (count: number) => {
   const positions = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 3)); // More sparse grid than game names
+  const actualCount = Math.min(count, 5); // Maximum 5 icons
+  
+  // Create a simple grid for positioning
+  const gridSize = 3; // 3x3 grid for better spacing
   const cellWidth = 100 / gridSize;
   const cellHeight = 100 / gridSize;
 
@@ -49,23 +52,25 @@ const generateIconPositions = (count: number) => {
   // Shuffle the grid to get random positions
   const shuffledGrid = [...grid].sort(() => Math.random() - 0.5);
   
-  // Select random icons for each position
-  for (let i = 0; i < count; i++) {
+  // Select random icons for each position - ensure randomness with timestamp
+  const randomizedIcons = [...ICONS].sort(() => Math.random() - 0.5);
+  
+  for (let i = 0; i < actualCount; i++) {
     if (i < shuffledGrid.length) {
-      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.7 - cellWidth * 0.35);
-      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.7 - cellHeight * 0.35);
+      const randX = shuffledGrid[i].x + (Math.random() * cellWidth * 0.4 - cellWidth * 0.2);
+      const randY = shuffledGrid[i].y + (Math.random() * cellHeight * 0.4 - cellHeight * 0.2);
       
       // Select a random icon for this position
-      const IconComponent = ICONS[Math.floor(Math.random() * ICONS.length)];
+      const IconComponent = randomizedIcons[i % randomizedIcons.length];
       
       positions.push({
         Icon: IconComponent,
         left: `${randX}%`,
         top: `${randY}%`,
-        delay: i * 0.3 + Math.random() * 2, // More varied delays
-        duration: 4 + Math.random() * 6, // Random duration between 4-10s
-        size: 16 + Math.floor(Math.random() * 12), // Random size between 16-28px
-        opacity: 0.4 + Math.random() * 0.3, // Random opacity between 0.4-0.7
+        delay: i * 1 + Math.random() * 3, // Longer delays
+        duration: 12 + Math.random() * 8, // Slower duration between 12-20s
+        size: 18 + Math.floor(Math.random() * 8), // Random size between 18-26px
+        opacity: 0.3 + Math.random() * 0.3, // Random opacity between 0.3-0.6
       });
     }
   }
@@ -74,14 +79,18 @@ const generateIconPositions = (count: number) => {
 };
 
 interface FloatingIconsProps {
-  count: number;
+  count?: number;
 }
 
-const FloatingIcons = ({ count }: FloatingIconsProps) => {
+const FloatingIcons = ({ count = 5 }: FloatingIconsProps) => {
   const [positions, setPositions] = useState<any[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   useEffect(() => {
-    setPositions(generateIconPositions(count));
+    // Add timestamp to ensure true randomness
+    const timestamp = Date.now();
+    setPositions(generateIconPositions(Math.min(count, 5)));
+    setRefreshKey(timestamp);
   }, [count]);
 
   return (
@@ -91,7 +100,7 @@ const FloatingIcons = ({ count }: FloatingIconsProps) => {
         
         return (
           <div
-            key={`icon-${index}`}
+            key={`icon-${refreshKey}-${index}`}
             className="absolute transition-all duration-300 zen-icon-item"
             style={{
               top,
@@ -100,8 +109,8 @@ const FloatingIcons = ({ count }: FloatingIconsProps) => {
               animationDelay: `${delay}s`,
               zIndex: Math.floor(Math.random() * 5),
               opacity: 0,
-              animation: `zen-float ${duration}s ease-in-out infinite alternate, 
-                         zen-fade-in 2s ease-out forwards`,
+              animation: `zen-float-slow ${duration}s ease-in-out infinite alternate, 
+                         zen-fade-in 3s ease-out forwards`,
             }}
           >
             <Icon 
