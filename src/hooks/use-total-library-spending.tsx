@@ -31,9 +31,9 @@ export const useTotalLibrarySpending = () => {
     }
 
     // Fix the reduce function - correct parameter order: (accumulator, currentValue)
-    const totalSpent = data.reduce((sum, gameItem) => {
-      const price = gameItem.games?.price_cents ? gameItem.games.price_cents / 100 : 0;
-      return sum + price;
+    const totalSpent = data.reduce((accumulator, currentGame) => {
+      const price = currentGame.games?.price_cents ? currentGame.games.price_cents / 100 : 0;
+      return accumulator + price;
     }, 0); // Initial value of 0
 
     return {
