@@ -16,7 +16,14 @@ export const queryKeys = {
   // User data
   profile: (userId?: string) => ['profile', userId],
   
-  // Library data
+  // Unified library data - PRIMARY data source
+  unifiedLibrary: {
+    all: ['unifiedLibrary'],
+    data: (userId?: string) => ['unifiedLibrary', 'data', userId],
+    stats: (userId?: string) => ['unifiedLibrary', 'stats', userId],
+  },
+  
+  // Legacy library data (kept for backward compatibility)
   libraryGames: (userId?: string) => ['libraryGames', userId],
   paginatedLibraryGames: (
     userId?: string, 
@@ -37,22 +44,11 @@ export const queryKeys = {
   libraryGamesCount: (userId?: string, filters?: FilterOptions) => 
     ['libraryGamesCount', userId, filters],
   
-  // Unplayed data
-  unplayedData: (userId?: string) => ['unplayedData', userId],
-  detailedDustData: (userId?: string) => ['detailedDustData', userId],
-  
-  // Unified library data - new section added
-  unifiedLibrary: {
-    all: ['unifiedLibrary'],
-    data: (userId?: string) => ['unifiedLibrary', 'data', userId],
-    stats: (userId?: string) => ['unifiedLibrary', 'stats', userId],
-  },
-  
   // Game details
   gameEstimates: (userId?: string) => ['gameEstimates', userId],
   gameDetails: (gameId?: number) => ['gameDetails', gameId],
   
-  // Picker data - improved cache keys
+  // Picker data
   pickerGames: (userId?: string) => ['pickerGames', userId],
   gamePicks: (userId?: string) => ['gamePicks', userId],
   previousPicks: (userId?: string) => ['previousPicks', userId],
@@ -68,19 +64,17 @@ export const queryKeys = {
   // Helper to create an array of all user-related queries for bulk invalidation
   allUserData: (userId?: string) => [
     queryKeys.profile(userId),
-    queryKeys.unplayedData(userId),
+    queryKeys.unifiedLibrary.data(userId),
+    queryKeys.unifiedLibrary.stats(userId),
     queryKeys.libraryGames(userId),
     queryKeys.paginatedLibraryGames(userId),
     queryKeys.libraryGamesCount(userId),
-    queryKeys.detailedDustData(userId),
     queryKeys.gameEstimates(userId),
     queryKeys.pickerGames(userId),
     queryKeys.gamePicks(userId),
     queryKeys.previousPicks(userId),
     queryKeys.spendingData(userId),
-    queryKeys.enhancedSpendingData(userId),
-    queryKeys.unifiedLibrary.data(userId),
-    queryKeys.unifiedLibrary.stats(userId)
+    queryKeys.enhancedSpendingData(userId)
   ]
 };
 
@@ -99,10 +93,10 @@ export const useCacheManagement = () => {
         queryKeys.profile(userId),
       ],
       
-      // Invalidate unplayed data and dependencies
-      invalidateUnplayed: (userId?: string) => [
-        queryKeys.unplayedData(userId),
+      // Invalidate unified library data (primary data source)
+      invalidateUnifiedLibrary: (userId?: string) => [
         queryKeys.unifiedLibrary.data(userId),
+        queryKeys.unifiedLibrary.stats(userId),
       ],
       
       // Invalidate all user data
