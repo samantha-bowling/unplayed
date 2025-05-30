@@ -10,7 +10,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 export const useTotalLibrarySpending = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data, isLoading } = useUnifiedLibraryData();
+  const { data: unifiedData, isLoading } = useUnifiedLibraryData();
 
   // Transform unified data and calculate spending
   const totalSpending = useMemo(() => {
@@ -22,7 +22,7 @@ export const useTotalLibrarySpending = () => {
       };
     }
 
-    if (!data) {
+    if (!unifiedData) {
       return {
         totalSpent: 0,
         totalGames: 0,
@@ -30,18 +30,17 @@ export const useTotalLibrarySpending = () => {
       };
     }
 
-    // Fix TypeScript inference by explicitly typing the reduce parameters
-    const totalSpent = data.reduce((accumulator: number, currentGame: any) => {
-      const price = currentGame.games?.price_cents ? currentGame.games.price_cents / 100 : 0;
-      return accumulator + price;
+    const totalSpent = unifiedData.reduce((sum, game) => {
+      const price = game.games.price_cents ? game.games.price_cents / 100 : 0;
+      return sum + price;
     }, 0);
 
     return {
       totalSpent,
-      totalGames: data.length,
+      totalGames: unifiedData.length,
       currency: 'USD'
     };
-  }, [isDemo, demoData, data]);
+  }, [isDemo, demoData, unifiedData]);
 
   return {
     data: totalSpending,

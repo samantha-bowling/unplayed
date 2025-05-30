@@ -1,95 +1,113 @@
 
+/**
+ * Central location for all query keys used in the application
+ * This helps ensure consistency in cache management and invalidation
+ */
+
+// Type definitions for query key parameters
+export type FilterOptions = {
+  search: string;
+  hideIgnored: boolean;
+  onlyUnplayed: boolean;
+  selectedGenre: string;
+};
 
 export const queryKeys = {
-  auth: {
-    profile: () => ['auth', 'profile'] as const,
-  },
-  library: {
-    data: (userId?: string) => ['library', 'data', userId] as const,
-  },
+  // User data
+  profile: (userId?: string) => ['profile', userId],
+  
+  // Unified library data - PRIMARY data source
   unifiedLibrary: {
-    data: (userId?: string) => ['unified-library', 'data', userId] as const,
+    all: ['unifiedLibrary'],
+    data: (userId?: string) => ['unifiedLibrary', 'data', userId],
+    stats: (userId?: string) => ['unifiedLibrary', 'stats', userId],
   },
-  enhancedSpendingData: (userId?: string, onlyUnplayed?: boolean) =>
-    ['enhanced-spending-data', userId, onlyUnplayed] as const,
-  cleanSpendingData: (userId?: string, onlyUnplayed?: boolean) => 
-    ['clean-spending-data', userId, onlyUnplayed] as const,
   
-  cleanLibraryStats: (userId?: string) => 
-    ['clean-library-stats', userId] as const,
-  
-  cleanGamePrice: (gameId: number, fallbackPrice?: number) => 
-    ['clean-game-price', gameId, fallbackPrice] as const,
-
-  // Add missing query keys - match actual usage patterns
-  profile: (userId?: string) => ['profile', userId] as const,
-  
-  gamePicks: (userId?: string) => ['game-picks', userId] as const,
-  
-  detailedDustData: (userId?: string) => ['detailed-dust-data', userId] as const,
-  
-  libraryGamesCount: (userId?: string, filters?: any) => 
-    ['library-games-count', userId, filters] as const,
-  
+  // Legacy library data (kept for backward compatibility)
+  libraryGames: (userId?: string) => ['libraryGames', userId],
   paginatedLibraryGames: (
     userId?: string, 
     page?: number, 
     pageSize?: number, 
-    filters?: any, 
+    filters?: FilterOptions, 
     sortBy?: string, 
     sortDirection?: string
-  ) => 
-    ['paginated-library-games', userId, page, pageSize, filters, sortBy, sortDirection] as const,
-
-  // Add missing query keys that Index.tsx expects
-  libraryGames: (userId?: string) => ['library-games', userId] as const,
+  ) => [
+    'paginatedLibraryGames', 
+    userId, 
+    page, 
+    pageSize, 
+    filters, 
+    sortBy, 
+    sortDirection
+  ],
+  libraryGamesCount: (userId?: string, filters?: FilterOptions) => 
+    ['libraryGamesCount', userId, filters],
   
-  pickerGames: (userId?: string) => ['picker-games', userId] as const,
+  // Game details
+  gameEstimates: (userId?: string) => ['gameEstimates', userId],
+  gameDetails: (gameId?: number) => ['gameDetails', gameId],
   
-  spendingData: (userId?: string) => ['spending-data', userId] as const,
-} as const;
-
-// Export FilterOptions type that matches actual usage in use-paginated-library.tsx
-export interface FilterOptions {
-  search?: string;  // matches actual usage
-  hideIgnored?: boolean;  // matches actual usage
-  onlyUnplayed?: boolean;  // matches actual usage
-  selectedGenre?: string;  // matches actual usage
+  // Picker data
+  pickerGames: (userId?: string) => ['pickerGames', userId],
+  gamePicks: (userId?: string) => ['gamePicks', userId],
+  previousPicks: (userId?: string) => ['previousPicks', userId],
   
-  // Legacy properties that might be used elsewhere
-  genreFilter?: string;
-  platformFilter?: string;
-  searchQuery?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  showOnlyUnplayed?: boolean;
-  showOnlyFree?: boolean;
-  priceRange?: [number, number];
-}
+  // Spending data
+  spendingData: (userId?: string) => ['spendingData', userId],
+  enhancedSpendingData: (userId?: string, onlyUnplayed?: boolean) => 
+    ['enhancedSpendingData', userId, onlyUnplayed],
+  
+  // Dust score data
+  detailedDustData: (userId?: string) => ['detailedDustData', userId],
+  
+  // Leaderboard data
+  leaderboardData: () => ['leaderboardData'],
+  
+  // Helper to create an array of all user-related queries for bulk invalidation
+  allUserData: (userId?: string) => [
+    queryKeys.profile(userId),
+    queryKeys.unifiedLibrary.data(userId),
+    queryKeys.unifiedLibrary.stats(userId),
+    queryKeys.libraryGames(userId),
+    queryKeys.paginatedLibraryGames(userId),
+    queryKeys.libraryGamesCount(userId),
+    queryKeys.gameEstimates(userId),
+    queryKeys.pickerGames(userId),
+    queryKeys.gamePicks(userId),
+    queryKeys.previousPicks(userId),
+    queryKeys.spendingData(userId),
+    queryKeys.enhancedSpendingData(userId),
+    queryKeys.detailedDustData(userId)
+  ]
+};
 
-// Export useCacheManagement function with proper structure
+/**
+ * Hook for cache management operations
+ * Provides utilities to perform targeted invalidations and updates
+ */
 export const useCacheManagement = () => {
   return {
-    clearAllCaches: () => {
-      console.log('Cache management functionality');
-    },
     queryKeys,
+    
+    // Utility functions for common cache operations
     utils: {
-      invalidateAll: () => {
-        console.log('Invalidating all caches');
-      },
-      invalidateUnifiedLibrary: (userId?: string) => [
-        queryKeys.unifiedLibrary.data(userId),
-        queryKeys.library.data(userId),
-        queryKeys.libraryGames(userId),
-        queryKeys.libraryGamesCount(userId),
-        queryKeys.paginatedLibraryGames(userId),
-      ],
+      // Invalidate only user profile data
       invalidateProfile: (userId?: string) => [
         queryKeys.profile(userId),
-        queryKeys.auth.profile(),
-      ]
+      ],
+      
+      // Invalidate unified library data (primary data source)
+      invalidateUnifiedLibrary: (userId?: string) => [
+        queryKeys.unifiedLibrary.data(userId),
+        queryKeys.unifiedLibrary.stats(userId),
+      ],
+      
+      // Invalidate all user data
+      invalidateAllUserData: (userId?: string) => 
+        queryKeys.allUserData(userId),
     }
   };
 };
 
+export default useCacheManagement;

@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wind, RefreshCw } from "lucide-react";
+import { Loader2, Wind, Medal, RefreshCw } from "lucide-react";
 import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
 import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
@@ -28,8 +28,8 @@ const DustPage = () => {
   // Debug logging
   useEffect(() => {
     console.log("DustPage data:", data);
-    console.log("DustPage dust score:", data?.dustScore);
-    console.log("DustPage dust score breakdown:", data?.dustScoreBreakdown);
+    console.log("DustPage dust score:", data.dustScore);
+    console.log("DustPage dust score breakdown:", data.dustScoreBreakdown);
   }, [data]);
 
   const refreshData = async () => {
@@ -150,35 +150,33 @@ const DustPage = () => {
                 
                 <TabsContent value="breakdown" className="space-y-4">
                   <DustScoreBreakdown 
-                    totalScore={data?.dustScore || 0}
-                    breakdown={data?.dustScoreBreakdown}
+                    totalScore={data.dustScore}
+                    breakdown={data.dustScoreBreakdown}
                   />
                 </TabsContent>
                 
                 <TabsContent value="clean" className="space-y-4">
                   <CleanScoreBreakdown
-                    cleanScore={data?.cleanScore || 0}
-                    breakdown={data?.cleanScoreBreakdown}
-                    cleanStreak={data?.cleanStreak || 0}
-                    recentlyPlayedCount={data?.recentlyPlayedCount || 0}
-                    cleanStreakMetadata={data?.cleanStreakMetadata || {
-                      streakQuality: 'bronze',
-                      gracePeriodUsed: false
-                    }}
+                    cleanScore={data.cleanScore || 0}
+                    breakdown={data.cleanScoreBreakdown}
+                    cleanStreak={data.cleanStreak}
+                    recentlyPlayedCount={data.recentlyPlayedCount}
+                    recentlyPlayedUnplayed={data.recentlyPlayedUnplayed}
+                    cleanStreakMetadata={data.cleanStreakMetadata}
                   />
                 </TabsContent>
                 
                 <TabsContent value="contributors" className="space-y-4">
                   <TopDustContributors 
-                    contributors={data?.topDustContributors || []}
+                    contributors={data.topDustContributors || []}
                   />
                 </TabsContent>
                 
                 <TabsContent value="analysis" className="space-y-4">
                   <DustScorePerGame 
-                    avgDustScore={data?.avgDustScore || 0}
-                    totalGames={data?.totalGames || 0}
-                    unplayedGames={data?.unplayedGames || 0}
+                    avgDustScore={data.avgDustScore || 0}
+                    totalGames={data.totalGames}
+                    unplayedGames={data.unplayedGames}
                   />
                 </TabsContent>
               </Tabs>

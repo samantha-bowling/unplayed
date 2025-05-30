@@ -1,178 +1,146 @@
 
-import { UnifiedLibraryStats } from '@/hooks/useUnifiedLibraryData';
-import { countGenres, processGenres } from '@/utils/genre-processing';
-import { processShelfLife } from '@/utils/shelf-life-processing';
-
-export interface DashboardMetrics {
-  unplayedGames: number;
-  totalGames: number;
-  dustScore: number;
-  totalPlaytime: number;
-  cleanScore: number;
-  recentlyPlayedCount: number;
-  playedGames: number;
-  metadataCompletionPercentage?: number;
-  dataSource: 'raw_database' | 'filtered_display';
-  shelfLife?: any[];
-}
+import { UnifiedGameData, UnifiedLibraryStats } from '@/hooks/useUnifiedLibraryData';
+import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
+import { calculateCleanScore } from './clean-score-utils';
+import { processGenres, countGenres } from './genre-processing';
 
 /**
- * Transform unified library stats to dashboard metrics
- * NOW PRIORITIZES RAW DATABASE STATISTICS for accuracy
+ * Transform unified library data to the legacy UnplayedDataType format
+ * This maintains backward compatibility with existing components
  */
-export function transformToDashboardMetrics(stats: UnifiedLibraryStats): DashboardMetrics {
-  // Use raw database statistics as the authoritative source
-  const totalGames = stats.totalGamesInDB;
-  const unplayedGames = stats.unplayedGamesInDB;
-  const playedGames = stats.playedGamesInDB;
-  const dustScore = stats.totalDustScoreInDB;
-  const totalPlaytime = stats.totalPlaytimeInDB;
-  
-  // Calculate clean score (inverse of dust score, normalized)
-  const cleanScore = totalGames > 0 ? Math.max(0, 100 - Math.round(dustScore / totalGames)) : 0;
-  
-  console.log('transformToDashboardMetrics - Using RAW database statistics:', {
-    totalGames,
-    unplayedGames,
-    playedGames,
-    dustScore,
-    totalPlaytime,
-    cleanScore,
-    dataSource: 'raw_database',
-    metadataCompletion: stats.metadataCompletionPercentage
-  });
+export const transformToUnplayedData = (
+  unifiedData: UnifiedGameData[],
+  stats: UnifiedLibraryStats
+): UnplayedDataType => {
+  // Convert unified data to GameListItem format
+  const gamesList: GameListItem[] = unifiedData.map(game => ({
+    id: game.game_id,
+    name: game.games.name,
+    image: game.games.image_url || game.games.header_image || '',
+    playtimeMinutes: game.playtime_minutes || 0,
+    lastPlayed: game.last_played_date,
+    added: game.acquisition_date,
+    price: game.games.price_cents ? (game.games.price_cents / 100) : 0,
+    genres: game.games.genres || [],
+    notes: game.notes,
+    hidden: game.hidden || false,
+    releaseDate: game.games.release_date,
+    metacritic: game.games.metacritic_score,
+    categories: game.games.categories || [],
+    completionEstimate: null, // TODO: Add game estimates if needed
+    mainStoryEstimate: null,
+    averageEstimate: null,
+    steamAppid: null,
+    howLongToBeatId: null,
+  }));
 
-  return {
-    unplayedGames,
-    totalGames,
-    dustScore,
-    totalPlaytime,
-    cleanScore,
-    recentlyPlayedCount: stats.recentlyPlayedCount,
-    playedGames,
-    metadataCompletionPercentage: stats.metadataCompletionPercentage,
-    dataSource: 'raw_database',
-    shelfLife: stats.shelfLife || []
-  };
-}
+  // Process genres using existing logic
+  const genreCounts = countGenres(unifiedData.map(game => ({ games: game.games })));
+  const genresArray = processGenres(genreCounts);
 
-/**
- * Legacy transform function for backward compatibility
- * Will be deprecated once all components use the new approach
- */
-export function transformToDisplayMetrics(stats: UnifiedLibraryStats): DashboardMetrics {
-  // Use filtered display statistics (games with valid metadata only)
-  const totalGames = stats.totalGames;
-  const unplayedGames = stats.unplayedGames;
-  const playedGames = stats.playedGames;
-  const dustScore = stats.totalDustScore;
-  const totalPlaytime = stats.totalPlaytime;
-  
-  const cleanScore = totalGames > 0 ? Math.max(0, 100 - Math.round(dustScore / totalGames)) : 0;
-  
-  console.log('transformToDisplayMetrics - Using FILTERED display statistics:', {
-    totalGames,
-    unplayedGames,
-    playedGames,
-    dustScore,
-    totalPlaytime,
-    cleanScore,
-    dataSource: 'filtered_display'
-  });
+  // Calculate shelf life - get oldest unplayed games by RELEASE DATE
+  const unplayedGamesList = gamesList.filter(game => game.playtimeMinutes === 0);
+  const shelfLife = unplayedGamesList
+    .filter(game => game.releaseDate)
+    .sort((a, b) => {
+      const dateA = new Date(a.releaseDate!).getTime();
+      const dateB = new Date(b.releaseDate!).getTime();
+      return dateA - dateB;
+    })
+    .slice(0, 50)
+    .map(game => ({
+      id: game.id,
+      name: game.name,
+      image: game.image,
+      addedDate: game.added,
+      releaseDate: game.releaseDate,
+      price: game.price,
+      genres: game.genres
+    }));
 
-  return {
-    unplayedGames,
-    totalGames,
-    dustScore,
-    totalPlaytime,
-    cleanScore,
-    recentlyPlayedCount: stats.recentlyPlayedCount,
-    playedGames,
-    metadataCompletionPercentage: stats.metadataCompletionPercentage,
-    dataSource: 'filtered_display',
-    shelfLife: stats.shelfLife || []
-  };
-}
+  // Convert to library preview format
+  const libraryItems = gamesList.map(game => ({
+    id: game.id,
+    name: game.name,
+    image: game.image,
+    playtime: game.playtimeMinutes
+  }));
 
-/**
- * Transform unified data with genre processing for pie charts
- */
-export function transformWithGenres(unifiedData: any[]) {
-  if (!unifiedData || !Array.isArray(unifiedData)) {
-    return { genres: [] };
-  }
-
-  // Count genres from the unified data
-  const genreCounts = countGenres(unifiedData);
-  
-  // Process genres with consolidation
-  const genres = processGenres(genreCounts);
-  
-  console.log('transformWithGenres - Processed genres:', {
-    totalGames: unifiedData.length,
-    genreCount: genres.length,
-    topGenre: genres[0]?.name || 'None'
-  });
-
-  return { genres };
-}
-
-/**
- * Transform unified data to unplayed data format for components that need it
- */
-export function transformToUnplayedData(unifiedData: any[], stats: UnifiedLibraryStats) {
-  if (!unifiedData || !stats) {
-    return {
-      library: [],
-      unplayedGames: [],
-      totalGames: 0,
-      unplayedCount: 0,
-      totalPlaytime: 0,
-      dustScore: 0,
-      avgDustScore: 0,
-      shelfLife: []
-    };
-  }
-
-  // Filter unplayed games
-  const unplayedItems = unifiedData.filter(item => 
-    !item.playtime_minutes || item.playtime_minutes === 0
+  // Calculate clean score
+  const totalPlaytimeHours = stats.totalPlaytime / 60;
+  const { 
+    cleanScore, 
+    breakdown: cleanScoreBreakdown, 
+    tier: cleanTier, 
+    cleanStreak,
+    recentlyPlayedUnplayed,
+    streakMetadata
+  } = calculateCleanScore(
+    stats.playedGames,
+    stats.totalGames,
+    totalPlaytimeHours,
+    gamesList,
+    stats.recentlyPlayedCount
   );
 
-  // Process shelf life data
-  const shelfLife = processShelfLife(unplayedItems);
+  return {
+    unplayedGames: stats.unplayedGames,
+    totalGames: stats.totalGames,
+    dustScore: stats.totalDustScore,
+    totalPlaytime: totalPlaytimeHours,
+    totalSpent: 0, // Will be populated by spending data
+    unplayedSpent: 0, // Will be populated by spending data
+    potentialGameplayHours: 0, // TODO: Calculate from estimates
+    genres: genresArray,
+    shelfLife: shelfLife,
+    library: libraryItems,
+    gamesList: gamesList,
+    cleanScore,
+    cleanScoreBreakdown,
+    cleanTier,
+    cleanStreak,
+    recentlyPlayedCount: stats.recentlyPlayedCount,
+    recentlyPlayedUnplayed,
+    cleanStreakMetadata: streakMetadata
+  };
+};
 
-  console.log('transformToUnplayedData - Processed unplayed data:', {
-    totalLibrary: unifiedData.length,
-    unplayedCount: unplayedItems.length,
-    shelfLifeCount: shelfLife.length,
-    dataSource: 'unified_transform'
-  });
+/**
+ * Transform unified library data to dashboard metrics
+ * This provides a simple interface for dashboard components
+ */
+export const transformToDashboardMetrics = (stats: UnifiedLibraryStats) => {
+  const totalPlaytimeHours = stats.totalPlaytime / 60;
+  
+  const { cleanScore } = calculateCleanScore(
+    stats.playedGames,
+    stats.totalGames,
+    totalPlaytimeHours,
+    [], // gamesList not needed for basic clean score
+    stats.recentlyPlayedCount
+  );
 
   return {
-    library: unifiedData.map(item => ({
-      id: item.game_id,
-      name: item.games?.name || 'Unknown Game',
-      image: item.games?.header_image || item.games?.image_url,
-      playtime: item.playtime_minutes || 0,
-      dustScore: item.dust_score || 0,
-      addedDate: item.acquisition_date,
-      genres: item.games?.genres || []
-    })),
-    unplayedGames: unplayedItems.map(item => ({
-      id: item.game_id,
-      name: item.games?.name || 'Unknown Game',
-      image: item.games?.header_image || item.games?.image_url,
-      playtime: 0,
-      dustScore: item.dust_score || 0,
-      addedDate: item.acquisition_date,
-      releaseDate: item.games?.release_date
-    })),
-    totalGames: stats.totalGamesInDB, // Use raw DB count
-    unplayedCount: stats.unplayedGamesInDB, // Use raw DB count
-    totalPlaytime: stats.totalPlaytimeInDB, // Use raw DB count
-    dustScore: stats.totalDustScoreInDB, // Use raw DB count
-    avgDustScore: stats.totalGamesInDB > 0 ? stats.totalDustScoreInDB / stats.totalGamesInDB : 0,
-    shelfLife
+    unplayedGames: stats.unplayedGames,
+    totalGames: stats.totalGames,
+    dustScore: stats.totalDustScore,
+    totalPlaytime: totalPlaytimeHours,
+    cleanScore,
+    recentlyPlayedCount: stats.recentlyPlayedCount,
+    playedGames: stats.playedGames,
+    shelfLife: stats.shelfLife || [],
   };
-}
+};
+
+/**
+ * Transform unified data to include genres for GenreHoarding
+ */
+export const transformWithGenres = (unifiedData: UnifiedGameData[]) => {
+  // Process genres using existing logic
+  const genreCounts = countGenres(unifiedData.map(game => ({ games: game.games })));
+  const genresArray = processGenres(genreCounts);
+
+  return {
+    genres: genresArray,
+  };
+};

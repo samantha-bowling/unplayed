@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
-import { useCleanSpendingData } from '@/hooks/use-clean-spending-data';
+import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
 import { Clock, RefreshCw, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -12,7 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
-import DataQualityIndicator from './DataQualityIndicator';
 
 interface SpendingMeterProps extends WithDemoProps {
   onlyUnplayed?: boolean;
@@ -34,16 +33,9 @@ const SpendingMeter = ({
     isOnCooldown,
     cooldownRemaining,
     formatCooldown
-  } = useCleanSpendingData(onlyUnplayed);
+  } = useEnhancedSpendingData(onlyUnplayed);
 
   const [animatedAmount, setAnimatedAmount] = useState(0);
-
-  console.log('SpendingMeter - Using clean spending data:', {
-    totalSpent: data?.totalSpent,
-    confidence: data?.confidence,
-    dataQuality: data?.dataQuality,
-    dataSource: 'useCleanSpendingData'
-  });
 
   // Animate the spending amount
   useEffect(() => {
@@ -119,6 +111,24 @@ const SpendingMeter = ({
   }
 
   if (!data) return null;
+
+  const getConfidenceColor = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return 'text-green-400';
+      case 'medium': return 'text-yellow-400';
+      case 'low': return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getConfidenceIcon = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return <CheckCircle size={16} className="text-green-400" />;
+      case 'medium': return <AlertCircle size={16} className="text-yellow-400" />;
+      case 'low': return <AlertCircle size={16} className="text-red-400" />;
+      default: return <AlertCircle size={16} className="text-gray-400" />;
+    }
+  };
 
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
@@ -203,21 +213,32 @@ const SpendingMeter = ({
           </div>
         </div>
 
-        {/* Enhanced data quality component */}
-        <DataQualityIndicator
-          confidence={data.confidence}
-          dataQualityPercentage={data.dataQuality.dataQualityPercentage}
-          gamesWithPrices={data.dataQuality.gamesWithPriceData}
-          gamesWithoutPrices={data.dataQuality.gamesWithMissingData}
-          showDetails={true}
-        />
-
-        {/* Warning and rejected value display */}
-        {data.displayInfo.warningText && (
-          <div className="text-xs text-yellow-400 bg-yellow-400/10 p-2 rounded mt-2">
-            {data.displayInfo.warningText}
+        {/* Confidence and data quality */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {getConfidenceIcon(data.confidence)}
+              <span className={`text-sm ${getConfidenceColor(data.confidence)}`}>
+                {data.confidence.charAt(0).toUpperCase() + data.confidence.slice(1)} Confidence
+              </span>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {data.dataQuality.gamesWithPriceData}/{data.dataQuality.gamesWithPriceData + data.dataQuality.gamesWithMissingData} priced
+            </Badge>
           </div>
-        )}
+
+          {data.displayInfo.warningText && (
+            <div className="text-xs text-yellow-400 bg-yellow-400/10 p-2 rounded">
+              {data.displayInfo.warningText}
+            </div>
+          )}
+
+          {data.displayInfo.rejectedValueText && (
+            <div className="text-xs text-red-400 bg-red-400/10 p-2 rounded">
+              {data.displayInfo.rejectedValueText}
+            </div>
+          )}
+        </div>
 
         {/* Last updated info */}
         <div className="text-xs text-gray-500 text-center mt-4 pt-2 border-t border-gray-700">

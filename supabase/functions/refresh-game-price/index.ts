@@ -1,206 +1,240 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-// CORS headers for browser preflight requests
+// CORS headers for browser requests
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Enhanced price validation function
-function validateGamePrice(priceCents: number | null | undefined, gameName?: string): {
-  isValid: boolean;
-  validatedPrice: number | null;
-  reason?: string;
-} {
-  if (priceCents === null || priceCents === undefined) {
-    return { isValid: false, validatedPrice: null, reason: 'No price data' };
-  }
+// Create a Supabase client
+const supabaseUrl = 'https://gwmygthanyycveyqqspr.supabase.co';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-  if (priceCents < 0) {
-    return { isValid: false, validatedPrice: null, reason: 'Negative price' };
-  }
+// Delay helper function for rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  if (priceCents > 50000) { // $500 cap
-    console.warn(`Rejecting unrealistic price for game "${gameName}": $${(priceCents / 100).toFixed(2)}`);
-    return { isValid: false, validatedPrice: null, reason: 'Price too high (likely bad data)' };
-  }
+// Type for the request payload
+interface RefreshGamePriceRequest {
+  app_ids: number | number[];
+  force_refresh?: boolean;
+  userId?: string; // For tracking user requests
+}
 
-  return { isValid: true, validatedPrice: priceCents };
+// Type for Steam API response
+interface SteamAppDetailsResponse {
+  [key: string]: {
+    success: boolean;
+    data?: {
+      price_overview?: {
+        currency: string;
+        initial: number;
+        final: number;
+        discount_percent: number;
+      };
+    };
+  };
+}
+
+// Function to fetch price data from Steam API
+async function fetchGamePrices(appId: number): Promise<{
+  app_id: number;
+  currency: string;
+  initial_price_cents: number | null;
+  final_price_cents: number | null;
+  discount_percent: number | null;
+} | null> {
+  try {
+    console.log(`Fetching price data for app_id: ${appId}`);
+    const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&cc=us&filters=price_overview`);
+    
+    if (!response.ok) {
+      console.error(`Steam API error for app_id ${appId}: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const data = await response.json() as SteamAppDetailsResponse;
+    
+    // Check if we have valid price data
+    if (!data[appId]?.success || !data[appId]?.data?.price_overview) {
+      console.log(`No price data available for app_id ${appId}`);
+      return {
+        app_id: appId,
+        currency: 'USD',
+        initial_price_cents: null,
+        final_price_cents: null,
+        discount_percent: null
+      };
+    }
+    
+    const priceOverview = data[appId].data.price_overview;
+    
+    return {
+      app_id: appId,
+      currency: priceOverview.currency,
+      initial_price_cents: priceOverview.initial,
+      final_price_cents: priceOverview.final,
+      discount_percent: priceOverview.discount_percent
+    };
+  } catch (error) {
+    console.error(`Error fetching price for app_id ${appId}:`, error);
+    return null;
+  }
+}
+
+// Function to process app IDs in batches to respect rate limits
+async function processBatch(appIds: number[], forceRefresh: boolean = false) {
+  const results = [];
+  
+  // If force refresh is not set, check which app_ids need updating
+  let appIdsToProcess = appIds;
+  if (!forceRefresh) {
+    // Query DB for app_ids that were checked more than 24 hours ago
+    const { data: existingPrices } = await supabase
+      .from('game_prices')
+      .select('app_id, last_checked')
+      .in('app_id', appIds);
+    
+    // Filter out recently checked app_ids
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const stalePrices = existingPrices?.filter(price => {
+      const lastChecked = new Date(price.last_checked);
+      return now.getTime() - lastChecked.getTime() > oneDay;
+    }) || [];
+    
+    // Get list of app_ids to process
+    const staleAppIds = stalePrices.map(price => price.app_id);
+    const newAppIds = appIds.filter(id => 
+      !existingPrices?.some(price => price.app_id === id)
+    );
+    
+    appIdsToProcess = [...staleAppIds, ...newAppIds];
+  }
+  
+  console.log(`Processing ${appIdsToProcess.length} app_ids (out of ${appIds.length} requested)`);
+  
+  // Process each app ID with a delay to respect rate limits
+  for (let i = 0; i < appIdsToProcess.length; i++) {
+    const appId = appIdsToProcess[i];
+    const priceData = await fetchGamePrices(appId);
+    
+    if (priceData) {
+      results.push(priceData);
+      
+      // Upsert the data into the game_prices table with enhanced tracking
+      const { error } = await supabase
+        .from('game_prices')
+        .upsert({
+          app_id: priceData.app_id,
+          currency: priceData.currency || 'USD',
+          initial_price_cents: priceData.initial_price_cents,
+          final_price_cents: priceData.final_price_cents,
+          discount_percent: priceData.discount_percent,
+          last_checked: new Date().toISOString(),
+          // Keep existing priority_score and user_request_count
+        }, {
+          onConflict: 'app_id',
+          ignoreDuplicates: false
+        });
+        
+      if (error) {
+        console.error(`Error upserting price data for app_id ${appId}:`, error);
+      }
+    }
+    
+    // Add delay between requests to avoid hitting rate limits
+    if (i < appIdsToProcess.length - 1) {
+      await delay(200); // 200ms delay between requests (5 requests per second)
+    }
+  }
+  
+  return results;
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204
-    });
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders, status: 204 });
   }
-
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({
-      error: "Method Not Allowed"
-    }), {
-      status: 405,
-      headers: corsHeaders
-    });
-  }
-
+  
   try {
-    console.log("🚀 Enhanced price refresh function starting");
-    
-    const body = await req.json();
-    const { app_ids, force_refresh = false, validate_prices = true } = body;
-
-    if (!app_ids || !Array.isArray(app_ids) || app_ids.length === 0) {
-      return new Response(JSON.stringify({
-        error: "app_ids array is required"
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 405 }
+      );
     }
-
-    console.log(`📊 Processing ${app_ids.length} games with validation: ${validate_prices}`);
-
-    // Process games in batches to avoid timeouts
-    const batchSize = 10;
-    let totalUpdated = 0;
-    let totalValidated = 0;
-    let totalRejected = 0;
-    const validationErrors: string[] = [];
-
-    for (let i = 0; i < app_ids.length; i += batchSize) {
-      const batch = app_ids.slice(i, i + batchSize);
-      console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(app_ids.length / batchSize)}`);
-
+    
+    // Parse request body
+    const requestData: RefreshGamePriceRequest = await req.json();
+    
+    // Validate the request
+    if (!requestData.app_ids) {
+      return new Response(
+        JSON.stringify({ error: 'Missing app_ids parameter' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    // Convert single app_id to array for uniform handling
+    const appIds = Array.isArray(requestData.app_ids)
+      ? requestData.app_ids
+      : [requestData.app_ids];
+    
+    console.log(`🔄 Processing price refresh for ${appIds.length} games`);
+    
+    // Track user request if userId provided (for prioritization)
+    if (requestData.userId && appIds.length > 0) {
       try {
-        // Build Steam Store API URL for batch
-        const steamUrl = `https://store.steampowered.com/api/appdetails?appids=${batch.join(',')}&filters=price_overview`;
-        console.log(`🌐 Fetching Steam prices for batch: ${batch.join(',')}`);
-
-        const response = await fetch(steamUrl);
-        if (!response.ok) {
-          console.error(`Steam API error for batch: ${response.status}`);
-          continue;
-        }
-
-        const steamData = await response.json();
-
-        // Process each game in the batch
-        for (const appId of batch) {
-          try {
-            const gameData = steamData[appId];
-            
-            if (!gameData || !gameData.success) {
-              console.log(`⚠️ No valid data for app ${appId}`);
-              continue;
-            }
-
-            const priceOverview = gameData.data?.price_overview;
-            let finalPrice: number | null = null;
-            let initialPrice: number | null = null;
-            let discountPercent: number | null = null;
-            let currency = 'USD';
-
-            if (priceOverview) {
-              // Extract price data
-              finalPrice = priceOverview.final || null;
-              initialPrice = priceOverview.initial || priceOverview.final || null;
-              discountPercent = priceOverview.discount_percent || null;
-              currency = priceOverview.currency || 'USD';
-            } else {
-              // Game might be free or not available for purchase
-              finalPrice = 0;
-              initialPrice = 0;
-            }
-
-            // Apply validation if enabled
-            if (validate_prices) {
-              const finalValidation = validateGamePrice(finalPrice, `App ${appId}`);
-              const initialValidation = validateGamePrice(initialPrice, `App ${appId}`);
-
-              if (!finalValidation.isValid) {
-                console.log(`❌ Rejected final price for app ${appId}: ${finalValidation.reason}`);
-                finalPrice = null;
-                totalRejected++;
-                validationErrors.push(`App ${appId}: ${finalValidation.reason}`);
-              } else {
-                totalValidated++;
-              }
-
-              if (!initialValidation.isValid) {
-                console.log(`❌ Rejected initial price for app ${appId}: ${initialValidation.reason}`);
-                initialPrice = null;
-              }
-            }
-
-            // Upsert price data
-            const { error: upsertError } = await supabase
-              .from('game_prices')
-              .upsert({
-                app_id: parseInt(appId),
-                final_price_cents: finalPrice,
-                initial_price_cents: initialPrice,
-                discount_percent: discountPercent,
-                currency: currency,
-                last_checked: new Date().toISOString()
-              }, {
-                onConflict: 'app_id'
-              });
-
-            if (upsertError) {
-              console.error(`Error upserting price for app ${appId}:`, upsertError);
-            } else {
-              totalUpdated++;
-              console.log(`✅ Updated price for app ${appId}: $${(finalPrice || 0) / 100}`);
-            }
-
-          } catch (gameError) {
-            console.error(`Error processing app ${appId}:`, gameError);
-          }
-        }
-
-        // Add delay between batches to respect rate limits
-        if (i + batchSize < app_ids.length) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-
-      } catch (batchError) {
-        console.error(`Error processing batch starting at ${i}:`, batchError);
+        console.log(`📊 Tracking user request for prioritization`);
+        await supabase.rpc('track_user_price_request', { 
+          p_app_ids: appIds 
+        });
+      } catch (trackError) {
+        console.warn('Failed to track user request:', trackError);
+        // Don't fail the whole request for tracking errors
       }
     }
-
-    console.log(`🎯 Enhanced price refresh completed: ${totalUpdated} updated, ${totalValidated} validated, ${totalRejected} rejected`);
-
-    return new Response(JSON.stringify({
-      success: true,
-      updated_count: totalUpdated,
-      validated_count: totalValidated,
-      rejected_count: totalRejected,
-      total_processed: app_ids.length,
-      validation_enabled: validate_prices,
-      validation_errors: validationErrors.slice(0, 10), // Return first 10 errors
-      message: `Successfully updated ${totalUpdated} prices with enhanced validation`
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
-
+    
+    // Limit batch size to prevent timeouts
+    const batchSize = 10;
+    const results = [];
+    
+    // Process in batches if needed
+    if (appIds.length > batchSize) {
+      for (let i = 0; i < appIds.length; i += batchSize) {
+        const batch = appIds.slice(i, i + batchSize);
+        const batchResults = await processBatch(batch, requestData.force_refresh);
+        results.push(...batchResults);
+      }
+    } else {
+      const batchResults = await processBatch(appIds, requestData.force_refresh);
+      results.push(...batchResults);
+    }
+    
+    console.log(`✅ Price refresh complete: ${results.length} games updated`);
+    
+    // Return the results
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Processed ${results.length} game prices`,
+        updated_count: results.length,
+        total_requested: appIds.length,
+        cache_hits: appIds.length - results.length,
+        results: results.slice(0, 5) // Only return first 5 for brevity
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    
   } catch (error) {
-    console.error("❌ Enhanced price refresh error:", error);
-    return new Response(JSON.stringify({
-      error: "Enhanced price refresh failed",
-      details: error.message
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    console.error('Error in refresh-game-price function:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'An unexpected error occurred' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 });

@@ -1,9 +1,9 @@
 
 import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useCleanSpendingData } from '@/hooks/use-clean-spending-data';
+import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
@@ -15,19 +15,19 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useCleanSpendingData(true);
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
+  // Use unplayed spending data from enhanced hook
   const spendingAmount = spendingData?.totalSpent || 0;
 
-  console.log('SpendingEstimate - Using clean spending data:', {
+  console.log('SpendingEstimate - Using unplayed spending data:', {
     totalSpent: spendingData?.totalSpent,
     confidence: spendingData?.confidence,
     dataQuality: spendingData?.dataQuality,
-    finalAmount: spendingAmount,
-    dataSource: 'useCleanSpendingData'
+    finalAmount: spendingAmount
   });
 
   const handleRefresh = async () => {
@@ -36,6 +36,7 @@ const SpendingEstimate = ({
     }
   };
 
+  // Only show refresh when authenticated and not in demo mode
   const showRefresh = !isDemo && status !== 'LOADING';
 
   return (
@@ -58,7 +59,7 @@ const SpendingEstimate = ({
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                 >
-                  <RefreshCw 
+                  <RefreshCcw 
                     size={16} 
                     className={`text-gray-400 hover:text-unplayed-mint ${isRefreshing ? 'animate-spin' : ''}`} 
                   />
