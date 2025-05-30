@@ -1,13 +1,12 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Clock, TrendingDown, Archive, PcCase } from 'lucide-react';
+import { Calendar, Clock, TrendingDown, Archive } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, LineChart, Line } from 'recharts';
-import { getBestGameImageFromDbData } from '@/utils/image-utils';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
+import ShelfLife from '@/components/ShelfLife';
 
 const LibraryShelfLifeTab = () => {
   const { games: libraryGames } = useLibraryData();
@@ -30,8 +29,8 @@ const LibraryShelfLifeTab = () => {
       unknown: 0 // No release date
     };
 
-    // Most dusty games (oldest unplayed)
-    const dustyGames: Array<{
+    // Aging unplayed games (3+ years old and unplayed)
+    const agingUnplayedGames: Array<{
       game: any;
       age: number;
       releaseYear: number;
@@ -70,22 +69,22 @@ const LibraryShelfLifeTab = () => {
           ageDistribution.vintage++;
         }
         
-        // Track dusty games
-        if (isUnplayed && age > 0) {
-          dustyGames.push({ game, age, releaseYear });
+        // Track aging unplayed games (3+ years old and unplayed)
+        if (isUnplayed && age >= 3) {
+          agingUnplayedGames.push({ game, age, releaseYear });
         }
       } else {
         ageDistribution.unknown++;
       }
     });
 
-    // Sort dusty games by age (oldest first)
-    dustyGames.sort((a, b) => b.age - a.age);
+    // Sort aging unplayed games by age (oldest first)
+    agingUnplayedGames.sort((a, b) => b.age - a.age);
 
     return {
       gamesByDecade,
       ageDistribution,
-      dustyGames: dustyGames.slice(0, 10) // Top 10 dustiest
+      agingUnplayedGames: agingUnplayedGames.slice(0, 10) // Top 10 aging unplayed
     };
   }, [libraryGames]);
 
@@ -170,13 +169,13 @@ const LibraryShelfLifeTab = () => {
                   <div className="flex items-center space-x-2 cursor-help">
                     <TrendingDown className="h-5 w-5 text-unplayed-red" />
                     <div>
-                      <p className="text-2xl font-bold text-white">{shelfLifeStats.dustyGames.length}</p>
-                      <p className="text-sm text-gray-400">Dusty Games</p>
+                      <p className="text-2xl font-bold text-white">{shelfLifeStats.agingUnplayedGames.length}</p>
+                      <p className="text-sm text-gray-400">Aging Unplayed</p>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Unplayed games that are getting old</p>
+                  <p>Unplayed games that are 3+ years old since release</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
@@ -279,63 +278,26 @@ const LibraryShelfLifeTab = () => {
           </Card>
         </div>
 
-        {/* Dustiest Games */}
+        {/* Shelf Life Component */}
         <Card className="bg-black/20 border border-gray-700">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <TrendingDown className="h-5 w-5 text-unplayed-red" />
-              <span>Dustiest Games</span>
+              <span>Your Shelf Life Games</span>
               <Tooltip>
                 <TooltipTrigger>
                   <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Your oldest unplayed games - these might be worth checking out!</p>
+                  <p>Your oldest unplayed games by release date - these might be worth checking out!</p>
                 </TooltipContent>
               </Tooltip>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {shelfLifeStats.dustyGames.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {shelfLifeStats.dustyGames.map(({ game, age, releaseYear }) => {
-                  const gameImage = getBestGameImageFromDbData(game, game.id);
-                  
-                  return (
-                    <div key={game.id} className="flex items-center space-x-3 p-3 bg-black/30 rounded-lg">
-                      <div className="w-12 h-12 flex-shrink-0">
-                        <img 
-                          src={gameImage || '/placeholder.svg'} 
-                          alt={game.name}
-                          className="w-full h-full object-cover rounded"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-white truncate">{game.name}</h4>
-                        <p className="text-sm text-gray-400">{releaseYear}</p>
-                      </div>
-                      
-                      <div className="text-right">
-                        <Badge 
-                          variant="destructive" 
-                          className="mb-1"
-                        >
-                          {age} years old
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center py-4">
-                No dusty games found - you're either very current with your gaming or have no unplayed games!
-              </p>
-            )}
+          <CardContent className="p-0">
+            <div className="h-[650px]">
+              <ShelfLife />
+            </div>
           </CardContent>
         </Card>
       </div>

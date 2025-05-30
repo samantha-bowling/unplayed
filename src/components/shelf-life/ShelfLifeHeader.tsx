@@ -1,19 +1,16 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ShelfLifeHeaderProps {
   displayCount: string;
   setDisplayCount: (count: string) => void;
-  onPickFromOldest: () => void;
   hasGames: boolean;
 }
 
 const ShelfLifeHeader: React.FC<ShelfLifeHeaderProps> = ({
   displayCount,
   setDisplayCount,
-  onPickFromOldest,
   hasGames
 }) => {
   return (
@@ -30,15 +27,6 @@ const ShelfLifeHeader: React.FC<ShelfLifeHeaderProps> = ({
             <SelectItem value="50" className="text-white hover:bg-gray-700">Top 50</SelectItem>
           </SelectContent>
         </Select>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="text-xs border-unplayed-mint/30 text-unplayed-mint hover:bg-unplayed-mint/10"
-          onClick={onPickFromOldest}
-          disabled={!hasGames}
-        >
-          Pick from oldest
-        </Button>
       </div>
     </div>
   );

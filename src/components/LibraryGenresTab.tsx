@@ -57,11 +57,8 @@ const LibraryGenresTab = () => {
     .sort((a, b) => a.total - b.total)
     .slice(0, 6);
   
-  // Genres with highest unplayed percentage
-  const highestUnplayedRate = genreStats
-    .filter(g => g.total >= 3) // At least 3 games for meaningful percentage
-    .sort((a, b) => b.unplayedPercentage - a.unplayedPercentage)
-    .slice(0, 6);
+  // Most owned genre (replaces highest unplayed percentage)
+  const mostOwnedGenre = genreStats.length > 0 ? genreStats[0] : null;
 
   // Chart data
   const chartData = topGenres.map(genre => ({
@@ -156,14 +153,14 @@ const LibraryGenresTab = () => {
                     <Zap className="h-5 w-5 text-unplayed-red" />
                     <div>
                       <p className="text-2xl font-bold text-white">
-                        {Math.round(highestUnplayedRate[0]?.unplayedPercentage || 0)}%
+                        {mostOwnedGenre?.total || 0}
                       </p>
-                      <p className="text-sm text-gray-400">Highest Unplayed</p>
+                      <p className="text-sm text-gray-400">Most Owned Genre</p>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Percentage of unplayed games in the genre with the highest unplayed rate</p>
+                  <p>Number of games in your most collected genre: {mostOwnedGenre?.genre || 'N/A'}</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
@@ -215,7 +212,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          {/* Unplayed Games by Genre Pie Chart */}
+          {/* Unplayed Games by Genre Pie Chart - No hover */}
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -247,13 +244,6 @@ const LibraryGenresTab = () => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1e1e1e', 
-                        borderColor: '#374151',
-                        borderRadius: '0.5rem' 
-                      }}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -335,45 +325,6 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Genres with Highest Unplayed Rate */}
-        <Card className="bg-black/20 border border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-blue-400" />
-              <span>Genres with Highest Unplayed Percentage</span>
-              <Tooltip>
-                <TooltipTrigger>
-                  <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Genres where you have the highest percentage of unplayed games (minimum 3 games)</p>
-                </TooltipContent>
-              </Tooltip>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {highestUnplayedRate.map((genre) => (
-                <div key={genre.genre} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white font-medium">{genre.genre}</span>
-                    <span className="text-sm text-gray-400">
-                      {Math.round(genre.unplayedPercentage)}% unplayed
-                    </span>
-                  </div>
-                  <Progress 
-                    value={genre.unplayedPercentage} 
-                    className="h-2"
-                  />
-                  <div className="text-xs text-gray-500">
-                    {genre.unplayed} unplayed of {genre.total} total games
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </TooltipProvider>
   );
