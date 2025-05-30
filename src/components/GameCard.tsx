@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Clock, Eye, EyeOff, FileEdit, Check } from 'lucide-react';
 import { 
@@ -103,8 +102,6 @@ const GameCard: React.FC<GameCardProps> = ({
         "absolute inset-0 bg-black/85 flex flex-col p-4 transition-opacity duration-200",
         isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
       )}>
-        <h3 className="font-medium mb-2">{title}</h3>
-        
         <div className="flex-grow flex flex-col gap-3 justify-center">
           <Button 
             onClick={onMarkAsPlayed} 
