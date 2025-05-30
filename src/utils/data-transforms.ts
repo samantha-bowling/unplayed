@@ -1,5 +1,7 @@
 
 import { UnifiedLibraryStats } from '@/hooks/useUnifiedLibraryData';
+import { countGenres, processGenres } from '@/utils/genre-processing';
+import { processShelfLife } from '@/utils/shelf-life-processing';
 
 export interface DashboardMetrics {
   unplayedGames: number;
@@ -11,6 +13,7 @@ export interface DashboardMetrics {
   playedGames: number;
   metadataCompletionPercentage?: number;
   dataSource: 'raw_database' | 'filtered_display';
+  shelfLife?: any[];
 }
 
 /**
@@ -48,7 +51,8 @@ export function transformToDashboardMetrics(stats: UnifiedLibraryStats): Dashboa
     recentlyPlayedCount: stats.recentlyPlayedCount,
     playedGames,
     metadataCompletionPercentage: stats.metadataCompletionPercentage,
-    dataSource: 'raw_database'
+    dataSource: 'raw_database',
+    shelfLife: stats.shelfLife || []
   };
 }
 
@@ -85,6 +89,90 @@ export function transformToDisplayMetrics(stats: UnifiedLibraryStats): Dashboard
     recentlyPlayedCount: stats.recentlyPlayedCount,
     playedGames,
     metadataCompletionPercentage: stats.metadataCompletionPercentage,
-    dataSource: 'filtered_display'
+    dataSource: 'filtered_display',
+    shelfLife: stats.shelfLife || []
+  };
+}
+
+/**
+ * Transform unified data with genre processing for pie charts
+ */
+export function transformWithGenres(unifiedData: any[]) {
+  if (!unifiedData || !Array.isArray(unifiedData)) {
+    return { genres: [] };
+  }
+
+  // Count genres from the unified data
+  const genreCounts = countGenres(unifiedData);
+  
+  // Process genres with consolidation
+  const genres = processGenres(genreCounts);
+  
+  console.log('transformWithGenres - Processed genres:', {
+    totalGames: unifiedData.length,
+    genreCount: genres.length,
+    topGenre: genres[0]?.name || 'None'
+  });
+
+  return { genres };
+}
+
+/**
+ * Transform unified data to unplayed data format for components that need it
+ */
+export function transformToUnplayedData(unifiedData: any[], stats: UnifiedLibraryStats) {
+  if (!unifiedData || !stats) {
+    return {
+      library: [],
+      unplayedGames: [],
+      totalGames: 0,
+      unplayedCount: 0,
+      totalPlaytime: 0,
+      dustScore: 0,
+      avgDustScore: 0,
+      shelfLife: []
+    };
+  }
+
+  // Filter unplayed games
+  const unplayedItems = unifiedData.filter(item => 
+    !item.playtime_minutes || item.playtime_minutes === 0
+  );
+
+  // Process shelf life data
+  const shelfLife = processShelfLife(unplayedItems);
+
+  console.log('transformToUnplayedData - Processed unplayed data:', {
+    totalLibrary: unifiedData.length,
+    unplayedCount: unplayedItems.length,
+    shelfLifeCount: shelfLife.length,
+    dataSource: 'unified_transform'
+  });
+
+  return {
+    library: unifiedData.map(item => ({
+      id: item.game_id,
+      name: item.games?.name || 'Unknown Game',
+      image: item.games?.header_image || item.games?.image_url,
+      playtime: item.playtime_minutes || 0,
+      dustScore: item.dust_score || 0,
+      addedDate: item.acquisition_date,
+      genres: item.games?.genres || []
+    })),
+    unplayedGames: unplayedItems.map(item => ({
+      id: item.game_id,
+      name: item.games?.name || 'Unknown Game',
+      image: item.games?.header_image || item.games?.image_url,
+      playtime: 0,
+      dustScore: item.dust_score || 0,
+      addedDate: item.acquisition_date,
+      releaseDate: item.games?.release_date
+    })),
+    totalGames: stats.totalGamesInDB, // Use raw DB count
+    unplayedCount: stats.unplayedGamesInDB, // Use raw DB count
+    totalPlaytime: stats.totalPlaytimeInDB, // Use raw DB count
+    dustScore: stats.totalDustScoreInDB, // Use raw DB count
+    avgDustScore: stats.totalGamesInDB > 0 ? stats.totalDustScoreInDB / stats.totalGamesInDB : 0,
+    shelfLife
   };
 }

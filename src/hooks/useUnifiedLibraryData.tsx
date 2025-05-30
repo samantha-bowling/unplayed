@@ -3,30 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useMemo } from 'react';
-import { queryKeys } from './use-query-keys';
-
-export interface UnifiedGameData {
-  id: string;
-  game_id: number;
-  playtime_minutes: number | null;
-  hidden: boolean | null;
-  dust_score: number | null;
-  last_played_date: string | null;
-  acquisition_date: string | null;
-  notes: string | null;
-  games: {
-    id: number;
-    name: string;
-    image_url: string | null;
-    header_image: string | null;
-    release_date: string | null;
-    metacritic_score: number | null;
-    genres: string[] | null;
-    categories: string[] | null;
-    price_cents: number | null;
-  };
-}
+import { processShelfLife } from '@/utils/shelf-life-processing';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 export interface UnifiedLibraryStats {
   // Raw database statistics (authoritative source)
@@ -36,90 +14,31 @@ export interface UnifiedLibraryStats {
   totalDustScoreInDB: number;
   totalPlaytimeInDB: number;
   
-  // Display-ready statistics (games with valid metadata)
+  // Filtered display statistics (for components that need metadata filtering)
   totalGames: number;
   unplayedGames: number;
   playedGames: number;
   totalDustScore: number;
   totalPlaytime: number;
-  recentlyPlayedCount: number;
   
   // Additional metrics
+  recentlyPlayedCount: number;
   metadataCompletionPercentage: number;
-  shelfLife?: any[];
+  shelfLife: any[];
 }
 
-/**
- * Unified hook that provides consistent game data across all components
- * Now provides both raw database statistics and display-ready filtered data
- */
 export const useUnifiedLibraryData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  
-  // Query for raw database statistics first
-  const { data: rawStats } = useQuery({
-    queryKey: ['raw-library-stats', user?.id],
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.unifiedLibraryData(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
-      
-      console.log('Fetching raw library statistics from database for user:', user.id);
-      
-      // Get total counts from user_games
-      const { data: gameCounts, error: countError } = await supabase
-        .from('user_games')
-        .select('playtime_minutes, dust_score', { count: 'exact' })
-        .eq('user_id', user.id);
-      
-      if (countError) throw countError;
 
-      const totalGamesInDB = gameCounts?.length || 0;
-      const unplayedGamesInDB = gameCounts?.filter(g => !g.playtime_minutes || g.playtime_minutes === 0).length || 0;
-      const playedGamesInDB = totalGamesInDB - unplayedGamesInDB;
-      const totalDustScoreInDB = gameCounts?.reduce((sum, g) => sum + (g.dust_score || 0), 0) || 0;
-      
-      // Get total playtime
-      const { data: playtimeData } = await supabase
-        .from('user_games')
-        .select('playtime_minutes')
-        .eq('user_id', user.id);
-      
-      const totalPlaytimeInDB = playtimeData?.reduce((sum, g) => sum + (g.playtime_minutes || 0), 0) || 0;
+      console.log('useUnifiedLibraryData - Fetching unified library data for user:', user.id);
 
-      console.log('Raw database statistics:', {
-        totalGamesInDB,
-        unplayedGamesInDB,
-        playedGamesInDB,
-        totalDustScoreInDB,
-        totalPlaytimeInDB
-      });
-
-      return {
-        totalGamesInDB,
-        unplayedGamesInDB,
-        playedGamesInDB,
-        totalDustScoreInDB,
-        totalPlaytimeInDB
-      };
-    },
-    enabled: !isDemo && !!user,
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  // Main query for displayable game data
-  const { 
-    data: rawGameData, 
-    isLoading, 
-    error,
-    refetch 
-  } = useQuery({
-    queryKey: queryKeys.unifiedLibrary.data(user?.id),
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-      
-      console.log('Fetching unified library data for user:', user.id);
-      
-      const { data: userGamesData, error: userGamesError } = await supabase
+      const { data: userGames, error } = await supabase
         .from('user_games')
         .select(`
           id,
@@ -131,216 +50,180 @@ export const useUnifiedLibraryData = () => {
           acquisition_date,
           notes,
           games:game_id(
-            id, 
-            name, 
+            id,
+            name,
             image_url,
             header_image,
             release_date,
             metacritic_score,
+            price_cents,
             genres,
-            categories,
-            price_cents
+            categories
           )
         `)
-        .eq('user_id', user.id)
-        .order('dust_score', { ascending: false });
-      
-      if (userGamesError) {
-        console.error('Error fetching unified library data:', userGamesError);
-        throw userGamesError;
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('useUnifiedLibraryData - Database error:', error);
+        throw error;
       }
 
-      console.log(`Unified library: Found ${userGamesData?.length || 0} total games for user ${user.id}`);
-      
-      return userGamesData as UnifiedGameData[];
+      if (!userGames) {
+        console.log('useUnifiedLibraryData - No games found for user');
+        return [];
+      }
+
+      console.log('useUnifiedLibraryData - Raw data received:', {
+        totalRecords: userGames.length,
+        sampleRecord: userGames[0] ? {
+          id: userGames[0].id,
+          game_id: userGames[0].game_id,
+          playtime: userGames[0].playtime_minutes,
+          hasGameData: !!userGames[0].games,
+          gameName: userGames[0].games?.name
+        } : null
+      });
+
+      return userGames;
     },
-    enabled: !isDemo && !!user,
-    staleTime: 5 * 60 * 1000,
+    enabled: !!user && !isDemo,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
 
-  // Transform demo data to unified format when in demo mode
-  const demoUnifiedData = useMemo((): UnifiedGameData[] => {
-    if (!isDemo || !demoData.gamesList) return [];
-    
-    console.log('Transforming demo data to unified format');
-    
-    return demoData.gamesList.map((game, index) => ({
-      id: `demo-${game.id}`,
-      game_id: game.id,
-      playtime_minutes: game.playtimeMinutes,
-      hidden: false,
-      dust_score: game.dustScore || 0,
-      last_played_date: game.lastPlayed || null,
-      acquisition_date: game.added || null,
-      notes: game.notes || null,
-      games: {
-        id: game.id,
-        name: game.name,
-        image_url: game.image,
-        header_image: game.image,
-        release_date: game.releaseDate || null,
-        metacritic_score: game.metacritic || null,
-        genres: game.genres || [],
-        categories: game.categories || [],
-        price_cents: typeof game.price === 'number' ? Math.round(game.price * 100) : (game.price_cents || null),
-      }
-    }));
-  }, [isDemo, demoData]);
+  // Calculate comprehensive statistics
+  const stats: UnifiedLibraryStats | null = data ? (() => {
+    // RAW DATABASE STATISTICS (authoritative source)
+    const totalGamesInDB = data.length;
+    const unplayedGamesInDB = data.filter(item => !item.playtime_minutes || item.playtime_minutes === 0).length;
+    const playedGamesInDB = totalGamesInDB - unplayedGamesInDB;
+    const totalDustScoreInDB = data.reduce((sum, item) => sum + (item.dust_score || 0), 0);
+    const totalPlaytimeInDB = data.reduce((sum, item) => sum + (item.playtime_minutes || 0), 0);
 
-  // Calculate statistics from the unified data (demo or real)
-  const stats = useMemo((): UnifiedLibraryStats => {
-    const dataToUse = isDemo ? demoUnifiedData : (rawGameData || []);
-    
-    if (isDemo) {
-      // Return pre-calculated demo stats
-      console.log('Using pre-calculated demo stats');
-      
-      const shelfLife = demoData.shelfLife?.map(game => ({
-        id: game.id,
-        name: game.name,
-        image: game.image,
-        addedDate: game.addedDate,
-        releaseDate: game.releaseDate,
-        price: 0,
-        genres: []
-      })) || [];
+    // FILTERED DISPLAY STATISTICS (games with complete metadata)
+    const gamesWithMetadata = data.filter(item => item.games?.name);
+    const totalGames = gamesWithMetadata.length;
+    const unplayedGames = gamesWithMetadata.filter(item => !item.playtime_minutes || item.playtime_minutes === 0).length;
+    const playedGames = totalGames - unplayedGames;
+    const totalDustScore = gamesWithMetadata.reduce((sum, item) => sum + (item.dust_score || 0), 0);
+    const totalPlaytime = gamesWithMetadata.reduce((sum, item) => sum + (item.playtime_minutes || 0), 0);
 
-      return {
-        totalGamesInDB: demoData.totalGames,
-        unplayedGamesInDB: demoData.unplayedGames,
-        playedGamesInDB: demoData.totalGames - demoData.unplayedGames,
-        totalDustScoreInDB: demoData.dustScore,
-        totalPlaytimeInDB: Math.round(demoData.totalPlaytime * 60),
-        totalGames: demoData.totalGames,
-        unplayedGames: demoData.unplayedGames,
-        playedGames: demoData.totalGames - demoData.unplayedGames,
-        totalDustScore: demoData.dustScore,
-        totalPlaytime: Math.round(demoData.totalPlaytime * 60),
-        recentlyPlayedCount: demoData.recentlyPlayedCount || 5,
-        metadataCompletionPercentage: 100,
-        shelfLife,
-      };
-    }
-    
-    // Use raw database statistics as the authoritative source
-    const totalGamesInDB = rawStats?.totalGamesInDB || 0;
-    const unplayedGamesInDB = rawStats?.unplayedGamesInDB || 0;
-    const playedGamesInDB = rawStats?.playedGamesInDB || 0;
-    const totalDustScoreInDB = rawStats?.totalDustScoreInDB || 0;
-    const totalPlaytimeInDB = rawStats?.totalPlaytimeInDB || 0;
-    
-    if (!dataToUse.length || !rawStats) {
-      return {
-        totalGamesInDB: 0,
-        unplayedGamesInDB: 0,
-        playedGamesInDB: 0,
-        totalDustScoreInDB: 0,
-        totalPlaytimeInDB: 0,
-        totalGames: 0,
-        unplayedGames: 0,
-        playedGames: 0,
-        totalDustScore: 0,
-        totalPlaytime: 0,
-        recentlyPlayedCount: 0,
-        metadataCompletionPercentage: 0,
-        shelfLife: [],
-      };
-    }
-
-    // Filter games with valid metadata for display purposes
-    const validGames = dataToUse.filter(game => game.games && game.games.name);
-    
-    const displayUnplayedGames = validGames.filter(game => 
-      !game.playtime_minutes || game.playtime_minutes === 0
-    );
-    
-    const displayPlayedGames = validGames.filter(game => 
-      game.playtime_minutes && game.playtime_minutes > 0
-    );
-
-    const displayTotalPlaytime = validGames.reduce((sum, game) => 
-      sum + (game.playtime_minutes || 0), 0
-    );
-
-    const displayTotalDustScore = validGames.reduce((sum, game) => 
-      sum + (game.dust_score || 0), 0
-    );
-
-    // Calculate recently played count (last 30 days)
+    // Recently played count
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const recentlyPlayedCount = validGames.filter(game => {
-      if (!game.last_played_date) return false;
-      const lastPlayedDate = new Date(game.last_played_date);
-      return lastPlayedDate >= thirtyDaysAgo;
+    const recentlyPlayedCount = data.filter(item => {
+      if (!item.last_played_date) return false;
+      const lastPlayed = new Date(item.last_played_date);
+      return lastPlayed >= thirtyDaysAgo;
     }).length;
 
-    // Calculate metadata completion percentage
-    const metadataCompletionPercentage = totalGamesInDB > 0 
-      ? (validGames.length / totalGamesInDB) * 100 
-      : 0;
+    // Metadata completion percentage
+    const metadataCompletionPercentage = totalGamesInDB > 0 ? 
+      (gamesWithMetadata.length / totalGamesInDB) * 100 : 0;
 
-    // Calculate shelf life for display data
-    const unplayedGamesList = displayUnplayedGames.filter(game => game.games?.release_date);
-    const shelfLife = unplayedGamesList
-      .sort((a, b) => {
-        const dateA = new Date(a.games!.release_date!).getTime();
-        const dateB = new Date(b.games!.release_date!).getTime();
-        return dateA - dateB;
-      })
-      .slice(0, 50)
-      .map(game => ({
-        id: game.game_id,
-        name: game.games!.name,
-        image: game.games!.image_url || game.games!.header_image,
-        addedDate: game.acquisition_date,
-        releaseDate: game.games!.release_date,
-        price: game.games!.price_cents ? game.games!.price_cents / 100 : 0,
-        genres: game.games!.genres || []
-      }));
+    // Process shelf life data
+    const unplayedItems = data.filter(item => (!item.playtime_minutes || item.playtime_minutes === 0) && item.games?.name);
+    const shelfLife = processShelfLife(unplayedItems);
 
-    const result = {
-      // Authoritative raw database statistics
+    const calculatedStats = {
+      // Raw database statistics (authoritative)
       totalGamesInDB,
       unplayedGamesInDB,
       playedGamesInDB,
       totalDustScoreInDB,
       totalPlaytimeInDB,
       
-      // Display-ready filtered statistics
-      totalGames: validGames.length,
-      unplayedGames: displayUnplayedGames.length,
-      playedGames: displayPlayedGames.length,
-      totalDustScore: displayTotalDustScore,
-      totalPlaytime: displayTotalPlaytime,
+      // Filtered display statistics
+      totalGames,
+      unplayedGames,
+      playedGames,
+      totalDustScore,
+      totalPlaytime,
+      
+      // Additional metrics
       recentlyPlayedCount,
       metadataCompletionPercentage,
-      shelfLife,
+      shelfLife
     };
 
-    console.log('Unified library stats with raw DB data:', {
-      ...result,
-      dataDiscrepancy: {
-        gamesInDBvsDisplay: `${totalGamesInDB} vs ${validGames.length}`,
-        unplayedInDBvsDisplay: `${unplayedGamesInDB} vs ${displayUnplayedGames.length}`,
-        dustScoreInDBvsDisplay: `${totalDustScoreInDB} vs ${displayTotalDustScore}`
+    console.log('useUnifiedLibraryData - Calculated comprehensive stats:', {
+      rawDB: {
+        totalGames: totalGamesInDB,
+        unplayed: unplayedGamesInDB,
+        dustScore: totalDustScoreInDB,
+        playtime: totalPlaytimeInDB
+      },
+      filtered: {
+        totalGames,
+        unplayed: unplayedGames,
+        dustScore: totalDustScore,
+        playtime: totalPlaytime
+      },
+      metadata: {
+        completionPercentage: metadataCompletionPercentage.toFixed(1) + '%',
+        missingMetadata: totalGamesInDB - gamesWithMetadata.length
+      },
+      shelfLife: {
+        totalItems: shelfLife.length,
+        oldestGame: shelfLife[0]?.name || 'None'
       }
     });
-    
-    return result;
-  }, [isDemo, demoUnifiedData, rawGameData, demoData, rawStats]);
 
-  // Return appropriate data based on demo mode
-  const data = isDemo ? demoUnifiedData : (rawGameData || []);
-  const loading = isDemo ? false : isLoading;
+    return calculatedStats;
+  })() : null;
+
+  // Handle demo mode
+  if (isDemo) {
+    const demoStats: UnifiedLibraryStats = {
+      totalGamesInDB: demoData.library.length,
+      unplayedGamesInDB: demoData.library.filter(game => game.playtime === 0).length,
+      playedGamesInDB: demoData.library.filter(game => game.playtime > 0).length,
+      totalDustScoreInDB: demoData.library.reduce((sum, game) => sum + (game.dustScore || 0), 0),
+      totalPlaytimeInDB: demoData.library.reduce((sum, game) => sum + game.playtime, 0),
+      totalGames: demoData.library.length,
+      unplayedGames: demoData.library.filter(game => game.playtime === 0).length,
+      playedGames: demoData.library.filter(game => game.playtime > 0).length,
+      totalDustScore: demoData.library.reduce((sum, game) => sum + (game.dustScore || 0), 0),
+      totalPlaytime: demoData.library.reduce((sum, game) => sum + game.playtime, 0),
+      recentlyPlayedCount: 3,
+      metadataCompletionPercentage: 100,
+      shelfLife: demoData.library.filter(game => game.playtime === 0).slice(0, 10)
+    };
+
+    return {
+      data: demoData.library.map(game => ({
+        id: `demo-${game.id}`,
+        game_id: game.id,
+        playtime_minutes: game.playtime,
+        hidden: false,
+        dust_score: game.dustScore || 0,
+        last_played_date: null,
+        acquisition_date: null,
+        notes: null,
+        games: {
+          id: game.id,
+          name: game.name,
+          image_url: game.image,
+          header_image: game.image,
+          release_date: null,
+          metacritic_score: null,
+          price_cents: null,
+          genres: [],
+          categories: []
+        }
+      })),
+      stats: demoStats,
+      isLoading: false,
+      error: null,
+      refetch: async () => demoData.library
+    };
+  }
 
   return {
-    data,
+    data: data || [],
     stats,
-    isLoading: loading,
+    isLoading,
     error,
-    refetch,
+    refetch
   };
 };
