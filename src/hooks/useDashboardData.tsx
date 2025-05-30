@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateCleanScore } from '@/utils/clean-score-utils';
@@ -24,7 +24,9 @@ export interface DashboardData {
 export const useDashboardData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: unplayedData, isLoading: unplayedLoading } = useUnplayedData();
+  
+  // Use unified library data for authenticated users
+  const { data: unifiedData, stats: unifiedStats, isLoading: unifiedLoading } = useUnifiedLibraryData();
   const { data: spendingData, isLoading: spendingLoading } = useEnhancedSpendingData();
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -47,8 +49,9 @@ export const useDashboardData = () => {
         };
       }
 
-      // For authenticated users, combine unplayed data with enhanced spending data
-      if (!unplayedData || !spendingData) {
+      // For authenticated users, use the unified data source
+      if (!unifiedStats || !spendingData) {
+        console.log('Dashboard: Waiting for unified data or spending data');
         return {
           unplayedGames: 0,
           totalGames: 0,
@@ -64,44 +67,41 @@ export const useDashboardData = () => {
         };
       }
 
-      // Calculate clean score using the latest calculation from clean-score-utils
-      const playedGames = unplayedData.totalGames - unplayedData.unplayedGames;
-      const totalPlaytimeHours = unplayedData.totalPlaytime;
-      const gamesList = unplayedData.gamesList || [];
+      // Calculate clean score using the unified stats
+      const totalPlaytimeHours = unifiedStats.totalPlaytime / 60;
       
       const { cleanScore } = calculateCleanScore(
-        playedGames,
-        unplayedData.totalGames,
+        unifiedStats.playedGames,
+        unifiedStats.totalGames,
         totalPlaytimeHours,
-        gamesList,
-        unplayedData.recentlyPlayedCount
+        [], // gamesList not needed for clean score calculation
+        unifiedStats.recentlyPlayedCount
       );
 
-      console.log('Dashboard data compilation:', {
-        unplayedGames: unplayedData.unplayedGames,
+      console.log('Dashboard data from unified source:', {
+        unplayedGames: unifiedStats.unplayedGames,
+        totalGames: unifiedStats.totalGames,
+        dustScore: unifiedStats.totalDustScore,
         unplayedSpent: spendingData.totalSpent,
-        totalSpent: unplayedData.totalSpent,
-        totalPlaytime: unplayedData.totalPlaytime,
-        dustScore: unplayedData.dustScore,
         cleanScore: cleanScore,
         spendingConfidence: spendingData.confidence
       });
 
       return {
-        unplayedGames: unplayedData.unplayedGames,
-        totalGames: unplayedData.totalGames,
-        dustScore: unplayedData.dustScore, // Use actual dust score from unplayed data
-        totalSpent: unplayedData.totalSpent,
-        unplayedSpent: spendingData.totalSpent,
-        potentialGameplayHours: unplayedData.potentialGameplayHours,
-        cleanScore: cleanScore, // Use calculated clean score
-        recentlyPlayedCount: unplayedData.recentlyPlayedCount,
-        totalPlaytime: unplayedData.totalPlaytime,
-        genres: unplayedData.genres || [],
-        shelfLife: unplayedData.shelfLife || [],
+        unplayedGames: unifiedStats.unplayedGames,
+        totalGames: unifiedStats.totalGames,
+        dustScore: unifiedStats.totalDustScore,
+        totalSpent: spendingData.totalSpent, // Use spending data for total spent
+        unplayedSpent: spendingData.totalSpent, // Use spending data for unplayed spent
+        potentialGameplayHours: 0, // TODO: Calculate from game estimates
+        cleanScore: cleanScore,
+        recentlyPlayedCount: unifiedStats.recentlyPlayedCount,
+        totalPlaytime: totalPlaytimeHours,
+        genres: [], // TODO: Calculate from unified data
+        shelfLife: [], // TODO: Calculate from unified data
       };
     },
-    enabled: isDemo || (!!user && !unplayedLoading && !spendingLoading),
+    enabled: isDemo || (!!user && !unifiedLoading && !spendingLoading),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -122,7 +122,7 @@ export const useDashboardData = () => {
       genres: [],
       shelfLife: [],
     },
-    isLoading: isLoading || unplayedLoading || spendingLoading,
+    isLoading: isLoading || unifiedLoading || spendingLoading,
     error,
     refetch,
     lastRefreshed,
