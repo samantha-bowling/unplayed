@@ -3,9 +3,10 @@ import { getBestGameImage } from './image-utils';
 
 /**
  * Efficiently processes shelf life data with optimized sorting by RELEASE DATE
+ * Note: Removed acquisition_date dependencies as this data is unreliable
  */
 export const processShelfLife = (unplayedItems: any[]): any[] => {
-  // Sort by RELEASE DATE (oldest games first) instead of acquisition date
+  // Sort by RELEASE DATE (oldest games first) 
   return unplayedItems
     .filter(item => item.games?.release_date) // Only include games with release dates
     .map(item => ({
@@ -16,7 +17,7 @@ export const processShelfLife = (unplayedItems: any[]): any[] => {
     .map(({ item }) => ({
       id: item.game_id,
       name: item.games?.name || 'Unknown Game',
-      addedDate: item.acquisition_date || new Date().toISOString(),
+      addedDate: null, // Removed acquisition_date dependency
       releaseDate: item.games?.release_date || null,
       header_image: item.games?.header_image,
       image: item.games?.image_url

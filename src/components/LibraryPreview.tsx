@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -378,20 +379,24 @@ const LibraryPreview = ({
                 const gameId = 'id' in game ? game.id : ('gameId' in game ? game.gameId : game.id);
                 const title = 'name' in game ? game.name : ('title' in game ? game.title : game.name);
                 
-                // For demo mode, use the image directly from demo data
+                // FIXED: Proper image handling for both demo and live data
                 let image;
                 if (isDemo || contextIsDemo) {
+                  // For demo mode, use the image directly from demo data
                   image = game.image || '/placeholder.svg';
                 } else {
-                  // For live data, use the enhanced image utility
+                  // For live data, use the enhanced image utility with the full game object
+                  // Pass the entire game object which may have nested games data
                   image = getBestGameImageFromDbData(game, gameId);
                 }
                 
-                console.log('Grid game image:', { 
+                console.log('Grid game image processing:', { 
                   gameId, 
                   title, 
                   image, 
                   isDemo: isDemo || contextIsDemo,
+                  hasHeaderImage: !!(game.header_image || (game as any).games?.header_image),
+                  hasImageUrl: !!(game.image_url || (game as any).games?.image_url),
                   originalGame: game 
                 });
                 
@@ -408,6 +413,10 @@ const LibraryPreview = ({
                         alt={title} 
                         className="w-full h-full object-cover" 
                         loading="lazy"
+                        onError={(e) => {
+                          console.log('Image failed to load:', image, 'for game:', title);
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
                       />
                     </div>
                     

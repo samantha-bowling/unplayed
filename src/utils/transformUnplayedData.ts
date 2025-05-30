@@ -6,6 +6,7 @@ import { processGenres, countGenres } from './genre-processing';
 /**
  * Transforms user game data into a structured format for the dashboard.
  * Aggregates playtime, spending, and other relevant metrics.
+ * Note: Removed acquisition_date dependencies as this data is unreliable.
  */
 export const transformUserGameData = (
   userGamesData: any[],
@@ -32,14 +33,14 @@ export const transformUserGameData = (
     // Accumulate total spent
     totalSpent += price;
 
-    // Populate games list
+    // Populate games list (removed acquisition_date reference)
     gamesList.push({
       id: game.game_id,
       name: gameData.name,
       image: gameData.image_url || gameData.header_image || '',
       playtimeMinutes: playtimeMinutes,
       lastPlayed: game.last_played_date || null,
-      added: game.acquisition_date || null,
+      added: null, // Removed acquisition_date dependency
       price: price,
       genres: gameData.genres || [],
       notes: game.notes || null,
@@ -62,7 +63,7 @@ export const transformUserGameData = (
   const genreCounts = countGenres(userGamesData);
   const genresArray = processGenres(genreCounts);
 
-  // Calculate shelf life - get oldest unplayed games by RELEASE DATE (not acquisition date)
+  // Calculate shelf life - get oldest unplayed games by RELEASE DATE only
   const unplayedGamesList = gamesList.filter(game => game.playtimeMinutes === 0);
   const shelfLife = unplayedGamesList
     .filter(game => game.releaseDate) // Only games with release dates
@@ -76,7 +77,7 @@ export const transformUserGameData = (
       id: game.id,
       name: game.name,
       image: game.image || '',
-      addedDate: game.added,
+      addedDate: null, // Removed acquisition_date dependency
       releaseDate: game.releaseDate,
       price: game.price,
       genres: game.genres
@@ -133,7 +134,7 @@ export const transformUserGameData = (
     unplayedSpent: 0, // This will be populated later
     potentialGameplayHours,
     genres: genresArray,
-    shelfLife: shelfLife, // Now properly sorted by oldest release date
+    shelfLife: shelfLife, // Now properly sorted by oldest release date only
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,
