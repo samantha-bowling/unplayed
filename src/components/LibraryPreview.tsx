@@ -25,37 +25,36 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   const { isDemo, demoData } = useDemoMode();
   const { isFullScreenMode, toggleFullScreenMode } = useFullScreenMode();
   const [viewMode, setViewMode] = useState<'grid' | 'zen'>('grid');
-  const [searchFilter, setSearchFilter] = useState('');
-  const [hideIgnored, setHideIgnored] = useState(false);
-  const [onlyUnplayed, setOnlyUnplayed] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'dust_score' | 'playtime'>('dust_score');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [limit, setLimit] = useState<number>(12);
 
-  const libraryDataResult = useLibraryData({
-    search: searchFilter,
-    hideIgnored,
-    onlyUnplayed,
-    sortBy,
-    sortDirection,
-    limit: viewMode === 'zen' ? 100 : limit
-  });
+  // Use the library data hook without any parameters
+  const libraryDataResult = useLibraryData();
 
   const {
     games: libraryGames,
     isLoading,
-    error
+    error,
+    filters,
+    updateSearchFilter,
+    toggleHideIgnored,
+    toggleOnlyUnplayed,
+    sortBy,
+    sortDirection,
+    updateSort,
+    resetFilters
   } = libraryDataResult;
 
   // Memoize filtered and processed games for performance
   const processedGames = useMemo(() => {
     if (!libraryGames) return [];
     
-    return libraryGames.map(game => ({
+    const limitedGames = viewMode === 'zen' ? libraryGames : libraryGames.slice(0, limit);
+    
+    return limitedGames.map(game => ({
       ...game,
       imageUrl: getBestGameImageFromDbData(game, game.id)
     }));
-  }, [libraryGames]);
+  }, [libraryGames, limit, viewMode]);
 
   const handleMarkAsPlayed = async (userGameId: string) => {
     // Implementation for marking as played
@@ -74,19 +73,10 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
 
   const handleSortChange = (newSortBy: string) => {
     if (sortBy === newSortBy) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      updateSort(sortBy, sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortBy(newSortBy as 'name' | 'dust_score' | 'playtime');
-      setSortDirection('desc');
+      updateSort(newSortBy as any, 'desc');
     }
-  };
-
-  const resetFilters = () => {
-    setSearchFilter('');
-    setHideIgnored(false);
-    setOnlyUnplayed(false);
-    setSortBy('dust_score');
-    setSortDirection('desc');
   };
 
   if (zenModeFullScreen || viewMode === 'zen') {
@@ -196,8 +186,8 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search games..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
+              value={filters.search}
+              onChange={(e) => updateSearchFilter(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -212,7 +202,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
                   <SelectContent>
                     <SelectItem value="name">Name</SelectItem>
                     <SelectItem value="dust_score">Dust Score</SelectItem>
-                    <SelectItem value="playtime">Playtime</SelectItem>
+                    <SelectItem value="playtime_minutes">Playtime</SelectItem>
                   </SelectContent>
                 </Select>
               </TooltipTrigger>
@@ -234,20 +224,20 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
         {/* Filter Toggles */}
         <div className="flex gap-2">
           <Button
-            variant={onlyUnplayed ? "default" : "outline"}
+            variant={filters.onlyUnplayed ? "default" : "outline"}
             size="sm"
-            onClick={() => setOnlyUnplayed(!onlyUnplayed)}
+            onClick={toggleOnlyUnplayed}
           >
             Only Unplayed
           </Button>
           <Button
-            variant={hideIgnored ? "default" : "outline"}
+            variant={filters.hideIgnored ? "default" : "outline"}
             size="sm"
-            onClick={() => setHideIgnored(!hideIgnored)}
+            onClick={toggleHideIgnored}
           >
             Hide Ignored
           </Button>
-          {(searchFilter || onlyUnplayed || hideIgnored) && (
+          {(filters.search || filters.onlyUnplayed || filters.hideIgnored) && (
             <Button
               variant="ghost"
               size="sm"
@@ -273,43 +263,25 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             <p>No games found matching your criteria.</p>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {processedGames.map(game => (
-                <GameCard
-                  key={game.userGame.id}
-                  id={game.userGame.id}
-                  gameId={game.id}
-                  title={game.name}
-                  imageUrl={game.imageUrl}
-                  headerImage={game.header_image}
-                  dustScore={game.userGame.dust_score}
-                  playtimeMinutes={game.userGame.playtime_minutes}
-                  isHidden={game.userGame.hidden}
-                  notes={game.userGame.notes}
-                  onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
-                  onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
-                  onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
-                />
-              ))}
-            </div>
-            
-            {libraryDataResult.totalCount && libraryDataResult.totalCount > limit && (
-              <div className="mt-6 text-center">
-                <p className="text-gray-400 text-sm mb-3">
-                  Showing {processedGames.length} of {libraryDataResult.totalCount} games
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setViewMode('zen')}
-                  className="bg-unplayed-pink/20 text-unplayed-pink hover:bg-unplayed-pink/30 border-unplayed-pink/30"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View All Games
-                </Button>
-              </div>
-            )}
-          </>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {processedGames.map(game => (
+              <GameCard
+                key={game.userGame.id}
+                id={game.userGame.id}
+                gameId={game.id}
+                title={game.name}
+                imageUrl={game.imageUrl}
+                headerImage={game.header_image}
+                dustScore={game.userGame.dust_score}
+                playtimeMinutes={game.userGame.playtime_minutes}
+                isHidden={game.userGame.hidden}
+                notes={game.userGame.notes}
+                onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
+                onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
+                onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
