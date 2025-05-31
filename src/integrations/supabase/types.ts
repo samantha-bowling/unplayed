@@ -420,6 +420,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_clean_score_breakdowns: {
+        Row: {
+          backlog_conversion_score: number
+          clean_streak_days: number
+          diversity_score: number
+          id: string
+          last_calculated: string
+          recency_score: number
+          recently_played_count: number
+          session_depth_score: number
+          user_id: string
+        }
+        Insert: {
+          backlog_conversion_score?: number
+          clean_streak_days?: number
+          diversity_score?: number
+          id?: string
+          last_calculated?: string
+          recency_score?: number
+          recently_played_count?: number
+          session_depth_score?: number
+          user_id: string
+        }
+        Update: {
+          backlog_conversion_score?: number
+          clean_streak_days?: number
+          diversity_score?: number
+          id?: string
+          last_calculated?: string
+          recency_score?: number
+          recently_played_count?: number
+          session_depth_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_games: {
         Row: {
           acquisition_date: string | null

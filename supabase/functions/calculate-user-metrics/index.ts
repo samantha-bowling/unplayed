@@ -94,9 +94,6 @@ serve(async (req) => {
     const totalPlaytimeMinutes = games.reduce((sum, g) => sum + g.playtime_minutes, 0);
     const totalPlaytimeHours = totalPlaytimeMinutes / 60;
 
-    // Calculate recently played count (games played in last 30 days - simplified to any played game for now)
-    const recentlyPlayedCount = playedGames;
-
     // Calculate spending metrics using clean price data
     let totalLibraryValueCents = 0;
     let unplayedValueCents = 0;
@@ -115,24 +112,49 @@ serve(async (req) => {
       }
     }
 
-    // Calculate clean score (simplified version based on play patterns)
-    const completionRate = totalGames > 0 ? (playedGames / totalGames) * 100 : 0;
+    // ===== NEW CLEAN SCORE CALCULATION (Phase 2) =====
+    
+    // 1. Unique Game Diversity (25% weight)
+    // Measure how varied the user's gaming habits are
+    const uniqueGenres = new Set();
+    const playedGameGenres = games.filter(g => g.playtime_minutes > 0).flatMap(g => g.genres);
+    playedGameGenres.forEach(genre => uniqueGenres.add(genre));
+    
+    const diversityScore = Math.min(100, Math.round((uniqueGenres.size / Math.max(1, totalGames / 10)) * 100));
+
+    // 2. Recency Engagement (30% weight)
+    // Count unique games played in last 30 days (simplified to recently played for now)
+    const recentlyPlayedCount = playedGames; // In real implementation, this would check last 30 days
+    const recencyScore = Math.min(100, Math.round((recentlyPlayedCount / Math.max(1, totalGames)) * 100));
+
+    // 3. Backlog Conversion Rate (25% weight)
+    // Percentage of games that were unplayed but now have some playtime
+    // For now, we'll use completion rate as a proxy
+    const backlogConversionScore = totalGames > 0 ? Math.round((playedGames / totalGames) * 100) : 0;
+
+    // 4. Session Depth (20% weight)
+    // Average playtime per played game (encouraging meaningful engagement)
     const avgPlaytimePerGame = playedGames > 0 ? totalPlaytimeHours / playedGames : 0;
-    const engagementFactor = Math.min(100, avgPlaytimePerGame * 10); // 10+ hours = 100
-    const recencyFactor = Math.min(100, (recentlyPlayedCount / Math.max(1, totalGames)) * 100);
-    
-    const cleanScore = Math.round((completionRate * 0.4) + (engagementFactor * 0.3) + (recencyFactor * 0.3));
-    
+    const sessionDepthScore = Math.min(100, Math.round(avgPlaytimePerGame * 10)); // 10+ hours = 100
+
+    // Calculate final clean score with new weights
+    const cleanScore = Math.round(
+      (diversityScore * 0.25) + 
+      (recencyScore * 0.30) + 
+      (backlogConversionScore * 0.25) + 
+      (sessionDepthScore * 0.20)
+    );
+
+    // Calculate clean streak (simplified - number of played games for now)
+    const cleanStreak = playedGames;
+
     // Determine clean tier
     const cleanTier = cleanScore >= 90 ? 'pristine' :
                      cleanScore >= 75 ? 'clean' :
                      cleanScore >= 60 ? 'tidy' :
                      cleanScore >= 40 ? 'messy' : 'dusty';
 
-    // Calculate clean streak (simplified - number of played games)
-    const cleanStreak = playedGames;
-
-    // Store user metrics
+    // Store user metrics (existing table)
     await supabase
       .from('user_metrics')
       .upsert({
@@ -150,7 +172,21 @@ serve(async (req) => {
         total_playtime_hours: totalPlaytimeHours,
         recently_played_count: recentlyPlayedCount,
         last_calculated: new Date().toISOString(),
-        calculation_version: 1
+        calculation_version: 2 // Updated to version 2 for new clean score system
+      });
+
+    // Store clean score breakdown (new table)
+    await supabase
+      .from('user_clean_score_breakdowns')
+      .upsert({
+        user_id: user.id,
+        diversity_score: diversityScore,
+        recency_score: recencyScore,
+        backlog_conversion_score: backlogConversionScore,
+        session_depth_score: sessionDepthScore,
+        clean_streak_days: cleanStreak,
+        recently_played_count: recentlyPlayedCount,
+        last_calculated: new Date().toISOString()
       });
 
     // Process genre statistics
@@ -258,21 +294,26 @@ serve(async (req) => {
     console.log(`Metrics calculation completed for user ${user.id}`);
     console.log(`- Total games: ${totalGames}`);
     console.log(`- Unplayed games: ${unplayedGames}`);
-    console.log(`- Clean score: ${cleanScore}`);
+    console.log(`- Clean score: ${cleanScore} (Phase 2)`);
+    console.log(`- Diversity: ${diversityScore}, Recency: ${recencyScore}, Backlog: ${backlogConversionScore}, Depth: ${sessionDepthScore}`);
     console.log(`- Total library value: $${(totalLibraryValueCents / 100).toFixed(2)}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'User metrics calculated successfully',
+        message: 'User metrics calculated successfully with Phase 2 clean score',
         metrics: {
           totalGames,
           unplayedGames,
           cleanScore,
+          cleanScoreBreakdown: {
+            diversityScore,
+            recencyScore,
+            backlogConversionScore,
+            sessionDepthScore
+          },
           totalLibraryValueCents,
-          genresProcessed: genreEntries.length,
-          shelfLifeGames: shelfLifeEntries.length,
-          dustBreakdowns: dustBreakdownEntries.length
+          genresProcessed: genreEntries.length
         }
       }),
       {
