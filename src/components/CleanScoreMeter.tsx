@@ -4,7 +4,7 @@ import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics } from '@/utils/data-transforms';
-import { useDustScoreData } from '@/hooks/use-dust-score-data';
+import useDustScoreData from '@/hooks/use-dust-score-data';
 import { CLEAN_SCORE_TIERS } from '@/utils/clean-score-utils';
 import {
   Tooltip,
@@ -39,7 +39,7 @@ const CleanScoreMeter = ({
   const actualScore = score ?? dashboardMetrics.cleanScore ?? 0;
   
   // Simple fallback: find tier directly from score if data.cleanTier is missing
-  const cleanTier = data?.cleanTier || CLEAN_SCORE_TIERS.find(
+  const cleanTier = data.cleanTier || CLEAN_SCORE_TIERS.find(
     tier => actualScore >= tier.range[0] && actualScore <= tier.range[1]
   ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1];
   
@@ -68,9 +68,9 @@ const CleanScoreMeter = ({
   const getTierColor = () => cleanTier?.color || '#22d3ee';
   const getTierName = () => cleanTier?.name || 'Calculating...';
 
-  const cleanStreak = data?.cleanStreak || 0;
-  const recentlyPlayedUnplayed = data?.recentlyPlayedUnplayed || 0;
-  const cleanStreakMetadata = data?.cleanStreakMetadata;
+  const cleanStreak = data.cleanStreak || 0;
+  const recentlyPlayedUnplayed = data.recentlyPlayedUnplayed || 0;
+  const cleanStreakMetadata = data.cleanStreakMetadata;
   
   const hasCleanStreak = cleanStreak > 1;
 

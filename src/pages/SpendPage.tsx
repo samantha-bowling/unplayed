@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -250,7 +249,7 @@ const SpendPage = () => {
                         
                         <div className="text-sm text-gray-400 space-y-2">
                           <p>
-                            <strong>Pricing Data:</strong> {unplayedSpendingData?.displayInfo?.displayText || 'Prices sourced from Steam Store API'}
+                            <strong>Pricing Data:</strong> {unplayedSpendingData?.displayInfo?.displayText || 'No data available'}
                           </p>
                           {unplayedSpendingData?.displayInfo?.warningText && (
                             <p className="text-yellow-400">
@@ -289,6 +288,7 @@ const SpendPage = () => {
                               <th className="px-4 py-3 text-right">Current Price</th>
                               <th className="px-4 py-3 hidden md:table-cell text-right">Original Price</th>
                               <th className="px-4 py-3 hidden md:table-cell text-right">Discount</th>
+                              <th className="px-4 py-3 hidden lg:table-cell text-center">Source</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -336,6 +336,24 @@ const SpendPage = () => {
                                   {game.discount ? (
                                     <span className="text-unplayed-mint">-{game.discount}%</span>
                                   ) : '—'}
+                                </td>
+                                <td className="px-4 py-3 hidden lg:table-cell text-center">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="outline" className="text-xs">
+                                          {game.priceDataSource === 'price_table' ? 'Fresh' :
+                                           game.priceDataSource === 'games_table' ? 'Cached' : 'Est.'}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>
+                                          {game.priceDataSource === 'price_table' ? 'Recently updated from Steam store' :
+                                           game.priceDataSource === 'games_table' ? 'From game database cache' : 'Estimated price'}
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 </td>
                               </tr>
                             )) || []}
