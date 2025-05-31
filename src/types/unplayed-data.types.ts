@@ -1,3 +1,4 @@
+
 /**
  * Core game data structure used throughout the app
  */
@@ -71,19 +72,9 @@ export interface GameDustData {
 }
 
 /**
- * Represents breakdown of a clean score calculation with new 4-factor system
+ * Represents breakdown of a clean score calculation
  */
 export interface CleanScoreBreakdown {
-  diversityScore: number;     // Game genre diversity (25% weight)
-  recencyScore: number;       // Recent activity engagement (30% weight) 
-  backlogConversionScore: number; // Backlog completion rate (25% weight)
-  sessionDepthScore: number;  // Average session depth (20% weight)
-}
-
-/**
- * Legacy clean score breakdown for backward compatibility
- */
-export interface LegacyCleanScoreBreakdown {
   completionRate: number;
   engagementFactor: number;
   recencyFactor: number;
@@ -166,8 +157,7 @@ export interface UnplayedDataType {
   
   // Clean score specific data
   cleanScore?: number;
-  cleanScoreBreakdown?: CleanScoreBreakdown; // New 4-factor system
-  legacyCleanScoreBreakdown?: LegacyCleanScoreBreakdown; // Legacy support
+  cleanScoreBreakdown?: CleanScoreBreakdown;
   cleanTier?: CleanScoreTier;
   cleanStreak?: number;
   recentlyPlayedCount?: number;

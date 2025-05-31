@@ -1,4 +1,3 @@
-
 import { 
   DustScoreBreakdown, 
   GameDustData, 
@@ -21,13 +20,9 @@ export interface DemoDataType {
   topDustContributors?: GameDustData[];
   avgDustScore?: number;
   
-  // Clean score specific data - using legacy format for demo
+  // Clean score specific data
   cleanScore?: number;
-  cleanScoreBreakdown?: {
-    completionRate: number;
-    engagementFactor: number;
-    recencyFactor: number;
-  };
+  cleanScoreBreakdown?: CleanScoreBreakdown;
   cleanTier?: CleanScoreTier;
   cleanStreak?: number;
   recentlyPlayedCount?: number;

@@ -1,8 +1,8 @@
+
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   UnplayedDataType, 
@@ -23,8 +23,7 @@ import {
 } from '@/utils/dust-score-utils';
 import { 
   CLEAN_SCORE_TIERS, 
-  calculateCleanScore, 
-  calculateLegacyCleanScore 
+  calculateCleanScore 
 } from '@/utils/clean-score-utils';
 
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
@@ -48,7 +47,6 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     error: basicDataError,
     refetch: refetchBasicData 
   } = useUnplayedData();
-  const { data: cleanScoreBreakdowns } = useCleanScoreBreakdowns();
 
   const { 
     data: detailedDustData, 
@@ -172,7 +170,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         avgPlaytimeFactor 
       } = processDustBreakdowns(breakdowns);
 
-      // Calculate clean score metrics using legacy format for now
+      // Calculate clean score metrics
       const totalGames = userGamesWithDust.length;
       const playedGames = userGamesWithDust.filter(game =>
         (game.playtime_minutes || 0) > 0
@@ -190,9 +188,31 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         return lastPlayed >= thirtyDaysAgo;
       }).length;
 
-      // Calculate clean score using legacy calculation
-      const { cleanScore, breakdown: legacyBreakdown, tier: cleanTier, cleanStreak } =
-        calculateLegacyCleanScore(playedGames, totalGames, totalPlaytimeHours, recentlyPlayedCount);
+      // Calculate clean score using our enhanced calculation
+      const gamesList = userGamesWithDust.map(game => ({
+        id: game.game_id,
+        name: game.games?.name || '',
+        playtimeMinutes: game.playtime_minutes || 0,
+        lastPlayed: game.last_played_date,
+        added: game.acquisition_date,
+        // Add other required fields
+        image: '',
+        price: 0,
+        genres: game.games?.genres || [],
+        notes: null,
+        hidden: false,
+        releaseDate: game.games?.release_date,
+        metacritic: game.games?.metacritic_score,
+        categories: [],
+        completionEstimate: null,
+        mainStoryEstimate: null,
+        averageEstimate: null,
+        steamAppid: null,
+        howLongToBeatId: null,
+      }));
+
+      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
+        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
 
       return {
         dustScoreBreakdown: {
@@ -205,7 +225,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         topDustContributors: topContributors,
         averageDustScore: avgDustScore,
         cleanScore,
-        legacyCleanScoreBreakdown: legacyBreakdown,
+        cleanScoreBreakdown,
         cleanTier,
         cleanStreak,
         recentlyPlayedCount,
@@ -216,11 +236,13 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     enabled: !!user && !isDemo,
   });
 
-  // Enhanced demo mode data preparation with legacy clean score
-  const demoLegacyBreakdown = {
-    completionRate: 75,
-    engagementFactor: 60,
-    recencyFactor: 65
+  // Enhanced demo mode data preparation with new 5-factor system
+  const demoDustBreakdown: DustScoreBreakdown = {
+    qualityScore: 12,    // Average quality across library
+    priceScore: 18,      // Mix of pricing tiers
+    ageScore: 15,        // Mix of old and new games
+    genreScore: 10,      // Common genres mostly
+    playtimeFactor: 0.85 // Some games played
   };
 
   const demoTopContributors: GameDustData[] = demoData.library.map((game, index) => ({
@@ -242,10 +264,9 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
 
   const demoCleanScore = 68;
   const demoCleanScoreBreakdown: CleanScoreBreakdown = {
-    diversityScore: 75,
-    recencyScore: 60,
-    backlogConversionScore: 65,
-    sessionDepthScore: 70
+    completionRate: 75,
+    engagementFactor: 60,
+    recencyFactor: 65
   };
   const demoCleanTier = CLEAN_SCORE_TIERS.find(
     tier => demoCleanScore >= tier.range[0] && demoCleanScore <= tier.range[1]
@@ -259,7 +280,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
       avgDustScore: 29.7, // Legacy alias
       topDustContributors: demoTopContributors,
       cleanScore: demoCleanScore,
-      legacyCleanScoreBreakdown: demoLegacyBreakdown,
+      cleanScoreBreakdown: demoCleanScoreBreakdown,
       cleanTier: demoCleanTier,
       cleanStreak: 4,
       recentlyPlayedCount: 5,
@@ -276,7 +297,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     };
   }
 
-  // Combine basic data with detailed dust data and new clean score breakdowns
+  // Combine basic data with detailed dust data
   const combinedData: DustScoreData = {
     // Core dust score data
     dustScore: basicData?.dustScore || 0,
@@ -291,23 +312,21 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     avgDustScore: detailedDustData?.averageDustScore || 0, // Legacy alias
     topDustContributors: detailedDustData?.topDustContributors || [],
     
-    // Clean score data with new 4-factor system for authenticated users
+    // Clean score data
     cleanScore: basicData?.cleanScore || detailedDustData?.cleanScore || 0,
-    cleanScoreBreakdown: cleanScoreBreakdowns ? {
-      diversityScore: cleanScoreBreakdowns.diversityScore,
-      recencyScore: cleanScoreBreakdowns.recencyScore,
-      backlogConversionScore: cleanScoreBreakdowns.backlogConversionScore,
-      sessionDepthScore: cleanScoreBreakdowns.sessionDepthScore
-    } : undefined,
-    legacyCleanScoreBreakdown: detailedDustData?.legacyCleanScoreBreakdown,
+    cleanScoreBreakdown: detailedDustData?.cleanScoreBreakdown || {
+      completionRate: 0,
+      engagementFactor: 0,
+      recencyFactor: 0
+    },
     cleanTier: basicData?.cleanTier || detailedDustData?.cleanTier || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
-    cleanStreak: cleanScoreBreakdowns?.cleanStreakDays || detailedDustData?.cleanStreak || 0,
+    cleanStreak: detailedDustData?.cleanStreak || 0,
     cleanStreakMetadata: detailedDustData?.cleanStreakMetadata,
     
     // Additional metrics
     totalGames: basicData?.totalGames || detailedDustData?.totalGames || 0,
     unplayedGames: basicData?.unplayedGames || detailedDustData?.unplayedGames || 0,
-    recentlyPlayedCount: cleanScoreBreakdowns?.recentlyPlayedCount || detailedDustData?.recentlyPlayedCount || 0,
+    recentlyPlayedCount: detailedDustData?.recentlyPlayedCount || 0,
     recentlyPlayedUnplayed: basicData?.recentlyPlayedUnplayed || detailedDustData?.recentlyPlayedUnplayed
   };
 
