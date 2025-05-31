@@ -1,4 +1,3 @@
-
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -47,6 +46,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     error: basicDataError,
     refetch: refetchBasicData 
   } = useUnplayedData();
+  const { data: cleanScoreBreakdowns } = useCleanScoreBreakdowns();
 
   const { 
     data: detailedDustData, 
@@ -236,7 +236,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     enabled: !!user && !isDemo,
   });
 
-  // Enhanced demo mode data preparation with new 5-factor system
+  // Enhanced demo mode data preparation with new 4-factor system
   const demoDustBreakdown: DustScoreBreakdown = {
     qualityScore: 12,    // Average quality across library
     priceScore: 18,      // Mix of pricing tiers
@@ -264,9 +264,10 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
 
   const demoCleanScore = 68;
   const demoCleanScoreBreakdown: CleanScoreBreakdown = {
-    completionRate: 75,
-    engagementFactor: 60,
-    recencyFactor: 65
+    diversityScore: 75,
+    recencyScore: 60,
+    backlogConversionScore: 65,
+    sessionDepthScore: 70
   };
   const demoCleanTier = CLEAN_SCORE_TIERS.find(
     tier => demoCleanScore >= tier.range[0] && demoCleanScore <= tier.range[1]
@@ -297,7 +298,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     };
   }
 
-  // Combine basic data with detailed dust data
+  // Combine basic data with detailed dust data and new clean score breakdowns
   const combinedData: DustScoreData = {
     // Core dust score data
     dustScore: basicData?.dustScore || 0,
@@ -312,21 +313,27 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     avgDustScore: detailedDustData?.averageDustScore || 0, // Legacy alias
     topDustContributors: detailedDustData?.topDustContributors || [],
     
-    // Clean score data
+    // Clean score data with new 4-factor system
     cleanScore: basicData?.cleanScore || detailedDustData?.cleanScore || 0,
-    cleanScoreBreakdown: detailedDustData?.cleanScoreBreakdown || {
-      completionRate: 0,
-      engagementFactor: 0,
-      recencyFactor: 0
+    cleanScoreBreakdown: cleanScoreBreakdowns ? {
+      diversityScore: cleanScoreBreakdowns.diversityScore,
+      recencyScore: cleanScoreBreakdowns.recencyScore,
+      backlogConversionScore: cleanScoreBreakdowns.backlogConversionScore,
+      sessionDepthScore: cleanScoreBreakdowns.sessionDepthScore
+    } : detailedDustData?.cleanScoreBreakdown || {
+      diversityScore: 0,
+      recencyScore: 0,
+      backlogConversionScore: 0,
+      sessionDepthScore: 0
     },
     cleanTier: basicData?.cleanTier || detailedDustData?.cleanTier || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
-    cleanStreak: detailedDustData?.cleanStreak || 0,
+    cleanStreak: cleanScoreBreakdowns?.cleanStreakDays || detailedDustData?.cleanStreak || 0,
     cleanStreakMetadata: detailedDustData?.cleanStreakMetadata,
     
     // Additional metrics
     totalGames: basicData?.totalGames || detailedDustData?.totalGames || 0,
     unplayedGames: basicData?.unplayedGames || detailedDustData?.unplayedGames || 0,
-    recentlyPlayedCount: detailedDustData?.recentlyPlayedCount || 0,
+    recentlyPlayedCount: cleanScoreBreakdowns?.recentlyPlayedCount || detailedDustData?.recentlyPlayedCount || 0,
     recentlyPlayedUnplayed: basicData?.recentlyPlayedUnplayed || detailedDustData?.recentlyPlayedUnplayed
   };
 
