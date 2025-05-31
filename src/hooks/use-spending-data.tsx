@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +7,7 @@ import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { isGameUnplayed } from '@/utils/game-definitions';
 
 export interface GamePriceData {
   app_id: number;
@@ -69,12 +69,12 @@ export const useSpendingData = () => {
     }));
   }, [unifiedData]);
   
-  // Extract game IDs from unplayed data for querying - we need this regardless of demo mode
+  // UPDATED: Extract game IDs using standardized logic
   const gameIds = useMemo(() => {
     if (isUnplayedLoading || !gamesList?.length) return [];
     
     return gamesList
-      .filter(game => game.playtimeMinutes === 0)
+      .filter(game => isGameUnplayed(game.playtimeMinutes))
       .map(game => game.id);
   }, [gamesList, isUnplayedLoading]);
   
@@ -107,7 +107,7 @@ export const useSpendingData = () => {
     if (isDemo) {
       const topSpendingGames = gamesList
         ? gamesList
-            .filter(game => game.playtimeMinutes === 0)
+            .filter(game => isGameUnplayed(game.playtimeMinutes)) // UPDATED: Use standardized logic
             .map(game => ({
               id: game.id,
               title: game.name,
@@ -184,7 +184,7 @@ export const useSpendingData = () => {
           
         // Add to totals
         totalLibraryValue += price;
-        if (game.playtimeMinutes === 0) {
+        if (isGameUnplayed(game.playtimeMinutes)) { // UPDATED: Use standardized logic
           totalSpent += price;
           if (originalPrice) totalOriginalPrice += originalPrice;
         }
@@ -202,7 +202,7 @@ export const useSpendingData = () => {
       // Filter to only unplayed games for the spending list
       .filter(game => {
         const originalGame = gamesList.find(g => g.id === game.id);
-        return originalGame && originalGame.playtimeMinutes === 0;
+        return originalGame && isGameUnplayed(originalGame.playtimeMinutes); // UPDATED: Use standardized logic
       })
       // Sort by price (highest first)
       .sort((a, b) => b.price - a.price);
