@@ -2,6 +2,7 @@ import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
+import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   UnplayedDataType, 
@@ -22,7 +23,8 @@ import {
 } from '@/utils/dust-score-utils';
 import { 
   CLEAN_SCORE_TIERS, 
-  calculateCleanScore 
+  calculateCleanScore, 
+  calculateLegacyCleanScore 
 } from '@/utils/clean-score-utils';
 
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
@@ -170,7 +172,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         avgPlaytimeFactor 
       } = processDustBreakdowns(breakdowns);
 
-      // Calculate clean score metrics
+      // Calculate clean score metrics using legacy format for now
       const totalGames = userGamesWithDust.length;
       const playedGames = userGamesWithDust.filter(game =>
         (game.playtime_minutes || 0) > 0
@@ -188,31 +190,9 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         return lastPlayed >= thirtyDaysAgo;
       }).length;
 
-      // Calculate clean score using our enhanced calculation
-      const gamesList = userGamesWithDust.map(game => ({
-        id: game.game_id,
-        name: game.games?.name || '',
-        playtimeMinutes: game.playtime_minutes || 0,
-        lastPlayed: game.last_played_date,
-        added: game.acquisition_date,
-        // Add other required fields
-        image: '',
-        price: 0,
-        genres: game.games?.genres || [],
-        notes: null,
-        hidden: false,
-        releaseDate: game.games?.release_date,
-        metacritic: game.games?.metacritic_score,
-        categories: [],
-        completionEstimate: null,
-        mainStoryEstimate: null,
-        averageEstimate: null,
-        steamAppid: null,
-        howLongToBeatId: null,
-      }));
-
-      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
-        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
+      // Calculate clean score using legacy calculation
+      const { cleanScore, breakdown: legacyBreakdown, tier: cleanTier, cleanStreak } =
+        calculateLegacyCleanScore(playedGames, totalGames, totalPlaytimeHours, recentlyPlayedCount);
 
       return {
         dustScoreBreakdown: {
@@ -225,7 +205,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         topDustContributors: topContributors,
         averageDustScore: avgDustScore,
         cleanScore,
-        cleanScoreBreakdown,
+        legacyCleanScoreBreakdown: legacyBreakdown,
         cleanTier,
         cleanStreak,
         recentlyPlayedCount,
@@ -236,13 +216,11 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     enabled: !!user && !isDemo,
   });
 
-  // Enhanced demo mode data preparation with new 4-factor system
-  const demoDustBreakdown: DustScoreBreakdown = {
-    qualityScore: 12,    // Average quality across library
-    priceScore: 18,      // Mix of pricing tiers
-    ageScore: 15,        // Mix of old and new games
-    genreScore: 10,      // Common genres mostly
-    playtimeFactor: 0.85 // Some games played
+  // Enhanced demo mode data preparation with legacy clean score
+  const demoLegacyBreakdown = {
+    completionRate: 75,
+    engagementFactor: 60,
+    recencyFactor: 65
   };
 
   const demoTopContributors: GameDustData[] = demoData.library.map((game, index) => ({
@@ -281,7 +259,7 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
       avgDustScore: 29.7, // Legacy alias
       topDustContributors: demoTopContributors,
       cleanScore: demoCleanScore,
-      cleanScoreBreakdown: demoCleanScoreBreakdown,
+      legacyCleanScoreBreakdown: demoLegacyBreakdown,
       cleanTier: demoCleanTier,
       cleanStreak: 4,
       recentlyPlayedCount: 5,
@@ -313,19 +291,15 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     avgDustScore: detailedDustData?.averageDustScore || 0, // Legacy alias
     topDustContributors: detailedDustData?.topDustContributors || [],
     
-    // Clean score data with new 4-factor system
+    // Clean score data with new 4-factor system for authenticated users
     cleanScore: basicData?.cleanScore || detailedDustData?.cleanScore || 0,
     cleanScoreBreakdown: cleanScoreBreakdowns ? {
       diversityScore: cleanScoreBreakdowns.diversityScore,
       recencyScore: cleanScoreBreakdowns.recencyScore,
       backlogConversionScore: cleanScoreBreakdowns.backlogConversionScore,
       sessionDepthScore: cleanScoreBreakdowns.sessionDepthScore
-    } : detailedDustData?.cleanScoreBreakdown || {
-      diversityScore: 0,
-      recencyScore: 0,
-      backlogConversionScore: 0,
-      sessionDepthScore: 0
-    },
+    } : undefined,
+    legacyCleanScoreBreakdown: detailedDustData?.legacyCleanScoreBreakdown,
     cleanTier: basicData?.cleanTier || detailedDustData?.cleanTier || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
     cleanStreak: cleanScoreBreakdowns?.cleanStreakDays || detailedDustData?.cleanStreak || 0,
     cleanStreakMetadata: detailedDustData?.cleanStreakMetadata,

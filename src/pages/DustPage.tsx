@@ -1,239 +1,115 @@
-
-import { useState, useEffect } from 'react';
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { useAuth } from "@/context/AuthContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wind, RefreshCw } from "lucide-react";
-import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
-import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
-import TopDustContributors from "@/components/dust/TopDustContributors";
-import DustScorePerGame from "@/components/dust/DustScorePerGame";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/hooks/use-query-keys';
-import { useUserMetrics } from '@/hooks/use-user-metrics';
-import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
+import React from 'react';
+import { SteamLoader } from '@/components/SteamLoader';
+import DustScoreBreakdown from '@/components/dust/CleanScoreBreakdown';
+import DustScoreChart from '@/components/dust/DustScoreChart';
+import GameSuggestion from '@/components/dust/GameSuggestion';
+import GenreBreakdown from '@/components/dust/GenreBreakdown';
+import LibraryPreview from '@/components/dust/LibraryPreview';
+import ShelfLife from '@/components/dust/ShelfLife';
+import SpendingBreakdown from '@/components/dust/SpendingBreakdown';
+import { useDustScoreData } from '@/hooks/use-dust-score-data';
+import { useEnhancedSpendingData } from '@/hooks/use-spending-data';
 
 const DustPage = () => {
-  const [activeTab, setActiveTab] = useState("breakdown");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  
-  // Use Phase 2 hooks for real calculated data
-  const { data: userMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useUserMetrics();
-  const { data: dustBreakdowns, isLoading: breakdownsLoading, refetch: refetchBreakdowns } = useDustBreakdowns();
-  
-  const isLoading = metricsLoading || breakdownsLoading;
+  const { data: dustData, isLoading, error } = useDustScoreData();
+  const { data: enhancedSpendingData } = useEnhancedSpendingData();
 
-  // Debug logging for Phase 2 data
-  useEffect(() => {
-    console.log("DustPage Phase 2 - User Metrics:", userMetrics);
-    console.log("DustPage Phase 2 - Dust Breakdowns:", dustBreakdowns);
-  }, [userMetrics, dustBreakdowns]);
+  if (isLoading) {
+    return <SteamLoader />;
+  }
 
-  const refreshData = async () => {
-    setIsRefreshing(true);
-    toast.loading("Refreshing dust data...");
-    
-    try {
-      // Invalidate and refetch Phase 2 queries
-      await queryClient.invalidateQueries({ 
-        queryKey: queryKeys.userMetrics(user?.id)
-      });
-      await queryClient.invalidateQueries({ 
-        queryKey: queryKeys.dustBreakdowns(user?.id)
-      });
-      
-      // Explicitly refetch the data
-      if (refetchMetrics) {
-        await refetchMetrics();
-      }
-      if (refetchBreakdowns) {
-        await refetchBreakdowns();
-      }
-      
-      toast.success("Dust data refreshed successfully");
-    } catch (error) {
-      console.error("Error refreshing dust data:", error);
-      toast.error("Failed to refresh dust data");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  if (error) {
+    console.error('Error loading dust score data:', error);
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Error loading dust score data.</p>
+      </div>
+    );
+  }
 
-  // Process data for components - use real calculated values
-  const processedData = {
-    dustScore: userMetrics?.totalDustScore || 0,
-    dustScoreBreakdown: userMetrics ? {
-      // These will be real values when we have per-game breakdowns
-      qualityScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ageScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
-      priceScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ownershipScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
-      ageScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ageScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
-      genreScore: 7, // Default until we have genre scores in breakdowns
-      playtimeFactor: Number(((dustBreakdowns?.reduce((sum, game) => sum + game.playtimeFactor, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)).toFixed(2))
-    } : undefined,
-    topDustContributors: dustBreakdowns?.slice(0, 10).map(game => ({
-      id: game.gameId,
-      name: game.gameName,
-      dustScore: game.dustScore,
-      addedDate: '', // Will need to add this to breakdown table
-      releaseDate: game.releaseDate,
-      playtimeMinutes: game.playtimeMinutes,
-      image: game.imageUrl,
-      breakdown: {
-        qualityScore: game.ageScore, // Mapping until we have real quality scores
-        priceScore: game.ownershipScore, // Mapping until we have real price scores
-        ageScore: game.ageScore,
-        genreScore: 7, // Default
-        playtimeFactor: game.playtimeFactor
+  if (!dustData) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-400">No dust score data available.</p>
+      </div>
+    );
+  }
+
+  // Create a legacy breakdown for display compatibility
+  const legacyBreakdown = dustData.cleanScoreBreakdown 
+    ? {
+        completionRate: dustData.cleanScoreBreakdown.backlogConversionScore || 0,
+        engagementFactor: dustData.cleanScoreBreakdown.sessionDepthScore || 0,
+        recencyFactor: dustData.cleanScoreBreakdown.recencyScore || 0
       }
-    })) || [],
-    averageDustScore: userMetrics?.averageDustScore || 0,
-    totalGames: userMetrics?.totalGames || 0,
-    unplayedGames: userMetrics?.unplayedGames || 0,
-    cleanScore: userMetrics?.cleanScore || 0,
-    cleanScoreBreakdown: {
-      completionRate: 0.5, // Will need real data
-      engagementFactor: 0.3, // Will need real data
-      recencyFactor: 0.2 // Will need real data
-    },
-    cleanStreak: userMetrics?.cleanStreak || 0,
-    recentlyPlayedCount: userMetrics?.recentlyPlayedCount || 0,
-    recentlyPlayedUnplayed: 0, // Will need real data
-    cleanStreakMetadata: undefined // Will need real data
-  };
+    : {
+        completionRate: 0,
+        engagementFactor: 0,
+        recencyFactor: 0
+      };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow w-full navbar-offset py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold font-space text-unplayed-mint mb-2">
-                Your Dust Report™
-              </h1>
-              <p className="text-lg text-gray-300">
-                A totally scientific breakdown of your glorious neglect.
-              </p>
-            </div>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    onClick={refreshData} 
-                    disabled={isRefreshing}
-                    className="text-unplayed-mint border-unplayed-mint/30 bg-unplayed-mint/10 hover:bg-unplayed-mint/20"
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    {isRefreshing ? "Refreshing..." : "Refresh Data"}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Update the dust report with latest data</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-24">
-              <Loader2 className="w-8 h-8 text-unplayed-mint animate-spin" />
-              <span className="ml-2 text-lg text-gray-300">Computing dust particles...</span>
-            </div>
-          ) : !user ? (
-            <div className="terminal-container p-8 text-center">
-              <Wind className="w-16 h-16 mx-auto text-unplayed-mint mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Connect Your Account</h2>
-              <p className="text-gray-400 mb-6">
-                Sign in with Steam to see your personalized dust report.
-              </p>
-              <Button onClick={() => navigate("/")}>
-                Return to Home
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Tabs 
-                defaultValue="breakdown" 
-                value={activeTab} 
-                onValueChange={setActiveTab}
-                className="space-y-6"
-              >
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
-                  <TabsTrigger 
-                    value="breakdown"
-                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
-                  >
-                    Breakdown
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="clean"
-                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
-                  >
-                    Clean Score
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="contributors"
-                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
-                  >
-                    Top Dust
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="analysis"
-                    className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
-                  >
-                    Analysis
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="breakdown" className="space-y-4">
-                  <DustScoreBreakdown 
-                    totalScore={processedData.dustScore}
-                    breakdown={processedData.dustScoreBreakdown}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="clean" className="space-y-4">
-                  <CleanScoreBreakdown
-                    cleanScore={processedData.cleanScore}
-                    breakdown={processedData.cleanScoreBreakdown}
-                    cleanStreak={processedData.cleanStreak}
-                    recentlyPlayedCount={processedData.recentlyPlayedCount}
-                    recentlyPlayedUnplayed={processedData.recentlyPlayedUnplayed}
-                    cleanStreakMetadata={processedData.cleanStreakMetadata}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="contributors" className="space-y-4">
-                  <TopDustContributors 
-                    contributors={processedData.topDustContributors}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="analysis" className="space-y-4">
-                  <DustScorePerGame 
-                    avgDustScore={processedData.averageDustScore}
-                    totalGames={processedData.totalGames}
-                    unplayedGames={processedData.unplayedGames}
-                  />
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      {/* Header Section */}
+      <header className="py-6 border-b border-gray-800">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-semibold text-white text-center">
+            Your Library Dust Score: <span className="text-unplayed-mint">{dustData.dustScore}</span>
+          </h1>
+          <p className="text-gray-400 text-center mt-2">
+            A measure of how well you're utilizing your Steam library
+          </p>
         </div>
+      </header>
+
+      <main className="container mx-auto px-4 pb-8">
+        {/* Dust Score Chart Section */}
+        <section className="mb-12">
+          <DustScoreChart dustScore={dustData.dustScore} breakdown={dustData.dustScoreBreakdown} />
+        </section>
+
+        {/* Game Suggestion Section */}
+        <section className="mb-12">
+          <GameSuggestion topDustContributors={dustData.topDustContributors} />
+        </section>
+
+        {/* Genre Breakdown Section */}
+        <section className="mb-12">
+          <GenreBreakdown />
+        </section>
+
+        {/* Spending Breakdown Section */}
+        <section className="mb-12">
+          <SpendingBreakdown enhancedSpendingData={enhancedSpendingData} />
+        </section>
+
+        {/* Library Preview Section */}
+        <section className="mb-12">
+          <LibraryPreview />
+        </section>
+
+        {/* Shelf Life Section */}
+        <section className="mb-12">
+          <ShelfLife />
+        </section>
+
+        {/* Clean Score Section */}
+        <section className="mb-12">
+          <CleanScoreBreakdown 
+            cleanScore={dustData.cleanScore || 0}
+            breakdown={legacyBreakdown}
+            cleanStreak={dustData.cleanStreak}
+            recentlyPlayedCount={dustData.recentlyPlayedCount}
+            recentlyPlayedUnplayed={dustData.recentlyPlayedUnplayed}
+            cleanStreakMetadata={dustData.cleanStreakMetadata}
+          />
+        </section>
+
+        {/* Footer Section */}
+        <footer className="text-center text-gray-500 mt-8">
+          <p>&copy; 2023 Dust Score. All rights reserved.</p>
+        </footer>
       </main>
-      
-      <Footer />
     </div>
   );
 };

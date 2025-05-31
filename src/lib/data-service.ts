@@ -38,7 +38,7 @@ export const getUnplayedDataService = {
       library: [],
       gamesList: [],
       cleanScore: 0,
-      cleanScoreBreakdown: {
+      legacyCleanScoreBreakdown: {
         completionRate: 0,
         engagementFactor: 0,
         recencyFactor: 0

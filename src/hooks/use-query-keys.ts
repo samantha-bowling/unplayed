@@ -1,3 +1,4 @@
+
 export const queryKeys = {
   userMetrics: (userId?: string) => ['userMetrics', userId],
   dustBreakdowns: (userId?: string) => ['dustBreakdowns', userId],
@@ -17,4 +18,16 @@ export const queryKeys = {
   profile: (userId?: string) => ['profile', userId],
   adminStats: () => ['adminStats'],
   batchProcessor: () => ['batchProcessor'],
+  libraryGamesCount: (userId?: string) => ['libraryGamesCount', userId],
+  paginatedLibraryGames: (userId?: string, page?: number, limit?: number, filters?: any) => 
+    ['paginatedLibraryGames', userId, page, limit, filters],
 } as const;
+
+export type FilterOptions = {
+  search?: string;
+  genre?: string;
+  sortBy?: 'name' | 'playtime' | 'dust_score' | 'release_date';
+  sortOrder?: 'asc' | 'desc';
+  showUnplayed?: boolean;
+  showPlayed?: boolean;
+};

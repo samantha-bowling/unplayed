@@ -55,7 +55,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       library: [],
       gamesList: [],
       cleanScore: 0,
-      cleanScoreBreakdown: {
+      legacyCleanScoreBreakdown: {
         completionRate: 0,
         engagementFactor: 0,
         recencyFactor: 0
@@ -118,7 +118,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       library: formattedLibrary || [],
       gamesList,
       cleanScore: games.cleanScore || 0,
-      cleanScoreBreakdown: games.cleanScoreBreakdown || {
+      legacyCleanScoreBreakdown: games.cleanScoreBreakdown || {
         completionRate: 0,
         engagementFactor: 0,
         recencyFactor: 0
@@ -147,7 +147,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
     library: [],
     gamesList,
     cleanScore: 0,
-    cleanScoreBreakdown: {
+    legacyCleanScoreBreakdown: {
       completionRate: 0,
       engagementFactor: 0,
       recencyFactor: 0
