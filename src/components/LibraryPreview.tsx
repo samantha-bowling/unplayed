@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { GameCard } from './GameCard';
+import GameCard from './GameCard';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +40,19 @@ const LibraryPreview = () => {
 
   const gamesToShow = unplayedGames.slice(0, 6);
 
+  // Handler functions for GameCard (preview doesn't need full functionality)
+  const handleMarkAsPlayed = () => {
+    console.log('Mark as played - preview mode');
+  };
+
+  const handleToggleHidden = () => {
+    console.log('Toggle hidden - preview mode');
+  };
+
+  const handleSaveNote = (note: string) => {
+    console.log('Save note - preview mode:', note);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -58,21 +71,18 @@ const LibraryPreview = () => {
         {gamesToShow.map((game) => (
           <GameCard
             key={game.id}
-            game={{
-              id: game.game_id,
-              name: game.games.name,
-              image: game.games.image_url || game.games.header_image,
-              playtimeMinutes: game.playtime_minutes || 0,
-              dustScore: game.dust_score || 0,
-              lastPlayedDate: game.last_played_date,
-              addedDate: game.acquisition_date,
-              price: game.games.price_cents ? game.games.price_cents / 100 : 0,
-              genres: game.games.genres || [],
-              metacritic: game.games.metacritic_score,
-              releaseDate: game.games.release_date,
-            }}
-            showPrice={false}
-            compact={true}
+            id={game.id}
+            gameId={game.game_id}
+            title={game.games.name}
+            imageUrl={game.games.image_url}
+            headerImage={game.games.header_image}
+            dustScore={game.dust_score}
+            playtimeMinutes={game.playtime_minutes}
+            isHidden={game.hidden}
+            notes={game.notes}
+            onMarkAsPlayed={handleMarkAsPlayed}
+            onToggleHidden={handleToggleHidden}
+            onSaveNote={handleSaveNote}
           />
         ))}
       </div>
