@@ -53,7 +53,6 @@ const Index = () => {
   const safeData = {
     unplayedGames: unplayedData?.unplayedGames || 0,
     totalGames: unplayedData?.totalGames || 0,
-    dustScore: unplayedData?.dustScore || 0,
     unplayedSpent: unplayedData?.unplayedSpent || 0,
     cleanScore: unplayedData?.cleanScore || 0,
     cleanTier: unplayedData?.cleanTier || null
@@ -342,7 +341,7 @@ const Index = () => {
               <>
                 <div className="dashboard-grid">
                   <UnplayedCounter count={safeData.unplayedGames} />
-                  <DustScoreMeter score={safeData.dustScore} />
+                  <DustScoreMeter />
                   <SpendingEstimate />
                 </div>
                 <div className="mt-4">
