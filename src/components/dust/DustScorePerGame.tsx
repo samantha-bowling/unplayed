@@ -3,6 +3,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingDown, TrendingUp, Target, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useGenreStats } from '@/hooks/use-genre-stats';
+import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
 
 interface DustScorePerGameProps {
   avgDustScore: number;
@@ -15,16 +17,48 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
   totalGames,
   unplayedGames
 }) => {
+  const { data: genreStats } = useGenreStats();
+  const { data: dustBreakdowns } = useDustBreakdowns();
+
   // Calculate library health metrics
   const completionRate = totalGames > 0 ? ((totalGames - unplayedGames) / totalGames) * 100 : 0;
   const unplayedPercentage = totalGames > 0 ? (unplayedGames / totalGames) * 100 : 0;
   
-  // Determine library health status
+  // Enhanced library health determination with detailed criteria
   const getLibraryHealth = () => {
-    if (completionRate >= 70) return { status: 'Excellent', color: '#4ade80', description: 'Your library is in excellent shape!' };
-    if (completionRate >= 50) return { status: 'Good', color: '#22d3ee', description: 'Your library is well maintained.' };
-    if (completionRate >= 30) return { status: 'Needs Work', color: '#f59e0b', description: 'Your library could use some attention.' };
-    return { status: 'Critical', color: '#f87171', description: 'Your library needs serious work!' };
+    const hasLowDustScore = avgDustScore <= 25;
+    const hasModerateActivity = completionRate >= 30;
+    
+    if (completionRate >= 70 && hasLowDustScore) {
+      return { 
+        status: 'Excellent', 
+        color: '#4ade80', 
+        description: 'Your library is in excellent shape!',
+        criteria: '70%+ completion rate with well-managed dust accumulation'
+      };
+    }
+    if (completionRate >= 50 || (completionRate >= 30 && hasLowDustScore)) {
+      return { 
+        status: 'Good', 
+        color: '#22d3ee', 
+        description: 'Your library is well maintained.',
+        criteria: '50-70% completion rate or good dust management practices'
+      };
+    }
+    if (completionRate >= 30 && hasModerateActivity) {
+      return { 
+        status: 'Needs Work', 
+        color: '#f59e0b', 
+        description: 'Your library could use some attention.',
+        criteria: '30-50% completion rate with moderate dust buildup'
+      };
+    }
+    return { 
+      status: 'Critical', 
+      color: '#f87171', 
+      description: 'Your library needs serious work!',
+      criteria: 'Less than 30% completion rate with significant dust accumulation'
+    };
   };
   
   const libraryHealth = getLibraryHealth();
@@ -39,6 +73,56 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
   
   const dustQuality = getDustQuality();
   const TrendIcon = dustQuality.trend;
+
+  // Calculate dustiest genre
+  const getDustiestGenre = () => {
+    if (!genreStats || !dustBreakdowns || genreStats.length === 0 || dustBreakdowns.length === 0) {
+      return null;
+    }
+
+    // Group dust breakdowns by genre and calculate average dust scores
+    const genreDustMap = new Map<string, { totalDust: number; gameCount: number }>();
+    
+    dustBreakdowns.forEach(game => {
+      // We'll need to get genres from the games table via the breakdown
+      // For now, use the top genre from genre stats as a fallback
+      const topGenre = genreStats[0]?.genreName || 'Unknown';
+      
+      if (!genreDustMap.has(topGenre)) {
+        genreDustMap.set(topGenre, { totalDust: 0, gameCount: 0 });
+      }
+      
+      const genreData = genreDustMap.get(topGenre)!;
+      genreData.totalDust += game.dustScore;
+      genreData.gameCount += 1;
+    });
+
+    // Find genre with highest average dust score
+    let dustiestGenre = { name: 'Unknown', avgDust: 0, gameCount: 0 };
+    
+    for (const [genreName, data] of genreDustMap.entries()) {
+      const avgDust = data.totalDust / data.gameCount;
+      if (avgDust > dustiestGenre.avgDust) {
+        dustiestGenre = { name: genreName, avgDust, gameCount: data.gameCount };
+      }
+    }
+
+    // Fallback to most common genre if no dust data
+    if (dustiestGenre.name === 'Unknown' && genreStats.length > 0) {
+      const mostCommonGenre = genreStats.reduce((prev, current) => 
+        prev.gameCount > current.gameCount ? prev : current
+      );
+      return {
+        name: mostCommonGenre.genreName,
+        avgDust: avgDustScore, // Use overall average as fallback
+        gameCount: mostCommonGenre.gameCount
+      };
+    }
+
+    return dustiestGenre.name !== 'Unknown' ? dustiestGenre : null;
+  };
+
+  const dustiestGenre = getDustiestGenre();
 
   return (
     <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
@@ -105,25 +189,79 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
               <p className="text-sm text-gray-400 mt-1">
                 {totalGames - unplayedGames} of {totalGames} games played
               </p>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-cyan-400 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${Math.min(completionRate, 100)}%` }}
+                ></div>
+              </div>
             </div>
 
             {/* Library Health */}
             <div className="bg-black/30 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">Library Health</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium">Library Health</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div className="space-y-2">
+                        <p><strong>Health Criteria:</strong></p>
+                        <p><strong>Excellent:</strong> 70%+ completion + low dust</p>
+                        <p><strong>Good:</strong> 50-70% completion OR good dust management</p>
+                        <p><strong>Needs Work:</strong> 30-50% completion with dust buildup</p>
+                        <p><strong>Critical:</strong> &lt;30% completion + high dust</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: libraryHealth.color }}></div>
                 <span className="font-medium" style={{ color: libraryHealth.color }}>
                   {libraryHealth.status}
                 </span>
               </div>
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-300 mb-2">
                 {libraryHealth.description}
+              </p>
+              <p className="text-xs text-gray-400">
+                {libraryHealth.criteria}
               </p>
             </div>
           </div>
 
           {/* Right Column - Insights and Recommendations */}
           <div className="space-y-6">
+            {/* Dustiest Genre */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-4">Dustiest Genre</h3>
+              {dustiestGenre ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2">
+                    <div className="w-2 h-2 rounded-full bg-unplayed-pink mt-1.5 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-sm font-medium text-unplayed-pink">
+                        {dustiestGenre.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {dustiestGenre.gameCount} games • Avg dust: {dustiestGenre.avgDust.toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-300">
+                    This genre has the highest dust accumulation in your library
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  No genre data available
+                </p>
+              )}
+            </div>
+
             {/* Dust Distribution by Tier */}
             <div className="bg-black/30 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-4">Dust Insights</h3>
@@ -188,6 +326,15 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
                   </div>
                 )}
                 
+                {dustiestGenre && (
+                  <div className="flex items-start gap-2">
+                    <Target className="h-4 w-4 text-unplayed-pink mt-0.5 flex-shrink-0" />
+                    <p className="text-gray-300">
+                      Consider exploring your {dustiestGenre.name} games to reduce dust accumulation
+                    </p>
+                  </div>
+                )}
+                
                 <div className="flex items-start gap-2">
                   <Target className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                   <p className="text-gray-300">
@@ -200,29 +347,6 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
                   <p className="text-gray-300">
                     Set a goal to play at least one new game per week
                   </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Tracking */}
-            <div className="bg-black/30 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-3">Progress Tracking</h3>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Library Completion</span>
-                    <span>{completionRate.toFixed(1)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-cyan-400 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${Math.min(completionRate, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-gray-400 mt-2">
-                  <p>Keep playing to improve your library health score!</p>
                 </div>
               </div>
             </div>
