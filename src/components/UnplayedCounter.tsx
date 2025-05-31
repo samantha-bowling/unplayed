@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useAnimatedCounter } from '@/hooks/use-animated-counter';
 import {
   Tooltip,
@@ -23,16 +23,32 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   compact = false,
   isDemo = false
 }: UnplayedCounterProps) => {
-  const { data: dashboardData } = useDashboardData();
-  const { isDemo: contextIsDemo } = useDemoMode();
+  const { data: userMetrics } = useUserMetrics();
+  const { isDemo: contextIsDemo, demoData } = useDemoMode();
   const { user } = useAuth();
 
   // Memoized base calculations
   const calculatedData = useMemo(() => {
-    const actualCount = count ?? dashboardData.unplayedGames;
-    const totalGames = dashboardData.totalGames;
-    const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     const isDemoMode = isDemo || contextIsDemo;
+    
+    // Use demo data if in demo mode
+    if (isDemoMode) {
+      const actualCount = count ?? demoData.unplayedGames;
+      const totalGames = demoData.totalGames;
+      const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
+      
+      return {
+        actualCount,
+        totalGames,
+        unplayedPercentage,
+        isDemoMode
+      };
+    }
+    
+    // Use Phase 2 user metrics data
+    const actualCount = count ?? userMetrics?.unplayedGames ?? 0;
+    const totalGames = userMetrics?.totalGames ?? 0;
+    const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     
     return {
       actualCount,
@@ -40,7 +56,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       unplayedPercentage,
       isDemoMode
     };
-  }, [count, dashboardData.unplayedGames, dashboardData.totalGames, isDemo, contextIsDemo]);
+  }, [count, userMetrics, isDemo, contextIsDemo, demoData]);
 
   // Animated counters with demo-aware speed
   const animatedCount = useAnimatedCounter({
