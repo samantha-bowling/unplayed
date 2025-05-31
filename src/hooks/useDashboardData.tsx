@@ -4,6 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useSpendingMetrics } from '@/hooks/useSpendingMetrics';
+import { useGenreStats } from '@/hooks/use-genre-stats';
+import { useShelfLifeData } from '@/hooks/use-shelf-life-data';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateCleanScore } from '@/utils/clean-score-utils';
 
@@ -26,6 +28,8 @@ export const useDashboardData = () => {
   const { isDemo, demoData } = useDemoMode();
   const { data: userMetrics, isLoading: userMetricsLoading } = useUserMetrics();
   const { data: spendingMetrics, isLoading: spendingLoading } = useSpendingMetrics();
+  const { data: genreStats, isLoading: genreStatsLoading } = useGenreStats();
+  const { data: shelfLifeData, isLoading: shelfLifeLoading } = useShelfLifeData();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.unplayedData(user?.id),
@@ -64,6 +68,24 @@ export const useDashboardData = () => {
         };
       }
 
+      // Transform genre stats to the expected format
+      const transformedGenres = (genreStats || []).map(stat => ({
+        name: stat.genreName,
+        value: stat.gameCount,
+        color: stat.colorHex
+      }));
+
+      // Transform shelf life data to the expected format
+      const transformedShelfLife = (shelfLifeData || []).map(game => ({
+        id: game.gameId,
+        name: game.gameName,
+        release_date: game.releaseDate,
+        years_old: game.yearsOld,
+        playtime_minutes: game.playtimeMinutes,
+        rank: game.rank,
+        image_url: game.imageUrl
+      }));
+
       console.log('Dashboard data compilation (using userMetrics):', {
         unplayedGames: userMetrics.unplayedGames,
         totalGames: userMetrics.totalGames,
@@ -71,6 +93,8 @@ export const useDashboardData = () => {
         dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames),
         totalPlaytime: userMetrics.totalPlaytimeHours,
         recentlyPlayedCount: userMetrics.recentlyPlayedCount,
+        genresCount: transformedGenres.length,
+        shelfLifeCount: transformedShelfLife.length,
         source: 'userMetrics'
       });
 
@@ -84,11 +108,11 @@ export const useDashboardData = () => {
         cleanScore: userMetrics.cleanScore,
         recentlyPlayedCount: userMetrics.recentlyPlayedCount,
         totalPlaytime: userMetrics.totalPlaytimeHours,
-        genres: [], // Would need to fetch from genre stats if needed
-        shelfLife: [], // Would need to fetch from shelf life data if needed
+        genres: transformedGenres,
+        shelfLife: transformedShelfLife,
       };
     },
-    enabled: isDemo || (!!user && !userMetricsLoading && !spendingLoading),
+    enabled: isDemo || (!!user && !userMetricsLoading && !spendingLoading && !genreStatsLoading && !shelfLifeLoading),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -109,7 +133,7 @@ export const useDashboardData = () => {
       genres: [],
       shelfLife: [],
     },
-    isLoading: isLoading || userMetricsLoading || spendingLoading,
+    isLoading: isLoading || userMetricsLoading || spendingLoading || genreStatsLoading || shelfLifeLoading,
     error,
     refetch,
     lastRefreshed,
