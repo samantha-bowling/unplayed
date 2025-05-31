@@ -1,28 +1,44 @@
 import { GenreData } from '@/types/unplayed-data.types';
 
-// Enhanced genre color mapping
+// Rainbow colors for consistent theming across genre components
+const RAINBOW_COLORS = [
+  '#ff6b6b', // red
+  '#f97316', // orange  
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#a855f7', // purple
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+  '#f59e0b', // amber
+  '#8b5cf6', // violet
+];
+
+// Enhanced genre color mapping using rainbow colors
 const GENRE_COLORS: Record<string, string> = {
-  'Action': '#ff6b6b',
-  'Adventure': '#48dbfb',
-  'RPG': '#a55eea',
-  'Strategy': '#8e44ad',
-  'Simulation': '#2ecc71',
-  'Sports': '#f39c12',
-  'Racing': '#e74c3c',
-  'Indie': '#3498db',
-  'Casual': '#1abc9c',
-  'Free to Play': '#9b59b6',
-  'Massively Multiplayer': '#2980b9',
-  'Early Access': '#f1c40f',
-  'Platformer': '#e67e22',
-  'Puzzle': '#00b894',
-  'Shooter': '#d63031',
-  'Visual Novel': '#6c5ce7',
-  'Card Game': '#00cec9',
-  'Survival': '#fdcb6e',
-  'Horror': '#636e72',
-  'Fighting': '#e84393',
-  'Point & Click': '#74b9ff',
+  'Action': RAINBOW_COLORS[0],
+  'Adventure': RAINBOW_COLORS[1],
+  'RPG': RAINBOW_COLORS[2],
+  'Strategy': RAINBOW_COLORS[3],
+  'Simulation': RAINBOW_COLORS[4],
+  'Sports': RAINBOW_COLORS[5],
+  'Racing': RAINBOW_COLORS[6],
+  'Indie': RAINBOW_COLORS[7],
+  'Casual': RAINBOW_COLORS[8],
+  'Free to Play': RAINBOW_COLORS[9],
+  'Massively Multiplayer': RAINBOW_COLORS[10],
+  'Early Access': RAINBOW_COLORS[11],
+  'Platformer': RAINBOW_COLORS[0],
+  'Puzzle': RAINBOW_COLORS[1],
+  'Shooter': RAINBOW_COLORS[2],
+  'Visual Novel': RAINBOW_COLORS[3],
+  'Card Game': RAINBOW_COLORS[4],
+  'Survival': RAINBOW_COLORS[5],
+  'Horror': RAINBOW_COLORS[6],
+  'Fighting': RAINBOW_COLORS[7],
+  'Point & Click': RAINBOW_COLORS[8],
   'Other': '#95a5a6'
 };
 
@@ -30,15 +46,12 @@ const getGenreColor = (genre: string, index: number): string => {
   if (GENRE_COLORS[genre]) {
     return GENRE_COLORS[genre];
   }
-
-  const fallbackColors = [
-    '#A3F7BF', '#EF5DFF', '#FFD866', '#FF3C38', '#61DAFB', '#6C757D'
-  ];
-  return fallbackColors[index % fallbackColors.length];
+  
+  return RAINBOW_COLORS[index % RAINBOW_COLORS.length];
 };
 
 /**
- * Efficiently processes genres with consolidation of genres under 5%
+ * Efficiently processes genres with consolidation of genres under 10%
  */
 export const processGenres = (genreCounts: Map<string, number>): GenreData[] => {
   // Convert and sort in single operation
@@ -47,15 +60,15 @@ export const processGenres = (genreCounts: Map<string, number>): GenreData[] => 
 
   const totalGames = Array.from(genreCounts.values()).reduce((sum, count) => sum + count, 0);
   
-  // Find genres that represent 5% or more
+  // Find genres that represent 10% or more
   const significantGenres: GenreData[] = [];
   let otherCount = 0;
 
   sortedGenres.forEach(([name, value], index) => {
     const percentage = (value / totalGames) * 100;
     
-    if (percentage >= 5 && significantGenres.length < 6) {
-      // Keep significant genres (5% or more) up to 6 total
+    if (percentage >= 10 && significantGenres.length < 6) {
+      // Keep significant genres (10% or more) up to 6 total
       significantGenres.push({
         name,
         value,
@@ -96,3 +109,6 @@ export const countGenres = (data: any[]): Map<string, number> => {
   
   return genreCounts;
 };
+
+// Export rainbow colors for use in other components
+export { RAINBOW_COLORS };

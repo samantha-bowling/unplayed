@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -8,6 +7,7 @@ import { useGenreStats } from '@/hooks/use-genre-stats';
 import { useShelfLifeData } from '@/hooks/use-shelf-life-data';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateCleanScore } from '@/utils/clean-score-utils';
+import { processGenres } from '@/utils/genre-processing';
 
 export interface DashboardData {
   unplayedGames: number;
@@ -68,12 +68,15 @@ export const useDashboardData = () => {
         };
       }
 
-      // Transform genre stats to the expected format
-      const transformedGenres = (genreStats || []).map(stat => ({
-        name: stat.genreName,
-        value: stat.gameCount,
-        color: stat.colorHex
-      }));
+      // Process and consolidate genre stats using the utility
+      let transformedGenres = [];
+      if (genreStats && genreStats.length > 0) {
+        const genreCounts = new Map<string, number>();
+        genreStats.forEach(stat => {
+          genreCounts.set(stat.genreName, stat.gameCount);
+        });
+        transformedGenres = processGenres(genreCounts);
+      }
 
       // Transform shelf life data to the expected format
       const transformedShelfLife = (shelfLifeData || []).map(game => ({

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Worm, HelpCircle } from 'lucide-react';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RAINBOW_COLORS } from '@/utils/genre-processing';
 
 const GenreWordCloud = () => {
   const { games: libraryGames } = useLibraryData();
@@ -34,8 +35,8 @@ const GenreWordCloud = () => {
     return baseSize + (maxSize - baseSize) * ratio;
   };
 
-  // Rainbow colors for the inchworm effect
-  const rainbowColors = [
+  // Convert rainbow colors to Tailwind classes
+  const rainbowClasses = [
     'text-red-400',
     'text-orange-400', 
     'text-yellow-400',
@@ -50,7 +51,7 @@ const GenreWordCloud = () => {
     'text-emerald-400',
   ];
 
-  const getRainbowColor = (index: number) => rainbowColors[index % rainbowColors.length];
+  const getRainbowClass = (index: number) => rainbowClasses[index % rainbowClasses.length];
 
   return (
     <Card className="bg-black/20 border border-gray-700">
@@ -81,7 +82,7 @@ const GenreWordCloud = () => {
                 <Tooltip key={genre.genre}>
                   <TooltipTrigger asChild>
                     <span
-                      className={`font-semibold cursor-help transition-all duration-300 hover:scale-110 hover:drop-shadow-lg ${getRainbowColor(index)}`}
+                      className={`font-semibold cursor-help transition-all duration-300 hover:scale-110 hover:drop-shadow-lg ${getRainbowClass(index)}`}
                       style={{
                         fontSize: `${getFontSize(genre.count)}px`,
                         lineHeight: '1.2',
