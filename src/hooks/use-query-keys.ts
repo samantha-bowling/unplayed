@@ -1,4 +1,3 @@
-
 // FilterOptions type for shared use across hooks
 export interface FilterOptions {
   search: string;
@@ -41,6 +40,8 @@ export const queryKeys = {
     sortDirection?: string
   ) => ['paginated-library-games', userId, page, pageSize, filters, sortBy, sortDirection] as const,
 
+  spendingMetrics: (userId?: string) => ['spendingMetrics', userId] as const,
+  
   helpers: {
     allUserData: (userId: string) => {
       return [

@@ -686,6 +686,66 @@ export type Database = {
           },
         ]
       }
+      user_spending_metrics: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          currency: string
+          free_games: number
+          games_missing_price_data: number
+          games_with_price_data: number
+          id: string
+          last_calculated: string
+          paid_games: number
+          total_games: number
+          total_saved_cents: number | null
+          total_spent_cents: number
+          unplayed_games: number
+          unplayed_saved_cents: number | null
+          unplayed_spent_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          currency?: string
+          free_games?: number
+          games_missing_price_data?: number
+          games_with_price_data?: number
+          id?: string
+          last_calculated?: string
+          paid_games?: number
+          total_games?: number
+          total_saved_cents?: number | null
+          total_spent_cents?: number
+          unplayed_games?: number
+          unplayed_saved_cents?: number | null
+          unplayed_spent_cents?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          currency?: string
+          free_games?: number
+          games_missing_price_data?: number
+          games_with_price_data?: number
+          id?: string
+          last_calculated?: string
+          paid_games?: number
+          total_games?: number
+          total_saved_cents?: number | null
+          total_spent_cents?: number
+          unplayed_games?: number
+          unplayed_saved_cents?: number | null
+          unplayed_spent_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string
@@ -746,6 +806,10 @@ export type Database = {
           genres?: string[]
           metacritic_score?: number
         }
+        Returns: Json
+      }
+      calculate_user_spending_metrics: {
+        Args: { p_user_id: string }
         Returns: Json
       }
       can_user_refresh_prices: {
@@ -813,6 +877,10 @@ export type Database = {
       update_leaderboard_dust_rankings: {
         Args: { snapshot_timestamp: string }
         Returns: undefined
+      }
+      upsert_user_spending_metrics: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       validate_and_clean_game_price: {
         Args: { price_cents: number }

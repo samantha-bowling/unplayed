@@ -8,6 +8,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
+import { useSpendingMetrics } from '@/hooks/useSpendingMetrics';
 import DataErrorBoundary from '@/components/DataErrorBoundary';
 
 import Header from "../components/Header";
@@ -59,6 +60,7 @@ const IndexOptimized = () => {
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
+  const { refreshMetrics: refreshSpendingMetrics } = useSpendingMetrics();
 
   // Memoized loading state
   const isLoading = useMemo(() => profileLoading && user, [profileLoading, user]);
@@ -86,8 +88,9 @@ const IndexOptimized = () => {
       // Explicit refetch of dashboard data
       refetch?.();
       
-      // Refresh profile
+      // Refresh profile and spending metrics
       refreshProfile(true);
+      refreshSpendingMetrics();
       
       // Success notification
       setTimeout(() => {
@@ -96,7 +99,7 @@ const IndexOptimized = () => {
         });
       }, 2000);
     }, 1000);
-  }, [user?.id, queryKeys, queryClient, refetch, refreshProfile]);
+  }, [user?.id, queryKeys, queryClient, refetch, refreshProfile, refreshSpendingMetrics]);
 
   // Enhanced import function with improved UX
   const importSteamLibrary = useCallback(async () => {

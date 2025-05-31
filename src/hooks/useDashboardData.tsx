@@ -1,9 +1,8 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
-import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
+import { useSpendingMetrics } from '@/hooks/useSpendingMetrics';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateCleanScore } from '@/utils/clean-score-utils';
 
@@ -25,7 +24,7 @@ export const useDashboardData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
   const { data: unplayedData, isLoading: unplayedLoading } = useUnplayedData();
-  const { data: spendingData, isLoading: spendingLoading } = useEnhancedSpendingData();
+  const { data: spendingMetrics, isLoading: spendingLoading } = useSpendingMetrics();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.unplayedData(user?.id),
@@ -47,8 +46,8 @@ export const useDashboardData = () => {
         };
       }
 
-      // For authenticated users, combine unplayed data with enhanced spending data
-      if (!unplayedData || !spendingData) {
+      // For authenticated users, combine unplayed data with spending metrics
+      if (!unplayedData || !spendingMetrics) {
         return {
           unplayedGames: 0,
           totalGames: 0,
@@ -79,21 +78,21 @@ export const useDashboardData = () => {
 
       console.log('Dashboard data compilation:', {
         unplayedGames: unplayedData.unplayedGames,
-        unplayedSpent: spendingData.totalSpent,
-        totalSpent: unplayedData.totalSpent,
+        unplayedSpent: spendingMetrics.unplayedSpentDollars,
+        totalSpent: spendingMetrics.totalSpentDollars,
         totalPlaytime: unplayedData.totalPlaytime,
         dustScore: unplayedData.dustScore,
         dustScoreSource: 'unplayedData.dustScore',
         cleanScore: cleanScore,
-        spendingConfidence: spendingData.confidence
+        spendingConfidence: spendingMetrics.confidence
       });
 
       return {
         unplayedGames: unplayedData.unplayedGames,
         totalGames: unplayedData.totalGames,
         dustScore: unplayedData.dustScore, // Use actual dust score from unplayed data
-        totalSpent: unplayedData.totalSpent,
-        unplayedSpent: spendingData.totalSpent,
+        totalSpent: spendingMetrics.totalSpentDollars,
+        unplayedSpent: spendingMetrics.unplayedSpentDollars,
         potentialGameplayHours: unplayedData.potentialGameplayHours,
         cleanScore: cleanScore, // Use calculated clean score
         recentlyPlayedCount: unplayedData.recentlyPlayedCount,
@@ -107,7 +106,7 @@ export const useDashboardData = () => {
   });
 
   // Calculate last refreshed time from spending data if available
-  const lastRefreshed = spendingData?.refreshedAt ? new Date(spendingData.refreshedAt) : null;
+  const lastRefreshed = spendingMetrics?.lastCalculated ? new Date(spendingMetrics.lastCalculated) : null;
 
   return {
     data: data || {
