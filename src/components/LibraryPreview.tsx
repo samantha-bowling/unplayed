@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { GameCard } from './GameCard';
+import GameCard from './GameCard';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
