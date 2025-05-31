@@ -1,3 +1,12 @@
+
+// FilterOptions type for shared use across hooks
+export interface FilterOptions {
+  search: string;
+  hideIgnored: boolean;
+  onlyUnplayed: boolean;
+  selectedGenre: string;
+}
+
 export const queryKeys = {
   unplayedGames: (userId?: string) => ['unplayed-games', userId] as const,
   unplayedGamesList: (userId?: string) => ['unplayed-games-list', userId] as const,
@@ -17,6 +26,19 @@ export const queryKeys = {
   genreStats: (userId?: string) => ['genre-stats', userId] as const,
   shelfLifeData: (userId?: string) => ['shelf-life-data', userId] as const,
   dustBreakdowns: (userId?: string) => ['dust-breakdowns', userId] as const,
+
+  // Missing query keys that were causing build errors
+  gamePicks: (userId?: string) => ['game-picks', userId] as const,
+  unplayedData: (userId?: string) => ['unplayed-data', userId] as const,
+  libraryGamesCount: (userId?: string, filters?: FilterOptions) => ['library-games-count', userId, filters] as const,
+  paginatedLibraryGames: (
+    userId?: string, 
+    page?: number, 
+    pageSize?: number, 
+    filters?: FilterOptions, 
+    sortBy?: string, 
+    sortDirection?: string
+  ) => ['paginated-library-games', userId, page, pageSize, filters, sortBy, sortDirection] as const,
 
   helpers: {
     allUserData: (userId: string) => {
