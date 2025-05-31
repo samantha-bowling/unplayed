@@ -1,99 +1,139 @@
-import { RouteType } from '@/types/route.types';
 
-export const routes: readonly RouteType[] = [
-  {
-    path: '/',
-    component: () => import('@/pages/HomePage'),
+/**
+ * Application Routes Configuration
+ * 
+ * This centralizes route definitions, permissions, and metadata
+ * for better route management and access control.
+ */
+import { UserRole } from "@/utils/auth-utils";
+
+export interface RouteConfig {
+  path: string;
+  requiresAuth: boolean; 
+  requiredRole?: string;
+  redirectPath?: string;
+  title?: string;
+  description?: string;
+}
+
+/**
+ * Main application routes with metadata and permission requirements
+ */
+export const routes: Record<string, RouteConfig> = {
+  // Public routes
+  HOME: {
+    path: "/",
+    requiresAuth: false,
+    title: "Unplayed - Find Games To Play",
+    description: "Discover games in your Steam library that you haven't played yet."
   },
-  {
-    path: '/welcome',
-    component: () => import('@/pages/WelcomePage'),
+  AUTH: {
+    path: "/auth",
+    requiresAuth: false,
+    title: "Sign In - Unplayed",
+    description: "Sign in to your Unplayed account."
   },
-  {
-    path: '/library',
-    component: () => import('@/pages/LibraryPage'),
+  AUTH_CALLBACK: {
+    path: "/auth/callback",
+    requiresAuth: false
   },
-  {
-    path: '/auth',
-    component: () => import('@/pages/AuthPage'),
+  STEAM_CALLBACK: {
+    path: "/auth/steam-callback",
+    requiresAuth: false
   },
-  {
-    path: '/login-error',
-    component: () => import('@/pages/LoginErrorPage'),
+  LOGIN_ERROR: {
+    path: "/login-error",
+    requiresAuth: false
   },
-  {
-    path: '/profile',
-    component: () => import('@/pages/ProfilePage'),
+  SUPPORT: {
+    path: "/support",
+    requiresAuth: false
   },
-  {
-    path: '/admin',
-    component: () => import('@/pages/AdminPage'),
+  LEADERBOARD: {
+    path: "/leaderboard",
+    requiresAuth: false
   },
-  {
-    path: '/admin/users',
-    component: () => import('@/pages/AdminUsersPage'),
+  
+  // Protected routes (require authentication)
+  LIBRARY: {
+    path: "/library",
+    requiresAuth: true
   },
-  {
-    path: '/admin/steam-queue',
-    component: () => import('@/pages/AdminSteamQueuePage'),
+  DUST: {
+    path: "/dust",
+    requiresAuth: true
   },
-  {
-    path: '/admin/steam-queue/:id',
-    component: () => import('@/pages/AdminSteamQueueDetailsPage'),
+  SPEND: {
+    path: "/spend",
+    requiresAuth: true
   },
-  {
-    path: '/admin/game-estimates',
-    component: () => import('@/pages/AdminGameEstimatesPage'),
+  
+  // Admin routes (require admin role)
+  AUTH_DEBUG: {
+    path: "/auth-debug",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN
   },
-  {
-    path: '/admin/game-estimates/:id',
-    component: () => import('@/pages/AdminGameEstimateDetailsPage'),
+  ADMIN_DASHBOARD: {
+    path: "/admin/dashboard",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN
   },
-  {
-    path: '/admin/game-enrichment',
-    component: () => import('@/pages/AdminGameEnrichmentPage'),
+  ADMIN_SUPPORT: {
+    path: "/admin/support",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN
   },
-  {
-    path: '/admin/game-enrichment/:id',
-    component: () => import('@/pages/AdminGameEnrichmentDetailsPage'),
+  ADMIN_ACCOUNT_DELETIONS: {
+    path: "/admin/account-deletions",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN
   },
-  {
-    path: '/admin/game-details/:id',
-    component: () => import('@/pages/AdminGameDetailsPage'),
+  ADMIN_QUEUE_MANAGER: {
+    path: "/admin/queue-manager",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN
   },
-  {
-    path: '/admin/dust-migration',
-    component: () => import('@/pages/AdminDustMigrationPage'),
+  ADMIN_HLTB_DATA: {
+    path: "/admin/hltb-data",
+    requiresAuth: true,
+    requiredRole: UserRole.ADMIN,
+    title: "Data Manager - Unplayed",
+    description: "Manage and monitor HowLongToBeat data, and other metadata integrations for your game catalog."
   },
-  {
-    path: '/dust',
-    component: () => import('@/pages/DustPage'),
+  
+  // Redirects
+  ADMIN_STEAM_DATA: {
+    path: "/admin/steam-data",
+    requiresAuth: true,
+    redirectPath: "/admin/hltb-data"
   },
-  {
-    path: '/clean',
-    component: () => import('@/pages/CleanPage'),
-  },
-  {
-    path: '/settings',
-    component: () => import('@/pages/SettingsPage'),
-  },
-  {
-    path: '/about',
-    component: () => import('@/pages/AboutPage'),
-  },
-  {
-    path: '/privacy',
-    component: () => import('@/pages/PrivacyPage'),
-  },
-  {
-    path: '/terms',
-    component: () => import('@/pages/TermsPage'),
-  },
-  {
-    path: '/donate',
-    component: () => import('@/pages/DonatePage'),
-  },
-  {
-    path: '/test-dust-migration', component: () => import('@/pages/TestDustMigrationPage')
-  },
-] as const;
+  AUTH_STEAM_DATA: {
+    path: "/auth/steam-data",
+    requiresAuth: true,
+    redirectPath: "/admin/hltb-data"
+  }
+};
+
+/**
+ * Get route configuration by path
+ */
+export function getRouteByPath(path: string): RouteConfig | undefined {
+  return Object.values(routes).find(route => route.path === path);
+}
+
+/**
+ * Format path with parameters
+ * @example formatPath('/users/:id', { id: '123' }) => '/users/123'
+ */
+export function formatPath(path: string, params: Record<string, string> = {}): string {
+  let formattedPath = path;
+  
+  Object.entries(params).forEach(([key, value]) => {
+    formattedPath = formattedPath.replace(`:${key}`, encodeURIComponent(value));
+  });
+  
+  return formattedPath;
+}
+
+export default routes;
