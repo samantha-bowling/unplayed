@@ -18,14 +18,14 @@ export interface DustScoreData {
   averageDustScore?: number;
   topDustContributors: GameDustData[];
   
-  // Clean score data (new 4-factor system)
+  // Clean score data (new 4-factor system for authenticated users)
   cleanScore: number;
-  cleanScoreBreakdown: CleanScoreBreakdown;
+  cleanScoreBreakdown?: CleanScoreBreakdown;
   cleanTier: CleanScoreTier;
   cleanStreak: number;
   cleanStreakMetadata?: CleanStreakMetadata;
   
-  // Legacy clean score support for demo mode
+  // Legacy clean score support for demo mode and fallbacks
   legacyCleanScoreBreakdown?: LegacyCleanScoreBreakdown;
   
   // Additional metrics

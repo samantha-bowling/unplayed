@@ -1,7 +1,8 @@
+
 import { 
   DustScoreBreakdown, 
   GameDustData, 
-  CleanScoreBreakdown, 
+  LegacyCleanScoreBreakdown, 
   CleanScoreTier, 
   GameListItem 
 } from '@/types/unplayed-data.types';
@@ -20,9 +21,9 @@ export interface DemoDataType {
   topDustContributors?: GameDustData[];
   avgDustScore?: number;
   
-  // Clean score specific data
+  // Clean score specific data (using legacy for demo)
   cleanScore?: number;
-  cleanScoreBreakdown?: CleanScoreBreakdown;
+  cleanScoreBreakdown?: LegacyCleanScoreBreakdown;
   cleanTier?: CleanScoreTier;
   cleanStreak?: number;
   recentlyPlayedCount?: number;

@@ -114,9 +114,10 @@ export const transformUserGameData = (
   const totalPlaytimeHours = totalPlaytime / 60;
 
   // Calculate enhanced clean score using the same algorithm as the leaderboard
+  // This returns legacy format for backward compatibility
   const { 
     cleanScore, 
-    breakdown: cleanScoreBreakdown, 
+    breakdown: legacyCleanScoreBreakdown, 
     tier: cleanTier, 
     cleanStreak,
     recentlyPlayedUnplayed,
@@ -142,7 +143,7 @@ export const transformUserGameData = (
     library: libraryItems,
     gamesList: gamesList,
     cleanScore,
-    cleanScoreBreakdown,
+    cleanScoreBreakdown: legacyCleanScoreBreakdown,
     cleanTier,
     cleanStreak,
     recentlyPlayedCount,

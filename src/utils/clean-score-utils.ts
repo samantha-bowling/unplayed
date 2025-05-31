@@ -1,5 +1,5 @@
 
-import { CleanScoreTier, CleanScoreBreakdown } from '@/types/unplayed-data.types';
+import { CleanScoreTier, LegacyCleanScoreBreakdown } from '@/types/unplayed-data.types';
 
 // Clean Score tiers configuration
 export const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
@@ -167,6 +167,7 @@ export const calculateRecentlyPlayedUnplayed = (gamesList: any[], userCreatedDat
 
 /**
  * Enhanced Clean Score calculation using only available data
+ * Returns legacy format for backward compatibility
  */
 export const calculateCleanScore = (
   playedGames: number, 
@@ -176,7 +177,7 @@ export const calculateCleanScore = (
   recentlyPlayedGames: number = 0
 ): { 
   cleanScore: number, 
-  breakdown: CleanScoreBreakdown, 
+  breakdown: LegacyCleanScoreBreakdown, 
   tier: CleanScoreTier,
   cleanStreak: number,
   recentlyPlayedUnplayed: number,

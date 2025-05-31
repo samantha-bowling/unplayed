@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/hooks/use-query-keys';
-import { CleanScoreBreakdown } from '@/types/unplayed-data.types';
 
 export interface CleanScoreBreakdownData {
   userId: string;
@@ -34,13 +33,16 @@ export const useCleanScoreBreakdowns = () => {
         return null;
       }
 
+      // Calculate total from individual scores
+      const totalCleanScore = data.diversity_score + data.recency_score + data.backlog_conversion_score + data.session_depth_score;
+
       return {
         userId: data.user_id,
         diversityScore: data.diversity_score,
         recencyScore: data.recency_score,
         backlogConversionScore: data.backlog_conversion_score,
         sessionDepthScore: data.session_depth_score,
-        totalCleanScore: data.total_clean_score,
+        totalCleanScore: totalCleanScore,
         lastCalculated: data.last_calculated
       };
     },
