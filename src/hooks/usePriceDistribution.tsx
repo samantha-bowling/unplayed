@@ -59,19 +59,23 @@ export const usePriceDistribution = () => {
       const distribution = priceRanges.map(({ range, min, max }) => {
         const gamesInRange = gamesData.filter(game => {
           // Use game_prices data if available, otherwise fall back to games.price_cents
-          const price = game.game_prices?.[0]?.final_price_cents ?? game.games.price_cents;
+          const gamePrice = Array.isArray(game.game_prices) && game.game_prices.length > 0 
+            ? game.game_prices[0]?.final_price_cents 
+            : game.games.price_cents;
           
-          if (price === null || price === undefined) return false;
+          if (gamePrice === null || gamePrice === undefined) return false;
           
           if (max === Infinity) {
-            return price >= min;
+            return gamePrice >= min;
           }
-          return price >= min && price <= max;
+          return gamePrice >= min && gamePrice <= max;
         });
 
         const totalValue = gamesInRange.reduce((sum, game) => {
-          const price = game.game_prices?.[0]?.final_price_cents ?? game.games.price_cents;
-          return sum + (price || 0);
+          const gamePrice = Array.isArray(game.game_prices) && game.game_prices.length > 0 
+            ? game.game_prices[0]?.final_price_cents 
+            : game.games.price_cents;
+          return sum + (gamePrice || 0);
         }, 0);
 
         return {
