@@ -59,7 +59,7 @@ const Footer = () => {
             <Link to="/support" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
               Support
             </Link>
-            <a href="https://discord.gg/6nMQDFmzGZ" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm flex items-center gap-1">
+            <a href="https://discord.gg/TvcNPryU8N" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm flex items-center gap-1">
               <DiscordIcon size={16} className="opacity-80" />
               Discord
             </a>

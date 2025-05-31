@@ -1,369 +1,276 @@
 
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
+import { useProfile } from '@/hooks/use-profile';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { queryKeys } from '@/hooks/use-query-keys';
 import { 
   calculateSpending, 
   generateTopSpendingGames, 
   formatSpendingDisplay,
-  type GameWithPrice,
-  type GamePriceInfo,
   type SpendingBreakdown,
-  type TopSpendingGame
+  type TopSpendingGame,
+  type GamePriceInfo,
+  type GameWithPrice
 } from '@/utils/spending-calculations';
-import { validateGamePrice } from '@/utils/price-validation';
-import { callSupabaseFunction } from '@/utils/supabase-functions';
-import { toast } from 'sonner';
-import { useState } from 'react';
-import { queryKeys } from './use-query-keys';
-import { usePriceRefreshRateLimit } from './use-price-refresh-rate-limit';
-import { filterUnplayedGames } from '@/utils/game-definitions';
 
-export interface EnhancedSpendingData {
-  totalSpent: number;
-  totalSaved: number | null;
-  freeGamesCount: number;
-  paidGamesCount: number;
-  currency: string;
-  confidence: 'high' | 'medium' | 'low';
-  dataQuality: {
-    gamesWithPriceData: number;
-    gamesWithMissingData: number;
-    gamesActuallyFree: number;
-    invalidPricesRejected: number;
-    totalRejectedValueDollars: number;
-  };
+export interface EnhancedSpendingData extends SpendingBreakdown {
   topSpendingGames: TopSpendingGame[];
-  breakdown: SpendingBreakdown;
   displayInfo: {
     displayText: string;
     warningText?: string;
     confidenceText: string;
-    rejectedValueText?: string;
   };
-  refreshedAt: string;
-}
-
-export interface UnifiedGameData {
-  id: string;
-  game_id: number;
-  playtime_minutes: number | null;
-  games: {
-    id: number;
-    name: string;
-    price_cents: number | null;
-    image_url: string | null;
-    header_image: string | null;
-  };
+  refreshedAt: string | null;
 }
 
 /**
- * Enhanced spending data hook - accepts optional game list for coordination
- * When gamesList is provided, uses that instead of fetching its own data
+ * Enhanced spending data hook with improved accuracy and data quality reporting
  */
-export const useEnhancedSpendingData = (
-  onlyUnplayed: boolean = true, 
-  gamesList?: UnifiedGameData[]
-) => {
+export const useEnhancedSpendingData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data: unplayedData, isLoading: isUnplayedLoading } = useUnplayedData();
+  const { toast } = useToast();
+  const [refreshInProgress, setRefreshInProgress] = useState<boolean>(false);
   
+  // Extract game IDs from unplayed data for querying
+  const gameIds = useMemo(() => {
+    if (isUnplayedLoading || !unplayedData?.gamesList) return [];
+    
+    return unplayedData.gamesList.map(game => game.id);
+  }, [unplayedData?.gamesList, isUnplayedLoading]);
+  
+  // Query user games with price data from both tables
   const {
-    canRefresh,
-    isOnCooldown,
-    countdown,
-    createRefreshLog,
-    updateRefreshLog,
-    trackPriceRequest,
-    showRateLimitNotification,
-    formatCountdown
-  } = usePriceRefreshRateLimit();
-
-  const queryResult = useQuery({
-    queryKey: gamesList 
-      ? queryKeys.enhancedSpendingDataCoordinated(user?.id, onlyUnplayed, gamesList.length)
-      : queryKeys.enhancedSpendingData(user?.id, onlyUnplayed),
-    queryFn: async (): Promise<EnhancedSpendingData> => {
-      console.log('🔍 [EnhancedSpendingData] Starting price calculation fetch');
+    data: userGamesData,
+    isLoading: isUserGamesLoading,
+    error: userGamesError,
+  } = useQuery({
+    queryKey: ['enhancedUserGames', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
       
-      if (isDemo) {
-        console.log('🎭 [EnhancedSpendingData] Using demo data');
-        return {
-          totalSpent: demoData.unplayedSpent || 0,
-          totalSaved: null,
-          freeGamesCount: 20,
-          paidGamesCount: 80,
-          currency: 'USD',
-          confidence: 'high' as const,
-          dataQuality: {
-            gamesWithPriceData: 100,
-            gamesWithMissingData: 0,
-            gamesActuallyFree: 20,
-            invalidPricesRejected: 0,
-            totalRejectedValueDollars: 0
-          },
-          topSpendingGames: [],
-          breakdown: {
-            totalSpent: demoData.unplayedSpent || 0,
-            totalSaved: null,
-            freeGamesCount: 20,
-            unknownPriceGamesCount: 0,
-            paidGamesCount: 80,
-            currency: 'USD',
-            confidence: 'high' as const,
-            dataQuality: {
-              gamesWithPriceData: 100,
-              gamesWithMissingData: 0,
-              gamesActuallyFree: 20,
-              invalidPricesRejected: 0,
-              totalRejectedValueDollars: 0
-            }
-          },
-          displayInfo: {
-            displayText: `$${(demoData.unplayedSpent || 0).toFixed(2)} spent`,
-            confidenceText: 'Data confidence: high (100/100 games have valid price data)'
-          },
-          refreshedAt: new Date().toISOString()
-        };
-      }
-
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      let userGames: any[];
-
-      if (gamesList) {
-        console.log('📊 [EnhancedSpendingData] Using provided games list for price calculations');
-        // Transform unified data to the format we need
-        userGames = gamesList.map(game => ({
-          game_id: game.game_id,
-          playtime_minutes: game.playtime_minutes,
-          games: game.games
-        }));
-      } else {
-        console.log('📊 [EnhancedSpendingData] Fetching user games for price calculations');
-        // Fetch user games with basic game details - simplified query
-        const { data: fetchedUserGames, error: userGamesError } = await supabase
-          .from('user_games')
-          .select(`
-            game_id,
-            playtime_minutes,
-            games:game_id(
-              id,
-              name,
-              price_cents,
-              image_url,
-              header_image
-            )
-          `)
-          .eq('user_id', user.id);
-
-        if (userGamesError) {
-          console.error('❌ [EnhancedSpendingData] Error fetching user games:', userGamesError);
-          throw userGamesError;
-        }
-
-        userGames = fetchedUserGames || [];
-      }
-
-      console.log(`✅ [EnhancedSpendingData] Processing ${userGames?.length || 0} user games`);
-
-      // Fetch enhanced price data from game_prices table
-      const gameIds = userGames?.map(ug => ug.game_id) || [];
-      let priceDataMap = new Map<number, GamePriceInfo>();
-
-      if (gameIds.length > 0) {
-        console.log(`💰 [EnhancedSpendingData] Fetching enhanced price data for ${gameIds.length} games`);
+      const { data, error } = await supabase
+        .from('user_games')
+        .select(`
+          id,
+          game_id,
+          playtime_minutes,
+          games:game_id(
+            id,
+            name,
+            price_cents,
+            image_url,
+            header_image
+          )
+        `)
+        .eq('user_id', user.id);
         
-        const { data: priceData, error: priceError } = await supabase
-          .from('game_prices')
-          .select('*')
-          .in('app_id', gameIds);
+      if (error) throw error;
+      
+      // Transform to our expected format
+      return data.map(item => ({
+        id: item.game_id,
+        name: item.games?.name || 'Unknown Game',
+        price_cents: item.games?.price_cents,
+        playtime_minutes: item.playtime_minutes || 0,
+        image_url: item.games?.image_url,
+        header_image: item.games?.header_image,
+      })) as GameWithPrice[];
+    },
+    enabled: !!user && !isDemo,
+  });
 
-        if (priceError) {
-          console.warn('⚠️ [EnhancedSpendingData] Could not fetch enhanced price data:', priceError);
-        } else {
-          priceDataMap = new Map(
-            priceData?.map(price => [price.app_id, price]) || []
-          );
-          console.log(`💰 [EnhancedSpendingData] Found enhanced prices for ${priceDataMap.size} games`);
-        }
-      }
+  // Query game price data from price table
+  const {
+    data: gamePricesData,
+    isLoading: isGamePricesLoading,
+    error: gamePricesError,
+    refetch: refetchGamePrices,
+  } = useQuery({
+    queryKey: ['enhancedGamePrices', gameIds],
+    queryFn: async () => {
+      if (gameIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('game_prices')
+        .select('*')
+        .in('app_id', gameIds);
+        
+      if (error) throw error;
+      return data as GamePriceInfo[];
+    },
+    enabled: gameIds.length > 0 && !isDemo,
+  });
 
-      // Transform to spending calculation format
-      const gamesWithPrices: GameWithPrice[] = userGames
-        ?.filter(ug => ug.games && ug.games.name)
-        .map(ug => ({
-          id: ug.games.id,
-          name: ug.games.name,
-          price_cents: ug.games.price_cents,
-          playtime_minutes: ug.playtime_minutes,
-          image_url: ug.games.image_url,
-          header_image: ug.games.header_image,
-        })) || [];
-
-      console.log(`🎯 [EnhancedSpendingData] Processing spending for ${gamesWithPrices.length} games, ${onlyUnplayed ? 'unplayed only' : 'all games'}`);
-
-      // Log validation statistics
-      let validatedGames = 0;
-      let rejectedGames = 0;
-      let totalRejectedValue = 0;
-
-      gamesWithPrices.forEach(game => {
-        const validation = validateGamePrice(game.price_cents, game.name);
-        if (validation.isValid) {
-          validatedGames++;
-        } else {
-          rejectedGames++;
-          if (game.price_cents) {
-            totalRejectedValue += game.price_cents;
+  // Calculate spending data using enhanced utilities
+  const spendingData = useMemo((): EnhancedSpendingData => {
+    // Return demo data if in demo mode
+    if (isDemo) {
+      return {
+        totalSpent: demoData.totalSpent,
+        totalSaved: null,
+        freeGamesCount: 15,
+        unknownPriceGamesCount: 0,
+        paidGamesCount: 85,
+        currency: 'USD',
+        confidence: 'high' as const,
+        dataQuality: {
+          gamesWithPriceData: 100,
+          gamesWithMissingData: 0,
+          gamesActuallyFree: 15
+        },
+        topSpendingGames: unplayedData?.gamesList
+          ?.filter(game => game.playtimeMinutes === 0 && (game.price || 0) > 0)
+          ?.slice(0, 20)
+          ?.map(game => ({
+            id: game.id,
+            title: game.name,
+            price: game.price || 0,
+            originalPrice: null,
+            discount: null,
+            imageUrl: game.image,
+            currency: 'USD',
+            priceDataSource: 'games_table' as const
+          })) || [],
+        displayInfo: {
+          displayText: `$${demoData.totalSpent.toFixed(2)} spent • 15 free games`,
+          confidenceText: 'Data confidence: high (demo data)'
+        },
+        refreshedAt: new Date().toISOString(),
+      };
+    }
+    
+    // Return empty data if no user games
+    if (!userGamesData || userGamesData.length === 0) {
+      return {
+        totalSpent: 0,
+        totalSaved: null,
+        freeGamesCount: 0,
+        unknownPriceGamesCount: 0,
+        paidGamesCount: 0,
+        currency: 'USD',
+        confidence: 'high' as const,
+        dataQuality: {
+          gamesWithPriceData: 0,
+          gamesWithMissingData: 0,
+          gamesActuallyFree: 0
+        },
+        topSpendingGames: [],
+        displayInfo: {
+          displayText: '$0.00 spent',
+          confidenceText: 'No games found'
+        },
+        refreshedAt: null,
+      };
+    }
+    
+    // Create price data map for efficient lookups
+    const priceDataMap = new Map<number, GamePriceInfo>();
+    if (gamePricesData) {
+      gamePricesData.forEach(price => {
+        priceDataMap.set(price.app_id, price);
+      });
+    }
+    
+    // Calculate unplayed spending breakdown
+    const unplayedBreakdown = calculateSpending(userGamesData, priceDataMap, true);
+    const topSpendingGames = generateTopSpendingGames(userGamesData, priceDataMap, true, 50);
+    const displayInfo = formatSpendingDisplay(unplayedBreakdown);
+    
+    // Find latest refresh date
+    let latestRefresh: Date | null = null;
+    if (gamePricesData) {
+      gamePricesData.forEach(price => {
+        if (price.last_checked) {
+          const refreshDate = new Date(price.last_checked);
+          if (!latestRefresh || refreshDate > latestRefresh) {
+            latestRefresh = refreshDate;
           }
         }
       });
-
-      console.log(`Price validation: ${validatedGames} valid, ${rejectedGames} rejected games (${(totalRejectedValue / 100).toFixed(2)} value rejected)`);
-
-      // Calculate spending using the centralized utility
-      const breakdown = calculateSpending(gamesWithPrices, priceDataMap, onlyUnplayed);
-      const topSpendingGames = generateTopSpendingGames(gamesWithPrices, priceDataMap, onlyUnplayed, 50);
-      const displayInfo = formatSpendingDisplay(breakdown);
-
-      console.log('✅ [EnhancedSpendingData] Enhanced spending calculation complete:', {
-        totalSpent: breakdown.totalSpent,
-        confidence: breakdown.confidence,
-        gamesProcessed: gamesWithPrices.length,
-        rejectedValue: breakdown.dataQuality.totalRejectedValueDollars
-      });
-
-      return {
-        totalSpent: breakdown.totalSpent,
-        totalSaved: breakdown.totalSaved,
-        freeGamesCount: breakdown.freeGamesCount,
-        paidGamesCount: breakdown.paidGamesCount,
-        currency: breakdown.currency,
-        confidence: breakdown.confidence,
-        dataQuality: breakdown.dataQuality,
-        topSpendingGames,
-        breakdown,
-        displayInfo,
-        refreshedAt: new Date().toISOString()
-      };
-    },
-    enabled: !isDemo && !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes - aligned with unified data
-    refetchOnWindowFocus: false,
-  });
-
-  const refreshPrices = async () => {
-    if (!user || isDemo) return;
-    
-    // Check rate limiting
-    if (!canRefresh) {
-      showRateLimitNotification();
-      return;
     }
     
-    setIsRefreshing(true);
-    let refreshLog: any = null;
+    console.log('Enhanced spending calculation:', {
+      totalGames: userGamesData.length,
+      unplayedSpent: unplayedBreakdown.totalSpent,
+      confidence: unplayedBreakdown.confidence,
+      dataQuality: unplayedBreakdown.dataQuality
+    });
+    
+    return {
+      ...unplayedBreakdown,
+      topSpendingGames,
+      displayInfo,
+      refreshedAt: latestRefresh ? latestRefresh.toISOString() : null,
+    };
+  }, [isDemo, demoData, userGamesData, gamePricesData, unplayedData?.gamesList]);
+  
+  // Refresh price data functionality
+  const refreshPrices = async () => {
+    if (!user || isDemo || gameIds.length === 0) return;
     
     try {
-      console.log('🔄 [EnhancedSpendingData] Starting price refresh...');
+      setRefreshInProgress(true);
+      toast({
+        title: "Refreshing price data",
+        description: `Updating prices for ${gameIds.length} games. This might take a moment...`
+      });
       
-      // Get user's game IDs - use provided list or fetch
-      let gameIds: number[];
+      // Call refresh function in batches
+      const batchSize = 10;
+      let updatedCount = 0;
       
-      if (gamesList) {
-        gameIds = gamesList.map(game => game.game_id);
-      } else {
-        const { data: userGames } = await supabase
-          .from('user_games')
-          .select('game_id')
-          .eq('user_id', user.id);
+      for (let i = 0; i < gameIds.length; i += batchSize) {
+        const batchIds = gameIds.slice(i, i + batchSize);
         
-        gameIds = userGames?.map(ug => ug.game_id) || [];
-      }
-      
-      if (gameIds.length === 0) {
-        toast.info("No games found to refresh prices for.");
-        return;
-      }
-
-      // Create refresh log
-      refreshLog = await createRefreshLog({
-        refreshType: 'manual',
-        gamesRequested: gameIds.length
-      });
-
-      // Track user request for prioritization
-      await trackPriceRequest(gameIds);
-
-      toast.info("Refreshing price data from Steam...", {
-        description: `Processing ${gameIds.length} games. This may take a moment.`
-      });
-
-      // Call the refresh-game-price function
-      const response = await callSupabaseFunction('refresh-game-price', {
-        app_ids: gameIds,
-        force_refresh: false // Respect 24-hour cache
-      });
-
-      const updatedCount = response?.updated_count || 0;
-
-      // Update refresh log with success
-      if (refreshLog) {
-        await updateRefreshLog({
-          logId: refreshLog.id,
-          gamesUpdated: updatedCount,
-          status: 'completed'
+        const response = await supabase.functions.invoke('refresh-game-price', {
+          body: {
+            app_ids: batchIds,
+            force_refresh: false
+          }
         });
+        
+        if (response.data?.updated_count) {
+          updatedCount += response.data.updated_count;
+        }
+        
+        if (i + batchSize < gameIds.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
-
-      // Refetch the query data
-      await queryResult.refetch();
       
-      toast.success("Price data refreshed successfully!", {
-        description: `Updated ${updatedCount} game prices with the latest information.`
+      await refetchGamePrices();
+      
+      toast({
+        title: "Price refresh complete",
+        description: `Updated ${updatedCount} game prices successfully.`
       });
-
-      console.log('✅ [EnhancedSpendingData] Price refresh completed successfully');
-
+      
     } catch (error) {
-      console.error('❌ [EnhancedSpendingData] Error refreshing prices:', error);
-      
-      // Update refresh log with failure
-      if (refreshLog) {
-        await updateRefreshLog({
-          logId: refreshLog.id,
-          gamesUpdated: 0,
-          status: 'failed',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-      
-      toast.error("Failed to refresh prices", {
-        description: "Please try again later or check your connection."
+      console.error("Error refreshing prices:", error);
+      toast({
+        title: "Error refreshing prices",
+        description: "There was a problem updating game prices. Please try again later.",
+        variant: "destructive"
       });
     } finally {
-      setIsRefreshing(false);
+      setRefreshInProgress(false);
     }
   };
-
+  
   return {
-    ...queryResult,
+    data: spendingData,
+    isLoading: isUserGamesLoading || isGamePricesLoading || isUnplayedLoading,
+    error: userGamesError || gamePricesError,
     refreshPrices,
-    isRefreshing,
-    
-    // Rate limiting info
-    canRefresh,
-    isOnCooldown,
-    cooldownRemaining: countdown,
-    formatCooldown: () => formatCountdown(countdown),
-    showRateLimitNotification,
+    isRefreshing: refreshInProgress,
   };
 };
 
-// Keep backward compatibility
-export const useSpendingData = useEnhancedSpendingData;
+export default useEnhancedSpendingData;

@@ -1,253 +1,135 @@
 
-import { useState, useEffect } from 'react';
-import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
-import { useCoordinatedSpendingData } from '@/hooks/use-coordinated-spending-data';
-import { Clock, RefreshCw, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect, useRef } from 'react';
+import CurrencyAmount from '@/components/ui/currency-amount';
+import { ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-interface SpendingMeterProps extends WithDemoProps {
-  onlyUnplayed?: boolean;
-  showRefreshButton?: boolean;
+interface SpendingMeterProps {
+  amount: number;
+  currency?: string;
+  isLoading: boolean;
+  showDetailsLink?: boolean;
+  onHideClick: () => void;
+  totalSaved?: number | null;
+  isDemo: boolean;
+  hasUser: boolean;
 }
 
-const SpendingMeter = ({ 
-  onlyUnplayed = true,
-  showRefreshButton = true,
-  isDemo = false 
+const SpendingMeter = ({
+  amount,
+  currency = 'USD',
+  isLoading,
+  showDetailsLink = true,
+  onHideClick,
+  totalSaved,
+  isDemo,
+  hasUser
 }: SpendingMeterProps) => {
-  const { 
-    data, 
-    isLoading, 
-    error, 
-    refreshPrices, 
-    isRefreshing,
-    canRefresh,
-    isOnCooldown,
-    cooldownRemaining,
-    formatCooldown
-  } = useCoordinatedSpendingData(onlyUnplayed);
-
   const [animatedAmount, setAnimatedAmount] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Animate the spending amount
   useEffect(() => {
-    if (data?.totalSpent) {
-      const duration = 2000;
-      const start = 0;
-      const end = data.totalSpent;
-      const frameDuration = 1000 / 60;
-      const totalFrames = Math.round(duration / frameDuration);
-      const increment = (end - start) / totalFrames;
-      let currentFrame = 0;
-
-      const timer = setInterval(() => {
-        currentFrame++;
-        const currentValue = start + increment * currentFrame;
-        setAnimatedAmount(currentValue);
-        if (currentFrame === totalFrames) {
-          clearInterval(timer);
+    // Set up mounted ref for cleanup
+    isMountedRef.current = true;
+    
+    // Cancel any in-flight animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    
+    // Reset animation state when amount changes
+    setAnimatedAmount(0);
+    startTimeRef.current = null;
+    
+    // Don't start animation if we're still loading
+    if (isLoading) return;
+    
+    // Use a small delay to ensure we're not animating during the render cycle
+    const timeoutId = setTimeout(() => {
+      if (!isMountedRef.current) return;
+      
+      const duration = 2000; // Animation duration in ms
+      
+      const animate = (timestamp: number) => {
+        if (!isMountedRef.current) return;
+        
+        if (startTimeRef.current === null) {
+          startTimeRef.current = timestamp;
         }
-      }, frameDuration);
-
-      return () => clearInterval(timer);
-    }
-  }, [data?.totalSpent]);
-
-  if (isLoading) {
-    return (
-      <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
-        <h3 className="terminal-header text-2xl mb-4">
-          {onlyUnplayed ? 'Unplayed Spending' : 'Total Library Value'}
-        </h3>
-        <div className="terminal-content flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
-        <h3 className="terminal-header text-2xl mb-4">
-          {onlyUnplayed ? 'Unplayed Spending' : 'Total Library Value'}
-        </h3>
-        <div className="terminal-content">
-          <div className="flex items-center gap-2 text-red-400 mb-4">
-            <AlertCircle size={20} />
-            <span>Error loading spending data</span>
-          </div>
-          {showRefreshButton && (
-            <Button 
-              onClick={refreshPrices}
-              disabled={isRefreshing || !canRefresh}
-              className="w-full"
-              variant="outline"
-            >
-              {isRefreshing ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Retrying...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) return null;
-
-  const getConfidenceColor = (confidence: string) => {
-    switch (confidence) {
-      case 'high': return 'text-green-400';
-      case 'medium': return 'text-yellow-400';
-      case 'low': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getConfidenceIcon = (confidence: string) => {
-    switch (confidence) {
-      case 'high': return <CheckCircle size={16} className="text-green-400" />;
-      case 'medium': return <AlertCircle size={16} className="text-yellow-400" />;
-      case 'low': return <AlertCircle size={16} className="text-red-400" />;
-      default: return <AlertCircle size={16} className="text-gray-400" />;
-    }
-  };
+        
+        const elapsed = timestamp - startTimeRef.current;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Calculate the current value based on progress
+        const currentValue = progress * amount;
+        setAnimatedAmount(currentValue);
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+          animationRef.current = requestAnimationFrame(animate);
+        }
+      };
+      
+      // Start the animation using requestAnimationFrame for smoother performance
+      animationRef.current = requestAnimationFrame(animate);
+    }, 50);
+    
+    // Clean up animation on unmount or data change
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(timeoutId);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [amount, isLoading]);
 
   return (
-    <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="terminal-header text-2xl mb-0">
-          {onlyUnplayed ? 'Unplayed Spending' : 'Total Library Value'}
-        </h3>
+    <div className="animate-fade-in flex flex-col h-full">
+      <div className="flex flex-col items-center py-4">
+        <div className="text-4xl md:text-5xl font-bold text-unplayed-red mb-2">
+          {isLoading ? (
+            <span className="opacity-50">Calculating...</span>
+          ) : (
+            <CurrencyAmount amount={animatedAmount} currency={currency} />
+          )}
+        </div>
         
-        {showRefreshButton && !isDemo && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={refreshPrices}
-                  disabled={isRefreshing || !canRefresh}
-                  size="sm"
-                  variant="ghost"
-                  className="text-cyan-400 hover:text-cyan-300"
-                >
-                  {isRefreshing ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : isOnCooldown ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-1" />
-                      {formatCooldown()}
-                    </>
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {isRefreshing ? (
-                  "Refreshing prices from Steam..."
-                ) : isOnCooldown ? (
-                  `Refresh available in ${formatCooldown()}`
-                ) : (
-                  "Refresh prices from Steam API"
-                )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <p className="text-gray-300 text-center mb-2">
+          Spent on unplayed games
+        </p>
+
+        {totalSaved && totalSaved > 0 && (
+          <p className="text-unplayed-mint text-sm">
+            You saved <CurrencyAmount amount={totalSaved} /> from sales!
+          </p>
         )}
+        
+        {showDetailsLink && hasUser && !isDemo && (
+          <Link 
+            to="/spend" 
+            className="mt-4 inline-flex items-center text-unplayed-mint hover:underline text-sm"
+          >
+            See detailed breakdown <ExternalLink size={14} className="ml-1" />
+          </Link>
+        )}
+        
+        <button 
+          onClick={onHideClick}
+          className="mt-6 btn-secondary"
+        >
+          Hide Financial Damage
+        </button>
       </div>
-
-      <div className="terminal-content">
-        {/* Main spending display */}
-        <div className="text-center mb-6">
-          <div className="text-4xl font-bold font-vt text-cyan-400 mb-2">
-            ${animatedAmount.toFixed(2)}
-          </div>
-          
-          {data.totalSaved && data.totalSaved > 0 && (
-            <div className="flex items-center justify-center gap-2 text-green-400 text-sm">
-              <TrendingUp size={16} />
-              <span>Saved ${data.totalSaved.toFixed(2)} from discounts</span>
-            </div>
-          )}
-        </div>
-
-        {/* Progress bar for refresh if in progress */}
-        {isRefreshing && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
-              <span>Refreshing prices...</span>
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            </div>
-            <Progress value={undefined} className="h-2" />
-          </div>
-        )}
-
-        {/* Data quality indicators */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-xl font-bold text-cyan-300">{data.paidGamesCount}</div>
-            <div className="text-xs text-gray-400">Paid Games</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-xl font-bold text-cyan-300">{data.freeGamesCount}</div>
-            <div className="text-xs text-gray-400">Free Games</div>
-          </div>
-        </div>
-
-        {/* Confidence and data quality */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {getConfidenceIcon(data.confidence)}
-              <span className={`text-sm ${getConfidenceColor(data.confidence)}`}>
-                {data.confidence.charAt(0).toUpperCase() + data.confidence.slice(1)} Confidence
-              </span>
-            </div>
-            <Badge variant="outline" className="text-xs">
-              {data.dataQuality.gamesWithPriceData}/{data.dataQuality.gamesWithPriceData + data.dataQuality.gamesWithMissingData} priced
-            </Badge>
-          </div>
-
-          {data.displayInfo.warningText && (
-            <div className="text-xs text-yellow-400 bg-yellow-400/10 p-2 rounded">
-              {data.displayInfo.warningText}
-            </div>
-          )}
-
-          {data.displayInfo.rejectedValueText && (
-            <div className="text-xs text-red-400 bg-red-400/10 p-2 rounded">
-              {data.displayInfo.rejectedValueText}
-            </div>
-          )}
-        </div>
-
-        {/* Last updated info */}
-        <div className="text-xs text-gray-500 text-center mt-4 pt-2 border-t border-gray-700">
-          Last updated: {new Date(data.refreshedAt).toLocaleString()}
-        </div>
-
-        {isDemo && !document.cookie.includes("demo_note_dismissed") && (
-          <div className="mt-4 pt-2 text-center">
-            <p className="text-sm text-cyan-400">You're in Demo Mode. Connect Steam to see real spending data.</p>
+      
+      <div className="mt-auto text-sm text-gray-400 text-center pb-2">
+        Based on{isDemo ? ' estimated' : ' current'} Steam store prices
+        {!isDemo && (
+          <div className="text-xs mt-1">
+            Enhanced calculation with proper free game detection
           </div>
         )}
       </div>
@@ -255,4 +137,4 @@ const SpendingMeter = ({
   );
 };
 
-export default withDemoIndicator(SpendingMeter);
+export default SpendingMeter;

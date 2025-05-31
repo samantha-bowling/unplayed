@@ -2,10 +2,8 @@
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { transformToDashboardMetrics } from '@/utils/data-transforms';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
 import useDustScoreData from '@/hooks/use-dust-score-data';
-import { CLEAN_SCORE_TIERS } from '@/utils/clean-score-utils';
 import {
   Tooltip,
   TooltipContent,
@@ -23,26 +21,12 @@ const CleanScoreMeter = ({
   score,
   isDemo = false
 }: CleanScoreProps) => {
-  const { stats: unifiedStats } = useUnifiedLibraryData();
-  const { data } = useDustScoreData();
+  const {
+    data
+  } = useDustScoreData();
 
-  const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
-    unplayedGames: 0,
-    totalGames: 0,
-    dustScore: 0,
-    totalPlaytime: 0,
-    cleanScore: 0,
-    recentlyPlayedCount: 0,
-    playedGames: 0,
-  };
-
-  const actualScore = score ?? dashboardMetrics.cleanScore ?? 0;
-  
-  // Simple fallback: find tier directly from score if data.cleanTier is missing
-  const cleanTier = data.cleanTier || CLEAN_SCORE_TIERS.find(
-    tier => actualScore >= tier.range[0] && actualScore <= tier.range[1]
-  ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1];
-  
+  const actualScore = score ?? data.cleanScore ?? 0;
+  const cleanTier = data.cleanTier;
   const [animatedScore, setAnimatedScore] = useState(0);
   const { user } = useAuth();
 

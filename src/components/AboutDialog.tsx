@@ -175,7 +175,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               <AccordionContent className="text-sm text-gray-300">
                 <p className="flex items-center gap-1">
                   Cool, we probably have more answers. 
-                  <a href="https://discord.gg/6nMQDFmzGZ" target="_blank" rel="noopener noreferrer" className="flex items-center text-unplayed-pink hover:underline">
+                  <a href="https://discord.gg/TvcNPryU8N" target="_blank" rel="noopener noreferrer" className="flex items-center text-unplayed-pink hover:underline">
                     <DiscordIcon className="h-4 w-4 mr-1" /> Join our Discord server
                   </a> 
                   or email us at 

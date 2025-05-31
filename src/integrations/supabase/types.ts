@@ -166,9 +166,6 @@ export type Database = {
           final_price_cents: number | null
           initial_price_cents: number | null
           last_checked: string | null
-          last_user_request: string | null
-          priority_score: number | null
-          user_request_count: number | null
         }
         Insert: {
           app_id: number
@@ -177,9 +174,6 @@ export type Database = {
           final_price_cents?: number | null
           initial_price_cents?: number | null
           last_checked?: string | null
-          last_user_request?: string | null
-          priority_score?: number | null
-          user_request_count?: number | null
         }
         Update: {
           app_id?: number
@@ -188,9 +182,6 @@ export type Database = {
           final_price_cents?: number | null
           initial_price_cents?: number | null
           last_checked?: string | null
-          last_user_request?: string | null
-          priority_score?: number | null
-          user_request_count?: number | null
         }
         Relationships: []
       }
@@ -421,42 +412,6 @@ export type Database = {
           },
         ]
       }
-      user_price_refresh_logs: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          error_message: string | null
-          games_requested: number
-          games_updated: number
-          id: string
-          refresh_type: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          error_message?: string | null
-          games_requested?: number
-          games_updated?: number
-          id?: string
-          refresh_type: string
-          status: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          error_message?: string | null
-          games_requested?: number
-          games_updated?: number
-          id?: string
-          refresh_type?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       users: {
         Row: {
           created_at: string
@@ -519,14 +474,6 @@ export type Database = {
         }
         Returns: Json
       }
-      can_user_refresh_prices: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      get_clean_game_price: {
-        Args: { p_game_id: number; p_fallback_price_cents?: number }
-        Returns: Json
-      }
       get_dust_score_breakdown: {
         Args: {
           game_id: number
@@ -536,21 +483,8 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stale_prices_for_refresh: {
-        Args: { batch_size?: number }
-        Returns: {
-          app_id: number
-          priority_score: number
-          user_request_count: number
-          days_since_check: number
-        }[]
-      }
       get_user_game_dust_breakdown: {
         Args: { p_user_game_id: string }
-        Returns: Json
-      }
-      get_user_library_stats: {
-        Args: { p_user_id: string }
         Returns: Json
       }
       increment: {
@@ -573,10 +507,6 @@ export type Database = {
           message: string
         }[]
       }
-      track_user_price_request: {
-        Args: { p_app_ids: number[] }
-        Returns: undefined
-      }
       update_leaderboard_clean_rankings: {
         Args: { snapshot_timestamp: string }
         Returns: undefined
@@ -584,10 +514,6 @@ export type Database = {
       update_leaderboard_dust_rankings: {
         Args: { snapshot_timestamp: string }
         Returns: undefined
-      }
-      validate_and_clean_game_price: {
-        Args: { price_cents: number }
-        Returns: number
       }
     }
     Enums: {

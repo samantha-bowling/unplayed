@@ -1,10 +1,9 @@
-
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useProfile } from '@/hooks/use-profile';
-import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { queryKeys } from '@/hooks/use-query-keys';
@@ -37,8 +36,6 @@ export interface PriceRange {
 export interface SpendingData {
   totalSpent: number;
   totalSaved: number | null;
-  totalLibraryValue: number;
-  totalGames: number;
   topSpendingGames: TopSpendingGame[];
   priceDistribution: PriceRange[];
   currency: string;
@@ -52,31 +49,18 @@ export interface SpendingData {
 export const useSpendingData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: unifiedData, isLoading: isUnplayedLoading } = useUnifiedLibraryData();
+  const { data: unplayedData, isLoading: isUnplayedLoading } = useUnplayedData();
   const { toast } = useToast();
   const [refreshInProgress, setRefreshInProgress] = useState<boolean>(false);
-
-  // Transform unified data to gamesList format
-  const gamesList = useMemo(() => {
-    if (!unifiedData) return [];
-    
-    return unifiedData.map(game => ({
-      id: game.game_id,
-      name: game.games.name,
-      playtimeMinutes: game.playtime_minutes || 0,
-      image: game.games.image_url,
-      price: game.games.price_cents ? game.games.price_cents / 100 : 0,
-    }));
-  }, [unifiedData]);
   
   // Extract game IDs from unplayed data for querying - we need this regardless of demo mode
   const gameIds = useMemo(() => {
-    if (isUnplayedLoading || !gamesList?.length) return [];
+    if (isUnplayedLoading || !unplayedData?.gamesList) return [];
     
-    return gamesList
+    return unplayedData.gamesList
       .filter(game => game.playtimeMinutes === 0)
       .map(game => game.id);
-  }, [gamesList, isUnplayedLoading]);
+  }, [unplayedData?.gamesList, isUnplayedLoading]);
   
   // Query game price data from our database - only if not in demo mode
   const {
@@ -105,8 +89,8 @@ export const useSpendingData = () => {
   const spendingData = useMemo(() => {
     // If in demo mode, return demo data with proper structure
     if (isDemo) {
-      const topSpendingGames = gamesList
-        ? gamesList
+      const topSpendingGames = unplayedData?.gamesList
+        ? unplayedData.gamesList
             .filter(game => game.playtimeMinutes === 0)
             .map(game => ({
               id: game.id,
@@ -120,13 +104,9 @@ export const useSpendingData = () => {
             .sort((a, b) => b.price - a.price)
         : [];
       
-      const totalLibraryValue = gamesList?.reduce((sum, game) => sum + (game.price || 0), 0) || 0;
-      
       return {
         totalSpent: demoData.totalSpent,
         totalSaved: null,
-        totalLibraryValue,
-        totalGames: gamesList?.length || 0,
         topSpendingGames,
         priceDistribution: [],
         currency: 'USD',
@@ -135,12 +115,10 @@ export const useSpendingData = () => {
     }
     
     // For real data, calculate from game prices
-    if (!gamesList?.length || !gamePrices) {
+    if (!unplayedData?.gamesList || !gamePrices) {
       return {
         totalSpent: 0,
         totalSaved: null,
-        totalLibraryValue: 0,
-        totalGames: 0,
         topSpendingGames: [],
         priceDistribution: [],
         currency: 'USD',
@@ -155,13 +133,13 @@ export const useSpendingData = () => {
     // Calculate total spent on unplayed games - FIXED: consistent price handling
     let totalSpent = 0;
     let totalOriginalPrice = 0;
-    let totalLibraryValue = 0;
     
     // Track the latest refresh date
     let latestRefresh: Date | null = null;
     
-    // Generate top spending games list and calculate totals
-    const topSpendingGames: TopSpendingGame[] = gamesList
+    // Generate top spending games list
+    const topSpendingGames: TopSpendingGame[] = unplayedData.gamesList
+      .filter(game => game.playtimeMinutes === 0)
       .map(game => {
         const priceData = priceMap.get(game.id);
         
@@ -183,11 +161,8 @@ export const useSpendingData = () => {
           : null;
           
         // Add to totals
-        totalLibraryValue += price;
-        if (game.playtimeMinutes === 0) {
-          totalSpent += price;
-          if (originalPrice) totalOriginalPrice += originalPrice;
-        }
+        totalSpent += price;
+        if (originalPrice) totalOriginalPrice += originalPrice;
         
         return {
           id: game.id,
@@ -198,11 +173,6 @@ export const useSpendingData = () => {
           imageUrl: game.image,
           currency: 'USD', // Simplified to USD only
         };
-      })
-      // Filter to only unplayed games for the spending list
-      .filter(game => {
-        const originalGame = gamesList.find(g => g.id === game.id);
-        return originalGame && originalGame.playtimeMinutes === 0;
       })
       // Sort by price (highest first)
       .sort((a, b) => b.price - a.price);
@@ -251,14 +221,12 @@ export const useSpendingData = () => {
     return {
       totalSpent,
       totalSaved,
-      totalLibraryValue,
-      totalGames: gamesList.length,
       topSpendingGames,
       priceDistribution,
       currency: 'USD', // Simplified to USD only
       refreshedAt: latestRefresh ? latestRefresh.toISOString() : null,
     };
-  }, [isDemo, demoData, gamesList, gamePrices]);
+  }, [isDemo, demoData, unplayedData?.gamesList, gamePrices]);
   
   // Refresh price data by calling our edge function - only for authenticated users
   const refreshPrices = async () => {

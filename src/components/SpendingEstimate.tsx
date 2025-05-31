@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
-import { RefreshCcw, ArrowRight } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useCoordinatedSpendingData } from '@/hooks/use-coordinated-spending-data';
+import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useNavigate } from 'react-router-dom';
+import SpendingMeter from './SpendingMeter';
 
 interface SpendingEstimateProps {
   showMoreDetailsLink?: boolean;
@@ -15,30 +15,25 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useCoordinatedSpendingData(true); // Only unplayed games
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
-  const navigate = useNavigate();
   
-  // Use unplayed spending data from coordinated hook
-  const spendingAmount = spendingData?.totalSpent || 0;
+  // Use unplayed spending data from enhanced hook
+  const spendingAmount = spendingData.totalSpent;
 
   console.log('SpendingEstimate - Using unplayed spending data:', {
-    totalSpent: spendingData?.totalSpent,
-    confidence: spendingData?.confidence,
-    dataQuality: spendingData?.dataQuality,
+    totalSpent: spendingData.totalSpent,
+    confidence: spendingData.confidence,
+    dataQuality: spendingData.dataQuality,
     finalAmount: spendingAmount
   });
 
   const handleRefresh = async () => {
-    if (!isRefreshing && refreshPrices) {
+    if (!isRefreshing) {
       await refreshPrices();
     }
-  };
-
-  const handleViewDetails = () => {
-    navigate('/spend');
   };
 
   // Only show refresh when authenticated and not in demo mode
@@ -80,38 +75,16 @@ const SpendingEstimate = ({
       
       <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
-          <div className="flex flex-col justify-center items-center h-full text-center">
-            <div className="text-4xl font-bold font-vt text-unplayed-pink mb-4">
-              ${spendingAmount.toFixed(2)}
-            </div>
-            
-            <p className="text-gray-300 mb-6">
-              spent on unplayed games
-            </p>
-
-            {spendingData && (
-              <div className="grid grid-cols-2 gap-4 mb-6 w-full max-w-xs">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-unplayed-mint">{spendingData.paidGamesCount}</div>
-                  <div className="text-xs text-gray-400">Paid Games</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-unplayed-mint">{spendingData.freeGamesCount}</div>
-                  <div className="text-xs text-gray-400">Free Games</div>
-                </div>
-              </div>
-            )}
-
-            {showMoreDetailsLink && (
-              <Button 
-                onClick={handleViewDetails}
-                className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold"
-              >
-                View Detailed Analysis
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          <SpendingMeter
+            amount={spendingAmount}
+            currency={'USD'}
+            isLoading={dataLoading || authLoading}
+            showDetailsLink={showMoreDetailsLink}
+            onHideClick={() => setIsVisible(false)}
+            totalSaved={spendingData.totalSaved}
+            isDemo={isDemo}
+            hasUser={!!user}
+          />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-gray-300 mb-6">

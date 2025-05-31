@@ -7,8 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { transformToUnplayedData } from '@/utils/data-transforms';
+import { useLibraryData } from '@/hooks/use-library-data';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import SteamLoader from './SteamLoader';
 import GameCard from './GameCard';
@@ -26,10 +25,10 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   const [hideIgnored, setHideIgnored] = useState<boolean>(false);
   const [onlyUnplayed, setOnlyUnplayed] = useState<boolean>(false);
 
-  // Use the unified data hook
-  const { data: unifiedData, stats: unifiedStats, isLoading, error } = useUnifiedLibraryData();
+  // Use the library data hook only when not in demo mode
+  const libraryDataResult = useLibraryData();
 
-  // Transform unified data to library format
+  // In demo mode, use demo library data; otherwise use real data
   const libraryGames = useMemo(() => {
     if (isDemo) {
       // Convert demo data to the expected format
@@ -47,38 +46,18 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
           game_id: game.id,
           playtime_minutes: game.playtime,
           hidden: false,
-          dust_score: Math.floor(Math.random() * 50) + 10,
+          dust_score: Math.floor(Math.random() * 50) + 10, // Random dust score for demo
           last_played_date: null,
           acquisition_date: null,
           notes: null,
         }
       }));
     }
+    return libraryDataResult.games || [];
+  }, [isDemo, demoData.library, libraryDataResult.games]);
 
-    if (!unifiedData || !unifiedStats) return [];
-
-    // Transform unified data to library format
-    return unifiedData.map(game => ({
-      id: game.game_id,
-      name: game.games.name,
-      image_url: game.games.image_url,
-      header_image: game.games.header_image,
-      release_date: game.games.release_date,
-      metacritic_score: game.games.metacritic_score,
-      genres: game.games.genres || [],
-      categories: game.games.categories || [],
-      userGame: {
-        id: game.id,
-        game_id: game.game_id,
-        playtime_minutes: game.playtime_minutes,
-        hidden: game.hidden,
-        dust_score: game.dust_score,
-        last_played_date: game.last_played_date,
-        acquisition_date: game.acquisition_date,
-        notes: game.notes,
-      }
-    }));
-  }, [isDemo, demoData.library, unifiedData, unifiedStats]);
+  const isLoading = isDemo ? false : libraryDataResult.isLoading;
+  const error = isDemo ? null : libraryDataResult.error;
 
   // Apply filters to the games
   const filteredGames = useMemo(() => {
@@ -126,6 +105,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
       console.log('Demo mode: Mark as played:', userGameId);
       return;
     }
+    // Implementation for marking as played
     console.log('Mark as played:', userGameId);
   };
 
@@ -134,6 +114,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
       console.log('Demo mode: Toggle hidden:', userGameId, !currentHidden);
       return;
     }
+    // Implementation for toggling hidden
     console.log('Toggle hidden:', userGameId, !currentHidden);
   };
 
@@ -142,6 +123,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
       console.log('Demo mode: Save note:', userGameId, note);
       return;
     }
+    // Implementation for saving note
     console.log('Save note:', userGameId, note);
   };
 
@@ -167,10 +149,6 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchFilter, hideIgnored, onlyUnplayed, limit]);
-
-  // Loading and error states
-  const actualIsLoading = isDemo ? false : isLoading;
-  const actualError = isDemo ? null : error;
 
   return (
     <div className="terminal-container">
@@ -256,13 +234,13 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
       </div>
 
       <div className="terminal-content">
-        {actualIsLoading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <SteamLoader message="Loading your library..." size="md" variant="secondary" />
           </div>
-        ) : actualError ? (
+        ) : error ? (
           <div className="text-center py-8 text-red-400">
-            <p>Error loading library: {actualError.message}</p>
+            <p>Error loading library: {error.message}</p>
           </div>
         ) : processedGames.length === 0 ? (
           <div className="text-center py-8 text-gray-400">

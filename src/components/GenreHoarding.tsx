@@ -3,8 +3,7 @@ import React, { useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
-import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
-import { transformWithGenres } from '@/utils/data-transforms';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -23,15 +22,10 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   activeGenre = null
 }: GenreHoardingProps) => {
   const { user } = useAuth();
-  const { data: unifiedData } = useUnifiedLibraryData();
+  const { data: dashboardData } = useDashboardData();
 
   // Memoize genre data to prevent unnecessary recalculations
-  const genreData = useMemo(() => {
-    if (!unifiedData?.length) return [];
-    
-    const { genres } = transformWithGenres(unifiedData);
-    return genres || [];
-  }, [unifiedData]);
+  const genreData = useMemo(() => dashboardData.genres, [dashboardData.genres]);
 
   // Memoize most hoarded genre calculation
   const mostHoardedGenre = useMemo(() => {

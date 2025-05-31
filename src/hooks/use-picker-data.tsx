@@ -1,6 +1,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import useUnplayedData from '@/hooks/useUnplayedData';
 import useGamePicks from '@/hooks/use-game-picks';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
@@ -12,7 +12,7 @@ type PickerScope = 'unplayed' | 'all';
  * Hook to provide filtered game data for the picker with proper session state management
  */
 export const usePickerData = () => {
-  const { data: unifiedData, stats: unifiedStats, isLoading: isLoadingLibrary } = useUnifiedLibraryData();
+  const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
   const { recentPick, isLoadingPicks, savePick, isSaving } = useGamePicks();
   const { user } = useAuth();
   const [scope, setScope] = useState<PickerScope>('unplayed');
@@ -26,40 +26,14 @@ export const usePickerData = () => {
   
   // Simplified authentication check - no more demo mode conflicts
   const isAuthenticated = !!user;
-
-  // Transform unified data to gamesList format with proper typing
-  const gamesList = useMemo(() => {
-    if (!unifiedData) return [];
-    
-    return unifiedData.map(game => ({
-      id: game.game_id,
-      name: game.games.name,
-      image: game.games.image_url || game.games.header_image || '',
-      playtimeMinutes: game.playtime_minutes || 0,
-      lastPlayed: game.last_played_date,
-      added: game.acquisition_date,
-      price: game.games.price_cents ? game.games.price_cents / 100 : 0,
-      genres: game.games.genres || [],
-      notes: game.notes,
-      hidden: game.hidden || false,
-      releaseDate: game.games.release_date,
-      metacritic: game.games.metacritic_score,
-      categories: game.games.categories || [],
-      completionEstimate: null,
-      mainStoryEstimate: null,
-      averageEstimate: null,
-      steamAppid: null,
-      howLongToBeatId: null,
-    })) as GameListItem[];
-  }, [unifiedData]);
   
   // Log data received
   useEffect(() => {
-    console.log('usePickerData - unifiedData:', unifiedData);
-    console.log('usePickerData - gamesList length:', gamesList?.length || 0);
+    console.log('usePickerData - unplayedData:', unplayedData);
+    console.log('usePickerData - gamesList length:', unplayedData?.gamesList?.length || 0);
     console.log('usePickerData - authenticated:', isAuthenticated);
     console.log('usePickerData - user:', user);
-  }, [unifiedData, gamesList, isAuthenticated, user]);
+  }, [unplayedData, isAuthenticated, user]);
   
   // Get recent pick IDs for duplicate prevention
   const recentPickIds = useMemo(() => {
@@ -80,15 +54,15 @@ export const usePickerData = () => {
   
   // Filter games based on selected criteria
   const filteredGames = useMemo(() => {
-    if (!gamesList?.length) {
+    if (!unplayedData || !unplayedData.gamesList) {
       console.log('usePickerData - No gamesList available');
       return [];
     }
     
-    console.log('usePickerData - Filtering from gamesList of size:', gamesList.length);
+    console.log('usePickerData - Filtering from gamesList of size:', unplayedData.gamesList.length);
     
     // First filter by scope (unplayed vs all)
-    let gamePool = gamesList;
+    let gamePool = unplayedData.gamesList;
     if (scope === 'unplayed') {
       gamePool = gamePool.filter(game => game.playtimeMinutes === 0);
       console.log('usePickerData - After unplayed filter:', gamePool.length);
@@ -102,9 +76,9 @@ export const usePickerData = () => {
     }
     
     // Filter by additional source filters if present
-    if (sourceFilter === 'shelfLife' && unifiedStats?.shelfLife) {
+    if (sourceFilter === 'shelfLife' && unplayedData.shelfLife) {
       // Get the ids of the oldest games from shelfLife
-      const oldestGameIds = new Set(unifiedStats.shelfLife.map(game => game.id));
+      const oldestGameIds = new Set(unplayedData.shelfLife.map(game => game.id));
       moodFiltered = moodFiltered.filter(game => oldestGameIds.has(game.id));
       console.log('usePickerData - After shelfLife filter:', moodFiltered.length);
     }
@@ -117,7 +91,7 @@ export const usePickerData = () => {
     }
     
     return moodFiltered;
-  }, [gamesList, scope, activeMood, recentPickIds, preventDuplicates, isAuthenticated, sourceFilter, unifiedStats]);
+  }, [unplayedData, scope, activeMood, recentPickIds, preventDuplicates, isAuthenticated, sourceFilter]);
 
   // Select a random game from the filtered pool
   const selectRandomGame = (): GameListItem | null => {

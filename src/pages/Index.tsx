@@ -6,7 +6,7 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
-import { useCacheManagement } from '@/hooks/use-query-keys';
+import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -22,8 +22,7 @@ import DemoModeIndicator from '@/components/DemoModeIndicator';
 import FullScreenModeWrapper from "@/components/FullScreenModeWrapper";
 import SteamLoader from "@/components/SteamLoader";
 import { Button } from "@/components/ui/button";
-import { useUnifiedLibraryData } from "@/hooks/useUnifiedLibraryData";
-import { transformToDashboardMetrics } from "@/utils/data-transforms";
+import { useUnplayedData } from "@/hooks/useUnplayedData";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,50 +41,58 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unifiedData, stats: unifiedStats, isLoading: dataLoading, refetch } = useUnifiedLibraryData();
+  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const queryClient = useQueryClient();
-  const { queryKeys, utils } = useCacheManagement();
+  const { queryKeys, utils } = useOptimizedCacheManagement();
 
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
 
-  // Transform unified data to dashboard metrics
-  const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
-    unplayedGames: 0,
-    totalGames: 0,
-    dustScore: 0,
-    totalPlaytime: 0,
-    cleanScore: 0,
-    recentlyPlayedCount: 0,
-    playedGames: 0,
+  // Safe data access with fallbacks
+  const safeData = {
+    unplayedGames: unplayedData?.unplayedGames || 0,
+    totalGames: unplayedData?.totalGames || 0,
+    dustScore: unplayedData?.dustScore || 0,
+    unplayedSpent: unplayedData?.unplayedSpent || 0,
+    cleanScore: unplayedData?.cleanScore || 0,
+    cleanTier: unplayedData?.cleanTier || null
   };
 
-  // Optimized function to update data after import
+  // Optimized function to update data after import using optimized cache management
   const refreshAllData = () => {
+    // Set a slight delay to ensure backend processing completes
     setTimeout(() => {
+      // Show toast notification
       toast.info("Refreshing your data...", {
         description: "This may take a moment to update all your stats."
       });
       
-      // Use consolidated cache invalidation
+      // Use optimized cache invalidation
       const keysToInvalidate = [
-        ...utils.invalidateUnifiedLibrary(user?.id),
+        ...utils.invalidateUnplayed(user?.id),
         ...utils.invalidateProfile(user?.id),
-        queryKeys.libraryGames(user?.id),
-        queryKeys.paginatedLibraryGames(user?.id),
-        queryKeys.libraryGamesCount(user?.id),
-        queryKeys.pickerGames(user?.id),
-        queryKeys.spendingData(user?.id)
+        // Invalidate specific dashboard-related queries
+        ['detailedDustData', user?.id],
+        ['libraryGames', user?.id],
+        ['paginatedLibraryGames', user?.id],
+        ['libraryGamesCount', user?.id],
+        ['pickerGames', user?.id],
+        ['spendingData', user?.id]
       ];
       
+      // Efficiently invalidate only necessary queries
       keysToInvalidate.forEach(queryKey => {
         queryClient.invalidateQueries({ queryKey });
       });
       
+      // Explicit refetch of dashboard data
       refetch?.();
+      
+      // Refresh profile as well
       refreshProfile(true);
       
+      // Notify success after a short delay
       setTimeout(() => {
         toast.success("Data refresh complete!", { 
           description: "Your dashboard has been updated with the latest information."
@@ -223,10 +230,11 @@ const Index = () => {
       );
     } else if (user && !profile?.steam_id) {
       // Authenticated but no Steam account linked
-      return <LinkSteamAccount />;
+      return (
+        <LinkSteamAccount />
+      );
     } else if (profile?.steam_id) {
-      const lastRefreshed = profile?.last_sync ? new Date(profile.last_sync) : null;
-      
+      // Fully authenticated with Steam
       return (
         <>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
@@ -333,8 +341,8 @@ const Index = () => {
             ) : (
               <>
                 <div className="dashboard-grid">
-                  <UnplayedCounter count={dashboardMetrics.unplayedGames} />
-                  <DustScoreMeter score={dashboardMetrics.dustScore} />
+                  <UnplayedCounter count={safeData.unplayedGames} />
+                  <DustScoreMeter score={safeData.dustScore} />
                   <SpendingEstimate />
                 </div>
                 <div className="mt-4">
