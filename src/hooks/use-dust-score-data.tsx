@@ -1,4 +1,3 @@
-
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -139,10 +138,10 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         
         let breakdown;
         if (breakdownData) {
-          // Use database breakdown
+          // Use database breakdown with new 5-factor system
           breakdown = {
             qualityScore: breakdownData.quality_score || 10,
-            priceScore: breakdownData.price_score || 7,
+            priceScore: breakdownData.price_score || breakdownData.ownership_score || 7,
             ageScore: breakdownData.age_score || 15,
             genreScore: breakdownData.genre_score || 7,
             playtimeFactor: breakdownData.playtime_factor || 1.0

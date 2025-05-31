@@ -10,6 +10,9 @@ export interface GameDustBreakdown {
   dustScore: number;
   ageScore: number;
   ownershipScore: number;
+  qualityScore: number; // New 5-factor field
+  priceScore: number;   // New 5-factor field
+  genreScore: number;   // New 5-factor field
   playtimeFactor: number;
   imageUrl: string | null;
   headerImage: string | null;
@@ -42,6 +45,9 @@ export const useDustBreakdowns = () => {
         dustScore: breakdown.current_dust_score,
         ageScore: breakdown.age_score,
         ownershipScore: breakdown.ownership_score,
+        qualityScore: breakdown.quality_score || 10,  // Use new column with fallback
+        priceScore: breakdown.price_score || breakdown.ownership_score || 7,  // Use new column with fallbacks
+        genreScore: breakdown.genre_score || 7,  // Use new column with fallback
         playtimeFactor: breakdown.playtime_factor,
         imageUrl: breakdown.image_url || breakdown.header_image,
         headerImage: breakdown.header_image,
