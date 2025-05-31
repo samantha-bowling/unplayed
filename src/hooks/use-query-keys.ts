@@ -45,6 +45,8 @@ export const queryKeys = {
   // Add the missing topSpendingGames query key
   topSpendingGames: (userId?: string) => ['topSpendingGames', userId] as const,
   
+  topExpensiveUnplayedGames: (userId?: string) => ['top-expensive-unplayed-games', userId] as const,
+  
   helpers: {
     allUserData: (userId: string) => {
       return [
