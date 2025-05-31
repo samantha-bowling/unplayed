@@ -83,6 +83,7 @@ export const useDashboardData = () => {
         totalSpent: unplayedData.totalSpent,
         totalPlaytime: unplayedData.totalPlaytime,
         dustScore: unplayedData.dustScore,
+        dustScoreSource: 'unplayedData.dustScore',
         cleanScore: cleanScore,
         spendingConfidence: spendingData.confidence
       });

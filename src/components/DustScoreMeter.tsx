@@ -29,6 +29,15 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
   const actualScore = score ?? userMetrics?.totalDustScore;
   const isDemoMode = isDemo || contextIsDemo;
 
+  // Add debugging for dust score source
+  console.log('DustScoreMeter Debug:', {
+    propsScore: score,
+    userMetricsScore: userMetrics?.totalDustScore,
+    actualScore,
+    isDemoMode,
+    userMetricsData: userMetrics
+  });
+
   if (isLoading) {
     return (
       <div className="terminal-container equal-height-container">

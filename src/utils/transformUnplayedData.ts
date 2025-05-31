@@ -11,6 +11,11 @@ export const transformUserGameData = (
   userGamesData: any[],
   gameEstimatesData: Record<number, any> = {}
 ): UnplayedDataType => {
+  console.log('transformUserGameData called with:', {
+    userGamesDataLength: userGamesData.length,
+    gameEstimatesDataKeys: Object.keys(gameEstimatesData).length
+  });
+
   // Initialize accumulators
   let totalPlaytime = 0;
   let totalSpent = 0;
@@ -27,6 +32,13 @@ export const transformUserGameData = (
     const price = gameData.price_cents ? (gameData.price_cents / 100) : 0;
     const playtimeMinutes = game.playtime_minutes || 0;
     const dustScore = game.dust_score || 0; // Use the dust score from database (enhanced calculation)
+
+    console.log('Processing game:', {
+      gameId: game.game_id,
+      gameName: gameData.name,
+      dustScore: dustScore,
+      playtimeMinutes: playtimeMinutes
+    });
 
     // Accumulate total playtime
     totalPlaytime += playtimeMinutes;
@@ -58,6 +70,12 @@ export const transformUserGameData = (
       steamAppid: gameEstimatesData[game.game_id]?.steam_appid || null,
       howLongToBeatId: gameEstimatesData[game.game_id]?.how_long_to_beat_id || null,
     });
+  });
+
+  console.log('Transform results:', {
+    totalGames: userGamesData.length,
+    totalDustScore: totalDustScore,
+    gamesList: gamesList.length
   });
 
   // Calculate unplayed games count

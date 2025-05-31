@@ -28,6 +28,8 @@ export const useUserMetrics = () => {
     queryFn: async (): Promise<UserMetrics | null> => {
       if (!user) return null;
 
+      console.log('Fetching user metrics for user:', user.id);
+
       const { data, error } = await supabase
         .from('user_metrics')
         .select('*')
@@ -39,7 +41,9 @@ export const useUserMetrics = () => {
         return null;
       }
 
-      return {
+      console.log('Raw user metrics from database:', data);
+
+      const metrics = {
         totalGames: data.total_games,
         unplayedGames: data.unplayed_games,
         playedGames: data.played_games,
@@ -54,6 +58,10 @@ export const useUserMetrics = () => {
         recentlyPlayedCount: data.recently_played_count || 0,
         lastCalculated: data.last_calculated
       };
+
+      console.log('Processed user metrics:', metrics);
+
+      return metrics;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
