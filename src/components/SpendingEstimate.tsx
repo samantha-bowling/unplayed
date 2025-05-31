@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
+import { useSpendingDataSimple } from '@/hooks/use-spending-data-simple';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
@@ -15,19 +14,19 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData();
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useSpendingDataSimple();
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   
-  // Use unplayed spending data from enhanced hook
+  // Use unplayed spending data from unified hook
   const spendingAmount = spendingData.totalSpent;
 
-  console.log('SpendingEstimate - Using unplayed spending data:', {
+  console.log('SpendingEstimate - Using unified spending data:', {
     totalSpent: spendingData.totalSpent,
-    confidence: spendingData.confidence,
-    dataQuality: spendingData.dataQuality,
-    finalAmount: spendingAmount
+    currency: spendingData.currency,
+    refreshedAt: spendingData.refreshedAt,
+    source: 'user_spending_metrics'
   });
 
   const handleRefresh = async () => {
@@ -77,7 +76,7 @@ const SpendingEstimate = ({
         {isVisible ? (
           <SpendingMeter
             amount={spendingAmount}
-            currency={'USD'}
+            currency={spendingData.currency}
             isLoading={dataLoading || authLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
