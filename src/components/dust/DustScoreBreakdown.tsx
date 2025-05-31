@@ -1,4 +1,3 @@
-
 import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +16,7 @@ interface DustScoreBreakdownProps {
 
 const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) => {
   // Debug logging
-  console.log("DustScoreBreakdown component received:", { totalScore, breakdown });
+  console.log("DustScoreBreakdown Phase 2 received:", { totalScore, breakdown });
 
   // If no breakdown data is available, show placeholder
   if (!breakdown) {
@@ -28,28 +27,25 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           <CardDescription>How your dust score is calculated</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center items-center py-12">
-          <p className="text-gray-400">No breakdown data available</p>
+          <p className="text-gray-400">No breakdown data available - calculating real factors...</p>
         </CardContent>
       </Card>
     );
   }
   
-  // Ensure we have valid values for calculation with new 5-factor system
+  // Use real calculated values from Phase 2 data
   const qualityScore = breakdown.qualityScore || 0;
   const priceScore = breakdown.priceScore || 0;
   const ageScore = breakdown.ageScore || 0;
   const genreScore = breakdown.genreScore || 0;
   const playtimeFactor = breakdown.playtimeFactor || 1.0;
   
-  // Calculate percentages for the visualizations
-  const actualTotal = totalScore || 1; // Prevent division by zero
-  
-  // Calculate what percentage each component contributes to the total
+  // Calculate percentages for the visualizations based on real data
   const rawTotal = qualityScore + priceScore + ageScore + genreScore;
-  const qualityPercent = Math.round((qualityScore / (rawTotal || 1)) * 100);
-  const pricePercent = Math.round((priceScore / (rawTotal || 1)) * 100);
-  const agePercent = Math.round((ageScore / (rawTotal || 1)) * 100);
-  const genrePercent = Math.round((genreScore / (rawTotal || 1)) * 100);
+  const qualityPercent = rawTotal > 0 ? Math.round((qualityScore / rawTotal) * 100) : 0;
+  const pricePercent = rawTotal > 0 ? Math.round((priceScore / rawTotal) * 100) : 0;
+  const agePercent = rawTotal > 0 ? Math.round((ageScore / rawTotal) * 100) : 0;
+  const genrePercent = rawTotal > 0 ? Math.round((genreScore / rawTotal) * 100) : 0;
   const playtimePercent = Math.round(playtimeFactor * 100);
   
   // Define dust score tiers based on total score
@@ -85,10 +81,10 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wind className="h-5 w-5 text-unplayed-mint" />
-              Dust Score Breakdown
+              Dust Score Breakdown (Phase 2)
             </CardTitle>
             <CardDescription className="text-base mt-3">
-              Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is calculated from these 5 factors
+              Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is calculated from real data across these 5 factors
             </CardDescription>
           </div>
         </div>
@@ -108,7 +104,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-yellow-400">{qualityScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Based on Metacritic scores - lower quality games get higher dust scores</p>
+                      <p>Based on real Metacritic scores from your games - lower quality games get higher dust scores</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -132,7 +128,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-green-400">{priceScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Based on game price - more expensive unplayed games accumulate more dust</p>
+                      <p>Based on real game prices - more expensive unplayed games accumulate more dust</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -156,7 +152,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-unplayed-amber">{ageScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Based on game release date - older games get higher scores</p>
+                      <p>Based on real game release dates - older games get higher scores</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -180,7 +176,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-purple-400">{genreScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Based on genre rarity - niche genres get higher scores</p>
+                      <p>Based on real genre data - niche genres get higher scores</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -204,7 +200,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-unplayed-pink">{playtimeFactor.toFixed(2)}x</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Multiplier based on your game playtime (lower for played games)</p>
+                      <p>Real multiplier based on your actual game playtime (lower for played games)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -212,7 +208,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <Progress value={playtimePercent} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-unplayed-pink mt-[-8px] rounded-full" style={{ width: `${playtimePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                Playtime reduces your dust score by {(100 - playtimePercent)}%
+                Real playtime reduces your dust score by {(100 - playtimePercent)}%
               </p>
             </div>
 

@@ -4,54 +4,60 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wind, Medal, RefreshCw } from "lucide-react";
+import { Loader2, Wind, RefreshCw } from "lucide-react";
 import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
 import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
 import DustScorePerGame from "@/components/dust/DustScorePerGame";
-import useDustScoreData from "@/hooks/use-dust-score-data";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
+import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
-  const { data, isLoading, refetch } = useDustScoreData();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Use Phase 2 hooks for real calculated data
+  const { data: userMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useUserMetrics();
+  const { data: dustBreakdowns, isLoading: breakdownsLoading, refetch: refetchBreakdowns } = useDustBreakdowns();
+  
+  const isLoading = metricsLoading || breakdownsLoading;
 
-  // Debug logging
+  // Debug logging for Phase 2 data
   useEffect(() => {
-    console.log("DustPage data:", data);
-    console.log("DustPage dust score:", data.dustScore);
-    console.log("DustPage dust score breakdown:", data.dustScoreBreakdown);
-  }, [data]);
+    console.log("DustPage Phase 2 - User Metrics:", userMetrics);
+    console.log("DustPage Phase 2 - Dust Breakdowns:", dustBreakdowns);
+  }, [userMetrics, dustBreakdowns]);
 
   const refreshData = async () => {
-    // Show refreshing state
     setIsRefreshing(true);
     toast.loading("Refreshing dust data...");
     
     try {
-      // Perform targeted cache invalidation for dust-related queries
+      // Invalidate and refetch Phase 2 queries
       await queryClient.invalidateQueries({ 
-        queryKey: queryKeys.detailedDustData(user?.id)
+        queryKey: queryKeys.userMetrics(user?.id)
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: queryKeys.dustBreakdowns(user?.id)
       });
       
-      // Explicitly refetch the dust score data if available
-      if (refetch) {
-        await refetch();
-        console.log("Dust data refetched successfully");
-      } else {
-        console.warn("Refetch function not available in useDustScoreData hook");
+      // Explicitly refetch the data
+      if (refetchMetrics) {
+        await refetchMetrics();
+      }
+      if (refetchBreakdowns) {
+        await refetchBreakdowns();
       }
       
-      // Show success message
       toast.success("Dust data refreshed successfully");
     } catch (error) {
       console.error("Error refreshing dust data:", error);
@@ -59,6 +65,48 @@ const DustPage = () => {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  // Process data for components - use real calculated values
+  const processedData = {
+    dustScore: userMetrics?.totalDustScore || 0,
+    dustScoreBreakdown: userMetrics ? {
+      // These will be real values when we have per-game breakdowns
+      qualityScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ageScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
+      priceScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ownershipScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
+      ageScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ageScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
+      genreScore: 7, // Default until we have genre scores in breakdowns
+      playtimeFactor: Number(((dustBreakdowns?.reduce((sum, game) => sum + game.playtimeFactor, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)).toFixed(2))
+    } : undefined,
+    topDustContributors: dustBreakdowns?.slice(0, 10).map(game => ({
+      id: game.gameId,
+      name: game.gameName,
+      dustScore: game.dustScore,
+      addedDate: '', // Will need to add this to breakdown table
+      releaseDate: game.releaseDate,
+      playtimeMinutes: game.playtimeMinutes,
+      image: game.imageUrl,
+      breakdown: {
+        qualityScore: game.ageScore, // Mapping until we have real quality scores
+        priceScore: game.ownershipScore, // Mapping until we have real price scores
+        ageScore: game.ageScore,
+        genreScore: 7, // Default
+        playtimeFactor: game.playtimeFactor
+      }
+    })) || [],
+    averageDustScore: userMetrics?.averageDustScore || 0,
+    totalGames: userMetrics?.totalGames || 0,
+    unplayedGames: userMetrics?.unplayedGames || 0,
+    cleanScore: userMetrics?.cleanScore || 0,
+    cleanScoreBreakdown: {
+      completionRate: 0.5, // Will need real data
+      engagementFactor: 0.3, // Will need real data
+      recencyFactor: 0.2 // Will need real data
+    },
+    cleanStreak: userMetrics?.cleanStreak || 0,
+    recentlyPlayedCount: userMetrics?.recentlyPlayedCount || 0,
+    recentlyPlayedUnplayed: 0, // Will need real data
+    cleanStreakMetadata: undefined // Will need real data
   };
 
   return (
@@ -150,33 +198,33 @@ const DustPage = () => {
                 
                 <TabsContent value="breakdown" className="space-y-4">
                   <DustScoreBreakdown 
-                    totalScore={data.dustScore}
-                    breakdown={data.dustScoreBreakdown}
+                    totalScore={processedData.dustScore}
+                    breakdown={processedData.dustScoreBreakdown}
                   />
                 </TabsContent>
                 
                 <TabsContent value="clean" className="space-y-4">
                   <CleanScoreBreakdown
-                    cleanScore={data.cleanScore || 0}
-                    breakdown={data.cleanScoreBreakdown}
-                    cleanStreak={data.cleanStreak}
-                    recentlyPlayedCount={data.recentlyPlayedCount}
-                    recentlyPlayedUnplayed={data.recentlyPlayedUnplayed}
-                    cleanStreakMetadata={data.cleanStreakMetadata}
+                    cleanScore={processedData.cleanScore}
+                    breakdown={processedData.cleanScoreBreakdown}
+                    cleanStreak={processedData.cleanStreak}
+                    recentlyPlayedCount={processedData.recentlyPlayedCount}
+                    recentlyPlayedUnplayed={processedData.recentlyPlayedUnplayed}
+                    cleanStreakMetadata={processedData.cleanStreakMetadata}
                   />
                 </TabsContent>
                 
                 <TabsContent value="contributors" className="space-y-4">
                   <TopDustContributors 
-                    contributors={data.topDustContributors || []}
+                    contributors={processedData.topDustContributors}
                   />
                 </TabsContent>
                 
                 <TabsContent value="analysis" className="space-y-4">
                   <DustScorePerGame 
-                    avgDustScore={data.averageDustScore || 0}
-                    totalGames={data.totalGames}
-                    unplayedGames={data.unplayedGames}
+                    avgDustScore={processedData.averageDustScore}
+                    totalGames={processedData.totalGames}
+                    unplayedGames={processedData.unplayedGames}
                   />
                 </TabsContent>
               </Tabs>
