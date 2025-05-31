@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
-import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
+import { useCoordinatedSpendingData } from '@/hooks/use-coordinated-spending-data';
 import { Clock, RefreshCw, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -33,7 +33,7 @@ const SpendingMeter = ({
     isOnCooldown,
     cooldownRemaining,
     formatCooldown
-  } = useEnhancedSpendingData(onlyUnplayed);
+  } = useCoordinatedSpendingData(onlyUnplayed);
 
   const [animatedAmount, setAnimatedAmount] = useState(0);
 

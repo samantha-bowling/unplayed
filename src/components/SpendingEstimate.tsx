@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, ArrowRight } from 'lucide-react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useEnhancedSpendingData } from '@/hooks/use-spending-data-enhanced';
+import { useCoordinatedSpendingData } from '@/hooks/use-coordinated-spending-data';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import SpendingMeter from './SpendingMeter';
+import { useNavigate } from 'react-router-dom';
 
 interface SpendingEstimateProps {
   showMoreDetailsLink?: boolean;
@@ -15,12 +15,13 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useEnhancedSpendingData(true); // Only unplayed games
+  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useCoordinatedSpendingData(true); // Only unplayed games
   const { isDemo } = useDemoMode();
   const { status, isLoading: authLoading, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
   
-  // Use unplayed spending data from enhanced hook
+  // Use unplayed spending data from coordinated hook
   const spendingAmount = spendingData?.totalSpent || 0;
 
   console.log('SpendingEstimate - Using unplayed spending data:', {
@@ -34,6 +35,10 @@ const SpendingEstimate = ({
     if (!isRefreshing && refreshPrices) {
       await refreshPrices();
     }
+  };
+
+  const handleViewDetails = () => {
+    navigate('/spend');
   };
 
   // Only show refresh when authenticated and not in demo mode
@@ -75,10 +80,38 @@ const SpendingEstimate = ({
       
       <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
-          <SpendingMeter
-            onlyUnplayed={true}
-            showRefreshButton={false}
-          />
+          <div className="flex flex-col justify-center items-center h-full text-center">
+            <div className="text-4xl font-bold font-vt text-unplayed-pink mb-4">
+              ${spendingAmount.toFixed(2)}
+            </div>
+            
+            <p className="text-gray-300 mb-6">
+              spent on unplayed games
+            </p>
+
+            {spendingData && (
+              <div className="grid grid-cols-2 gap-4 mb-6 w-full max-w-xs">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-unplayed-mint">{spendingData.paidGamesCount}</div>
+                  <div className="text-xs text-gray-400">Paid Games</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-unplayed-mint">{spendingData.freeGamesCount}</div>
+                  <div className="text-xs text-gray-400">Free Games</div>
+                </div>
+              </div>
+            )}
+
+            {showMoreDetailsLink && (
+              <Button 
+                onClick={handleViewDetails}
+                className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold"
+              >
+                View Detailed Analysis
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <p className="text-gray-300 mb-6">

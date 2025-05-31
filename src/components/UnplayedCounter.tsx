@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -5,6 +6,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
 import { transformToDashboardMetrics } from '@/utils/data-transforms';
 import { useAnimatedCounter } from '@/hooks/use-animated-counter';
+import { getGameCounts } from '@/utils/game-definitions';
 import {
   Tooltip,
   TooltipContent,
@@ -23,24 +25,41 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   compact = false,
   isDemo = false
 }: UnplayedCounterProps) => {
-  const { stats: unifiedStats } = useUnifiedLibraryData();
+  const { data: unifiedData, stats: unifiedStats } = useUnifiedLibraryData();
   const { isDemo: contextIsDemo } = useDemoMode();
   const { user } = useAuth();
 
-  // Memoized base calculations
+  // Memoized base calculations using standardized game counting
   const calculatedData = useMemo(() => {
-    const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
-      unplayedGames: 0,
-      totalGames: 0,
-      dustScore: 0,
-      totalPlaytime: 0,
-      cleanScore: 0,
-      recentlyPlayedCount: 0,
-      playedGames: 0,
-    };
+    let actualCount: number;
+    let totalGames: number;
     
-    const actualCount = count ?? dashboardMetrics.unplayedGames;
-    const totalGames = dashboardMetrics.totalGames;
+    if (count !== undefined) {
+      // Use provided count
+      actualCount = count;
+      totalGames = unifiedStats?.totalGames || 0;
+    } else {
+      // Use unified data with standardized counting
+      if (unifiedData && unifiedData.length > 0) {
+        const gameCounts = getGameCounts(unifiedData);
+        actualCount = gameCounts.unplayedGames;
+        totalGames = gameCounts.totalGames;
+      } else {
+        // Fallback to dashboard metrics
+        const dashboardMetrics = unifiedStats ? transformToDashboardMetrics(unifiedStats) : {
+          unplayedGames: 0,
+          totalGames: 0,
+          dustScore: 0,
+          totalPlaytime: 0,
+          cleanScore: 0,
+          recentlyPlayedCount: 0,
+          playedGames: 0,
+        };
+        actualCount = dashboardMetrics.unplayedGames;
+        totalGames = dashboardMetrics.totalGames;
+      }
+    }
+    
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     const isDemoMode = isDemo || contextIsDemo;
     
@@ -50,7 +69,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       unplayedPercentage,
       isDemoMode
     };
-  }, [count, unifiedStats, isDemo, contextIsDemo]);
+  }, [count, unifiedData, unifiedStats, isDemo, contextIsDemo]);
 
   // Animated counters with demo-aware speed
   const animatedCount = useAnimatedCounter({
