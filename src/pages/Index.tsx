@@ -192,7 +192,7 @@ const Index = () => {
     return (
       <FullScreenModeWrapper>
         <div className="min-h-screen flex items-center justify-center">
-          {focusedComponent === "library" && <LibraryPreview />}
+          {focusedComponent === "library" && <LibraryPreview zenModeFullScreen />}
           {focusedComponent === "picker" && <RandomPicker fullScreen />}
         </div>
       </FullScreenModeWrapper>
