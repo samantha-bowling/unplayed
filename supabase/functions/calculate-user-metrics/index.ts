@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -14,9 +15,104 @@ interface GameData {
   release_date: string | null;
   genres: string[];
   price_cents: number | null;
+  metacritic_score: number | null;
   playtime_minutes: number;
   dust_score: number | null;
   last_played_date: string | null;
+}
+
+// Enhanced 5-factor dust score calculation
+function calculateEnhancedDustScore(
+  releaseDate: string | null,
+  playtimeMinutes: number,
+  priceCents: number = 0,
+  genres: string[] = [],
+  metacriticScore: number | null = null
+): {
+  qualityScore: number;
+  priceScore: number;
+  ageScore: number;
+  genreScore: number;
+  playtimeFactor: number;
+  totalScore: number;
+} {
+  // 1. Age Score (based on release date)
+  const ageScore = (() => {
+    if (!releaseDate) return 15;
+    const release = new Date(releaseDate);
+    const now = new Date();
+    const yearsOld = (now.getTime() - release.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    
+    if (yearsOld >= 15) return 30;
+    if (yearsOld >= 10) return 25;
+    if (yearsOld >= 5) return 20;
+    if (yearsOld >= 2) return 15;
+    if (yearsOld >= 1) return 10;
+    return 5;
+  })();
+
+  // 2. Quality Score (high quality = high dust when unplayed)
+  const qualityScore = (() => {
+    if (!metacriticScore) return 10;
+    if (metacriticScore >= 90) return 20;
+    if (metacriticScore >= 80) return 17;
+    if (metacriticScore >= 70) return 14;
+    if (metacriticScore >= 60) return 10;
+    return 6;
+  })();
+
+  // 3. Price Score (higher price = higher dust potential)
+  const priceScore = (() => {
+    if (priceCents >= 6000) return 15;
+    if (priceCents >= 4000) return 12;
+    if (priceCents >= 2000) return 10;
+    if (priceCents >= 1000) return 8;
+    if (priceCents > 0) return 5;
+    if (priceCents === 0) return 2;
+    return 7;
+  })();
+
+  // 4. Genre Score
+  const genreScore = (() => {
+    if (!genres || genres.length === 0) return 7;
+    
+    const dustyGenres = ['Strategy', 'Simulation', 'RPG', 'Turn-Based Strategy', 'Grand Strategy'];
+    const quickGenres = ['Action', 'Arcade', 'Racing', 'Sports', 'Fighting'];
+    
+    const hasDustyGenre = genres.some(genre => 
+      dustyGenres.some(dusty => genre.toLowerCase().includes(dusty.toLowerCase()))
+    );
+    const hasQuickGenre = genres.some(genre => 
+      quickGenres.some(quick => genre.toLowerCase().includes(quick.toLowerCase()))
+    );
+    
+    if (hasDustyGenre) return 10;
+    if (hasQuickGenre) return 5;
+    return 7;
+  })();
+
+  // 5. Playtime Factor
+  const playtimeFactor = (() => {
+    const minutes = playtimeMinutes || 0;
+    if (minutes === 0) return 1.0;
+    if (minutes < 30) return 0.9;
+    if (minutes < 120) return 0.6;
+    if (minutes < 360) return 0.3;
+    return 0.1;
+  })();
+
+  // Calculate total dust score
+  const baseScore = ageScore + qualityScore + priceScore + genreScore;
+  const totalScore = Math.max(1, Math.min(100, Math.floor(baseScore * playtimeFactor)));
+
+  return {
+    qualityScore,
+    priceScore,
+    ageScore,
+    genreScore,
+    playtimeFactor,
+    totalScore
+  };
 }
 
 serve(async (req) => {
@@ -42,9 +138,9 @@ serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    console.log(`Processing metrics for user: ${user.id}`);
+    console.log(`Processing enhanced metrics for user: ${user.id}`);
 
-    // Fetch all user games with game data
+    // Fetch ALL user games with game data (removed slice limit)
     const { data: userGames, error: gamesError } = await supabase
       .from('user_games')
       .select(`
@@ -59,7 +155,8 @@ serve(async (req) => {
           header_image,
           release_date,
           genres,
-          price_cents
+          price_cents,
+          metacritic_score
         )
       `)
       .eq('user_id', user.id);
@@ -76,12 +173,21 @@ serve(async (req) => {
       release_date: ug.games?.release_date || null,
       genres: ug.games?.genres || [],
       price_cents: ug.games?.price_cents || null,
+      metacritic_score: ug.games?.metacritic_score || null,
       playtime_minutes: ug.playtime_minutes || 0,
       dust_score: ug.dust_score || 0,
       last_played_date: ug.last_played_date || null
     })) || [];
 
-    console.log(`Processing ${games.length} games`);
+    console.log(`Processing ${games.length} games with enhanced 5-factor scoring`);
+
+    // Provide user feedback for large libraries
+    let processingMessage = 'Enhanced dust scores calculated successfully';
+    if (games.length >= 500) {
+      processingMessage = `Processing large library of ${games.length} games completed with enhanced scoring`;
+    } else if (games.length >= 100) {
+      processingMessage = `Processing ${games.length} games completed with enhanced scoring`;
+    }
 
     // Calculate core metrics
     const totalGames = games.length;
@@ -114,53 +220,29 @@ serve(async (req) => {
       }
     }
 
-    // ===== FIXED RECENTLY PLAYED CALCULATION (SIMPLIFIED) =====
-    
-    // Calculate recently played games (games played in last 30 days - no playtime threshold)
+    // Calculate recently played games (simplified)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const recentlyPlayedCount = games.filter(game => {
-      // Must have last played date
       if (!game.last_played_date) return false;
-      
-      // Must be played within last 30 days (removed playtime threshold)
       const lastPlayedDate = new Date(game.last_played_date);
       return lastPlayedDate >= thirtyDaysAgo;
     }).length;
 
-    console.log(`Recently played calculation (SIMPLIFIED):`, {
-      totalGames,
-      playedGames,
-      recentlyPlayedCount,
-      thirtyDaysAgo: thirtyDaysAgo.toISOString(),
-      description: 'Any game with last_played_date within 30 days'
-    });
+    console.log(`Recently played calculation: ${recentlyPlayedCount} games`);
 
-    // ===== CLEAN SCORE CALCULATION (Phase 2) =====
-    
-    // 1. Unique Game Diversity (25% weight)
-    // Measure how varied the user's gaming habits are
+    // Enhanced clean score calculation
     const uniqueGenres = new Set();
     const playedGameGenres = games.filter(g => g.playtime_minutes > 0).flatMap(g => g.genres);
     playedGameGenres.forEach(genre => uniqueGenres.add(genre));
     
     const diversityScore = Math.min(100, Math.round((uniqueGenres.size / Math.max(1, totalGames / 10)) * 100));
-
-    // 2. Recency Engagement (30% weight) - Now uses the SIMPLIFIED recently played count
     const recencyScore = Math.min(100, Math.round((recentlyPlayedCount / Math.max(1, totalGames)) * 100));
-
-    // 3. Backlog Conversion Rate (25% weight)
-    // Percentage of games that were unplayed but now have some playtime
-    // For now, we'll use completion rate as a proxy
     const backlogConversionScore = totalGames > 0 ? Math.round((playedGames / totalGames) * 100) : 0;
-
-    // 4. Session Depth (20% weight)
-    // Average playtime per played game (encouraging meaningful engagement)
     const avgPlaytimePerGame = playedGames > 0 ? totalPlaytimeHours / playedGames : 0;
-    const sessionDepthScore = Math.min(100, Math.round(avgPlaytimePerGame * 10)); // 10+ hours = 100
+    const sessionDepthScore = Math.min(100, Math.round(avgPlaytimePerGame * 10));
 
-    // Calculate final clean score with new weights
     const cleanScore = Math.round(
       (diversityScore * 0.25) + 
       (recencyScore * 0.30) + 
@@ -168,16 +250,13 @@ serve(async (req) => {
       (sessionDepthScore * 0.20)
     );
 
-    // Calculate clean streak (simplified - number of played games for now)
     const cleanStreak = playedGames;
-
-    // Determine clean tier
     const cleanTier = cleanScore >= 90 ? 'pristine' :
                      cleanScore >= 75 ? 'clean' :
                      cleanScore >= 60 ? 'tidy' :
                      cleanScore >= 40 ? 'messy' : 'dusty';
 
-    // Store user metrics (existing table)
+    // Store user metrics
     await supabase
       .from('user_metrics')
       .upsert({
@@ -193,12 +272,12 @@ serve(async (req) => {
         total_library_value_cents: totalLibraryValueCents,
         unplayed_value_cents: unplayedValueCents,
         total_playtime_hours: totalPlaytimeHours,
-        recently_played_count: recentlyPlayedCount, // Now using the SIMPLIFIED calculation
+        recently_played_count: recentlyPlayedCount,
         last_calculated: new Date().toISOString(),
-        calculation_version: 2 // Updated to version 2 for new clean score system
+        calculation_version: 3
       });
 
-    // Store clean score breakdown (new table)
+    // Store clean score breakdown
     await supabase
       .from('user_clean_score_breakdowns')
       .upsert({
@@ -208,7 +287,7 @@ serve(async (req) => {
         backlog_conversion_score: backlogConversionScore,
         session_depth_score: sessionDepthScore,
         clean_streak_days: cleanStreak,
-        recently_played_count: recentlyPlayedCount, // Now using the SIMPLIFIED calculation
+        recently_played_count: recentlyPlayedCount,
         last_calculated: new Date().toISOString()
       });
 
@@ -220,18 +299,16 @@ serve(async (req) => {
       });
     });
 
-    // Genre colors (consistent with current UI)
     const genreColors = [
       '#A3F7BF', '#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA',
       '#FFD3BA', '#E0BBE4', '#D4F0FF', '#C7CEEA', '#FFC0CB'
     ];
 
-    // Clear existing genre stats and insert new ones
     await supabase.from('user_genre_stats').delete().eq('user_id', user.id);
     
     const genreEntries = Object.entries(genreStats)
-      .sort(([,a], [,b]) => b - a) // Sort by count descending
-      .slice(0, 10) // Top 10 genres
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10)
       .map(([genre, count], index) => ({
         user_id: user.id,
         genre_name: genre,
@@ -245,7 +322,7 @@ serve(async (req) => {
       await supabase.from('user_genre_stats').insert(genreEntries);
     }
 
-    // Process shelf life data (oldest games by release date)
+    // Process shelf life data
     const gamesWithReleaseDate = games
       .filter(g => g.release_date)
       .map(g => ({
@@ -253,9 +330,8 @@ serve(async (req) => {
         parsedReleaseDate: new Date(g.release_date!)
       }))
       .sort((a, b) => a.parsedReleaseDate.getTime() - b.parsedReleaseDate.getTime())
-      .slice(0, 20); // Top 20 oldest games
+      .slice(0, 20);
 
-    // Clear existing shelf life data and insert new ones
     await supabase.from('user_shelf_life').delete().eq('user_id', user.id);
 
     const shelfLifeEntries = gamesWithReleaseDate.map((game, index) => {
@@ -264,7 +340,7 @@ serve(async (req) => {
         user_id: user.id,
         game_id: game.id,
         release_date: game.release_date,
-        years_old: Math.round(yearsOld * 10) / 10, // Round to 1 decimal
+        years_old: Math.round(yearsOld * 10) / 10,
         playtime_minutes: game.playtime_minutes,
         shelf_life_rank: index + 1,
         last_calculated: new Date().toISOString()
@@ -275,32 +351,34 @@ serve(async (req) => {
       await supabase.from('user_shelf_life').insert(shelfLifeEntries);
     }
 
-    // Process dust breakdowns for top dust contributors
-    const topDustGames = games
+    // Process enhanced dust breakdowns for ALL games with dust scores (removed limit)
+    const allDustGames = games
       .filter(g => g.dust_score && g.dust_score > 0)
-      .sort((a, b) => (b.dust_score || 0) - (a.dust_score || 0))
-      .slice(0, 50); // Top 50 dust contributors
+      .sort((a, b) => (b.dust_score || 0) - (a.dust_score || 0));
 
-    // Clear existing dust breakdowns and calculate new ones
     await supabase.from('game_dust_breakdowns').delete().eq('user_id', user.id);
 
     const dustBreakdownEntries = [];
-    for (const game of topDustGames) {
-      // Get breakdown using existing function (simplified since we don't have acquisition_date)
-      const { data: breakdown } = await supabase.rpc('get_dust_score_breakdown', {
-        game_id: game.id,
-        acquisition_date: new Date().toISOString(), // Use current date as fallback
-        release_date: game.release_date || new Date().toISOString(),
-        playtime_minutes: game.playtime_minutes
-      });
+    for (const game of allDustGames) {
+      // Calculate enhanced 5-factor breakdown for each game
+      const breakdown = calculateEnhancedDustScore(
+        game.release_date,
+        game.playtime_minutes,
+        game.price_cents || 0,
+        game.genres,
+        game.metacritic_score
+      );
 
       dustBreakdownEntries.push({
         user_id: user.id,
         game_id: game.id,
-        current_dust_score: game.dust_score || 0,
-        age_score: breakdown?.ageScore || 0,
-        ownership_score: breakdown?.ownershipScore || 0,
-        playtime_factor: breakdown?.playtimeFactor || 1.0,
+        current_dust_score: breakdown.totalScore,
+        age_score: breakdown.ageScore,
+        ownership_score: breakdown.priceScore, // Map for compatibility
+        quality_score: breakdown.qualityScore,
+        price_score: breakdown.priceScore,
+        genre_score: breakdown.genreScore,
+        playtime_factor: breakdown.playtimeFactor,
         game_name: game.name,
         image_url: game.image_url,
         header_image: game.header_image,
@@ -314,31 +392,30 @@ serve(async (req) => {
       await supabase.from('game_dust_breakdowns').insert(dustBreakdownEntries);
     }
 
-    console.log(`Metrics calculation completed for user ${user.id}`);
-    console.log(`- Total games: ${totalGames}`);
-    console.log(`- Unplayed games: ${unplayedGames}`);
-    console.log(`- Recently played (SIMPLIFIED): ${recentlyPlayedCount}`);
-    console.log(`- Clean score: ${cleanScore} (Phase 2)`);
-    console.log(`- Diversity: ${diversityScore}, Recency: ${recencyScore}, Backlog: ${backlogConversionScore}, Depth: ${sessionDepthScore}`);
-    console.log(`- Total library value: $${(totalLibraryValueCents / 100).toFixed(2)}`);
+    console.log(`Enhanced metrics calculation completed for user ${user.id}`);
+    console.log(`- Total games processed: ${totalGames}`);
+    console.log(`- Dust breakdowns created: ${dustBreakdownEntries.length}`);
+    console.log(`- Clean score: ${cleanScore} (Enhanced Phase 2)`);
+    console.log(`- Enhanced 5-factor scoring: Quality/Price/Age/Genre/Playtime`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'User metrics calculated successfully with SIMPLIFIED recently played calculation',
+        message: processingMessage,
         metrics: {
           totalGames,
           unplayedGames,
-          recentlyPlayedCount, // Now accurate and simplified
+          recentlyPlayedCount,
           cleanScore,
+          dustBreakdownsCreated: dustBreakdownEntries.length,
+          enhancedScoring: true,
           cleanScoreBreakdown: {
             diversityScore,
             recencyScore,
             backlogConversionScore,
             sessionDepthScore
           },
-          totalLibraryValueCents,
-          genresProcessed: 0 // Will be filled by the existing genre processing code
+          totalLibraryValueCents
         }
       }),
       {
@@ -348,7 +425,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error calculating user metrics:', error);
+    console.error('Error calculating enhanced user metrics:', error);
     return new Response(
       JSON.stringify({
         success: false,
