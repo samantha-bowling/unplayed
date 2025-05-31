@@ -47,6 +47,8 @@ export const queryKeys = {
   
   topExpensiveUnplayedGames: (userId?: string) => ['top-expensive-unplayed-games', userId] as const,
   
+  priceDistribution: (userId?: string) => ['price-distribution', userId] as const,
+  
   helpers: {
     allUserData: (userId: string) => {
       return [

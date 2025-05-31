@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,6 +9,7 @@ import { useTopExpensiveUnplayedGames } from '@/hooks/useTopExpensiveUnplayedGam
 import CurrencyAmount from '@/components/ui/currency-amount';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import PriceDistributionChart from '@/components/PriceDistributionChart';
 
 const SpendPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
