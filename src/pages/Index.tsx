@@ -5,6 +5,7 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
+import { useMetricsRefresh } from "@/hooks/useMetricsRefresh";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
 
@@ -43,6 +44,7 @@ const Index = () => {
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
+  const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
 
@@ -58,46 +60,57 @@ const Index = () => {
     cleanTier: unplayedData?.cleanTier || null
   };
 
-  // Optimized function to update data after import using optimized cache management
-  const refreshAllData = () => {
-    // Set a slight delay to ensure backend processing completes
-    setTimeout(() => {
-      // Show toast notification
-      toast.info("Refreshing your data...", {
-        description: "This may take a moment to update all your stats."
-      });
+  // Enhanced function to update data with metrics refresh first
+  const refreshAllData = async () => {
+    if (isRefreshing || !user) return;
+
+    try {
+      // First refresh backend metrics
+      await refreshUserMetrics();
       
-      // Use optimized cache invalidation
-      const keysToInvalidate = [
-        ...utils.invalidateUnplayed(user?.id),
-        ...utils.invalidateProfile(user?.id),
-        // Invalidate specific dashboard-related queries
-        ['detailedDustData', user?.id],
-        ['libraryGames', user?.id],
-        ['paginatedLibraryGames', user?.id],
-        ['libraryGamesCount', user?.id],
-        ['pickerGames', user?.id],
-        ['spendingData', user?.id]
-      ];
-      
-      // Efficiently invalidate only necessary queries
-      keysToInvalidate.forEach(queryKey => {
-        queryClient.invalidateQueries({ queryKey });
-      });
-      
-      // Explicit refetch of dashboard data
-      refetch?.();
-      
-      // Refresh profile as well
-      refreshProfile(true);
-      
-      // Notify success after a short delay
+      // Then refresh cache with a slight delay to ensure backend processing completes
       setTimeout(() => {
-        toast.success("Data refresh complete!", { 
-          description: "Your dashboard has been updated with the latest information."
+        toast.info("Refreshing your data...", {
+          description: "This may take a moment to update all your stats."
         });
-      }, 2000);
-    }, 1000);
+        
+        // Use optimized cache invalidation
+        const keysToInvalidate = [
+          ...utils.invalidateUnplayed(user?.id),
+          ...utils.invalidateProfile(user?.id),
+          // Invalidate specific dashboard-related queries
+          ['detailedDustData', user?.id],
+          ['libraryGames', user?.id],
+          ['paginatedLibraryGames', user?.id],
+          ['libraryGamesCount', user?.id],
+          ['pickerGames', user?.id],
+          ['spendingData', user?.id]
+        ];
+        
+        // Efficiently invalidate only necessary queries
+        keysToInvalidate.forEach(queryKey => {
+          queryClient.invalidateQueries({ queryKey });
+        });
+        
+        // Explicit refetch of dashboard data
+        refetch?.();
+        
+        // Refresh profile as well
+        refreshProfile(true);
+        
+        // Notify success after a short delay
+        setTimeout(() => {
+          toast.success("Data refresh complete!", { 
+            description: "Your dashboard has been updated with the latest information."
+          });
+        }, 2000);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast.error("Failed to refresh data", {
+        description: "Please try again later."
+      });
+    }
   };
   
   // Function to import Steam library with progress updates
@@ -249,7 +262,7 @@ const Index = () => {
                   <Button
                     onClick={importSteamLibrary}
                     className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
-                    disabled={isImporting}
+                    disabled={isImporting || isRefreshing}
                   >
                     <Import className="mr-2 h-4 w-4" />
                     {isImporting ? "Importing..." : "Import Steam Library"}
@@ -269,13 +282,14 @@ const Index = () => {
                       onClick={refreshAllData}
                       variant="outline"
                       className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
+                      disabled={isRefreshing}
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh Dashboard
+                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      {isRefreshing ? "Refreshing..." : "Refresh Dashboard"}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Update the dashboard with latest data without importing from Steam</p>
+                    <p>Update metrics and refresh dashboard with latest data</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

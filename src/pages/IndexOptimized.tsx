@@ -5,6 +5,7 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
+import { useMetricsRefresh } from "@/hooks/useMetricsRefresh";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
@@ -58,6 +59,7 @@ const IndexOptimized = () => {
   const { isDemo } = useDemoMode();
   const { data: dashboardData, isLoading: dataLoading, lastRefreshed, refetch } = useDashboardData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
+  const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
   const { refreshMetrics: refreshSpendingMetrics } = useSpendingMetrics();
@@ -70,36 +72,47 @@ const IndexOptimized = () => {
     setImportState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Optimized refresh function with targeted invalidation
-  const refreshAllData = useCallback(() => {
-    setTimeout(() => {
-      toast.info("Refreshing your data...", {
-        description: "This may take a moment to update all your stats."
-      });
+  // Enhanced refresh function with backend metrics refresh first
+  const refreshAllData = useCallback(async () => {
+    if (isRefreshing || !user?.id) return;
+
+    try {
+      // First refresh backend metrics
+      await refreshUserMetrics();
       
-      // Use optimized cache invalidation
-      if (user?.id) {
+      // Then refresh cache with a slight delay
+      setTimeout(() => {
+        toast.info("Refreshing your data...", {
+          description: "This may take a moment to update all your stats."
+        });
+        
+        // Use optimized cache invalidation
         const userDataKeys = queryKeys.helpers.allUserData(user.id);
         userDataKeys.forEach(key => {
           queryClient.invalidateQueries({ queryKey: key });
         });
-      }
-      
-      // Explicit refetch of dashboard data
-      refetch?.();
-      
-      // Refresh profile and spending metrics
-      refreshProfile(true);
-      refreshSpendingMetrics();
-      
-      // Success notification
-      setTimeout(() => {
-        toast.success("Data refresh complete!", { 
-          description: "Your dashboard has been updated with the latest information."
-        });
-      }, 2000);
-    }, 1000);
-  }, [user?.id, queryKeys, queryClient, refetch, refreshProfile, refreshSpendingMetrics]);
+        
+        // Explicit refetch of dashboard data
+        refetch?.();
+        
+        // Refresh profile and spending metrics
+        refreshProfile(true);
+        refreshSpendingMetrics();
+        
+        // Success notification
+        setTimeout(() => {
+          toast.success("Data refresh complete!", { 
+            description: "Your dashboard has been updated with the latest information."
+          });
+        }, 2000);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast.error("Failed to refresh data", {
+        description: "Please try again later."
+      });
+    }
+  }, [user?.id, refreshUserMetrics, isRefreshing, queryKeys, queryClient, refetch, refreshProfile, refreshSpendingMetrics]);
 
   // Enhanced import function with improved UX
   const importSteamLibrary = useCallback(async () => {
@@ -281,7 +294,7 @@ const IndexOptimized = () => {
                   <Button
                     onClick={importSteamLibrary}
                     className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
-                    disabled={importState.isImporting}
+                    disabled={importState.isImporting || isRefreshing}
                   >
                     <Import className="mr-2 h-4 w-4" />
                     {importState.isImporting ? "Importing..." : "Import Steam Library"}
@@ -301,13 +314,14 @@ const IndexOptimized = () => {
                       onClick={refreshAllData}
                       variant="outline"
                       className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
+                      disabled={isRefreshing}
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh Dashboard
+                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      {isRefreshing ? "Refreshing..." : "Refresh Dashboard"}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Update the dashboard with latest data without importing from Steam</p>
+                    <p>Update metrics and refresh dashboard with latest data</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -332,7 +346,7 @@ const IndexOptimized = () => {
       );
     }
     return null;
-  }, [user, profile, importState, lastRefreshed, importSteamLibrary, refreshAllData]);
+  }, [user, profile, importState, lastRefreshed, importSteamLibrary, refreshAllData, isRefreshing]);
 
   return (
     <FullScreenModeWrapper>
