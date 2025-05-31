@@ -8,6 +8,7 @@ import { useShelfLifeData } from '@/hooks/use-shelf-life-data';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateCleanScore } from '@/utils/clean-score-utils';
 import { processGenres } from '@/utils/genre-processing';
+import { getBestGameImageFromDbData } from '@/utils/image-utils';
 
 export interface DashboardData {
   unplayedGames: number;
@@ -78,15 +79,16 @@ export const useDashboardData = () => {
         transformedGenres = processGenres(genreCounts);
       }
 
-      // Transform shelf life data to the expected format
+      // Transform shelf life data to the expected format with proper image handling
       const transformedShelfLife = (shelfLifeData || []).map(game => ({
         id: game.gameId,
         name: game.gameName,
-        release_date: game.releaseDate,
-        years_old: game.yearsOld,
-        playtime_minutes: game.playtimeMinutes,
-        rank: game.rank,
-        image_url: game.imageUrl
+        addedDate: null, // Removed acquisition_date dependency
+        releaseDate: game.releaseDate,
+        image: getBestGameImageFromDbData({
+          header_image: game.headerImage,
+          image_url: game.imageUrl
+        }, game.gameId)
       }));
 
       console.log('Dashboard data compilation (using userMetrics):', {
