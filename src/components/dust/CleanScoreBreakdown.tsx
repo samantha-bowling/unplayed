@@ -1,4 +1,3 @@
-
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -247,9 +246,10 @@ const CleanScoreBreakdown = ({
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-sm">
                         <div className="space-y-2">
-                          <p><strong>Grace Period:</strong> 1-2 day breaks won't reset your streak - life happens!</p>
-                          <p><strong>Minimum Sessions:</strong> Play for 30+ minutes to count towards streak</p>
-                          <p><strong>Streak Decay:</strong> Long breaks gradually reduce streak instead of instant reset</p>
+                          <p><strong>Clean Streak:</strong> Consecutive days you've played games in your library</p>
+                          <p><strong>Minimum Play Time:</strong> At least 30 minutes of gameplay counts toward your streak</p>
+                          <p><strong>Grace Period:</strong> 1-2 day breaks won't reset your streak - we understand life happens!</p>
+                          <p><strong>Streak Quality:</strong> Bronze (1-6 days), Silver (7-29 days), Gold (30+ days)</p>
                           {cleanStreakMetadata?.averageSessionLength && (
                             <p><strong>Your Average:</strong> {cleanStreakMetadata.averageSessionLength} min/session</p>
                           )}
@@ -306,22 +306,22 @@ const CleanScoreBreakdown = ({
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 flex-shrink-0"></div>
                   <div>
-                    <p className="text-green-400 font-medium">Grace Period</p>
-                    <p className="text-gray-300">1-2 day breaks won't reset your streak. Taking breaks is healthy!</p>
+                    <p className="text-green-400 font-medium">Daily Gaming Goal</p>
+                    <p className="text-gray-300">Play any game in your library for 30+ minutes to maintain your streak</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0"></div>
                   <div>
-                    <p className="text-amber-400 font-medium">Minimum Sessions</p>
-                    <p className="text-gray-300">Play for 30+ minutes to count towards your streak</p>
+                    <p className="text-amber-400 font-medium">Grace Period</p>
+                    <p className="text-gray-300">Miss 1-2 days? No problem! Your streak continues with a small grace buffer</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
                   <div>
-                    <p className="text-blue-400 font-medium">Gradual Decay</p>
-                    <p className="text-gray-300">Long breaks reduce your streak gradually, not instantly</p>
+                    <p className="text-blue-400 font-medium">Streak Quality</p>
+                    <p className="text-gray-300">Bronze (1-6), Silver (7-29), Gold (30+ days) - aim for consistency!</p>
                   </div>
                 </div>
               </div>
