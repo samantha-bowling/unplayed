@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skull, Clock, Calendar, HelpCircle } from 'lucide-react';
+import { Skull, Clock, Calendar, HelpCircle, Star, DollarSign, Gamepad2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -55,7 +55,7 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
               Top Dust Contributors
             </CardTitle>
             <p className="text-gray-400 mt-2">
-              Games that contribute the most to your Dust Score
+              Games creating the most dust using our enhanced 5-factor algorithm
             </p>
           </div>
           
@@ -84,9 +84,9 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Header */}
+            {/* Enhanced Header with 5-Factor Icons */}
             <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-400 border-b border-gray-700 pb-2">
-              <div className="col-span-5">Game</div>
+              <div className="col-span-4">Game</div>
               <div className="col-span-2 text-center">
                 <TooltipProvider>
                   <Tooltip>
@@ -97,19 +97,20 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Higher scores indicate more neglected games</p>
+                      <p>Enhanced 5-factor dust score: Quality + Price + Age + Genre + Playtime</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
+              <div className="col-span-3 text-center">5-Factor Breakdown</div>
               <div className="col-span-2 text-center">Release Date</div>
-              <div className="col-span-3 text-center">Playtime</div>
+              <div className="col-span-1 text-center">Playtime</div>
             </div>
 
-            {/* Games List */}
+            {/* Games List with Enhanced Breakdown */}
             {displayedContributors.map((game, index) => (
               <div key={game.id} className="grid grid-cols-12 gap-4 items-center py-3 border-b border-gray-800 last:border-b-0 hover:bg-gray-800/30 transition-colors">
-                <div className="col-span-5 flex items-center gap-3">
+                <div className="col-span-4 flex items-center gap-3">
                   <div className="w-6 h-6 rounded bg-unplayed-pink/20 flex items-center justify-center text-xs font-bold text-unplayed-pink">
                     {index + 1}
                   </div>
@@ -135,7 +136,7 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <div className="space-y-1">
-                          <p><strong>Breakdown:</strong></p>
+                          <p><strong>Enhanced 5-Factor Breakdown:</strong></p>
                           <p>Quality: {game.breakdown.qualityScore}</p>
                           <p>Price: {game.breakdown.priceScore}</p>
                           <p>Age: {game.breakdown.ageScore}</p>
@@ -147,19 +148,79 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
                   </TooltipProvider>
                 </div>
                 
+                {/* Enhanced 5-Factor Visual Breakdown */}
+                <div className="col-span-3 flex items-center justify-center gap-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help">
+                          <Star className="h-3 w-3 text-blue-400" />
+                          <span className="text-xs text-blue-400">{game.breakdown.qualityScore}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Quality Score (Metacritic-based)</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help">
+                          <DollarSign className="h-3 w-3 text-green-400" />
+                          <span className="text-xs text-green-400">{game.breakdown.priceScore}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Price Score</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help">
+                          <Calendar className="h-3 w-3 text-amber-400" />
+                          <span className="text-xs text-amber-400">{game.breakdown.ageScore}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Age Score</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help">
+                          <Gamepad2 className="h-3 w-3 text-purple-400" />
+                          <span className="text-xs text-purple-400">{game.breakdown.genreScore}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Genre Score</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 cursor-help">
+                          <Clock className="h-3 w-3 text-cyan-400" />
+                          <span className="text-xs text-cyan-400">{Math.round(game.breakdown.playtimeFactor * 100)}%</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Playtime Multiplier</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                
                 <div className="col-span-2 text-center">
                   <span className="text-sm text-gray-300">
                     {formatDate(game.releaseDate)}
                   </span>
                 </div>
                 
-                <div className="col-span-3 text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Clock className="h-3 w-3 text-gray-400" />
-                    <span className={`text-sm ${game.playtimeMinutes === 0 ? 'text-unplayed-mint' : 'text-gray-300'}`}>
-                      {formatPlaytime(game.playtimeMinutes)}
-                    </span>
-                  </div>
+                <div className="col-span-1 text-center">
+                  <span className={`text-sm ${game.playtimeMinutes === 0 ? 'text-unplayed-mint' : 'text-gray-300'}`}>
+                    {formatPlaytime(game.playtimeMinutes)}
+                  </span>
                 </div>
               </div>
             ))}
@@ -168,7 +229,7 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
         
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            These games are contributing the most dust to your library. Consider giving them some playtime!
+            Enhanced algorithm now factors in game quality - high-rated unplayed games create more dust!
           </p>
         </div>
       </CardContent>
