@@ -1,13 +1,17 @@
+
 import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Wind, Clock, Play, Star, DollarSign, BookMarked } from 'lucide-react';
+import { Wind, Clock, Play, Star, DollarSign, BookMarked, TrendingDown } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
+import { useMemo } from 'react';
+import GameOpportunityCard from './GameOpportunityCard';
 
 interface DustScoreBreakdownProps {
   totalScore: number;
@@ -15,6 +19,8 @@ interface DustScoreBreakdownProps {
 }
 
 const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) => {
+  const { data: dustBreakdowns } = useDustBreakdowns();
+
   // Debug logging
   console.log("DustScoreBreakdown received:", { totalScore, breakdown });
 
@@ -47,6 +53,36 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   const agePercent = rawTotal > 0 ? Math.round((ageScore / rawTotal) * 100) : 0;
   const genrePercent = rawTotal > 0 ? Math.round((genreScore / rawTotal) * 100) : 0;
   const playtimePercent = Math.round(playtimeFactor * 100);
+
+  // Find biggest opportunity and oldest neglected games
+  const biggestOpportunity = useMemo(() => {
+    if (!dustBreakdowns || dustBreakdowns.length === 0) return null;
+    return dustBreakdowns.reduce((max, current) => 
+      current.dustScore > max.dustScore ? current : max
+    );
+  }, [dustBreakdowns]);
+
+  const oldestNeglected = useMemo(() => {
+    if (!dustBreakdowns || dustBreakdowns.length === 0) return null;
+    return dustBreakdowns
+      .filter(game => game.playtimeMinutes === 0 && game.releaseDate)
+      .sort((a, b) => new Date(a.releaseDate!).getTime() - new Date(b.releaseDate!).getTime())[0];
+  }, [dustBreakdowns]);
+
+  // Calculate dust reduction progress
+  const dustReductionData = useMemo(() => {
+    if (!dustBreakdowns || dustBreakdowns.length === 0) return null;
+    
+    const topGames = dustBreakdowns.slice(0, 5);
+    const potentialReduction = topGames.reduce((sum, game) => sum + game.dustScore, 0);
+    const reductionPercentage = totalScore > 0 ? Math.round((potentialReduction / totalScore) * 100) : 0;
+    
+    return {
+      potentialReduction,
+      reductionPercentage,
+      topGamesCount: topGames.length
+    };
+  }, [dustBreakdowns, totalScore]);
   
   // Enhanced 8-tier dust score system with better granularity
   const getDustTier = () => {
@@ -93,6 +129,18 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   };
   
   const dustTier = getDustTier();
+
+  // Define all tiers for the reference section
+  const allTiers = [
+    { name: "Freshly Polished", color: "#A3F7BF", range: "0-499" },
+    { name: "Light Dusting", color: "#90EE90", range: "500-1,499" },
+    { name: "Dust Storm Brewing", color: "#FFD700", range: "1,500-3,499" },
+    { name: "Duststorm Warning", color: "#FF9F39", range: "3,500-7,499" },
+    { name: "Hoarder's Horizon", color: "#F6AD55", range: "7,500-14,999" },
+    { name: "Dust Dynasty", color: "#FF6347", range: "15,000-34,999" },
+    { name: "Legendary Collector", color: "#8A2BE2", range: "35,000-74,999" },
+    { name: "Mythical Archive", color: "#FF1493", range: "75,000+" }
+  ];
   
   return (
     <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
@@ -233,7 +281,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               </p>
             </div>
 
-            {/* What It Means section - moved here */}
+            {/* What It Means section */}
             <div className="bg-black/30 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-2">What It Means</h3>
               <div className="space-y-3 text-sm">
@@ -255,7 +303,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               </div>
             </div>
 
-            {/* How to Improve section - moved here */}
+            {/* How to Improve section */}
             <div className="bg-black/20 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-2">How to Improve</h3>
               <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
@@ -269,6 +317,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           </div>
           
           <div className="space-y-4">
+            {/* Your Dust Tier - more compact */}
             <div className="bg-black/30 rounded-lg p-3">
               <h3 className="text-lg font-medium mb-1">Your Dust Tier</h3>
               <div className="flex items-center mb-1">
@@ -282,65 +331,66 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               </p>
             </div>
 
+            {/* Dust Reduction Progress Tracker */}
+            {dustReductionData && (
+              <div className="bg-black/30 rounded-lg p-4">
+                <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-unplayed-mint" />
+                  Dust Reduction Progress
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-gray-300">Potential Quick Win</span>
+                      <span className="text-sm font-bold text-unplayed-mint">
+                        -{dustReductionData.potentialReduction.toLocaleString()}
+                      </span>
+                    </div>
+                    <Progress value={dustReductionData.reductionPercentage} className="h-2 bg-gray-700" />
+                    <div className="h-0.5 bg-unplayed-mint mt-[-8px] rounded-full" style={{ width: `${dustReductionData.reductionPercentage}%` }}></div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Playing your top {dustReductionData.topGamesCount} dustiest games could reduce your score by {dustReductionData.reductionPercentage}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Biggest Opportunity */}
+            {biggestOpportunity && (
+              <GameOpportunityCard
+                game={biggestOpportunity}
+                title="Biggest Opportunity"
+                subtitle={`Dust Score: ${biggestOpportunity.dustScore.toLocaleString()}`}
+                highlight={`Could reduce total dust by ${Math.round((biggestOpportunity.dustScore / totalScore) * 100)}%`}
+              />
+            )}
+
+            {/* Oldest Neglected */}
+            {oldestNeglected && (
+              <GameOpportunityCard
+                game={oldestNeglected}
+                title="Oldest Neglected"
+                subtitle={`Released: ${new Date(oldestNeglected.releaseDate!).getFullYear()}`}
+                highlight={`${new Date().getFullYear() - new Date(oldestNeglected.releaseDate!).getFullYear()} years old • Never played`}
+              />
+            )}
+
+            {/* Dust Score Tiers - 2 column layout */}
             <div className="bg-black/20 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#A3F7BF]"></div>
-                    <span className="font-medium text-[#A3F7BF]">Freshly Polished</span>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                {allTiers.map((tier, index) => (
+                  <div key={index}>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tier.color }}></div>
+                      <span className="font-medium" style={{ color: tier.color }}>
+                        {tier.name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400 pl-5">{tier.range}</span>
                   </div>
-                  <span className="text-xs text-gray-400 pl-5">0-499</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#90EE90]"></div>
-                    <span className="font-medium text-[#90EE90]">Light Dusting</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">500-1,499</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FFD700]"></div>
-                    <span className="font-medium text-[#FFD700]">Dust Storm Brewing</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">1,500-3,499</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF9F39]"></div>
-                    <span className="font-medium text-[#FF9F39]">Duststorm Warning</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">3,500-7,499</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#F6AD55]"></div>
-                    <span className="font-medium text-[#F6AD55]">Hoarder's Horizon</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">7,500-14,999</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF6347]"></div>
-                    <span className="font-medium text-[#FF6347]">Dust Dynasty</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">15,000-34,999</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#8A2BE2]"></div>
-                    <span className="font-medium text-[#8A2BE2]">Legendary Collector</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">35,000-74,999</span>
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF1493]"></div>
-                    <span className="font-medium text-[#FF1493]">Mythical Archive</span>
-                  </div>
-                  <span className="text-xs text-gray-400 pl-5">75,000+</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
