@@ -1,219 +1,302 @@
 
-import React from 'react';
-import { TrendingUp, Calendar, DollarSign, Gamepad2, Clock, Trophy, Target, Lightbulb } from 'lucide-react';
+import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Wind, Clock, Play, Star, DollarSign, BookMarked } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DustScoreBreakdownProps {
   totalScore: number;
-  breakdown?: {
-    qualityScore: number;
-    priceScore: number;
-    ageScore: number;
-    genreScore: number;
-    playtimeFactor: number;
-  };
+  breakdown?: DustBreakdownType;
 }
 
-const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
-  totalScore,
-  breakdown
-}) => {
-  // Use graceful defaults if breakdown is not provided
-  const defaultBreakdown = {
-    qualityScore: 10,  // Neutral for missing Metacritic
-    priceScore: 7,     // Slightly above free for missing price
-    ageScore: 15,      // Moderate for missing release date
-    genreScore: 7,     // Neutral for missing genres
-    playtimeFactor: 1.0 // Unplayed for missing playtime
+const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) => {
+  // Debug logging
+  console.log("DustScoreBreakdown received:", { totalScore, breakdown });
+
+  // If no breakdown data is available, show placeholder
+  if (!breakdown) {
+    return (
+      <Card className="terminal-container">
+        <CardHeader>
+          <CardTitle>Dust Score Breakdown</CardTitle>
+          <CardDescription>How your dust score is calculated</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center items-center py-12">
+          <p className="text-gray-400">No breakdown data available - calculating real factors...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  // Use real calculated values from Phase 2 data
+  const qualityScore = breakdown.qualityScore || 0;
+  const priceScore = breakdown.priceScore || 0;
+  const ageScore = breakdown.ageScore || 0;
+  const genreScore = breakdown.genreScore || 0;
+  const playtimeFactor = breakdown.playtimeFactor || 1.0;
+  
+  // Calculate percentages for the visualizations based on real data
+  const rawTotal = qualityScore + priceScore + ageScore + genreScore;
+  const qualityPercent = rawTotal > 0 ? Math.round((qualityScore / rawTotal) * 100) : 0;
+  const pricePercent = rawTotal > 0 ? Math.round((priceScore / rawTotal) * 100) : 0;
+  const agePercent = rawTotal > 0 ? Math.round((ageScore / rawTotal) * 100) : 0;
+  const genrePercent = rawTotal > 0 ? Math.round((genreScore / rawTotal) * 100) : 0;
+  const playtimePercent = Math.round(playtimeFactor * 100);
+  
+  // Define dust score tiers based on total score
+  const getDustTier = () => {
+    if (totalScore < 1000) return {
+      name: "Freshly Polished",
+      color: "#A3F7BF",
+      description: "Your library is well-maintained with minimal dust. Keep up the good work!"
+    };
+    if (totalScore < 5000) return {
+      name: "Dust Storm Brewing",
+      color: "#FF9F39",
+      description: "You're starting to accumulate some dust. Consider playing a few neglected games."
+    };
+    if (totalScore < 10000) return {
+      name: "Duststorm Warning",
+      color: "#F6AD55",
+      description: "Your backlog is becoming concerning. Time to make a dent in those unplayed games."
+    };
+    return {
+      name: "Hoarder's Horizon",
+      color: "#FF3C38",
+      description: "Your library has reached critical dust levels. Serious intervention needed!"
+    };
   };
-
-  const actualBreakdown = breakdown || defaultBreakdown;
-
-  // Define dust tiers
-  const dustTiers = [
-    { name: "Pristine", range: "0-20", color: "text-green-400", description: "Your library is spotless! You actually play your games." },
-    { name: "Light Dust", range: "21-40", color: "text-blue-400", description: "A few cobwebs here and there, but mostly under control." },
-    { name: "Moderate Accumulation", range: "41-60", color: "text-yellow-400", description: "Some dust bunnies are forming. Time to start playing!" },
-    { name: "Heavy Buildup", range: "61-80", color: "text-orange-400", description: "Significant dust layers detected. Your wallet is crying." },
-    { name: "Critical Mass", range: "81-100", color: "text-red-400", description: "Dust storm detected! You have a serious hoarding problem." },
-  ];
-
-  // Determine current tier
-  const getCurrentTier = (score: number) => {
-    if (score <= 20) return dustTiers[0];
-    if (score <= 40) return dustTiers[1];
-    if (score <= 60) return dustTiers[2];
-    if (score <= 80) return dustTiers[3];
-    return dustTiers[4];
-  };
-
-  const currentTier = getCurrentTier(totalScore);
-
-  // Define all 5 factors with their individual progress bars
-  const factors = [
-    {
-      name: "Quality Score",
-      value: actualBreakdown.qualityScore,
-      description: "High-rated games create shame dust when unplayed",
-      icon: TrendingUp,
-      color: "text-blue-400",
-      progressColor: "#60a5fa"
-    },
-    {
-      name: "Price Score", 
-      value: actualBreakdown.priceScore,
-      description: "Expensive games create guilt dust",
-      icon: DollarSign,
-      color: "text-green-400",
-      progressColor: "#34d399"
-    },
-    {
-      name: "Age Score",
-      value: actualBreakdown.ageScore,
-      description: "Older games accumulate more dust naturally",
-      icon: Calendar,
-      color: "text-amber-400",
-      progressColor: "#fbbf24"
-    },
-    {
-      name: "Genre Score",
-      value: actualBreakdown.genreScore,
-      description: "Unwanted genres collect dust faster",
-      icon: Gamepad2,
-      color: "text-purple-400",
-      progressColor: "#a78bfa"
-    },
-    {
-      name: "Playtime Factor",
-      value: Math.round(actualBreakdown.playtimeFactor * 100),
-      description: "Unplayed games get maximum dust accumulation",
-      icon: Clock,
-      color: "text-cyan-400",
-      progressColor: "#22d3ee",
-      isPercentage: true
-    }
-  ];
-
+  
+  const dustTier = getDustTier();
+  
   return (
-    <div className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-unplayed-mint mb-2">
-          Your total Dust Score of {totalScore} is calculated from these 5 factors:
-        </h2>
-        <p className="text-gray-400">
-          A scientific breakdown of your digital hoarding habits
-        </p>
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        {/* Left Column - Factor Breakdown */}
-        <div className="space-y-6">
-          {factors.map((factor) => {
-            const Icon = factor.icon;
-            const displayValue = factor.isPercentage ? `${factor.value}%` : factor.value;
-            const progressValue = factor.isPercentage ? factor.value : Math.min((factor.value / 30) * 100, 100);
-            
-            return (
-              <div key={factor.name} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`h-5 w-5 ${factor.color}`} />
-                    <span className="font-medium text-white">{factor.name}</span>
-                  </div>
-                  <span className={`text-xl font-bold ${factor.color}`}>
-                    {displayValue}
-                  </span>
+    <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Wind className="h-5 w-5 text-unplayed-mint" />
+              Dust Score Breakdown
+            </CardTitle>
+            <CardDescription className="text-base mt-3">
+              Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is calculated from real data across these 5 factors
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <Star className="h-4 w-4 mr-2 text-yellow-400" />
+                  <span className="text-sm font-medium">Quality Score</span>
                 </div>
-                
-                <Progress 
-                  value={progressValue} 
-                  className="h-4"
-                  style={{
-                    '--progress-background': factor.progressColor
-                  } as React.CSSProperties}
-                />
-                
-                <p className="text-sm text-gray-400">
-                  {factor.description}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-yellow-400">{qualityScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Based on real Metacritic scores from your games - lower quality games get higher dust scores</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={qualityPercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-yellow-400 mt-[-8px] rounded-full" style={{ width: `${qualityPercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                {qualityPercent}% of your raw score comes from game quality
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2 text-green-400" />
+                  <span className="text-sm font-medium">Price Score</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-green-400">{priceScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Based on real game prices - more expensive unplayed games accumulate more dust</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={pricePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${pricePercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                {pricePercent}% of your raw score comes from game pricing
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-unplayed-amber" />
+                  <span className="text-sm font-medium">Age Score</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-unplayed-amber">{ageScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Based on real game release dates - older games get higher scores</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={agePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-amber mt-[-8px] rounded-full" style={{ width: `${agePercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                {agePercent}% of your raw score comes from game age
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <BookMarked className="h-4 w-4 mr-2 text-purple-400" />
+                  <span className="text-sm font-medium">Genre Score</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-purple-400">{genreScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Based on real genre data - niche genres get higher scores</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={genrePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${genrePercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                {genrePercent}% of your raw score comes from genre rarity
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <Play className="h-4 w-4 mr-2 text-unplayed-pink" />
+                  <span className="text-sm font-medium">Playtime Factor</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-unplayed-pink">{playtimeFactor.toFixed(2)}x</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Real multiplier based on your actual game playtime (lower for played games)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={playtimePercent} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-unplayed-pink mt-[-8px] rounded-full" style={{ width: `${playtimePercent}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                Real playtime reduces your dust score by {(100 - playtimePercent)}%
+              </p>
+            </div>
+
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">How to Improve</h3>
+              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+                <li>Play high-quality games you've been avoiding</li>
+                <li>Focus on expensive games sitting in your backlog</li>
+                <li>Tackle older games before they accumulate more dust</li>
+                <li>Try games from genres you don't usually play</li>
+                <li>Set aside regular time to reduce your unplayed collection</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="bg-black/30 rounded-lg p-3">
+              <h3 className="text-lg font-medium mb-1">Your Dust Tier</h3>
+              <div className="flex items-center mb-1">
+                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: dustTier.color }}></div>
+                <span className="font-medium" style={{ color: dustTier.color }}>
+                  {dustTier.name}
+                </span>
+              </div>
+              <p className="text-sm text-gray-300">
+                {dustTier.description}
+              </p>
+            </div>
+
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">What It Means</h3>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <span className="text-yellow-400 font-bold">Quality:</span> Games with poor reviews or no Metacritic score get higher dust scores.
+                </p>
+                <p>
+                  <span className="text-green-400 font-bold">Price:</span> More expensive unplayed games accumulate significantly more dust.
+                </p>
+                <p>
+                  <span className="text-unplayed-amber font-bold">Age:</span> Older games get higher scores - classics deserve attention!
+                </p>
+                <p>
+                  <span className="text-purple-400 font-bold">Genre:</span> Niche or rare genres get slightly higher scores.
+                </p>
+                <p>
+                  <span className="text-unplayed-pink font-bold">Playtime:</span> Playing games significantly reduces their dust accumulation.
                 </p>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* Right Column - Tier, Explanations, and Tips */}
-        <div className="space-y-8">
-          
-          {/* Your Dust Tier */}
-          <div className="bg-black/30 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Trophy className={`h-6 w-6 ${currentTier.color}`} />
-              <h3 className="text-xl font-semibold text-white">Your Dust Tier</h3>
-            </div>
-            
-            <div className="mb-4">
-              <span className={`text-2xl font-bold ${currentTier.color}`}>
-                {currentTier.name}
-              </span>
-              <span className="text-gray-400 ml-2">({currentTier.range})</span>
-            </div>
-            
-            <p className="text-gray-300">
-              {currentTier.description}
-            </p>
-          </div>
-
-          {/* What It Means */}
-          <div className="bg-black/30 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Target className="h-6 w-6 text-unplayed-mint" />
-              <h3 className="text-xl font-semibold text-white">What It Means</h3>
-            </div>
-            
-            <div className="space-y-3 text-sm text-gray-300">
-              <p><strong className="text-blue-400">Quality:</strong> Critically acclaimed games make you feel guilty for not playing them.</p>
-              <p><strong className="text-green-400">Price:</strong> Expensive games create more dust because they represent wasted money.</p>
-              <p><strong className="text-amber-400">Age:</strong> Older games naturally accumulate dust over time.</p>
-              <p><strong className="text-purple-400">Genre:</strong> Games in genres you don't prefer collect dust faster.</p>
-              <p><strong className="text-cyan-400">Playtime:</strong> Unplayed games get maximum dust; played games get less.</p>
-            </div>
-          </div>
-
-          {/* How to Improve */}
-          <div className="bg-black/30 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Lightbulb className="h-6 w-6 text-yellow-400" />
-              <h3 className="text-xl font-semibold text-white">How to Improve</h3>
-            </div>
-            
-            <ul className="space-y-2 text-sm text-gray-300">
-              <li>• Start playing your highest-rated unplayed games</li>
-              <li>• Focus on expensive games you haven't touched</li>
-              <li>• Try older games that have been sitting in your library</li>
-              <li>• Hide or remove games in genres you don't enjoy</li>
-              <li>• Even 30 minutes of playtime dramatically reduces dust</li>
-            </ul>
-          </div>
-
-          {/* Dust Score Tiers */}
-          <div className="bg-black/30 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">Dust Score Tiers</h3>
-            
-            <div className="space-y-2">
-              {dustTiers.map((tier, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className={`font-medium ${tier.color}`}>{tier.name}</span>
-                  <span className="text-gray-400">{tier.range}</span>
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#A3F7BF]"></div>
+                    <span className="font-medium text-[#A3F7BF]">Freshly Polished</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">0-999</span>
                 </div>
-              ))}
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF9F39]"></div>
+                    <span className="font-medium text-[#FF9F39]">Dust Storm Brewing</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">1,000-4,999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#F6AD55]"></div>
+                    <span className="font-medium text-[#F6AD55]">Duststorm Warning</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">5,000-9,999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF3C38]"></div>
+                    <span className="font-medium text-[#FF3C38]">Hoarder's Horizon</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">10,000+</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
