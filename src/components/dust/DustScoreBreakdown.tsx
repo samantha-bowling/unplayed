@@ -30,38 +30,31 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
 
   const actualBreakdown = breakdown || defaultBreakdown;
 
+  // Map new 5-factor scores back to original 3-factor display for consistency
   const factors = [
     {
-      name: "Quality Score",
-      value: actualBreakdown.qualityScore,
-      description: "Based on Metacritic ratings - higher quality games create more dust when unplayed",
-      icon: TrendingUp,
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/20"
+      name: "Age Score",
+      value: actualBreakdown.ageScore,
+      description: "How old this game is - older games accumulate more dust naturally",
+      icon: Calendar,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/20"
     },
     {
-      name: "Price Score", 
-      value: actualBreakdown.priceScore,
-      description: "Based on game cost - expensive games create more dust when unplayed",
+      name: "Ownership Score", 
+      value: actualBreakdown.priceScore, // Map price score to ownership for display consistency
+      description: "How long you've owned this game and how much it cost - expensive games create guilt dust",
       icon: DollarSign,
       color: "text-green-400",
       bgColor: "bg-green-500/20"
     },
     {
-      name: "Age Score",
-      value: actualBreakdown.ageScore,
-      description: "Based on release date - older games naturally accumulate more dust",
-      icon: Calendar,
-      color: "text-amber-400", 
-      bgColor: "bg-amber-500/20"
-    },
-    {
-      name: "Genre Score",
-      value: actualBreakdown.genreScore,
-      description: "Based on game type - strategy and RPG games tend to gather dust faster",
-      icon: Gamepad2,
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/20"
+      name: "Popularity Score",
+      value: actualBreakdown.qualityScore, // Map quality score to popularity for display consistency
+      description: "How critically acclaimed this game is - high-rated games create shame dust when unplayed",
+      icon: TrendingUp,
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/20"
     }
   ];
 
@@ -72,10 +65,10 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">
           <Beaker className="h-5 w-5 text-unplayed-mint" />
-          Enhanced Dust Score Breakdown™
+          Dust Score Breakdown™
         </CardTitle>
         <p className="text-gray-400 mt-2">
-          Scientific analysis of your library's dust accumulation using our enhanced 5-factor algorithm
+          Scientific analysis of your library's dust accumulation factors
         </p>
       </CardHeader>
       
@@ -172,13 +165,13 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
           </p>
         </div>
 
-        {/* Enhanced Algorithm Info */}
+        {/* Algorithm Info */}
         <div className="mt-6 p-4 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded-lg">
-          <h4 className="font-medium text-unplayed-mint mb-2">Enhanced 5-Factor Algorithm</h4>
+          <h4 className="font-medium text-unplayed-mint mb-2">Dust Score Algorithm</h4>
           <p className="text-sm text-gray-300 leading-relaxed">
-            Our improved dust calculation now accounts for game quality (Metacritic scores), 
-            pricing, age, genre tendencies, and your actual playtime. High-quality games 
-            create more dust when left unplayed - it's more shameful to ignore a masterpiece!
+            Your dust score is calculated using the age of your games, how long you've owned them, 
+            their critical reception, and your actual playtime. The algorithm rewards you for 
+            playing games and penalizes digital hoarding.
           </p>
         </div>
       </CardContent>

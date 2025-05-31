@@ -87,6 +87,7 @@ export type Database = {
           current_dust_score: number
           game_id: number
           game_name: string
+          genre_score: number
           header_image: string | null
           id: string
           image_url: string | null
@@ -94,6 +95,8 @@ export type Database = {
           ownership_score: number
           playtime_factor: number
           playtime_minutes: number | null
+          price_score: number
+          quality_score: number
           release_date: string | null
           user_id: string
         }
@@ -102,6 +105,7 @@ export type Database = {
           current_dust_score?: number
           game_id: number
           game_name: string
+          genre_score?: number
           header_image?: string | null
           id?: string
           image_url?: string | null
@@ -109,6 +113,8 @@ export type Database = {
           ownership_score?: number
           playtime_factor?: number
           playtime_minutes?: number | null
+          price_score?: number
+          quality_score?: number
           release_date?: string | null
           user_id: string
         }
@@ -117,6 +123,7 @@ export type Database = {
           current_dust_score?: number
           game_id?: number
           game_name?: string
+          genre_score?: number
           header_image?: string | null
           id?: string
           image_url?: string | null
@@ -124,6 +131,8 @@ export type Database = {
           ownership_score?: number
           playtime_factor?: number
           playtime_minutes?: number | null
+          price_score?: number
+          quality_score?: number
           release_date?: string | null
           user_id?: string
         }
