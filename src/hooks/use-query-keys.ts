@@ -1,4 +1,3 @@
-
 /**
  * Central location for all query keys used in the application
  * This helps ensure consistency in cache management and invalidation
@@ -56,7 +55,13 @@ export const queryKeys = {
   // Spending data
   spendingData: (userId?: string) => ['spendingData', userId],
   enhancedSpendingData: (userId?: string, onlyUnplayed?: boolean) => 
-    ['enhancedSpendingData', userId, onlyUnplayed],
+    ['enhancedSpendingData', userId, onlyUnplayed] as const,
+  enhancedSpendingDataCoordinated: (userId?: string, onlyUnplayed?: boolean, gameCount?: number) => [
+    'enhancedSpendingDataCoordinated', 
+    userId, 
+    onlyUnplayed,
+    gameCount
+  ] as const,
   
   // Dust score data
   detailedDustData: (userId?: string) => ['detailedDustData', userId],
