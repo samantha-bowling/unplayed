@@ -90,7 +90,11 @@ serve(async (req) => {
 
       if (calcError) {
         console.error('Error calculating metrics:', calcError);
-        throw calcError;
+        throw new Error(`Database function error: ${calcError.message}`);
+      }
+
+      if (!calculatedMetrics) {
+        throw new Error('No metrics returned from calculation function');
       }
 
       metrics = calculatedMetrics;
@@ -107,7 +111,11 @@ serve(async (req) => {
 
       if (fetchError) {
         console.error('Error fetching cached metrics:', fetchError);
-        throw fetchError;
+        throw new Error(`Error fetching cached metrics: ${fetchError.message}`);
+      }
+
+      if (!cachedMetrics) {
+        throw new Error('No cached metrics found for user');
       }
 
       // Convert to same format as calculated metrics
