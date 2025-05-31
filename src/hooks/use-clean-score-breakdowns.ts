@@ -11,6 +11,8 @@ export interface CleanScoreBreakdownData {
   backlogConversionScore: number;
   sessionDepthScore: number;
   totalCleanScore: number;
+  cleanStreakDays: number;
+  recentlyPlayedCount: number;
   lastCalculated: string;
 }
 
@@ -43,6 +45,8 @@ export const useCleanScoreBreakdowns = () => {
         backlogConversionScore: data.backlog_conversion_score,
         sessionDepthScore: data.session_depth_score,
         totalCleanScore: totalCleanScore,
+        cleanStreakDays: data.clean_streak_days,
+        recentlyPlayedCount: data.recently_played_count,
         lastCalculated: data.last_calculated
       };
     },
