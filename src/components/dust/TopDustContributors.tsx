@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skull, Clock, Calendar, HelpCircle, Star, DollarSign, Gamepad2 } from 'lucide-react';
+import { Skull, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -84,9 +84,9 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Enhanced Header with 5-Factor Icons */}
+            {/* Header without 5-Factor Breakdown column */}
             <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-400 border-b border-gray-700 pb-2">
-              <div className="col-span-4">Game</div>
+              <div className="col-span-5">Game</div>
               <div className="col-span-2 text-center">
                 <TooltipProvider>
                   <Tooltip>
@@ -102,24 +102,25 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="col-span-3 text-center">5-Factor Breakdown</div>
-              <div className="col-span-2 text-center">Release Date</div>
-              <div className="col-span-1 text-center">Playtime</div>
+              <div className="col-span-3 text-center">Release Date</div>
+              <div className="col-span-2 text-center">Playtime</div>
             </div>
 
-            {/* Games List with Enhanced Breakdown */}
+            {/* Games List without 5-Factor Breakdown column */}
             {displayedContributors.map((game, index) => (
               <div key={game.id} className="grid grid-cols-12 gap-4 items-center py-3 border-b border-gray-800 last:border-b-0 hover:bg-gray-800/30 transition-colors">
-                <div className="col-span-4 flex items-center gap-3">
-                  <div className="w-6 h-6 rounded bg-unplayed-pink/20 flex items-center justify-center text-xs font-bold text-unplayed-pink">
+                <div className="col-span-5 flex items-center gap-3">
+                  <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-200">
                     {index + 1}
                   </div>
                   {game.image && (
-                    <img 
-                      src={game.image} 
-                      alt={game.name}
-                      className="w-8 h-8 rounded object-cover"
-                    />
+                    <div className="w-16 h-9 rounded overflow-hidden flex-shrink-0">
+                      <img 
+                        src={game.image} 
+                        alt={game.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-white truncate">{game.name}</p>
@@ -148,76 +149,13 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
                   </TooltipProvider>
                 </div>
                 
-                {/* Enhanced 5-Factor Visual Breakdown */}
-                <div className="col-span-3 flex items-center justify-center gap-1">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help">
-                          <Star className="h-3 w-3 text-blue-400" />
-                          <span className="text-xs text-blue-400">{game.breakdown.qualityScore}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Quality Score (Metacritic-based)</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help">
-                          <DollarSign className="h-3 w-3 text-green-400" />
-                          <span className="text-xs text-green-400">{game.breakdown.priceScore}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Price Score</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help">
-                          <Calendar className="h-3 w-3 text-amber-400" />
-                          <span className="text-xs text-amber-400">{game.breakdown.ageScore}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Age Score</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help">
-                          <Gamepad2 className="h-3 w-3 text-purple-400" />
-                          <span className="text-xs text-purple-400">{game.breakdown.genreScore}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Genre Score</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-help">
-                          <Clock className="h-3 w-3 text-cyan-400" />
-                          <span className="text-xs text-cyan-400">{Math.round(game.breakdown.playtimeFactor * 100)}%</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Playtime Multiplier</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                
-                <div className="col-span-2 text-center">
+                <div className="col-span-3 text-center">
                   <span className="text-sm text-gray-300">
                     {formatDate(game.releaseDate)}
                   </span>
                 </div>
                 
-                <div className="col-span-1 text-center">
+                <div className="col-span-2 text-center">
                   <span className={`text-sm ${game.playtimeMinutes === 0 ? 'text-unplayed-mint' : 'text-gray-300'}`}>
                     {formatPlaytime(game.playtimeMinutes)}
                   </span>
