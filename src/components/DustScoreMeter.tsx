@@ -24,21 +24,36 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
 }: DustScoreProps) => {
   const { data: userMetrics, isLoading } = useUserMetrics();
   const { user } = useAuth();
-  const { isDemo: contextIsDemo } = useDemoMode();
+  const { isDemo: contextIsDemo, demoData } = useDemoMode();
   
-  const actualScore = score ?? userMetrics?.totalDustScore;
   const isDemoMode = isDemo || contextIsDemo;
+  
+  // Determine the actual score to display
+  const actualScore = useMemo(() => {
+    if (isDemoMode) {
+      // In demo mode, use demo data dust score
+      return demoData.dustScore || 15420; // Fallback demo score
+    }
+    
+    // For authenticated users, use the passed score prop or user metrics
+    if (score !== undefined) {
+      return score;
+    }
+    
+    return userMetrics?.totalDustScore || 0;
+  }, [score, userMetrics?.totalDustScore, isDemoMode, demoData.dustScore]);
 
   // Add debugging for dust score source
   console.log('DustScoreMeter Debug:', {
     propsScore: score,
     userMetricsScore: userMetrics?.totalDustScore,
+    demoScore: demoData.dustScore,
     actualScore,
     isDemoMode,
-    userMetricsData: userMetrics
+    isLoading
   });
 
-  if (isLoading) {
+  if (isLoading && !isDemoMode) {
     return (
       <div className="terminal-container equal-height-container">
         <h3 className="terminal-header text-2xl mb-0">Dust Score™</h3>
@@ -51,10 +66,6 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
         </div>
       </div>
     );
-  }
-
-  if (actualScore === undefined) {
-    return null;
   }
 
   return (
