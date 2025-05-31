@@ -42,6 +42,9 @@ export const queryKeys = {
 
   spendingMetrics: (userId?: string) => ['spendingMetrics', userId] as const,
   
+  // Add the missing topSpendingGames query key
+  topSpendingGames: (userId?: string) => ['topSpendingGames', userId] as const,
+  
   helpers: {
     allUserData: (userId: string) => {
       return [
@@ -57,4 +60,6 @@ export const queryKeys = {
       ];
     }
   }
-};
+} as const;
+
+export default queryKeys;

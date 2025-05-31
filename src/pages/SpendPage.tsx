@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -343,15 +342,11 @@ const SpendPage = () => {
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Badge variant="outline" className="text-xs">
-                                          {game.priceDataSource === 'price_table' ? 'Fresh' :
-                                           game.priceDataSource === 'games_table' ? 'Cached' : 'Est.'}
+                                          Current
                                         </Badge>
                                       </TooltipTrigger>
                                       <TooltipContent>
-                                        <p>
-                                          {game.priceDataSource === 'price_table' ? 'Recently updated from Steam store' :
-                                           game.priceDataSource === 'games_table' ? 'From game database cache' : 'Estimated price'}
-                                        </p>
+                                        <p>Current Steam store price</p>
                                       </TooltipContent>
                                     </Tooltip>
                                   </TooltipProvider>
