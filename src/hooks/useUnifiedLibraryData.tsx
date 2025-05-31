@@ -1,10 +1,10 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useMemo } from 'react';
 import { queryKeys } from './use-query-keys';
-import { isGameUnplayed } from '@/utils/game-definitions';
 
 export interface UnifiedGameData {
   id: string;
@@ -173,13 +173,12 @@ export const useUnifiedLibraryData = () => {
     // Filter out games without valid game data
     const validGames = dataToUse.filter(game => game.games && game.games.name);
     
-    // UPDATED: Use standardized game classification logic
     const unplayedGames = validGames.filter(game => 
-      isGameUnplayed(game.playtime_minutes)
+      !game.playtime_minutes || game.playtime_minutes === 0
     );
     
     const playedGames = validGames.filter(game => 
-      !isGameUnplayed(game.playtime_minutes)
+      game.playtime_minutes && game.playtime_minutes > 0
     );
 
     const totalPlaytime = validGames.reduce((sum, game) => 

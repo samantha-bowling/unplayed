@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { isGameUnplayed } from '@/utils/game-definitions';
 
 // Type definitions for our data
 type Game = {
@@ -162,10 +161,10 @@ export function useLibraryData() {
       result = result.filter(game => !game.userGame.hidden);
     }
 
-    // Filter to only unplayed games if onlyUnplayed is true - UPDATED to use standardized logic
+    // Filter to only unplayed games if onlyUnplayed is true
     if (filters.onlyUnplayed) {
       result = result.filter(game => 
-        isGameUnplayed(game.userGame.playtime_minutes)
+        !game.userGame.playtime_minutes || game.userGame.playtime_minutes === 0
       );
     }
 

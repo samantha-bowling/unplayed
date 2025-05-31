@@ -1,121 +1,316 @@
 
+import { useMemo } from 'react';
+import { useUnifiedLibraryData } from '@/hooks/useUnifiedLibraryData';
+import { transformToDashboardMetrics, transformToUnplayedData } from '@/utils/data-transforms';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { isGameUnplayed } from '@/utils/game-definitions';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  UnplayedDataType, 
+  DustScoreBreakdown, 
+  GameDustData, 
+  GameListItem, 
+  CleanScoreBreakdown,
+  CleanScoreTier,
+  DustScoreBreakdownResponse
+} from '@/types/unplayed-data.types';
+import { normalizeDemoGames } from '@/utils/normalize-games';
+import { queryKeys } from '@/hooks/use-query-keys';
+import { safeGetNumber } from '@/utils/safe-json';
+import { 
+  processDustBreakdown, 
+  processDustBreakdowns 
+} from '@/utils/dust-score-utils';
+import { 
+  CLEAN_SCORE_TIERS, 
+  calculateCleanScore 
+} from '@/utils/clean-score-utils';
 
-export interface DustScoreGame {
-  id: number;
-  name: string;
-  image: string | null;
-  dustScore: number;
-  playtimeMinutes: number;
-  addedDate: string | null;
-  lastPlayedDate: string | null;
-}
-
-export interface DustScoreData {
-  totalDustScore: number;
-  unplayedDustScore: number;
-  averageDustScore: number;
-  topDustContributors: DustScoreGame[];
-  dustDistribution: {
-    low: number;
-    medium: number;
-    high: number;
+const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
+  const processed = processDustBreakdown(breakdown);
+  return {
+    qualityScore: processed.qualityScore,
+    priceScore: processed.priceScore,
+    ageScore: processed.ageScore,
+    genreScore: processed.genreScore,
+    playtimeFactor: processed.playtimeFactor,
+    totalScore: processed.totalScore
   };
-}
+};
 
-export const useDustScoreData = () => {
+const useDustScoreData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
+  const { 
+    data: unifiedData, 
+    stats: unifiedStats, 
+    isLoading: isBasicDataLoading, 
+    error: basicDataError,
+    refetch: refetchBasicData 
+  } = useUnifiedLibraryData();
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dustScoreData', user?.id],
+  // Transform unified data to basic format
+  const basicData = useMemo(() => {
+    if (!unifiedData || !unifiedStats) return null;
+    return transformToUnplayedData(unifiedData, unifiedStats);
+  }, [unifiedData, unifiedStats]);
+
+  const { 
+    data: detailedDustData, 
+    isLoading: isDetailedDataLoading, 
+    error: detailedDataError,
+    refetch: refetchDetailedData
+  } = useQuery({
+    queryKey: queryKeys.detailedDustData(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data: userGamesData, error: userGamesError } = await supabase
+      const { data: userGamesWithDust, error } = await supabase
         .from('user_games')
         .select(`
           id,
           game_id,
           playtime_minutes,
-          dust_score,
           acquisition_date,
           last_played_date,
+          dust_score,
           games:game_id(
-            id,
-            name,
-            image_url
+            id, 
+            name, 
+            image_url,
+            header_image,
+            release_date,
+            metacritic_score,
+            price_cents,
+            genres
           )
         `)
         .eq('user_id', user.id)
-        .not('dust_score', 'is', null)
         .order('dust_score', { ascending: false });
 
-      if (userGamesError) throw userGamesError;
+      if (error) throw error;
 
-      const games: DustScoreGame[] = userGamesData
-        .filter(item => item.games && item.dust_score !== null)
-        .map(item => ({
-          id: item.game_id,
-          name: item.games!.name,
-          image: item.games!.image_url,
-          dustScore: item.dust_score!,
-          playtimeMinutes: item.playtime_minutes || 0,
-          addedDate: item.acquisition_date,
-          lastPlayedDate: item.last_played_date,
-        }));
+      if (!userGamesWithDust || userGamesWithDust.length === 0) {
+        return {
+          dustScoreBreakdown: { 
+            qualityScore: 0, 
+            priceScore: 0, 
+            ageScore: 0, 
+            genreScore: 0, 
+            playtimeFactor: 0 
+          },
+          topDustContributors: [],
+          avgDustScore: 0,
+          cleanScore: 0,
+          cleanScoreBreakdown: { completionRate: 0, engagementFactor: 0, recencyFactor: 0 },
+          cleanTier: CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
+          cleanStreak: 0,
+          recentlyPlayedCount: 0
+        };
+      }
 
-      const totalDustScore = games.reduce((sum, game) => sum + game.dustScore, 0);
-      
-      // UPDATED: Use standardized game classification logic
-      const unplayedGames = games.filter(game => isGameUnplayed(game.playtimeMinutes));
-      const unplayedDustScore = unplayedGames.reduce((sum, game) => sum + game.dustScore, 0);
-      
-      const averageDustScore = games.length > 0 ? totalDustScore / games.length : 0;
+      // Get top contributors
+      const topContributorsWithIds = userGamesWithDust
+        .filter(game => game.dust_score && game.dust_score > 0)
+        .slice(0, 20);
 
-      const dustDistribution = {
-        low: games.filter(game => game.dustScore < 33).length,
-        medium: games.filter(game => game.dustScore >= 33 && game.dustScore < 67).length,
-        high: games.filter(game => game.dustScore >= 67).length,
-      };
+      // For now, create mock breakdowns since we haven't implemented the new database function yet
+      // This will be replaced with actual database calls once the new function is deployed
+      const breakdowns = topContributorsWithIds.map((game) => {
+        const gameData = game.games;
+        const qualityScore = gameData?.metacritic_score ? 
+          (gameData.metacritic_score >= 80 ? 8 : gameData.metacritic_score >= 60 ? 15 : 25) : 15;
+        const priceScore = gameData?.price_cents ? 
+          (gameData.price_cents >= 6000 ? 25 : gameData.price_cents >= 2000 ? 15 : 5) : 10;
+        const ageScore = gameData?.release_date ? 
+          (new Date().getFullYear() - new Date(gameData.release_date).getFullYear() >= 10 ? 20 : 10) : 10;
+        const genreScore = gameData?.genres?.length ? 
+          (gameData.genres.includes('Racing') || gameData.genres.includes('Sports') ? 15 : 10) : 10;
+        const playtimeFactor = game.playtime_minutes === 0 ? 1.0 : 0.3;
+        
+        return {
+          qualityScore,
+          priceScore,
+          ageScore,
+          genreScore,
+          playtimeFactor,
+          totalScore: Math.round((qualityScore + priceScore + ageScore + genreScore) * playtimeFactor)
+        };
+      });
+
+      // Calculate dust metrics
+      const totalDustScore = userGamesWithDust.reduce((sum, game) =>
+        sum + (game.dust_score || 0), 0);
+      const avgDustScore = userGamesWithDust.length > 0
+        ? parseFloat((totalDustScore / userGamesWithDust.length).toFixed(1))
+        : 0;
+
+      // Process contributors with type-safe breakdown handling
+      const topContributors: GameDustData[] = topContributorsWithIds.map((game, index) => {
+        const breakdownData = breakdowns[index];
+        return {
+          id: game.game_id,
+          name: game.games?.name || 'Unknown Game',
+          dustScore: game.dust_score || 0,
+          addedDate: game.acquisition_date || new Date().toISOString(),
+          releaseDate: game.games?.release_date || null,
+          playtimeMinutes: game.playtime_minutes || 0,
+          image: game.games?.header_image || game.games?.image_url || null,
+          breakdown: {
+            qualityScore: breakdownData.qualityScore,
+            priceScore: breakdownData.priceScore,
+            ageScore: breakdownData.ageScore,
+            genreScore: breakdownData.genreScore,
+            playtimeFactor: breakdownData.playtimeFactor
+          }
+        };
+      });
+
+      // Process dust breakdowns with our type-safe utility
+      const { 
+        totalQualityScore, 
+        totalPriceScore, 
+        totalAgeScore, 
+        totalGenreScore, 
+        avgPlaytimeFactor 
+      } = processDustBreakdowns(breakdowns);
+
+      // Calculate clean score metrics
+      const totalGames = userGamesWithDust.length;
+      const playedGames = userGamesWithDust.filter(game =>
+        (game.playtime_minutes || 0) > 0
+      ).length;
+      const totalPlaytimeHours = userGamesWithDust.reduce((sum, game) =>
+        sum + ((game.playtime_minutes || 0) / 60), 0
+      );
+
+      // Count recently played games
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const recentlyPlayedCount = userGamesWithDust.filter(game => {
+        if (!game.last_played_date) return false;
+        const lastPlayed = new Date(game.last_played_date);
+        return lastPlayed >= thirtyDaysAgo;
+      }).length;
+
+      // Calculate clean score using our enhanced calculation
+      const gamesList = userGamesWithDust.map(game => ({
+        id: game.game_id,
+        name: game.games?.name || '',
+        playtimeMinutes: game.playtime_minutes || 0,
+        lastPlayed: game.last_played_date,
+        added: game.acquisition_date,
+        // Add other required fields
+        image: '',
+        price: 0,
+        genres: game.games?.genres || [],
+        notes: null,
+        hidden: false,
+        releaseDate: game.games?.release_date,
+        metacritic: game.games?.metacritic_score,
+        categories: [],
+        completionEstimate: null,
+        mainStoryEstimate: null,
+        averageEstimate: null,
+        steamAppid: null,
+        howLongToBeatId: null,
+      }));
+
+      const { cleanScore, breakdown: cleanScoreBreakdown, tier: cleanTier, cleanStreak } =
+        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
 
       return {
-        totalDustScore,
-        unplayedDustScore,
-        averageDustScore,
-        topDustContributors: games.slice(0, 10),
-        dustDistribution,
-      } as DustScoreData;
+        dustScoreBreakdown: {
+          qualityScore: totalQualityScore,
+          priceScore: totalPriceScore,
+          ageScore: totalAgeScore,
+          genreScore: totalGenreScore,
+          playtimeFactor: avgPlaytimeFactor
+        },
+        topDustContributors: topContributors,
+        avgDustScore,
+        cleanScore,
+        cleanScoreBreakdown,
+        cleanTier,
+        cleanStreak,
+        recentlyPlayedCount,
+        totalGames,
+        unplayedGames: totalGames - playedGames
+      };
     },
-    enabled: !isDemo && !!user,
+    enabled: !!user && !isDemo,
   });
 
-  // Return demo data if in demo mode
+  // Enhanced demo mode data preparation with new 5-factor system
+  const demoDustBreakdown: DustScoreBreakdown = {
+    qualityScore: 12,    // Average quality across library
+    priceScore: 18,      // Mix of pricing tiers
+    ageScore: 15,        // Mix of old and new games
+    genreScore: 10,      // Common genres mostly
+    playtimeFactor: 0.85 // Some games played
+  };
+
+  const demoTopContributors: GameDustData[] = demoData.library.map((game, index) => ({
+    id: game.id,
+    name: game.name,
+    dustScore: 95 - index * 5,
+    addedDate: new Date(Date.now() - (index + 1) * 30 * 24 * 60 * 60 * 1000).toISOString(),
+    releaseDate: new Date(Date.now() - (index + 5) * 90 * 24 * 60 * 60 * 1000).toISOString(),
+    playtimeMinutes: 0,
+    image: game.image,
+    breakdown: {
+      qualityScore: Math.max(5, 25 - index * 3),
+      priceScore: Math.max(5, 20 - index * 2),
+      ageScore: Math.min(25, 10 + index * 2),
+      genreScore: 8 + (index % 3) * 2,
+      playtimeFactor: 1.0
+    }
+  }));
+
+  const demoCleanScore = 68;
+  const demoCleanScoreBreakdown: CleanScoreBreakdown = {
+    completionRate: 75,
+    engagementFactor: 60,
+    recencyFactor: 65
+  };
+  const demoCleanTier = CLEAN_SCORE_TIERS.find(
+    tier => demoCleanScore >= tier.range[0] && demoCleanScore <= tier.range[1]
+  ) || CLEAN_SCORE_TIERS[2];
+
   if (isDemo) {
+    const normalizedDemoData = normalizeDemoGames(demoData);
+    const enhancedDemoData: UnplayedDataType = {
+      ...normalizedDemoData,
+      dustScoreBreakdown: demoDustBreakdown,
+      topDustContributors: demoTopContributors,
+      avgDustScore: 29.7,
+      cleanScore: demoCleanScore,
+      cleanScoreBreakdown: demoCleanScoreBreakdown,
+      cleanTier: demoCleanTier,
+      cleanStreak: 4,
+      recentlyPlayedCount: 5
+    };
+
     return {
-      data: {
-        totalDustScore: demoData.dustScore,
-        unplayedDustScore: demoData.dustScore * 0.8, // Assume 80% from unplayed
-        averageDustScore: 45,
-        topDustContributors: [],
-        dustDistribution: {
-          low: 20,
-          medium: 30,
-          high: 25,
-        },
-      } as DustScoreData,
+      data: enhancedDemoData,
       isLoading: false,
       error: null,
+      refetch: () => Promise.resolve(enhancedDemoData)
     };
   }
 
   return {
-    data,
-    isLoading,
-    error,
+    data: isDemo
+      ? normalizeDemoGames(demoData)
+      : { ...basicData, ...detailedDustData },
+    isLoading: isBasicDataLoading || isDetailedDataLoading,
+    error: basicDataError || detailedDataError,
+    refetch: async () => {
+      if (refetchBasicData) await refetchBasicData();
+      if (refetchDetailedData) await refetchDetailedData();
+    }
   };
 };
+
+export default useDustScoreData;
