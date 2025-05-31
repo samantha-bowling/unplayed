@@ -26,51 +26,95 @@ const DustScoreIcon: React.FC<DustScoreIconProps> = ({
     isDemo
   });
 
-  // Calculate severity data based on dust score
+  // Calculate severity data based on dust score using new 8-tier system
   const severityData = useMemo(() => {
-    if (score < 1000) {
+    if (score < 500) {
       return {
         icon: '✨',
         severity: 'Freshly Polished',
-        description: 'Your library is in good shape!',
-        color: '#10b981', // Green
+        description: 'Your library sparkles! Gaming efficiency master.',
+        color: '#A3F7BF', // Light green
         bgColor: 'bg-green-500/20',
         borderColor: 'border-green-500/30',
-        progress: Math.min((score / 1000) * 100, 100),
+        progress: Math.min((score / 500) * 100, 100),
         progressColor: 'bg-green-500'
       };
-    } else if (score < 5000) {
+    } else if (score < 1500) {
+      return {
+        icon: '🌱',
+        severity: 'Light Dusting',
+        description: 'A few games gathering dust, nothing serious!',
+        color: '#90EE90', // Light green
+        bgColor: 'bg-lime-500/20',
+        borderColor: 'border-lime-500/30',
+        progress: Math.min(((score - 500) / 1000) * 100, 100),
+        progressColor: 'bg-lime-500'
+      };
+    } else if (score < 3500) {
       return {
         icon: '🌬️',
         severity: 'Dust Storm Brewing',
-        description: 'Some games could use attention soon.',
-        color: '#f59e0b', // Amber
-        bgColor: 'bg-amber-500/20',
-        borderColor: 'border-amber-500/30',
-        progress: Math.min(((score - 1000) / 4000) * 100, 100),
-        progressColor: 'bg-amber-500'
+        description: 'Starting to accumulate dust. Time for action!',
+        color: '#FFD700', // Gold
+        bgColor: 'bg-yellow-500/20',
+        borderColor: 'border-yellow-500/30',
+        progress: Math.min(((score - 1500) / 2000) * 100, 100),
+        progressColor: 'bg-yellow-500'
       };
-    } else if (score < 10000) {
+    } else if (score < 7500) {
       return {
-        icon: '🌪️',
+        icon: '⚠️',
         severity: 'Duststorm Warning',
-        description: 'Your backlog is getting out of control.',
-        color: '#f97316', // Orange
+        description: 'Your backlog is becoming concerning.',
+        color: '#FF9F39', // Orange
         bgColor: 'bg-orange-500/20',
         borderColor: 'border-orange-500/30',
-        progress: Math.min(((score - 5000) / 5000) * 100, 100),
+        progress: Math.min(((score - 3500) / 4000) * 100, 100),
         progressColor: 'bg-orange-500'
+      };
+    } else if (score < 15000) {
+      return {
+        icon: '📦',
+        severity: "Hoarder's Horizon",
+        description: 'Serious collector territory. Your backlog has its own ecosystem!',
+        color: '#F6AD55', // Light orange
+        bgColor: 'bg-amber-600/20',
+        borderColor: 'border-amber-600/30',
+        progress: Math.min(((score - 7500) / 7500) * 100, 100),
+        progressColor: 'bg-amber-600'
+      };
+    } else if (score < 35000) {
+      return {
+        icon: '👑',
+        severity: 'Dust Dynasty',
+        description: 'Building a gaming empire! Your collection could stock a store.',
+        color: '#FF6347', // Tomato red
+        bgColor: 'bg-red-500/20',
+        borderColor: 'border-red-500/30',
+        progress: Math.min(((score - 15000) / 20000) * 100, 100),
+        progressColor: 'bg-red-500'
+      };
+    } else if (score < 75000) {
+      return {
+        icon: '🏆',
+        severity: 'Legendary Collector',
+        description: 'Legendary status achieved. Preserving gaming history!',
+        color: '#8A2BE2', // Blue violet
+        bgColor: 'bg-purple-600/20',
+        borderColor: 'border-purple-600/30',
+        progress: Math.min(((score - 35000) / 40000) * 100, 100),
+        progressColor: 'bg-purple-600'
       };
     } else {
       return {
-        icon: '💀',
-        severity: "Hoarder's Horizon",
-        description: 'Dust apocalypse levels detected.',
-        color: '#dc2626', // Red
-        bgColor: 'bg-red-500/20',
-        borderColor: 'border-red-500/30',
-        progress: Math.min(((score - 10000) / 40000) * 100, 100),
-        progressColor: 'bg-red-500'
+        icon: '🧙‍♂️',
+        severity: 'Mythical Archive',
+        description: "You're a gaming library of Alexandria!",
+        color: '#FF1493', // Deep pink
+        bgColor: 'bg-pink-600/20',
+        borderColor: 'border-pink-600/30',
+        progress: Math.min(((score - 75000) / 25000) * 100, 100),
+        progressColor: 'bg-pink-600'
       };
     }
   }, [score]);
