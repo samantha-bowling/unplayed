@@ -1,4 +1,3 @@
-
 import { DustScoreBreakdown as DustBreakdownType } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -113,6 +112,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
+            {/* Progress bars section */}
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
@@ -233,6 +233,29 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               </p>
             </div>
 
+            {/* What It Means section - moved here */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">What It Means</h3>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <span className="text-yellow-400 font-bold">Quality:</span> Games with poor reviews or no Metacritic score get higher dust scores.
+                </p>
+                <p>
+                  <span className="text-green-400 font-bold">Price:</span> More expensive unplayed games accumulate significantly more dust.
+                </p>
+                <p>
+                  <span className="text-unplayed-amber font-bold">Age:</span> Older games get higher scores - classics deserve attention!
+                </p>
+                <p>
+                  <span className="text-purple-400 font-bold">Genre:</span> Niche or rare genres get slightly higher scores.
+                </p>
+                <p>
+                  <span className="text-unplayed-pink font-bold">Playtime:</span> Playing games significantly reduces their dust accumulation.
+                </p>
+              </div>
+            </div>
+
+            {/* How to Improve section - moved here */}
             <div className="bg-black/20 rounded-lg p-4">
               <h3 className="text-lg font-medium mb-2">How to Improve</h3>
               <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
@@ -259,29 +282,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               </p>
             </div>
 
-            <div className="bg-black/30 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">What It Means</h3>
-              <div className="space-y-3 text-sm">
-                <p>
-                  <span className="text-yellow-400 font-bold">Quality:</span> Games with poor reviews or no Metacritic score get higher dust scores.
-                </p>
-                <p>
-                  <span className="text-green-400 font-bold">Price:</span> More expensive unplayed games accumulate significantly more dust.
-                </p>
-                <p>
-                  <span className="text-unplayed-amber font-bold">Age:</span> Older games get higher scores - classics deserve attention!
-                </p>
-                <p>
-                  <span className="text-purple-400 font-bold">Genre:</span> Niche or rare genres get slightly higher scores.
-                </p>
-                <p>
-                  <span className="text-unplayed-pink font-bold">Playtime:</span> Playing games significantly reduces their dust accumulation.
-                </p>
-              </div>
-            </div>
-
             <div className="bg-black/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-3">Enhanced Dust Score Tiers</h3>
+              <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
               <div className="space-y-3 text-sm">
                 <div>
                   <div className="flex items-center">
