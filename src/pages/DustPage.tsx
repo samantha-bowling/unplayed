@@ -19,7 +19,7 @@ import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
 import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
 
 const DustPage = () => {
-  const [activeTab, setActiveTab] = useState("breakdown");
+  const [activeTab, setActiveTab] = useState("dustScore");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -179,17 +179,17 @@ const DustPage = () => {
           ) : (
             <>
               <Tabs 
-                defaultValue="breakdown" 
+                defaultValue="dustScore" 
                 value={activeTab} 
                 onValueChange={setActiveTab}
                 className="space-y-6"
               >
                 <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
                   <TabsTrigger 
-                    value="breakdown"
+                    value="dustScore"
                     className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
                   >
-                    Breakdown
+                    Dust Score
                   </TabsTrigger>
                   <TabsTrigger 
                     value="clean"
@@ -211,7 +211,7 @@ const DustPage = () => {
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="breakdown" className="space-y-4">
+                <TabsContent value="dustScore" className="space-y-4">
                   <DustScoreBreakdown 
                     totalScore={processedData.dustScore}
                     breakdown={processedData.dustScoreBreakdown}

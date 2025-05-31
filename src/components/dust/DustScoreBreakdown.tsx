@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Beaker, TrendingUp, Calendar, DollarSign, Gamepad2, Clock, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 interface DustScoreBreakdownProps {
   totalScore: number;
@@ -30,31 +31,39 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
 
   const actualBreakdown = breakdown || defaultBreakdown;
 
-  // Map new 5-factor scores back to original 3-factor display for consistency
+  // Define all 5 factors with their individual progress bars
   const factors = [
+    {
+      name: "Quality Score",
+      value: actualBreakdown.qualityScore,
+      description: "How critically acclaimed this game is - high-rated games create shame dust when unplayed",
+      icon: TrendingUp,
+      color: "text-blue-400",
+      progressColor: "#60a5fa"
+    },
+    {
+      name: "Price Score", 
+      value: actualBreakdown.priceScore,
+      description: "How much you paid for this game - expensive games create guilt dust",
+      icon: DollarSign,
+      color: "text-green-400",
+      progressColor: "#34d399"
+    },
     {
       name: "Age Score",
       value: actualBreakdown.ageScore,
       description: "How old this game is - older games accumulate more dust naturally",
       icon: Calendar,
       color: "text-amber-400",
-      bgColor: "bg-amber-500/20"
+      progressColor: "#fbbf24"
     },
     {
-      name: "Ownership Score", 
-      value: actualBreakdown.priceScore, // Map price score to ownership for display consistency
-      description: "How long you've owned this game and how much it cost - expensive games create guilt dust",
-      icon: DollarSign,
-      color: "text-green-400",
-      bgColor: "bg-green-500/20"
-    },
-    {
-      name: "Popularity Score",
-      value: actualBreakdown.qualityScore, // Map quality score to popularity for display consistency
-      description: "How critically acclaimed this game is - high-rated games create shame dust when unplayed",
-      icon: TrendingUp,
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/20"
+      name: "Genre Score",
+      value: actualBreakdown.genreScore,
+      description: "Your preference for this game's genres - unwanted genres collect dust faster",
+      icon: Gamepad2,
+      color: "text-purple-400",
+      progressColor: "#a78bfa"
     }
   ];
 
@@ -86,13 +95,13 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
           </p>
         </div>
 
-        {/* Factor Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* Individual Factor Breakdown */}
+        <div className="space-y-6 mb-6">
           {factors.map((factor) => {
             const Icon = factor.icon;
             return (
-              <div key={factor.name} className={`${factor.bgColor} rounded-lg p-4`}>
-                <div className="flex items-center justify-between mb-2">
+              <div key={factor.name} className="space-y-2">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className={`h-4 w-4 ${factor.color}`} />
                     <span className="font-medium text-white">{factor.name}</span>
@@ -112,20 +121,21 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
                   </span>
                 </div>
                 
-                {/* Visual bar for the score */}
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${factor.color.replace('text-', 'bg-')}`}
-                    style={{ width: `${Math.min((factor.value / 30) * 100, 100)}%` }}
-                  ></div>
-                </div>
+                {/* Progress bar for the score */}
+                <Progress 
+                  value={Math.min((factor.value / 30) * 100, 100)} 
+                  className="h-3"
+                  style={{
+                    '--progress-background': factor.progressColor
+                  } as React.CSSProperties}
+                />
               </div>
             );
           })}
         </div>
 
         {/* Playtime Multiplier */}
-        <div className="bg-black/30 rounded-lg p-4">
+        <div className="bg-black/30 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-cyan-400" />
@@ -149,12 +159,13 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
             </span>
           </div>
           
-          <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-            <div 
-              className="bg-cyan-400 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${playtimeFactorPercentage}%` }}
-            ></div>
-          </div>
+          <Progress 
+            value={playtimeFactorPercentage} 
+            className="h-3 mb-2"
+            style={{
+              '--progress-background': '#22d3ee'
+            } as React.CSSProperties}
+          />
           
           <p className="text-xs text-gray-400">
             {actualBreakdown.playtimeFactor === 1.0 ? "Completely unplayed - maximum dust potential!" :
@@ -166,12 +177,11 @@ const DustScoreBreakdown: React.FC<DustScoreBreakdownProps> = ({
         </div>
 
         {/* Algorithm Info */}
-        <div className="mt-6 p-4 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded-lg">
+        <div className="p-4 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded-lg">
           <h4 className="font-medium text-unplayed-mint mb-2">Dust Score Algorithm</h4>
           <p className="text-sm text-gray-300 leading-relaxed">
-            Your dust score is calculated using the age of your games, how long you've owned them, 
-            their critical reception, and your actual playtime. The algorithm rewards you for 
-            playing games and penalizes digital hoarding.
+            Your dust score is calculated using quality ratings, purchase price, game age, genre preferences, 
+            and your actual playtime. The algorithm rewards you for playing games and penalizes digital hoarding.
           </p>
         </div>
       </CardContent>
