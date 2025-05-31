@@ -98,6 +98,8 @@ export interface CleanStreakMetadata {
   lastPlayDate: string | null;
   averageSessionLength: number;
   streakStartDate: string | null;
+  streakEndDate: string | null;
+  daysSinceEnd: number | null;
   streakQuality: 'bronze' | 'silver' | 'gold';
 }
 
