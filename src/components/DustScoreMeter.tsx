@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
 import DustScoreIcon from './dust/DustScoreIcon';
 import {
   Tooltip,
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/tooltip";
 import { InfoIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import CleanScoreSimple from './dust/CleanScoreSimple';
 
 interface DustScoreProps extends WithDemoProps {
   score?: number;
@@ -23,18 +22,12 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
   score,
   isDemo = false
 }: DustScoreProps) => {
-  const { data: unplayedData, isLoading } = useUnplayedData();
+  const { data: userMetrics, isLoading } = useUserMetrics();
   const { user } = useAuth();
   const { isDemo: contextIsDemo } = useDemoMode();
   
-  const actualScore = score ?? unplayedData?.dustScore;
+  const actualScore = score ?? userMetrics?.totalDustScore;
   const isDemoMode = isDemo || contextIsDemo;
-  
-  // Memoized clean score display
-  const showCleanScore = useMemo(() => 
-    unplayedData?.cleanScore !== undefined && user,
-    [unplayedData?.cleanScore, user]
-  );
 
   if (isLoading) {
     return (
@@ -77,20 +70,8 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
       </div>
 
       <div className="terminal-content flex flex-col py-4">
-        {/* New Icon-Based Visualization */}
+        {/* Icon-Based Visualization */}
         <DustScoreIcon score={actualScore} isDemo={isDemoMode} />
-
-        {showCleanScore && (
-          <>
-            <div className="my-4 border-t border-gray-700 w-full"></div>
-            <div className="flex flex-col items-center text-center">
-              <CleanScoreSimple 
-                score={unplayedData.cleanScore || 0} 
-                tier={unplayedData.cleanTier}
-              />
-            </div>
-          </>
-        )}
 
         {user && !isDemoMode && (
           <div className="mt-6 flex justify-center">
