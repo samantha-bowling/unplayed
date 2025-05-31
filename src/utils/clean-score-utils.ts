@@ -11,28 +11,33 @@ export const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
 ];
 
 /**
- * Simplified Clean Streak calculation
- * Count consecutive days with 30+ minutes of playtime, going backwards from today
+ * Enhanced Clean Streak calculation with proper start/end dates
  */
 export const calculateCleanStreak = (gamesList: any[]): {
   streak: number;
   streakQuality: 'bronze' | 'silver' | 'gold';
+  isActive: boolean;
   metadata: {
     gracePeriodUsed: boolean;
     lastPlayDate: string | null;
     averageSessionLength: number;
     streakStartDate: string | null;
+    streakEndDate: string | null;
+    daysSinceEnd: number | null;
   };
 } => {
   if (!gamesList || gamesList.length === 0) {
     return {
       streak: 0,
       streakQuality: 'bronze',
+      isActive: false,
       metadata: {
         gracePeriodUsed: false,
         lastPlayDate: null,
         averageSessionLength: 0,
-        streakStartDate: null
+        streakStartDate: null,
+        streakEndDate: null,
+        daysSinceEnd: null
       }
     };
   }
@@ -54,48 +59,107 @@ export const calculateCleanStreak = (gamesList: any[]): {
     return {
       streak: 0,
       streakQuality: 'bronze',
+      isActive: false,
       metadata: {
         gracePeriodUsed: false,
         lastPlayDate: null,
         averageSessionLength: 0,
-        streakStartDate: null
+        streakStartDate: null,
+        streakEndDate: null,
+        daysSinceEnd: null
       }
     };
   }
 
-  // Calculate streak by going backwards from today
+  // Get qualifying days (30+ minutes) sorted by date
+  const qualifyingDays = Array.from(playTimeByDate.entries())
+    .filter(([_, minutes]) => minutes >= 30)
+    .map(([date, minutes]) => ({ date, minutes }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Most recent first
+
+  if (qualifyingDays.length === 0) {
+    return {
+      streak: 0,
+      streakQuality: 'bronze',
+      isActive: false,
+      metadata: {
+        gracePeriodUsed: false,
+        lastPlayDate: null,
+        averageSessionLength: 0,
+        streakStartDate: null,
+        streakEndDate: null,
+        daysSinceEnd: null
+      }
+    };
+  }
+
+  // Calculate streak by finding consecutive days from most recent
   let streak = 0;
   let streakStartDate: string | null = null;
-  const today = new Date();
+  let streakEndDate: string | null = null;
+  let isActive = false;
   
-  // Go backwards day by day for up to 30 days
-  for (let i = 0; i < 30; i++) {
-    const checkDate = new Date(today);
-    checkDate.setDate(checkDate.getDate() - i);
-    const dateStr = checkDate.toISOString().split('T')[0];
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  // Check if streak is active (played today or yesterday)
+  const mostRecentDay = qualifyingDays[0].date;
+  isActive = mostRecentDay === todayStr || mostRecentDay === yesterdayStr;
+  
+  if (isActive) {
+    // Count consecutive days from most recent
+    let currentDate = new Date(mostRecentDay);
+    streakEndDate = mostRecentDay;
     
-    const dayPlaytime = playTimeByDate.get(dateStr) || 0;
+    for (let i = 0; i < qualifyingDays.length; i++) {
+      const dayData = qualifyingDays[i];
+      const expectedDate = new Date(currentDate);
+      expectedDate.setDate(expectedDate.getDate() - i);
+      const expectedDateStr = expectedDate.toISOString().split('T')[0];
+      
+      if (dayData.date === expectedDateStr) {
+        streak++;
+        streakStartDate = dayData.date;
+      } else {
+        break;
+      }
+    }
+  } else {
+    // Find the most recent completed streak
+    streak = 1;
+    streakEndDate = mostRecentDay;
+    streakStartDate = mostRecentDay;
     
-    if (dayPlaytime >= 30) { // 30+ minutes counts as a gaming day
-      streak++;
-      if (!streakStartDate) streakStartDate = dateStr;
-    } else if (streak > 0) {
-      // First day without qualifying playtime breaks the streak
-      break;
+    // Look backwards for consecutive days
+    let currentDate = new Date(mostRecentDay);
+    for (let i = 1; i < qualifyingDays.length; i++) {
+      currentDate.setDate(currentDate.getDate() - 1);
+      const expectedDateStr = currentDate.toISOString().split('T')[0];
+      
+      if (qualifyingDays[i] && qualifyingDays[i].date === expectedDateStr) {
+        streak++;
+        streakStartDate = qualifyingDays[i].date;
+      } else {
+        break;
+      }
     }
   }
 
-  // Find last play date
-  const sortedDates = Array.from(playTimeByDate.keys()).sort().reverse();
-  const lastPlayDate = sortedDates[0] || null;
+  // Calculate days since streak ended (if not active)
+  let daysSinceEnd: number | null = null;
+  if (!isActive && streakEndDate) {
+    const endDate = new Date(streakEndDate);
+    daysSinceEnd = Math.floor((today.getTime() - endDate.getTime()) / (24 * 60 * 60 * 1000));
+  }
 
-  // Calculate average session length
-  const totalMinutes = Array.from(playTimeByDate.values()).reduce((sum, minutes) => sum + minutes, 0);
-  const averageSessionLength = playTimeByDate.size > 0 ? totalMinutes / playTimeByDate.size : 0;
+  // Calculate average session length from qualifying days
+  const totalMinutes = qualifyingDays.reduce((sum, day) => sum + day.minutes, 0);
+  const averageSessionLength = Math.round(totalMinutes / qualifyingDays.length);
 
-  // Simple streak quality based on length
+  // Determine streak quality
   let streakQuality: 'bronze' | 'silver' | 'gold' = 'bronze';
-  if (streak >= 14) {
+  if (streak >= 30) {
     streakQuality = 'gold';
   } else if (streak >= 7) {
     streakQuality = 'silver';
@@ -104,17 +168,20 @@ export const calculateCleanStreak = (gamesList: any[]): {
   return {
     streak,
     streakQuality,
+    isActive,
     metadata: {
-      gracePeriodUsed: false, // No longer using grace period
-      lastPlayDate,
-      averageSessionLength: Math.round(averageSessionLength),
-      streakStartDate
+      gracePeriodUsed: false,
+      lastPlayDate: mostRecentDay,
+      averageSessionLength,
+      streakStartDate,
+      streakEndDate,
+      daysSinceEnd
     }
   };
 };
 
 /**
- * Simplified Recently Played Games calculation
+ * Fixed Recently Played Games calculation
  * Count games with last_played_date within 30 days AND playtime >= 30 minutes
  */
 export const calculateRecentlyPlayedGames = (gamesList: any[]): number => {
