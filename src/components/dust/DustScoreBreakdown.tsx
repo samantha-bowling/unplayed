@@ -49,27 +49,47 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
   const genrePercent = rawTotal > 0 ? Math.round((genreScore / rawTotal) * 100) : 0;
   const playtimePercent = Math.round(playtimeFactor * 100);
   
-  // Define dust score tiers based on total score
+  // Enhanced 8-tier dust score system with better granularity
   const getDustTier = () => {
-    if (totalScore < 1000) return {
+    if (totalScore < 500) return {
       name: "Freshly Polished",
       color: "#A3F7BF",
-      description: "Your library is well-maintained with minimal dust. Keep up the good work!"
+      description: "Your library sparkles! You're a gaming efficiency master with minimal dust accumulation."
     };
-    if (totalScore < 5000) return {
+    if (totalScore < 1500) return {
+      name: "Light Dusting",
+      color: "#90EE90",
+      description: "A few games gathering dust, but nothing a quick gaming session can't fix!"
+    };
+    if (totalScore < 3500) return {
       name: "Dust Storm Brewing",
-      color: "#FF9F39",
-      description: "You're starting to accumulate some dust. Consider playing a few neglected games."
+      color: "#FFD700",
+      description: "You're starting to accumulate some dust. Time to dust off a few classics!"
     };
-    if (totalScore < 10000) return {
+    if (totalScore < 7500) return {
       name: "Duststorm Warning",
+      color: "#FF9F39",
+      description: "Your backlog is becoming concerning. Consider making a strategic gaming plan."
+    };
+    if (totalScore < 15000) return {
+      name: "Hoarder's Horizon",
       color: "#F6AD55",
-      description: "Your backlog is becoming concerning. Time to make a dent in those unplayed games."
+      description: "You've crossed into serious collector territory. Your backlog has its own ecosystem!"
+    };
+    if (totalScore < 35000) return {
+      name: "Dust Dynasty",
+      color: "#FF6347",
+      description: "You're building a gaming empire! Your unplayed collection could stock a small store."
+    };
+    if (totalScore < 75000) return {
+      name: "Legendary Collector",
+      color: "#8A2BE2",
+      description: "Your collection has reached legendary status. You're preserving gaming history!"
     };
     return {
-      name: "Hoarder's Horizon",
-      color: "#FF3C38",
-      description: "Your library has reached critical dust levels. Serious intervention needed!"
+      name: "Mythical Archive",
+      color: "#FF1493",
+      description: "You've transcended mere collecting - you're a gaming library of Alexandria!"
     };
   };
   
@@ -261,35 +281,63 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
             </div>
 
             <div className="bg-black/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
+              <h3 className="text-lg font-medium mb-3">Enhanced Dust Score Tiers</h3>
               <div className="space-y-3 text-sm">
                 <div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full mr-2 bg-[#A3F7BF]"></div>
                     <span className="font-medium text-[#A3F7BF]">Freshly Polished</span>
                   </div>
-                  <span className="text-xs text-gray-400 pl-5">0-999</span>
+                  <span className="text-xs text-gray-400 pl-5">0-499</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#90EE90]"></div>
+                    <span className="font-medium text-[#90EE90]">Light Dusting</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">500-1,499</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FFD700]"></div>
+                    <span className="font-medium text-[#FFD700]">Dust Storm Brewing</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">1,500-3,499</span>
                 </div>
                 <div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full mr-2 bg-[#FF9F39]"></div>
-                    <span className="font-medium text-[#FF9F39]">Dust Storm Brewing</span>
+                    <span className="font-medium text-[#FF9F39]">Duststorm Warning</span>
                   </div>
-                  <span className="text-xs text-gray-400 pl-5">1,000-4,999</span>
+                  <span className="text-xs text-gray-400 pl-5">3,500-7,499</span>
                 </div>
                 <div>
                   <div className="flex items-center">
                     <div className="w-3 h-3 rounded-full mr-2 bg-[#F6AD55]"></div>
-                    <span className="font-medium text-[#F6AD55]">Duststorm Warning</span>
+                    <span className="font-medium text-[#F6AD55]">Hoarder's Horizon</span>
                   </div>
-                  <span className="text-xs text-gray-400 pl-5">5,000-9,999</span>
+                  <span className="text-xs text-gray-400 pl-5">7,500-14,999</span>
                 </div>
                 <div>
                   <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF3C38]"></div>
-                    <span className="font-medium text-[#FF3C38]">Hoarder's Horizon</span>
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF6347]"></div>
+                    <span className="font-medium text-[#FF6347]">Dust Dynasty</span>
                   </div>
-                  <span className="text-xs text-gray-400 pl-5">10,000+</span>
+                  <span className="text-xs text-gray-400 pl-5">15,000-34,999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#8A2BE2]"></div>
+                    <span className="font-medium text-[#8A2BE2]">Legendary Collector</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">35,000-74,999</span>
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full mr-2 bg-[#FF1493]"></div>
+                    <span className="font-medium text-[#FF1493]">Mythical Archive</span>
+                  </div>
+                  <span className="text-xs text-gray-400 pl-5">75,000+</span>
                 </div>
               </div>
             </div>
