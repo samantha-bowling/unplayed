@@ -81,6 +81,62 @@ export type Database = {
         }
         Relationships: []
       }
+      game_dust_breakdowns: {
+        Row: {
+          age_score: number
+          current_dust_score: number
+          game_id: number
+          game_name: string
+          header_image: string | null
+          id: string
+          image_url: string | null
+          last_calculated: string
+          ownership_score: number
+          playtime_factor: number
+          playtime_minutes: number | null
+          release_date: string | null
+          user_id: string
+        }
+        Insert: {
+          age_score?: number
+          current_dust_score?: number
+          game_id: number
+          game_name: string
+          header_image?: string | null
+          id?: string
+          image_url?: string | null
+          last_calculated?: string
+          ownership_score?: number
+          playtime_factor?: number
+          playtime_minutes?: number | null
+          release_date?: string | null
+          user_id: string
+        }
+        Update: {
+          age_score?: number
+          current_dust_score?: number
+          game_id?: number
+          game_name?: string
+          header_image?: string | null
+          id?: string
+          image_url?: string | null
+          last_calculated?: string
+          ownership_score?: number
+          playtime_factor?: number
+          playtime_minutes?: number | null
+          release_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_dust_breakdowns_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_estimates: {
         Row: {
           completionist_hours: number | null
@@ -421,6 +477,93 @@ export type Database = {
           },
         ]
       }
+      user_genre_stats: {
+        Row: {
+          color_hex: string
+          game_count: number
+          genre_name: string
+          id: string
+          last_calculated: string
+          percentage: number
+          user_id: string
+        }
+        Insert: {
+          color_hex?: string
+          game_count?: number
+          genre_name: string
+          id?: string
+          last_calculated?: string
+          percentage?: number
+          user_id: string
+        }
+        Update: {
+          color_hex?: string
+          game_count?: number
+          genre_name?: string
+          id?: string
+          last_calculated?: string
+          percentage?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_metrics: {
+        Row: {
+          average_dust_score: number | null
+          calculation_version: number
+          clean_score: number
+          clean_score_tier: string | null
+          clean_streak: number
+          id: string
+          last_calculated: string
+          played_games: number
+          recently_played_count: number | null
+          total_dust_score: number
+          total_games: number
+          total_library_value_cents: number | null
+          total_playtime_hours: number | null
+          unplayed_games: number
+          unplayed_value_cents: number | null
+          user_id: string
+        }
+        Insert: {
+          average_dust_score?: number | null
+          calculation_version?: number
+          clean_score?: number
+          clean_score_tier?: string | null
+          clean_streak?: number
+          id?: string
+          last_calculated?: string
+          played_games?: number
+          recently_played_count?: number | null
+          total_dust_score?: number
+          total_games?: number
+          total_library_value_cents?: number | null
+          total_playtime_hours?: number | null
+          unplayed_games?: number
+          unplayed_value_cents?: number | null
+          user_id: string
+        }
+        Update: {
+          average_dust_score?: number | null
+          calculation_version?: number
+          clean_score?: number
+          clean_score_tier?: string | null
+          clean_streak?: number
+          id?: string
+          last_calculated?: string
+          played_games?: number
+          recently_played_count?: number | null
+          total_dust_score?: number
+          total_games?: number
+          total_library_value_cents?: number | null
+          total_playtime_hours?: number | null
+          unplayed_games?: number
+          unplayed_value_cents?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_price_refresh_logs: {
         Row: {
           completed_at: string | null
@@ -456,6 +599,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_shelf_life: {
+        Row: {
+          game_id: number
+          id: string
+          last_calculated: string
+          playtime_minutes: number | null
+          release_date: string | null
+          shelf_life_rank: number
+          user_id: string
+          years_old: number | null
+        }
+        Insert: {
+          game_id: number
+          id?: string
+          last_calculated?: string
+          playtime_minutes?: number | null
+          release_date?: string | null
+          shelf_life_rank: number
+          user_id: string
+          years_old?: number | null
+        }
+        Update: {
+          game_id?: number
+          id?: string
+          last_calculated?: string
+          playtime_minutes?: number | null
+          release_date?: string | null
+          shelf_life_rank?: number
+          user_id?: string
+          years_old?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_shelf_life_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {

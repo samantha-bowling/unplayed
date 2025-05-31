@@ -1,88 +1,36 @@
-
-/**
- * Central location for all query keys used in the application
- * This helps ensure consistency in cache management and invalidation
- */
-
-// Type definitions for query key parameters
-export type FilterOptions = {
-  search: string;
-  hideIgnored: boolean;
-  onlyUnplayed: boolean;
-  selectedGenre: string;
-};
-
 export const queryKeys = {
-  // User data
-  profile: (userId?: string) => ['profile', userId],
+  unplayedGames: (userId?: string) => ['unplayed-games', userId] as const,
+  unplayedGamesList: (userId?: string) => ['unplayed-games-list', userId] as const,
+  unplayedGame: (gameId: string) => ['unplayed-game', gameId] as const,
+  library: (userId?: string) => ['library', userId] as const,
+  libraryItem: (gameId: string) => ['library-item', gameId] as const,
+  shelfLife: (userId?: string) => ['shelf-life', userId] as const,
+  genreBreakdown: (userId?: string) => ['genre-breakdown', userId] as const,
+  spendingData: (userId?: string) => ['spending-data', userId] as const,
+  spendingConfidence: (userId?: string) => ['spending-confidence', userId] as const,
+  steamProfile: (steamId?: string) => ['steam-profile', steamId] as const,
+  profile: (userId?: string) => ['profile', userId] as const,
+  detailedDustData: (userId?: string) => ['detailed-dust-data', userId] as const,
   
-  // Library data
-  libraryGames: (userId?: string) => ['libraryGames', userId],
-  paginatedLibraryGames: (
-    userId?: string, 
-    page?: number, 
-    pageSize?: number, 
-    filters?: FilterOptions, 
-    sortBy?: string, 
-    sortDirection?: string
-  ) => [
-    'paginatedLibraryGames', 
-    userId, 
-    page, 
-    pageSize, 
-    filters, 
-    sortBy, 
-    sortDirection
-  ],
-  libraryGamesCount: (userId?: string, filters?: FilterOptions) => 
-    ['libraryGamesCount', userId, filters],
-  
-  // Unplayed data
-  unplayedData: (userId?: string) => ['unplayedData', userId],
-  detailedDustData: (userId?: string) => ['detailedDustData', userId],
-  
-  // Game details
-  gameEstimates: (userId?: string) => ['gameEstimates', userId],
-  gameDetails: (gameId?: number) => ['gameDetails', gameId],
-  
-  // Picker data - improved cache keys
-  pickerGames: (userId?: string) => ['pickerGames', userId],
-  gamePicks: (userId?: string) => ['gamePicks', userId],
-  previousPicks: (userId?: string) => ['previousPicks', userId],
-  
-  // Spending data
-  spendingData: (userId?: string) => ['spendingData', userId],
-  
-  // Leaderboard data
-  leaderboardData: () => ['leaderboardData'],
-  
-  // Helper to create an array of all user-related queries for bulk invalidation
-  allUserData: (userId?: string) => [
-    queryKeys.profile(userId),
-    queryKeys.unplayedData(userId),
-    queryKeys.libraryGames(userId),
-    queryKeys.paginatedLibraryGames(userId),
-    queryKeys.libraryGamesCount(userId),
-    queryKeys.detailedDustData(userId),
-    queryKeys.gameEstimates(userId),
-    queryKeys.pickerGames(userId),
-    queryKeys.gamePicks(userId),
-    queryKeys.previousPicks(userId),
-    queryKeys.spendingData(userId)
-  ]
-};
+  // New Phase 2 query keys
+  userMetrics: (userId?: string) => ['user-metrics', userId] as const,
+  genreStats: (userId?: string) => ['genre-stats', userId] as const,
+  shelfLifeData: (userId?: string) => ['shelf-life-data', userId] as const,
+  dustBreakdowns: (userId?: string) => ['dust-breakdowns', userId] as const,
 
-/**
- * Hook for cache management operations
- * Provides utilities to perform targeted invalidations and updates
- */
-export const useCacheManagement = () => {
-  // This will be expanded with additional utilities 
-  // for more advanced cache operations
-  
-  return {
-    queryKeys
-  };
+  helpers: {
+    allUserData: (userId: string) => {
+      return [
+        queryKeys.unplayedGames(userId),
+        queryKeys.unplayedGamesList(userId),
+        queryKeys.library(userId),
+        queryKeys.shelfLife(userId),
+        queryKeys.genreBreakdown(userId),
+        queryKeys.spendingData(userId),
+        queryKeys.spendingConfidence(userId),
+        queryKeys.profile(userId),
+        queryKeys.detailedDustData(userId)
+      ];
+    }
+  }
 };
-
-export default useCacheManagement;
