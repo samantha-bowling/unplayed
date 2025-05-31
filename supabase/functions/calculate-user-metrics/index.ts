@@ -114,9 +114,9 @@ serve(async (req) => {
       }
     }
 
-    // ===== FIXED RECENTLY PLAYED CALCULATION =====
+    // ===== FIXED RECENTLY PLAYED CALCULATION (SIMPLIFIED) =====
     
-    // Calculate recently played games (games with 30+ minutes played in last 30 days)
+    // Calculate recently played games (games played in last 30 days - no playtime threshold)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
@@ -124,22 +124,20 @@ serve(async (req) => {
       // Must have last played date
       if (!game.last_played_date) return false;
       
-      // Must have at least 30 minutes playtime
-      if (game.playtime_minutes < 30) return false;
-      
-      // Must be played within last 30 days
+      // Must be played within last 30 days (removed playtime threshold)
       const lastPlayedDate = new Date(game.last_played_date);
       return lastPlayedDate >= thirtyDaysAgo;
     }).length;
 
-    console.log(`Recently played calculation:`, {
+    console.log(`Recently played calculation (SIMPLIFIED):`, {
       totalGames,
       playedGames,
       recentlyPlayedCount,
-      thirtyDaysAgo: thirtyDaysAgo.toISOString()
+      thirtyDaysAgo: thirtyDaysAgo.toISOString(),
+      description: 'Any game with last_played_date within 30 days'
     });
 
-    // ===== NEW CLEAN SCORE CALCULATION (Phase 2) =====
+    // ===== CLEAN SCORE CALCULATION (Phase 2) =====
     
     // 1. Unique Game Diversity (25% weight)
     // Measure how varied the user's gaming habits are
@@ -149,7 +147,7 @@ serve(async (req) => {
     
     const diversityScore = Math.min(100, Math.round((uniqueGenres.size / Math.max(1, totalGames / 10)) * 100));
 
-    // 2. Recency Engagement (30% weight) - Now uses the FIXED recently played count
+    // 2. Recency Engagement (30% weight) - Now uses the SIMPLIFIED recently played count
     const recencyScore = Math.min(100, Math.round((recentlyPlayedCount / Math.max(1, totalGames)) * 100));
 
     // 3. Backlog Conversion Rate (25% weight)
@@ -195,7 +193,7 @@ serve(async (req) => {
         total_library_value_cents: totalLibraryValueCents,
         unplayed_value_cents: unplayedValueCents,
         total_playtime_hours: totalPlaytimeHours,
-        recently_played_count: recentlyPlayedCount, // Now using the FIXED calculation
+        recently_played_count: recentlyPlayedCount, // Now using the SIMPLIFIED calculation
         last_calculated: new Date().toISOString(),
         calculation_version: 2 // Updated to version 2 for new clean score system
       });
@@ -210,7 +208,7 @@ serve(async (req) => {
         backlog_conversion_score: backlogConversionScore,
         session_depth_score: sessionDepthScore,
         clean_streak_days: cleanStreak,
-        recently_played_count: recentlyPlayedCount, // Now using the FIXED calculation
+        recently_played_count: recentlyPlayedCount, // Now using the SIMPLIFIED calculation
         last_calculated: new Date().toISOString()
       });
 
@@ -319,7 +317,7 @@ serve(async (req) => {
     console.log(`Metrics calculation completed for user ${user.id}`);
     console.log(`- Total games: ${totalGames}`);
     console.log(`- Unplayed games: ${unplayedGames}`);
-    console.log(`- Recently played (FIXED): ${recentlyPlayedCount}`);
+    console.log(`- Recently played (SIMPLIFIED): ${recentlyPlayedCount}`);
     console.log(`- Clean score: ${cleanScore} (Phase 2)`);
     console.log(`- Diversity: ${diversityScore}, Recency: ${recencyScore}, Backlog: ${backlogConversionScore}, Depth: ${sessionDepthScore}`);
     console.log(`- Total library value: $${(totalLibraryValueCents / 100).toFixed(2)}`);
@@ -327,11 +325,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'User metrics calculated successfully with FIXED recently played calculation',
+        message: 'User metrics calculated successfully with SIMPLIFIED recently played calculation',
         metrics: {
           totalGames,
           unplayedGames,
-          recentlyPlayedCount, // Now accurate
+          recentlyPlayedCount, // Now accurate and simplified
           cleanScore,
           cleanScoreBreakdown: {
             diversityScore,

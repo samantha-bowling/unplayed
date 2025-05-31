@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ShieldQuestion, TrendingUp, Clock, Activity, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const LibraryStatsSection: React.FC = () => {
   const navigate = useNavigate();
@@ -28,90 +29,127 @@ const LibraryStatsSection: React.FC = () => {
   };
 
   return (
-    <div className="mb-6">
-      <Card className="bg-black/30 border border-unplayed-mint/20 hover:border-unplayed-mint/40 transition-all duration-300">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-3 gap-6">
-            {/* Row 1 */}
-            {/* Unplayed Games Count */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-unplayed-mint/20 rounded-lg flex items-center justify-center">
-                <ShieldQuestion className="h-6 w-6 text-unplayed-mint" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-unplayed-mint">
-                  {dashboardData.unplayedGames}
-                </div>
-                <div className="text-sm text-gray-400">
-                  unplayed Games
-                </div>
-              </div>
-            </div>
+    <TooltipProvider>
+      <div className="mb-6">
+        <Card className="bg-black/30 border border-unplayed-mint/20 hover:border-unplayed-mint/40 transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-3 gap-6">
+              {/* Row 1 */}
+              {/* Unplayed Games Count */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-4 cursor-help">
+                    <div className="flex-shrink-0 w-12 h-12 bg-unplayed-mint/20 rounded-lg flex items-center justify-center">
+                      <ShieldQuestion className="h-6 w-6 text-unplayed-mint" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-unplayed-mint">
+                        {dashboardData.unplayedGames}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        unplayed Games
+                      </div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Games in your library with 0 minutes of playtime</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Percentage of Library */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-unplayed-amber/20 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-unplayed-amber" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-unplayed-amber">
-                  {unplayedPercentage}%
-                </div>
-                <div className="text-sm text-gray-400">
-                  of library unplayed
-                </div>
-              </div>
-            </div>
+              {/* Percentage of Library */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-4 cursor-help">
+                    <div className="flex-shrink-0 w-12 h-12 bg-unplayed-amber/20 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-unplayed-amber" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-unplayed-amber">
+                        {unplayedPercentage}%
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        of library unplayed
+                      </div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Percentage of your library that has never been played</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Total Playtime */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-blue-400" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-400">
-                  {formatPlaytime(totalPlaytimeHours)}
-                </div>
-                <div className="text-sm text-gray-400">
-                  total playtime
-                </div>
-              </div>
-            </div>
+              {/* Total Playtime */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-4 cursor-help">
+                    <div className="flex-shrink-0 w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-400">
+                        {formatPlaytime(totalPlaytimeHours)}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        total playtime
+                      </div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Total hours spent playing games across your entire library</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Row 2 */}
-            {/* Recent Activity */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <Activity className="h-6 w-6 text-green-400" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  {dashboardData.recentlyPlayedCount || 0}
-                </div>
-                <div className="text-sm text-gray-400">
-                  played recently
-                </div>
-              </div>
-            </div>
+              {/* Row 2 */}
+              {/* Recent Activity */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-4 cursor-help">
+                    <div className="flex-shrink-0 w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <Activity className="h-6 w-6 text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-400">
+                        {dashboardData.recentlyPlayedCount || 0}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        played recently
+                      </div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Games played in the last 30 days (any amount of playtime)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Library Value - Spanning 2 columns */}
-            <div className="col-span-2 flex items-center justify-center">
-              <Button
-                onClick={handleLibraryValueClick}
-                variant="outline"
-                className="bg-emerald-500/20 text-emerald-400 font-semibold hover:bg-emerald-500/30 border-emerald-400/30 h-16 px-8 w-full max-w-md"
-              >
-                <DollarSign className="mr-3 h-6 w-6" />
-                <div className="text-left">
-                  <div className="text-lg font-bold">View Library Value</div>
-                  <div className="text-xs opacity-75">Check your spending</div>
-                </div>
-              </Button>
+              {/* Library Value - Spanning 2 columns */}
+              <div className="col-span-2 flex items-center justify-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleLibraryValueClick}
+                      variant="outline"
+                      className="bg-emerald-500/20 text-emerald-400 font-semibold hover:bg-emerald-500/30 border-emerald-400/30 h-16 px-8 w-full max-w-md"
+                    >
+                      <DollarSign className="mr-3 h-6 w-6" />
+                      <div className="text-left">
+                        <div className="text-lg font-bold">View Library Value</div>
+                        <div className="text-xs opacity-75">Check your spending</div>
+                      </div>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>View detailed breakdown of your library's monetary value and spending analysis</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import { CleanScoreTier, LegacyCleanScoreBreakdown } from '@/types/unplayed-data.types';
 
 // Clean Score tiers configuration
@@ -181,8 +180,8 @@ export const calculateCleanStreak = (gamesList: any[]): {
 };
 
 /**
- * Fixed Recently Played Games calculation
- * Count games with last_played_date within 30 days AND playtime >= 30 minutes
+ * SIMPLIFIED Recently Played Games calculation
+ * Count games played in the last 30 days (ANY playtime activity)
  */
 export const calculateRecentlyPlayedGames = (gamesList: any[]): number => {
   if (!gamesList || gamesList.length === 0) return 0;
@@ -195,14 +194,9 @@ export const calculateRecentlyPlayedGames = (gamesList: any[]): number => {
     const lastPlayedDate = game.lastPlayed || game.last_played_date;
     if (!lastPlayedDate) return false;
     
-    // Check if played within last 30 days
+    // Check if played within last 30 days (removed playtime threshold for simplicity)
     const playDate = new Date(lastPlayedDate);
-    const withinThirtyDays = playDate >= thirtyDaysAgo;
-    
-    // Check if has at least 30 minutes playtime
-    const hasMinimumPlaytime = (game.playtimeMinutes || 0) >= 30;
-    
-    return withinThirtyDays && hasMinimumPlaytime;
+    return playDate >= thirtyDaysAgo;
   }).length;
 };
 
