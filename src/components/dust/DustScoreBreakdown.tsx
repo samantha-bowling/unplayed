@@ -16,7 +16,7 @@ interface DustScoreBreakdownProps {
 
 const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) => {
   // Debug logging
-  console.log("DustScoreBreakdown Phase 2 received:", { totalScore, breakdown });
+  console.log("DustScoreBreakdown received:", { totalScore, breakdown });
 
   // If no breakdown data is available, show placeholder
   if (!breakdown) {
@@ -81,7 +81,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wind className="h-5 w-5 text-unplayed-mint" />
-              Dust Score Breakdown (Phase 2)
+              Dust Score Breakdown
             </CardTitle>
             <CardDescription className="text-base mt-3">
               Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is calculated from real data across these 5 factors

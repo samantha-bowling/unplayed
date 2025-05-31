@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -35,9 +34,15 @@ const DustPage = () => {
 
   // Debug logging for Phase 2 data
   useEffect(() => {
-    console.log("DustPage Phase 2 - User Metrics:", userMetrics);
-    console.log("DustPage Phase 2 - Dust Breakdowns:", dustBreakdowns);
-    console.log("DustPage Phase 2 - Clean Score Breakdowns:", cleanScoreBreakdowns);
+    console.log("DustPage - User Metrics:", userMetrics);
+    console.log("DustPage - Dust Breakdowns:", dustBreakdowns);
+    console.log("DustPage - Clean Score Breakdowns:", cleanScoreBreakdowns);
+    console.log("DustPage - Clean Streak Comparison:", {
+      userMetricsCleanStreak: userMetrics?.cleanStreak,
+      cleanBreakdownsCleanStreak: cleanScoreBreakdowns?.cleanStreakDays,
+      userMetricsRecentlyPlayed: userMetrics?.recentlyPlayedCount,
+      cleanBreakdownsRecentlyPlayed: cleanScoreBreakdowns?.recentlyPlayedCount
+    });
   }, [userMetrics, dustBreakdowns, cleanScoreBreakdowns]);
 
   const refreshData = async () => {
@@ -76,7 +81,7 @@ const DustPage = () => {
     }
   };
 
-  // Process data for components - use real calculated values
+  // Process data for components - use correct data sources
   const processedData = {
     dustScore: userMetrics?.totalDustScore || 0,
     dustScoreBreakdown: userMetrics ? {
@@ -113,8 +118,9 @@ const DustPage = () => {
       backlogConversionScore: cleanScoreBreakdowns.backlogConversionScore,
       sessionDepthScore: cleanScoreBreakdowns.sessionDepthScore
     } : undefined,
-    cleanStreak: userMetrics?.cleanStreak || 0,
-    recentlyPlayedCount: userMetrics?.recentlyPlayedCount || 0,
+    // Fix: Use correct data sources for clean streak and recently played
+    cleanStreak: cleanScoreBreakdowns?.cleanStreakDays || 0,
+    recentlyPlayedCount: cleanScoreBreakdowns?.recentlyPlayedCount || 0,
     cleanStreakMetadata: undefined // Will need real data
   };
 
