@@ -1,12 +1,12 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
-import { useSpendingMetrics } from '@/hooks/useSpendingMetrics';
+import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
 import { useGenreStats } from '@/hooks/use-genre-stats';
 import { useShelfLifeData } from '@/hooks/use-shelf-life-data';
 import { queryKeys } from '@/hooks/use-query-keys';
-import { calculateCleanScore } from '@/utils/clean-score-utils';
 import { processGenres } from '@/utils/genre-processing';
 import { getBestGameImage } from '@/utils/image-utils';
 
@@ -28,7 +28,7 @@ export const useDashboardData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
   const { data: userMetrics, isLoading: userMetricsLoading } = useUserMetrics();
-  const { data: spendingMetrics, isLoading: spendingLoading } = useSpendingMetrics();
+  const { data: spendingData, isLoading: spendingLoading } = useUnifiedSpendingDataV2();
   const { data: genreStats, isLoading: genreStatsLoading } = useGenreStats();
   const { data: shelfLifeData, isLoading: shelfLifeLoading } = useShelfLifeData();
 
@@ -52,8 +52,8 @@ export const useDashboardData = () => {
         };
       }
 
-      // For authenticated users, use userMetrics as primary source
-      if (!userMetrics || !spendingMetrics) {
+      // For authenticated users, use userMetrics and unified spending data
+      if (!userMetrics || !spendingData) {
         return {
           unplayedGames: 0,
           totalGames: 0,
@@ -92,24 +92,26 @@ export const useDashboardData = () => {
         )
       }));
 
-      console.log('Dashboard data compilation (using userMetrics):', {
+      console.log('Dashboard data compilation (using unified data):', {
         unplayedGames: userMetrics.unplayedGames,
         totalGames: userMetrics.totalGames,
         cleanScore: userMetrics.cleanScore,
         dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames),
         totalPlaytime: userMetrics.totalPlaytimeHours,
         recentlyPlayedCount: userMetrics.recentlyPlayedCount,
+        unplayedSpent: spendingData.unplayedSpent,
+        totalSpent: spendingData.totalLibraryValue,
         genresCount: transformedGenres.length,
         shelfLifeCount: transformedShelfLife.length,
-        source: 'userMetrics'
+        source: 'unified_data'
       });
 
       return {
         unplayedGames: userMetrics.unplayedGames,
         totalGames: userMetrics.totalGames,
         dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames), // Average dust score
-        totalSpent: spendingMetrics.totalSpentDollars,
-        unplayedSpent: spendingMetrics.unplayedSpentDollars,
+        totalSpent: spendingData.totalLibraryValue,
+        unplayedSpent: spendingData.unplayedSpent,
         potentialGameplayHours: 0, // Not available in userMetrics, would need separate calculation
         cleanScore: userMetrics.cleanScore,
         recentlyPlayedCount: userMetrics.recentlyPlayedCount,

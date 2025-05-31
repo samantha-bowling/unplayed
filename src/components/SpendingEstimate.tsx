@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { RefreshCcw } from 'lucide-react';
-import { useDemoMode } from '@/context/DemoModeContext';
 import { useAuth } from '@/context/AuthContext';
-import { useSpendingDataSimple } from '@/hooks/use-spending-data-simple';
+import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpendingMeter from './SpendingMeter';
@@ -14,29 +14,31 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading, refreshPrices, isRefreshing } = useSpendingDataSimple();
-  const { isDemo } = useDemoMode();
-  const { status, isLoading: authLoading, user } = useAuth();
+  const { data: spendingData, isLoading: dataLoading, refreshSpendingData } = useUnifiedSpendingDataV2();
+  const { user, status } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Use unplayed spending data from unified hook
-  const spendingAmount = spendingData.totalSpent;
-
-  console.log('SpendingEstimate - Using unified spending data:', {
-    totalSpent: spendingData.totalSpent,
+  console.log('SpendingEstimate - Using unified spending data V2:', {
+    unplayedSpent: spendingData.unplayedSpent,
     currency: spendingData.currency,
-    refreshedAt: spendingData.refreshedAt,
-    source: 'user_spending_metrics'
+    lastCalculated: spendingData.lastCalculated,
+    source: 'user_spending_metrics_v2'
   });
 
   const handleRefresh = async () => {
-    if (!isRefreshing) {
-      await refreshPrices();
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await refreshSpendingData();
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  // Only show refresh when authenticated and not in demo mode
-  const showRefresh = !isDemo && status !== 'LOADING';
+  // Only show refresh when authenticated
+  const showRefresh = status !== 'LOADING' && !!user;
 
   return (
     <div className="terminal-container equal-height-container">
@@ -65,7 +67,7 @@ const SpendingEstimate = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Refresh price data from Steam store</p>
+                <p>Recalculate spending metrics from latest library data</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -75,13 +77,12 @@ const SpendingEstimate = ({
       <div className="terminal-content flex flex-col h-full">
         {isVisible ? (
           <SpendingMeter
-            amount={spendingAmount}
+            amount={spendingData.unplayedSpent}
             currency={spendingData.currency}
-            isLoading={dataLoading || authLoading}
+            isLoading={dataLoading}
             showDetailsLink={showMoreDetailsLink}
             onHideClick={() => setIsVisible(false)}
-            totalSaved={spendingData.totalSaved}
-            isDemo={isDemo}
+            totalSaved={spendingData.unplayedSaved}
             hasUser={!!user}
           />
         ) : (
@@ -93,9 +94,9 @@ const SpendingEstimate = ({
             <button 
               onClick={() => setIsVisible(true)}
               className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              disabled={dataLoading || authLoading}
+              disabled={dataLoading}
             >
-              {dataLoading || authLoading ? 'Loading...' : 'Show me the damage'}
+              {dataLoading ? 'Loading...' : 'Show me the damage'}
             </button>
           </div>
         )}
