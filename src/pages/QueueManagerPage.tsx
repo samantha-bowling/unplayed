@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Zap, Loader2 } from "lucide-react";
+import { Zap, Loader2, Calculator } from "lucide-react";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
@@ -38,6 +37,8 @@ const QueueManagerPage = () => {
   const [userId, setUserId] = useState<string>("");
   const [priorityLevel, setPriorityLevel] = useState<number>(10);
   const [isPrioritizing, setIsPrioritizing] = useState<boolean>(false);
+  const [metricsUserId, setMetricsUserId] = useState<string>("");
+  const [isCalculatingMetrics, setIsCalculatingMetrics] = useState<boolean>(false);
   
   // Fetch queue statistics
   const fetchQueueStats = useCallback(async (): Promise<QueueStats> => {
@@ -196,6 +197,39 @@ const QueueManagerPage = () => {
     }
   };
 
+  const calculateUserMetrics = async () => {
+    if (!metricsUserId) {
+      toast.error("Please enter a User ID");
+      return;
+    }
+    
+    try {
+      setIsCalculatingMetrics(true);
+      toast.info("Calculating user metrics...");
+      
+      const { data, error } = await supabase.functions.invoke("calculate-user-metrics", {
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
+      
+      if (error) {
+        console.error("Error calculating user metrics:", error);
+        toast.error("Failed to calculate user metrics");
+        return;
+      }
+      
+      toast.success(`Successfully calculated metrics! Processed ${data?.metrics?.totalGames || 0} games`);
+      console.log("Metrics calculation response:", data);
+      
+    } catch (err) {
+      console.error("Error calculating metrics:", err);
+      toast.error("Error occurred while calculating metrics");
+    } finally {
+      setIsCalculatingMetrics(false);
+    }
+  };
+
   return (
     <AdminLayout requiredRole="admin">
       <div className="container mx-auto px-4 py-24">
@@ -253,57 +287,110 @@ const QueueManagerPage = () => {
           <MetadataConsistencyCard />
         </div>
 
-        <Card className="bg-gradient-to-br from-purple-900/40 to-purple-700/20 border-purple-400/30">
-          <CardHeader>
-            <CardTitle className="text-lg">Smart User Prioritization</CardTitle>
-            <CardDescription>
-              Prioritize games for specific users to improve their experience
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="user-id">User ID</Label>
-              <Input
-                id="user-id"
-                type="text"
-                placeholder="Enter Steam User ID or UUID"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-              />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-purple-900/40 to-purple-700/20 border-purple-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg">Smart User Prioritization</CardTitle>
+              <CardDescription>
+                Prioritize games for specific users to improve their experience
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-id">User ID</Label>
+                <Input
+                  id="user-id"
+                  type="text"
+                  placeholder="Enter Steam User ID or UUID"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="priority-level">Priority Level: {priorityLevel}</Label>
-              <Slider
-                id="priority-level"
-                min={1}
-                max={100}
-                step={1}
-                value={[priorityLevel]}
-                onValueChange={(value) => setPriorityLevel(value[0])}
-                className="py-4"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="priority-level">Priority Level: {priorityLevel}</Label>
+                <Slider
+                  id="priority-level"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[priorityLevel]}
+                  onValueChange={(value) => setPriorityLevel(value[0])}
+                  className="py-4"
+                />
+              </div>
 
-            <button
-              onClick={prioritizeUserGames}
-              disabled={isPrioritizing || !userId}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
-            >
-              {isPrioritizing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Prioritizing...
-                </>
-              ) : (
-                <>
-                  <Zap className="mr-2 h-4 w-4" />
-                  Prioritize User Games
-                </>
-              )}
-            </button>
-          </CardContent>
-        </Card>
+              <button
+                onClick={prioritizeUserGames}
+                disabled={isPrioritizing || !userId}
+                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
+              >
+                {isPrioritizing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Prioritizing...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Prioritize User Games
+                  </>
+                )}
+              </button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-900/40 to-green-700/20 border-green-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Calculator className="mr-2 h-5 w-5" />
+                User Metrics Calculator
+              </CardTitle>
+              <CardDescription>
+                Calculate and populate user metrics data for existing users
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="metrics-user-id">User ID</Label>
+                <Input
+                  id="metrics-user-id"
+                  type="text"
+                  placeholder="Enter User UUID (leave empty for current user)"
+                  value={metricsUserId}
+                  onChange={(e) => setMetricsUserId(e.target.value)}
+                />
+                <p className="text-xs text-gray-400">
+                  Leave empty to calculate metrics for the currently authenticated user
+                </p>
+              </div>
+
+              <button
+                onClick={calculateUserMetrics}
+                disabled={isCalculatingMetrics}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
+              >
+                {isCalculatingMetrics ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Calculating Metrics...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="mr-2 h-4 w-4" />
+                    Calculate User Metrics
+                  </>
+                )}
+              </button>
+              
+              <div className="text-xs text-gray-400 space-y-1">
+                <p>• Calculates total games, unplayed games, spending data</p>
+                <p>• Generates genre statistics and shelf life data</p>
+                <p>• Creates dust score breakdowns for top contributors</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AdminLayout>
   );
