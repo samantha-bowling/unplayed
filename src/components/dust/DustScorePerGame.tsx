@@ -1,9 +1,8 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BarChart3, TrendingUp, Target, AlertTriangle, CircleDot, Cherry } from 'lucide-react';
-import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, TrendingDown, TrendingUp, Target, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DustScorePerGameProps {
   avgDustScore: number;
@@ -11,286 +10,226 @@ interface DustScorePerGameProps {
   unplayedGames: number;
 }
 
-const DustScorePerGame = ({ avgDustScore, totalGames, unplayedGames }: DustScorePerGameProps) => {
-  // Calculate completion rate
+const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
+  avgDustScore,
+  totalGames,
+  unplayedGames
+}) => {
+  // Calculate library health metrics
   const completionRate = totalGames > 0 ? ((totalGames - unplayedGames) / totalGames) * 100 : 0;
-  const playedGames = totalGames - unplayedGames;
-  const playedPercentage = totalGames > 0 ? (playedGames / totalGames) * 100 : 0;
   const unplayedPercentage = totalGames > 0 ? (unplayedGames / totalGames) * 100 : 0;
   
-  // Determine which category is larger for Pac-Man sizing
-  const playedIsLarger = playedGames >= unplayedGames;
-  const largerPercentage = Math.max(playedPercentage, unplayedPercentage);
-  const smallerPercentage = Math.min(playedPercentage, unplayedPercentage);
-  
-  // Create dust tier breakdown data
-  const dustTiers = [
-    { name: 'Low Dust (0-25)', range: [0, 25], color: '#4ade80', games: Math.floor(totalGames * 0.3) },
-    { name: 'Medium Dust (26-50)', range: [26, 50], color: '#60a5fa', games: Math.floor(totalGames * 0.4) },
-    { name: 'High Dust (51-75)', range: [51, 75], color: '#f59e0b', games: Math.floor(totalGames * 0.2) },
-    { name: 'Critical Dust (76-100)', range: [76, 100], color: '#f87171', games: Math.floor(totalGames * 0.1) }
-  ];
-
-  // Dust distribution chart data
-  const dustDistributionData = [
-    { tier: 'Low', games: dustTiers[0].games, fill: dustTiers[0].color },
-    { tier: 'Medium', games: dustTiers[1].games, fill: dustTiers[1].color },
-    { tier: 'High', games: dustTiers[2].games, fill: dustTiers[2].color },
-    { tier: 'Critical', games: dustTiers[3].games, fill: dustTiers[3].color }
-  ];
-
-  // Generate insights based on data
-  const generateInsights = () => {
-    const insights = [];
-    
-    if (avgDustScore > 75) {
-      insights.push({
-        type: 'warning',
-        icon: AlertTriangle,
-        title: 'High Dust Accumulation',
-        message: 'Your average dust score is quite high. Consider playing some of your older games.',
-        color: 'text-orange-400'
-      });
-    } else if (avgDustScore < 25) {
-      insights.push({
-        type: 'success',
-        icon: Target,
-        title: 'Excellent Library Management',
-        message: 'Your dust score is impressively low! You\'re doing great at playing your games.',
-        color: 'text-green-400'
-      });
-    }
-
-    if (completionRate < 30) {
-      insights.push({
-        type: 'tip',
-        icon: TrendingUp,
-        title: 'Backlog Opportunity',
-        message: 'You have many unplayed games. Try setting a goal to play 2-3 new games each month.',
-        color: 'text-blue-400'
-      });
-    } else if (completionRate > 70) {
-      insights.push({
-        type: 'success',
-        icon: Target,
-        title: 'Great Completion Rate',
-        message: 'You\'ve played most of your library! Consider being more selective with new purchases.',
-        color: 'text-green-400'
-      });
-    }
-
-    return insights;
+  // Determine library health status
+  const getLibraryHealth = () => {
+    if (completionRate >= 70) return { status: 'Excellent', color: '#4ade80', description: 'Your library is in excellent shape!' };
+    if (completionRate >= 50) return { status: 'Good', color: '#22d3ee', description: 'Your library is well maintained.' };
+    if (completionRate >= 30) return { status: 'Needs Work', color: '#f59e0b', description: 'Your library could use some attention.' };
+    return { status: 'Critical', color: '#f87171', description: 'Your library needs serious work!' };
   };
-
-  const insights = generateInsights();
+  
+  const libraryHealth = getLibraryHealth();
+  
+  // Dust score quality assessment
+  const getDustQuality = () => {
+    if (avgDustScore <= 15) return { quality: 'Excellent', color: '#4ade80', trend: TrendingDown };
+    if (avgDustScore <= 25) return { quality: 'Good', color: '#22d3ee', trend: TrendingDown };
+    if (avgDustScore <= 40) return { quality: 'Moderate', color: '#f59e0b', trend: TrendingUp };
+    return { quality: 'High', color: '#f87171', trend: TrendingUp };
+  };
+  
+  const dustQuality = getDustQuality();
+  const TrendIcon = dustQuality.trend;
 
   return (
-    <div className="space-y-6">
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="terminal-container">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Average Dust Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-unplayed-mint mb-2">
-              {avgDustScore.toFixed(1)}
-            </div>
-            <Progress value={avgDustScore} className="h-2" />
-            <p className="text-xs text-gray-400 mt-1">
-              {avgDustScore < 25 ? 'Excellent' : avgDustScore < 50 ? 'Good' : avgDustScore < 75 ? 'Needs attention' : 'Critical'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="terminal-container">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Completion Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-cyan-400 mb-2">
-              {completionRate.toFixed(1)}%
-            </div>
-            <Progress value={completionRate} className="h-2" />
-            <p className="text-xs text-gray-400 mt-1">
-              {totalGames - unplayedGames} of {totalGames} games played
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="terminal-container">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Library Health</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-amber-400 mb-2">
-              {completionRate > 70 ? 'Healthy' : completionRate > 40 ? 'Fair' : 'Needs Work'}
-            </div>
-            <div className="text-xs text-gray-400">
-              Based on completion rate and dust accumulation
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="terminal-container">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-unplayed-mint" />
-              Dust Distribution by Tier
-            </CardTitle>
-            <CardDescription>
-              How your games are distributed across dust score ranges
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dustDistributionData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="tier" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1F2937', 
-                    border: '1px solid #374151',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar dataKey="games" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="terminal-container">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CircleDot className="h-5 w-5 text-yellow-400" />
-              unplayed Pac-Man
-            </CardTitle>
-            <CardDescription>
-              Your played vs unplayed library, but Pac-Man
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] flex items-center justify-center relative">
-              <TooltipProvider>
-                <UITooltip>
-                  <TooltipTrigger asChild>
-                    <div className="relative w-full h-full flex items-center justify-center cursor-help">
-                      {/* Trail dots */}
-                      <div className="absolute left-8 top-1/2 transform -translate-y-1/2 flex space-x-4">
-                        <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                        <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-                        <div className="w-2 h-2 bg-white/20 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-                      </div>
-
-                      {/* Pac-Man */}
-                      <div className="relative">
-                        <div 
-                          className="w-40 h-40 bg-yellow-400 rounded-full relative animate-pulse"
-                          style={{
-                            background: `conic-gradient(from 45deg, transparent 0deg ${smallerPercentage * 3.6}deg, #FBBF24 ${smallerPercentage * 3.6}deg 360deg)`,
-                            animationDuration: '1s'
-                          }}
-                        >
-                          {/* Eye */}
-                          <div className="absolute w-3 h-3 bg-black rounded-full top-6 left-14"></div>
-                          
-                          {/* Mouth animation effect */}
-                          <div className="absolute inset-0 rounded-full border-4 border-yellow-400"></div>
-                        </div>
-                        
-                        {/* Pac-Man glow */}
-                        <div className="absolute inset-0 w-40 h-40 bg-yellow-400/30 rounded-full blur-sm"></div>
-                      </div>
-
-                      {/* Cherry to be eaten */}
-                      <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                        <Cherry className="w-6 h-6 text-red-400 animate-bounce" />
-                        <div className="absolute inset-0 w-6 h-6 bg-red-400/30 rounded-full blur-sm"></div>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-center">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Library Breakdown</p>
-                      <p className="text-xs">Played: {playedPercentage.toFixed(1)}% ({playedGames} games)</p>
-                      <p className="text-xs">Unplayed: {unplayedPercentage.toFixed(1)}% ({unplayedGames} games)</p>
-                    </div>
-                  </TooltipContent>
-                </UITooltip>
-              </TooltipProvider>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Insights and Recommendations */}
-      <Card className="terminal-container">
-        <CardHeader>
-          <CardTitle>Insights & Recommendations</CardTitle>
-          <CardDescription>
-            Personalized suggestions based on your library analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {insights.map((insight, index) => (
-              <div key={index} className="flex items-start gap-3 p-4 bg-black/20 rounded-lg">
-                <insight.icon className={`h-5 w-5 mt-0.5 ${insight.color}`} />
-                <div>
-                  <h4 className={`font-medium ${insight.color}`}>{insight.title}</h4>
-                  <p className="text-gray-300 text-sm mt-1">{insight.message}</p>
-                </div>
+    <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-cyan-400" />
+          Dust Score Analysis
+        </CardTitle>
+        <p className="text-gray-400 mt-2">
+          Understanding your library's dust accumulation patterns
+        </p>
+      </CardHeader>
+      
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left Column - Key Metrics */}
+          <div className="space-y-6">
+            {/* Average Dust Score */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium">Average Dust Score</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The average dust score across all games in your library</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            ))}
-            
-            {insights.length === 0 && (
-              <div className="text-center py-8 text-gray-400">
-                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Your library looks well-maintained! Keep up the good work.</p>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold" style={{ color: dustQuality.color }}>
+                  {avgDustScore.toFixed(1)}
+                </span>
+                <TrendIcon className="h-5 w-5" style={{ color: dustQuality.color }} />
               </div>
-            )}
+              <p className="text-sm text-gray-400 mt-1">
+                Quality: <span style={{ color: dustQuality.color }}>{dustQuality.quality}</span>
+              </p>
+            </div>
+
+            {/* Completion Rate */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium">Completion Rate</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Percentage of games in your library that have been played</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-cyan-400">
+                  {completionRate.toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-sm text-gray-400 mt-1">
+                {totalGames - unplayedGames} of {totalGames} games played
+              </p>
+            </div>
+
+            {/* Library Health */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">Library Health</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: libraryHealth.color }}></div>
+                <span className="font-medium" style={{ color: libraryHealth.color }}>
+                  {libraryHealth.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-300">
+                {libraryHealth.description}
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Dust Tier Breakdown Table */}
-      <Card className="terminal-container">
-        <CardHeader>
-          <CardTitle>Dust Tier Breakdown</CardTitle>
-          <CardDescription>
-            Understanding what each dust tier means for your games
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {dustTiers.map((tier, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: tier.color }}></div>
+          {/* Right Column - Insights and Recommendations */}
+          <div className="space-y-6">
+            {/* Dust Distribution by Tier */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-4">Dust Insights</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-unplayed-mint mt-1.5 flex-shrink-0"></div>
                   <div>
-                    <div className="font-medium">{tier.name}</div>
-                    <div className="text-sm text-gray-400">
-                      {tier.range[0] === 0 ? 'Recently acquired or played' : 
-                       tier.range[0] < 50 ? 'Moderate dust accumulation' :
-                       tier.range[0] < 75 ? 'Significant neglect' : 'Critical attention needed'}
-                    </div>
+                    <p className="text-sm font-medium text-unplayed-mint">
+                      {unplayedPercentage.toFixed(1)}% Unplayed Games
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {unplayedGames} games have never been launched
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-lg">{tier.games}</div>
-                  <div className="text-sm text-gray-400">games</div>
+                
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-400">
+                      Dust Accumulation Rate
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {avgDustScore > 30 ? 'High' : avgDustScore > 20 ? 'Moderate' : 'Low'} - based on purchase vs play patterns
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-400 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="text-sm font-medium text-purple-400">
+                      Library Efficiency
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {completionRate > 50 ? 'High efficiency' : 'Room for improvement'} in game utilization
+                    </p>
+                  </div>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Recommendations */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-4">Recommendations</h3>
+              <div className="space-y-3 text-sm">
+                {avgDustScore > 30 && (
+                  <div className="flex items-start gap-2">
+                    <Target className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-gray-300">
+                      Focus on reducing your unplayed game count before purchasing new titles
+                    </p>
+                  </div>
+                )}
+                
+                {completionRate < 50 && (
+                  <div className="flex items-start gap-2">
+                    <Target className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-gray-300">
+                      Try playing games you've owned longest but haven't touched
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex items-start gap-2">
+                  <Target className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-gray-300">
+                    Use the Random Game Picker to discover hidden gems in your library
+                  </p>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <Target className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-gray-300">
+                    Set a goal to play at least one new game per week
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Tracking */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-3">Progress Tracking</h3>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Library Completion</span>
+                    <span>{completionRate.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-cyan-400 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${Math.min(completionRate, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-400 mt-2">
+                  <p>Keep playing to improve your library health score!</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
