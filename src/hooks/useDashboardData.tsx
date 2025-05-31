@@ -1,7 +1,8 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useSpendingMetrics } from '@/hooks/useSpendingMetrics';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateCleanScore } from '@/utils/clean-score-utils';
@@ -23,7 +24,7 @@ export interface DashboardData {
 export const useDashboardData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: unplayedData, isLoading: unplayedLoading } = useUnplayedData();
+  const { data: userMetrics, isLoading: userMetricsLoading } = useUserMetrics();
   const { data: spendingMetrics, isLoading: spendingLoading } = useSpendingMetrics();
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -46,8 +47,8 @@ export const useDashboardData = () => {
         };
       }
 
-      // For authenticated users, combine unplayed data with spending metrics
-      if (!unplayedData || !spendingMetrics) {
+      // For authenticated users, use userMetrics as primary source
+      if (!userMetrics || !spendingMetrics) {
         return {
           unplayedGames: 0,
           totalGames: 0,
@@ -63,50 +64,36 @@ export const useDashboardData = () => {
         };
       }
 
-      // Calculate clean score using the latest calculation from clean-score-utils
-      const playedGames = unplayedData.totalGames - unplayedData.unplayedGames;
-      const totalPlaytimeHours = unplayedData.totalPlaytime;
-      const gamesList = unplayedData.gamesList || [];
-      
-      const { cleanScore } = calculateCleanScore(
-        playedGames,
-        unplayedData.totalGames,
-        totalPlaytimeHours,
-        gamesList,
-        unplayedData.recentlyPlayedCount
-      );
-
-      console.log('Dashboard data compilation:', {
-        unplayedGames: unplayedData.unplayedGames,
-        unplayedSpent: spendingMetrics.unplayedSpentDollars,
-        totalSpent: spendingMetrics.totalSpentDollars,
-        totalPlaytime: unplayedData.totalPlaytime,
-        dustScore: unplayedData.dustScore,
-        dustScoreSource: 'unplayedData.dustScore',
-        cleanScore: cleanScore,
-        spendingConfidence: spendingMetrics.confidence
+      console.log('Dashboard data compilation (using userMetrics):', {
+        unplayedGames: userMetrics.unplayedGames,
+        totalGames: userMetrics.totalGames,
+        cleanScore: userMetrics.cleanScore,
+        dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames),
+        totalPlaytime: userMetrics.totalPlaytimeHours,
+        recentlyPlayedCount: userMetrics.recentlyPlayedCount,
+        source: 'userMetrics'
       });
 
       return {
-        unplayedGames: unplayedData.unplayedGames,
-        totalGames: unplayedData.totalGames,
-        dustScore: unplayedData.dustScore, // Use actual dust score from unplayed data
+        unplayedGames: userMetrics.unplayedGames,
+        totalGames: userMetrics.totalGames,
+        dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames), // Average dust score
         totalSpent: spendingMetrics.totalSpentDollars,
         unplayedSpent: spendingMetrics.unplayedSpentDollars,
-        potentialGameplayHours: unplayedData.potentialGameplayHours,
-        cleanScore: cleanScore, // Use calculated clean score
-        recentlyPlayedCount: unplayedData.recentlyPlayedCount,
-        totalPlaytime: unplayedData.totalPlaytime,
-        genres: unplayedData.genres || [],
-        shelfLife: unplayedData.shelfLife || [],
+        potentialGameplayHours: 0, // Not available in userMetrics, would need separate calculation
+        cleanScore: userMetrics.cleanScore,
+        recentlyPlayedCount: userMetrics.recentlyPlayedCount,
+        totalPlaytime: userMetrics.totalPlaytimeHours,
+        genres: [], // Would need to fetch from genre stats if needed
+        shelfLife: [], // Would need to fetch from shelf life data if needed
       };
     },
-    enabled: isDemo || (!!user && !unplayedLoading && !spendingLoading),
+    enabled: isDemo || (!!user && !userMetricsLoading && !spendingLoading),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Calculate last refreshed time from spending data if available
-  const lastRefreshed = spendingMetrics?.lastCalculated ? new Date(spendingMetrics.lastCalculated) : null;
+  // Calculate last refreshed time from user metrics if available
+  const lastRefreshed = userMetrics?.lastCalculated ? new Date(userMetrics.lastCalculated) : null;
 
   return {
     data: data || {
@@ -122,7 +109,7 @@ export const useDashboardData = () => {
       genres: [],
       shelfLife: [],
     },
-    isLoading: isLoading || unplayedLoading || spendingLoading,
+    isLoading: isLoading || userMetricsLoading || spendingLoading,
     error,
     refetch,
     lastRefreshed,

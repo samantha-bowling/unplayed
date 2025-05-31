@@ -59,7 +59,17 @@ export const useUserMetrics = () => {
         lastCalculated: data.last_calculated
       };
 
-      console.log('Processed user metrics:', metrics);
+      // Add data consistency debugging
+      const unplayedPercentage = metrics.totalGames > 0 
+        ? Math.round((metrics.unplayedGames / metrics.totalGames) * 100) 
+        : 0;
+      
+      console.log('Processed user metrics with consistency check:', {
+        ...metrics,
+        unplayedPercentage,
+        dataAge: new Date(data.last_calculated),
+        isStale: new Date(data.last_calculated) < new Date(Date.now() - 24 * 60 * 60 * 1000)
+      });
 
       return metrics;
     },

@@ -4,22 +4,34 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShieldQuestion, TrendingUp, Clock, Activity, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const LibraryStatsSection: React.FC = () => {
   const navigate = useNavigate();
-  const { data: dashboardData } = useDashboardData();
+  const { data: userMetrics, isLoading } = useUserMetrics();
   
-  const unplayedPercentage = dashboardData.totalGames > 0 ? Math.round((dashboardData.unplayedGames / dashboardData.totalGames) * 100) : 0;
+  // Show loading state if metrics are not available
+  if (isLoading || !userMetrics) {
+    return (
+      <div className="mb-6">
+        <Card className="bg-black/30 border border-unplayed-mint/20">
+          <CardContent className="p-6">
+            <div className="text-center text-gray-400">Loading library stats...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
-  // Calculate total playtime in hours
-  const totalPlaytimeHours = Math.round(dashboardData.totalPlaytime || 0);
+  const unplayedPercentage = userMetrics.totalGames > 0 
+    ? Math.round((userMetrics.unplayedGames / userMetrics.totalGames) * 100) 
+    : 0;
   
   // Format playtime display
   const formatPlaytime = (hours: number) => {
     if (hours < 1) return "< 1h";
-    if (hours < 100) return `${hours}h`;
+    if (hours < 100) return `${Math.round(hours)}h`;
     if (hours < 1000) return `${Math.round(hours / 10) * 10}h`;
     return `${Math.round(hours / 100) * 100}h`;
   };
@@ -44,7 +56,7 @@ const LibraryStatsSection: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-unplayed-mint">
-                        {dashboardData.unplayedGames}
+                        {userMetrics.unplayedGames}
                       </div>
                       <div className="text-sm text-gray-400">
                         unplayed Games
@@ -88,7 +100,7 @@ const LibraryStatsSection: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-blue-400">
-                        {formatPlaytime(totalPlaytimeHours)}
+                        {formatPlaytime(userMetrics.totalPlaytimeHours)}
                       </div>
                       <div className="text-sm text-gray-400">
                         total playtime
@@ -111,7 +123,7 @@ const LibraryStatsSection: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-green-400">
-                        {dashboardData.recentlyPlayedCount || 0}
+                        {userMetrics.recentlyPlayedCount}
                       </div>
                       <div className="text-sm text-gray-400">
                         played recently
