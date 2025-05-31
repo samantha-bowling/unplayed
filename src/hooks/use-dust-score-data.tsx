@@ -13,6 +13,7 @@ import {
   CleanScoreTier,
   DustScoreBreakdownResponse
 } from '@/types/unplayed-data.types';
+import { DustScoreData, DustScoreCalculationResponse } from '@/types/dust-score-data.types';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { safeGetNumber } from '@/utils/safe-json';
@@ -37,7 +38,7 @@ const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
   };
 };
 
-const useDustScoreData = () => {
+const useDustScoreData = (): DustScoreCalculationResponse => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
   const { 
@@ -54,7 +55,7 @@ const useDustScoreData = () => {
     refetch: refetchDetailedData
   } = useQuery({
     queryKey: queryKeys.detailedDustData(user?.id),
-    queryFn: async () => {
+    queryFn: async (): Promise<Partial<DustScoreData>> => {
       if (!user) throw new Error('User not authenticated');
 
       const { data: userGamesWithDust, error } = await supabase
@@ -92,12 +93,14 @@ const useDustScoreData = () => {
             playtimeFactor: 0 
           },
           topDustContributors: [],
-          avgDustScore: 0,
+          averageDustScore: 0,
           cleanScore: 0,
           cleanScoreBreakdown: { completionRate: 0, engagementFactor: 0, recencyFactor: 0 },
           cleanTier: CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
           cleanStreak: 0,
-          recentlyPlayedCount: 0
+          recentlyPlayedCount: 0,
+          totalGames: 0,
+          unplayedGames: 0
         };
       }
 
@@ -220,7 +223,7 @@ const useDustScoreData = () => {
           playtimeFactor: avgPlaytimeFactor
         },
         topDustContributors: topContributors,
-        avgDustScore,
+        averageDustScore: avgDustScore,
         cleanScore,
         cleanScoreBreakdown,
         cleanTier,
@@ -270,36 +273,71 @@ const useDustScoreData = () => {
   ) || CLEAN_SCORE_TIERS[2];
 
   if (isDemo) {
-    const normalizedDemoData = normalizeDemoGames(demoData);
-    const enhancedDemoData: UnplayedDataType = {
-      ...normalizedDemoData,
+    const enhancedDemoData: DustScoreData = {
+      dustScore: 595,
       dustScoreBreakdown: demoDustBreakdown,
+      averageDustScore: 29.7,
+      avgDustScore: 29.7, // Legacy alias
       topDustContributors: demoTopContributors,
-      avgDustScore: 29.7,
       cleanScore: demoCleanScore,
       cleanScoreBreakdown: demoCleanScoreBreakdown,
       cleanTier: demoCleanTier,
       cleanStreak: 4,
-      recentlyPlayedCount: 5
+      recentlyPlayedCount: 5,
+      totalGames: 150,
+      unplayedGames: 100,
+      recentlyPlayedUnplayed: 3
     };
 
     return {
       data: enhancedDemoData,
       isLoading: false,
       error: null,
-      refetch: () => Promise.resolve(enhancedDemoData)
+      refetch: async () => enhancedDemoData
     };
   }
 
+  // Combine basic data with detailed dust data
+  const combinedData: DustScoreData = {
+    // Core dust score data
+    dustScore: basicData?.dustScore || 0,
+    dustScoreBreakdown: detailedDustData?.dustScoreBreakdown || {
+      qualityScore: 0,
+      priceScore: 0,
+      ageScore: 0,
+      genreScore: 0,
+      playtimeFactor: 0
+    },
+    averageDustScore: detailedDustData?.averageDustScore || 0,
+    avgDustScore: detailedDustData?.averageDustScore || 0, // Legacy alias
+    topDustContributors: detailedDustData?.topDustContributors || [],
+    
+    // Clean score data
+    cleanScore: basicData?.cleanScore || detailedDustData?.cleanScore || 0,
+    cleanScoreBreakdown: detailedDustData?.cleanScoreBreakdown || {
+      completionRate: 0,
+      engagementFactor: 0,
+      recencyFactor: 0
+    },
+    cleanTier: basicData?.cleanTier || detailedDustData?.cleanTier || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
+    cleanStreak: detailedDustData?.cleanStreak || 0,
+    cleanStreakMetadata: detailedDustData?.cleanStreakMetadata,
+    
+    // Additional metrics
+    totalGames: basicData?.totalGames || detailedDustData?.totalGames || 0,
+    unplayedGames: basicData?.unplayedGames || detailedDustData?.unplayedGames || 0,
+    recentlyPlayedCount: detailedDustData?.recentlyPlayedCount || 0,
+    recentlyPlayedUnplayed: basicData?.recentlyPlayedUnplayed || detailedDustData?.recentlyPlayedUnplayed
+  };
+
   return {
-    data: isDemo
-      ? normalizeDemoGames(demoData)
-      : { ...basicData, ...detailedDustData },
+    data: combinedData,
     isLoading: isBasicDataLoading || isDetailedDataLoading,
     error: basicDataError || detailedDataError,
     refetch: async () => {
       if (refetchBasicData) await refetchBasicData();
       if (refetchDetailedData) await refetchDetailedData();
+      return combinedData;
     }
   };
 };

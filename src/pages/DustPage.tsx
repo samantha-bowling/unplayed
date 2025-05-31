@@ -174,7 +174,7 @@ const DustPage = () => {
                 
                 <TabsContent value="analysis" className="space-y-4">
                   <DustScorePerGame 
-                    avgDustScore={data.avgDustScore || 0}
+                    avgDustScore={data.averageDustScore || 0}
                     totalGames={data.totalGames}
                     unplayedGames={data.unplayedGames}
                   />
