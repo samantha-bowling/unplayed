@@ -32,28 +32,52 @@ export const useEnhancedSpendingData = () => {
   const { toast } = useToast();
   const [refreshInProgress, setRefreshInProgress] = useState<boolean>(false);
 
+  // Create a proper SpendingBreakdown object that matches the expected structure
+  const createSpendingBreakdown = (): SpendingBreakdown => {
+    if (!spendingMetrics) {
+      return {
+        totalSpent: 0,
+        totalSaved: null,
+        freeGamesCount: 0,
+        unknownPriceGamesCount: 0,
+        paidGamesCount: 0,
+        currency: 'USD',
+        confidence: 'low',
+        dataQuality: {
+          gamesWithPriceData: 0,
+          gamesWithMissingData: 0,
+          gamesActuallyFree: 0
+        }
+      };
+    }
+
+    return {
+      totalSpent: spendingMetrics.unplayedSpentDollars,
+      totalSaved: spendingMetrics.unplayedSavedCents ? spendingMetrics.unplayedSavedCents / 100 : null,
+      freeGamesCount: spendingMetrics.freeGames,
+      unknownPriceGamesCount: spendingMetrics.gamesMissingPriceData,
+      paidGamesCount: spendingMetrics.paidGames,
+      currency: spendingMetrics.currency,
+      confidence: spendingMetrics.confidence,
+      dataQuality: {
+        gamesWithPriceData: spendingMetrics.gamesWithPriceData,
+        gamesWithMissingData: spendingMetrics.gamesMissingPriceData,
+        gamesActuallyFree: spendingMetrics.freeGames
+      }
+    };
+  };
+
+  const spendingBreakdown = createSpendingBreakdown();
+  const displayInfo = formatSpendingDisplay(spendingBreakdown);
+
   // Transform spending metrics to enhanced spending data format
   const spendingData: EnhancedSpendingData = {
-    totalSpent: spendingMetrics?.unplayedSpentDollars || 0,
-    totalSaved: spendingMetrics?.unplayedSavedCents ? spendingMetrics.unplayedSavedCents / 100 : null,
-    freeGamesCount: spendingMetrics?.freeGames || 0,
-    unknownPriceGamesCount: spendingMetrics?.gamesMissingPriceData || 0,
-    paidGamesCount: spendingMetrics?.paidGames || 0,
-    currency: spendingMetrics?.currency || 'USD',
-    confidence: spendingMetrics?.confidence || 'low',
-    dataQuality: {
-      gamesWithPriceData: spendingMetrics?.gamesWithPriceData || 0,
-      gamesWithMissingData: spendingMetrics?.gamesMissingPriceData || 0,
-      gamesActuallyFree: spendingMetrics?.freeGames || 0
-    },
+    ...spendingBreakdown,
     topSpendingGames: [], // We'll need to implement this separately if needed
     displayInfo: {
-      displayText: formatSpendingDisplay({
-        totalSpent: spendingMetrics?.unplayedSpentDollars || 0,
-        freeGamesCount: spendingMetrics?.freeGames || 0,
-        confidence: spendingMetrics?.confidence || 'low'
-      } as SpendingBreakdown).displayText,
-      confidenceText: `Data confidence: ${spendingMetrics?.confidence || 'low'} (${Math.round(spendingMetrics?.dataQualityPercentage || 0)}% coverage)`
+      displayText: displayInfo.displayText,
+      warningText: displayInfo.warningText,
+      confidenceText: displayInfo.confidenceText
     },
     refreshedAt: spendingMetrics?.lastCalculated || null,
   };
