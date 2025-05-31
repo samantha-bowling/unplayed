@@ -26,6 +26,7 @@ export const queryKeys = {
   genreStats: (userId?: string) => ['genre-stats', userId] as const,
   shelfLifeData: (userId?: string) => ['shelf-life-data', userId] as const,
   dustBreakdowns: (userId?: string) => ['dust-breakdowns', userId] as const,
+  cleanScoreBreakdowns: (userId?: string) => ['clean-score-breakdowns', userId] as const,
 
   // Missing query keys that were causing build errors
   gamePicks: (userId?: string) => ['game-picks', userId] as const,

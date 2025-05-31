@@ -1,7 +1,8 @@
+
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, ShieldCheck, Calendar, HelpCircle, Trophy, Zap, Target, Brush, Medal } from 'lucide-react';
+import { Clock, ShieldCheck, Calendar, HelpCircle, Trophy, Target, Brush, Medal, ThumbsUp } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -14,7 +15,6 @@ interface CleanScoreBreakdownProps {
   breakdown?: CleanBreakdownType;
   cleanStreak?: number;
   recentlyPlayedCount?: number;
-  recentlyPlayedUnplayed?: number;
   cleanStreakMetadata?: CleanStreakMetadata;
 }
 
@@ -23,7 +23,6 @@ const CleanScoreBreakdown = ({
   breakdown, 
   cleanStreak = 0, 
   recentlyPlayedCount = 0,
-  recentlyPlayedUnplayed = 0,
   cleanStreakMetadata
 }: CleanScoreBreakdownProps) => {
   // If no breakdown data is available, show placeholder
@@ -133,72 +132,96 @@ const CleanScoreBreakdown = ({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <ShieldCheck className="h-4 w-4 mr-2 text-cyan-400" />
-                  <span className="text-sm font-medium">Completion Rate</span>
+                  <ThumbsUp className="h-4 w-4 mr-2 text-cyan-400" />
+                  <span className="text-sm font-medium">Diversity Score</span>
                 </div>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-cyan-400">{breakdown.completionRate}%</span>
+                      <span className="text-lg font-bold text-cyan-400">{breakdown.diversityScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Percentage of your library you've played at least once</p>
+                      <p>How varied your gaming sessions are across different genres and playstyles</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.completionRate} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-cyan-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.completionRate}%` }}></div>
+              <Progress value={breakdown.diversityScore} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-cyan-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.diversityScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                40% weight in your total score
+                25% weight in your total score
               </p>
             </div>
             
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2 text-amber-400" />
-                  <span className="text-sm font-medium">Engagement Factor</span>
+                  <Calendar className="h-4 w-4 mr-2 text-amber-400" />
+                  <span className="text-sm font-medium">Recency Score</span>
                 </div>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-amber-400">{breakdown.engagementFactor}%</span>
+                      <span className="text-lg font-bold text-amber-400">{breakdown.recencyScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>How much time you've spent playing relative to expected playtime</p>
+                      <p>How active you've been in gaming recently (last 30 days)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.engagementFactor} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-amber-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.engagementFactor}%` }}></div>
+              <Progress value={breakdown.recencyScore} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-amber-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.recencyScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                30% weight in your total score
+                25% weight in your total score
               </p>
             </div>
             
             <div>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-green-400" />
-                  <span className="text-sm font-medium">Recency Factor</span>
+                  <Target className="h-4 w-4 mr-2 text-green-400" />
+                  <span className="text-sm font-medium">Backlog Conversion</span>
                 </div>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-lg font-bold text-green-400">{breakdown.recencyFactor}%</span>
+                      <span className="text-lg font-bold text-green-400">{breakdown.backlogConversionScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>How active you've been in the last 30 days</p>
+                      <p>Your progress in converting unplayed games to played ones</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.recencyFactor} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.recencyFactor}%` }}></div>
+              <Progress value={breakdown.backlogConversionScore} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.backlogConversionScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                30% weight in your total score
+                25% weight in your total score
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-purple-400" />
+                  <span className="text-sm font-medium">Session Depth</span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-lg font-bold text-purple-400">{breakdown.sessionDepthScore}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Quality and length of your gaming sessions</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Progress value={breakdown.sessionDepthScore} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.sessionDepthScore}%` }}></div>
+              <p className="text-xs text-gray-400 mt-1">
+                25% weight in your total score
               </p>
             </div>
 
@@ -259,30 +282,6 @@ const CleanScoreBreakdown = ({
                   <span className="ml-auto text-green-400 font-bold">{recentlyPlayedCount}</span>
                 </div>
                 <p className="text-xs text-gray-400">Games played in the last 30 days</p>
-              </div>
-
-              {/* New Recently Played Unplayed Section */}
-              <div className="bg-black/20 rounded-lg p-3">
-                <div className="flex items-center mb-1">
-                  <Zap className="h-4 w-4 mr-2 text-purple-400" />
-                  <span className="text-gray-300 font-medium">Backlog Progress</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help ml-1" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p>Games that had zero playtime when you signed up but you've since started playing. This shows your progress in tackling your backlog!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <span className="ml-auto text-purple-400 font-bold">{recentlyPlayedUnplayed}</span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  {recentlyPlayedUnplayed > 0 
-                    ? "Great progress conquering your backlog!" 
-                    : "Start playing some unplayed games to see progress here"}
-                </p>
               </div>
             </div>
           </div>

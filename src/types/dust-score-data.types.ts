@@ -1,7 +1,8 @@
 
 import { 
   DustScoreBreakdown, 
-  CleanScoreBreakdown, 
+  CleanScoreBreakdown,
+  LegacyCleanScoreBreakdown,
   CleanScoreTier,
   CleanStreakMetadata,
   GameDustData 
@@ -17,12 +18,15 @@ export interface DustScoreData {
   averageDustScore?: number;
   topDustContributors: GameDustData[];
   
-  // Clean score data
+  // Clean score data (new 4-factor system)
   cleanScore: number;
   cleanScoreBreakdown: CleanScoreBreakdown;
   cleanTier: CleanScoreTier;
   cleanStreak: number;
   cleanStreakMetadata?: CleanStreakMetadata;
+  
+  // Legacy clean score support for demo mode
+  legacyCleanScoreBreakdown?: LegacyCleanScoreBreakdown;
   
   // Additional metrics
   totalGames: number;

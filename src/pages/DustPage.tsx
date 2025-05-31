@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
+import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("breakdown");
@@ -28,14 +29,16 @@ const DustPage = () => {
   // Use Phase 2 hooks for real calculated data
   const { data: userMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useUserMetrics();
   const { data: dustBreakdowns, isLoading: breakdownsLoading, refetch: refetchBreakdowns } = useDustBreakdowns();
+  const { data: cleanScoreBreakdowns, isLoading: cleanBreakdownsLoading, refetch: refetchCleanBreakdowns } = useCleanScoreBreakdowns();
   
-  const isLoading = metricsLoading || breakdownsLoading;
+  const isLoading = metricsLoading || breakdownsLoading || cleanBreakdownsLoading;
 
   // Debug logging for Phase 2 data
   useEffect(() => {
     console.log("DustPage Phase 2 - User Metrics:", userMetrics);
     console.log("DustPage Phase 2 - Dust Breakdowns:", dustBreakdowns);
-  }, [userMetrics, dustBreakdowns]);
+    console.log("DustPage Phase 2 - Clean Score Breakdowns:", cleanScoreBreakdowns);
+  }, [userMetrics, dustBreakdowns, cleanScoreBreakdowns]);
 
   const refreshData = async () => {
     setIsRefreshing(true);
@@ -49,6 +52,9 @@ const DustPage = () => {
       await queryClient.invalidateQueries({ 
         queryKey: queryKeys.dustBreakdowns(user?.id)
       });
+      await queryClient.invalidateQueries({ 
+        queryKey: queryKeys.cleanScoreBreakdowns(user?.id)
+      });
       
       // Explicitly refetch the data
       if (refetchMetrics) {
@@ -56,6 +62,9 @@ const DustPage = () => {
       }
       if (refetchBreakdowns) {
         await refetchBreakdowns();
+      }
+      if (refetchCleanBreakdowns) {
+        await refetchCleanBreakdowns();
       }
       
       toast.success("Dust data refreshed successfully");
@@ -98,14 +107,14 @@ const DustPage = () => {
     totalGames: userMetrics?.totalGames || 0,
     unplayedGames: userMetrics?.unplayedGames || 0,
     cleanScore: userMetrics?.cleanScore || 0,
-    cleanScoreBreakdown: {
-      completionRate: 0.5, // Will need real data
-      engagementFactor: 0.3, // Will need real data
-      recencyFactor: 0.2 // Will need real data
-    },
+    cleanScoreBreakdown: cleanScoreBreakdowns ? {
+      diversityScore: cleanScoreBreakdowns.diversityScore,
+      recencyScore: cleanScoreBreakdowns.recencyScore,
+      backlogConversionScore: cleanScoreBreakdowns.backlogConversionScore,
+      sessionDepthScore: cleanScoreBreakdowns.sessionDepthScore
+    } : undefined,
     cleanStreak: userMetrics?.cleanStreak || 0,
     recentlyPlayedCount: userMetrics?.recentlyPlayedCount || 0,
-    recentlyPlayedUnplayed: 0, // Will need real data
     cleanStreakMetadata: undefined // Will need real data
   };
 
@@ -209,7 +218,6 @@ const DustPage = () => {
                     breakdown={processedData.cleanScoreBreakdown}
                     cleanStreak={processedData.cleanStreak}
                     recentlyPlayedCount={processedData.recentlyPlayedCount}
-                    recentlyPlayedUnplayed={processedData.recentlyPlayedUnplayed}
                     cleanStreakMetadata={processedData.cleanStreakMetadata}
                   />
                 </TabsContent>

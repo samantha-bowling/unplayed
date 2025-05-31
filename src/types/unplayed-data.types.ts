@@ -72,9 +72,19 @@ export interface GameDustData {
 }
 
 /**
- * Represents breakdown of a clean score calculation
+ * New 4-factor clean score breakdown system
  */
 export interface CleanScoreBreakdown {
+  diversityScore: number;          // How varied your gaming sessions are (25% weight)
+  recencyScore: number;            // Recent gaming activity (25% weight) 
+  backlogConversionScore: number;  // Progress on unplayed games (25% weight)
+  sessionDepthScore: number;       // Quality of gaming sessions (25% weight)
+}
+
+/**
+ * Legacy 3-factor clean score breakdown for demo mode compatibility
+ */
+export interface LegacyCleanScoreBreakdown {
   completionRate: number;
   engagementFactor: number;
   recencyFactor: number;
@@ -155,9 +165,9 @@ export interface UnplayedDataType {
   topDustContributors?: GameDustData[];
   avgDustScore?: number;
   
-  // Clean score specific data
+  // Clean score specific data (legacy for demo mode)
   cleanScore?: number;
-  cleanScoreBreakdown?: CleanScoreBreakdown;
+  cleanScoreBreakdown?: LegacyCleanScoreBreakdown;
   cleanTier?: CleanScoreTier;
   cleanStreak?: number;
   recentlyPlayedCount?: number;
