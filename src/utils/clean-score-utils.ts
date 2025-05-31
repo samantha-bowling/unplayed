@@ -10,16 +10,9 @@ export const CLEAN_SCORE_TIERS: CleanScoreTier[] = [
   { name: 'Filthy Casual', color: '#f87171', range: [0, 24] }
 ];
 
-// Enhanced clean streak configuration
-export const CLEAN_STREAK_CONFIG = {
-  gracePeriodDays: 2, // Allow 1-2 day breaks without resetting streak
-  minimumSessionMinutes: 30, // Minimum playtime to count as a "playing day"
-  decayRate: 0.8, // Gradual decay factor for long breaks
-  maxDecayDays: 7 // Maximum days before applying decay
-};
-
 /**
- * Enhanced Clean Streak calculation with grace period, minimum sessions, and decay
+ * Simplified Clean Streak calculation
+ * Count consecutive days with 30+ minutes of playtime, going backwards from today
  */
 export const calculateCleanStreak = (gamesList: any[]): {
   streak: number;
@@ -44,24 +37,20 @@ export const calculateCleanStreak = (gamesList: any[]): {
     };
   }
 
-  const now = new Date();
-  const playDates = new Map<string, number>(); // date -> total minutes played that day
+  // Group playtime by date
+  const playTimeByDate = new Map<string, number>();
   
-  // Aggregate playtime by date from last played dates
   gamesList.forEach(game => {
     if (game.lastPlayed || game.last_played_date) {
       const playDate = new Date(game.lastPlayed || game.last_played_date);
       const dateStr = playDate.toISOString().split('T')[0];
       const playtime = game.playtimeMinutes || 0;
       
-      // Only count if this session was significant enough
-      if (playtime >= CLEAN_STREAK_CONFIG.minimumSessionMinutes) {
-        playDates.set(dateStr, (playDates.get(dateStr) || 0) + playtime);
-      }
+      playTimeByDate.set(dateStr, (playTimeByDate.get(dateStr) || 0) + playtime);
     }
   });
 
-  if (playDates.size === 0) {
+  if (playTimeByDate.size === 0) {
     return {
       streak: 0,
       streakQuality: 'bronze',
@@ -74,61 +63,41 @@ export const calculateCleanStreak = (gamesList: any[]): {
     };
   }
 
-  // Sort dates descending to find most recent activity
-  const sortedDates = Array.from(playDates.keys()).sort().reverse();
-  const lastPlayDate = sortedDates[0];
-  const daysSinceLastPlay = Math.floor((now.getTime() - new Date(lastPlayDate).getTime()) / (1000 * 60 * 60 * 24));
-
-  // Check if we're within grace period or need to apply decay
+  // Calculate streak by going backwards from today
   let streak = 0;
-  let gracePeriodUsed = false;
   let streakStartDate: string | null = null;
+  const today = new Date();
   
-  if (daysSinceLastPlay <= CLEAN_STREAK_CONFIG.gracePeriodDays) {
-    // Within grace period, calculate consecutive days
-    let currentDate = new Date();
-    let consecutiveDays = 0;
+  // Go backwards day by day for up to 30 days
+  for (let i = 0; i < 30; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(checkDate.getDate() - i);
+    const dateStr = checkDate.toISOString().split('T')[0];
     
-    for (let i = 0; i < 30; i++) { // Check last 30 days
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const dayPlaytime = playDates.get(dateStr) || 0;
-      
-      if (dayPlaytime >= CLEAN_STREAK_CONFIG.minimumSessionMinutes) {
-        consecutiveDays++;
-        if (!streakStartDate) streakStartDate = dateStr;
-      } else if (consecutiveDays > 0) {
-        // Check if we're in grace period
-        if (i <= CLEAN_STREAK_CONFIG.gracePeriodDays) {
-          gracePeriodUsed = true;
-          // Continue counting, but mark grace period as used
-        } else {
-          break; // End of streak
-        }
-      }
-      
-      currentDate.setDate(currentDate.getDate() - 1);
+    const dayPlaytime = playTimeByDate.get(dateStr) || 0;
+    
+    if (dayPlaytime >= 30) { // 30+ minutes counts as a gaming day
+      streak++;
+      if (!streakStartDate) streakStartDate = dateStr;
+    } else if (streak > 0) {
+      // First day without qualifying playtime breaks the streak
+      break;
     }
-    
-    streak = consecutiveDays;
-  } else if (daysSinceLastPlay <= CLEAN_STREAK_CONFIG.maxDecayDays) {
-    // Apply gradual decay
-    const baseStreak = sortedDates.length; // Use number of unique play dates as base
-    const decayFactor = Math.pow(CLEAN_STREAK_CONFIG.decayRate, daysSinceLastPlay - CLEAN_STREAK_CONFIG.gracePeriodDays);
-    streak = Math.max(1, Math.floor(baseStreak * decayFactor));
-  } else {
-    // Too long since last play, streak is effectively 0
-    streak = 0;
   }
 
-  // Calculate average session length
-  const totalMinutes = Array.from(playDates.values()).reduce((sum, minutes) => sum + minutes, 0);
-  const averageSessionLength = playDates.size > 0 ? totalMinutes / playDates.size : 0;
+  // Find last play date
+  const sortedDates = Array.from(playTimeByDate.keys()).sort().reverse();
+  const lastPlayDate = sortedDates[0] || null;
 
-  // Determine streak quality based on length and consistency
+  // Calculate average session length
+  const totalMinutes = Array.from(playTimeByDate.values()).reduce((sum, minutes) => sum + minutes, 0);
+  const averageSessionLength = playTimeByDate.size > 0 ? totalMinutes / playTimeByDate.size : 0;
+
+  // Simple streak quality based on length
   let streakQuality: 'bronze' | 'silver' | 'gold' = 'bronze';
-  if (streak >= 10 && averageSessionLength >= 60) {
+  if (streak >= 14) {
     streakQuality = 'gold';
-  } else if (streak >= 5 && averageSessionLength >= 45) {
+  } else if (streak >= 7) {
     streakQuality = 'silver';
   }
 
@@ -136,12 +105,38 @@ export const calculateCleanStreak = (gamesList: any[]): {
     streak,
     streakQuality,
     metadata: {
-      gracePeriodUsed,
+      gracePeriodUsed: false, // No longer using grace period
       lastPlayDate,
       averageSessionLength: Math.round(averageSessionLength),
       streakStartDate
     }
   };
+};
+
+/**
+ * Simplified Recently Played Games calculation
+ * Count games with last_played_date within 30 days AND playtime >= 30 minutes
+ */
+export const calculateRecentlyPlayedGames = (gamesList: any[]): number => {
+  if (!gamesList || gamesList.length === 0) return 0;
+  
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  return gamesList.filter(game => {
+    // Check if game has last played date
+    const lastPlayedDate = game.lastPlayed || game.last_played_date;
+    if (!lastPlayedDate) return false;
+    
+    // Check if played within last 30 days
+    const playDate = new Date(lastPlayedDate);
+    const withinThirtyDays = playDate >= thirtyDaysAgo;
+    
+    // Check if has at least 30 minutes playtime
+    const hasMinimumPlaytime = (game.playtimeMinutes || 0) >= 30;
+    
+    return withinThirtyDays && hasMinimumPlaytime;
+  }).length;
 };
 
 /**
@@ -174,7 +169,7 @@ export const calculateCleanScore = (
   totalGames: number,
   totalPlaytime: number,
   gamesList: any[] = [],
-  recentlyPlayedGames: number = 0
+  recentlyPlayedGames?: number // Now optional, we'll calculate it ourselves
 ): { 
   cleanScore: number, 
   breakdown: LegacyCleanScoreBreakdown, 
@@ -194,6 +189,9 @@ export const calculateCleanScore = (
       recentlyPlayedUnplayed: 0
     };
   }
+
+  // Calculate recently played games using our simplified method
+  const calculatedRecentlyPlayed = calculateRecentlyPlayedGames(gamesList);
 
   // Small library bonus (libraries under 10 games get a boost)
   let adjustedTotalGames = totalGames;
@@ -254,9 +252,9 @@ export const calculateCleanScore = (
   let recencyFactor = 0;
   
   if (totalGames > 0) {
-    const baseRecencyFactor = Math.min(recentlyPlayedGames / totalGames, 1);
+    const baseRecencyFactor = Math.min(calculatedRecentlyPlayed / totalGames, 1);
     
-    // Calculate enhanced clean streak
+    // Calculate simplified clean streak
     const streakData = calculateCleanStreak(gamesList);
     
     // Streak bonus (up to 20% boost for quality streaks)

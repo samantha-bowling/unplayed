@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon, Medal, Trophy, Target } from 'lucide-react';
+import { InfoIcon, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface CleanScoreProps extends WithDemoProps {
@@ -54,24 +54,8 @@ const CleanScoreMeter = ({
 
   const cleanStreak = data.cleanStreak || 0;
   const recentlyPlayedUnplayed = data.recentlyPlayedUnplayed || 0;
-  const cleanStreakMetadata = data.cleanStreakMetadata;
   
-  const hasCleanStreak = cleanStreak > 1;
-
-  // Get streak quality icon and color
-  const getStreakQuality = () => {
-    const quality = cleanStreakMetadata?.streakQuality || 'bronze';
-    switch (quality) {
-      case 'gold':
-        return { icon: Trophy, color: '#ffd700', label: 'Gold' };
-      case 'silver':
-        return { icon: Medal, color: '#c0c0c0', label: 'Silver' };
-      default:
-        return { icon: Target, color: '#cd7f32', label: 'Bronze' };
-    }
-  };
-
-  const streakQuality = getStreakQuality();
+  const hasCleanStreak = cleanStreak > 0;
 
   return (
     <div className={`terminal-container ${isDemo ? 'relative' : ''} equal-height-container`}>
@@ -140,26 +124,23 @@ const CleanScoreMeter = ({
         <div className="text-center mt-2">
           <p className="text-xl font-medium" style={{ color: getTierColor() }}>{getTierName()}</p>
           
-          {/* Enhanced Clean Streak Display */}
+          {/* Simplified Clean Streak Display */}
           {hasCleanStreak && (
             <div className="flex items-center justify-center gap-2 mt-3 p-2 bg-black/20 rounded-lg">
-              <streakQuality.icon 
+              <Target 
                 size={18} 
-                className="animate-pulse" 
-                style={{ color: streakQuality.color }}
+                className="text-cyan-400"
               />
               <div className="text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium" style={{ color: streakQuality.color }}>
-                    {streakQuality.label} Streak
+                  <span className="text-sm font-medium text-cyan-400">
+                    Clean Streak
                   </span>
-                  <span className="text-sm font-bold" style={{ color: streakQuality.color }}>
-                    {cleanStreak} days
+                  <span className="text-sm font-bold text-cyan-400">
+                    {cleanStreak} {cleanStreak === 1 ? 'day' : 'days'}
                   </span>
                 </div>
-                {cleanStreakMetadata?.gracePeriodUsed && (
-                  <span className="text-xs text-yellow-400">Grace period active</span>
-                )}
+                <span className="text-xs text-gray-400">Consecutive days with 30+ min playtime</span>
               </div>
             </div>
           )}

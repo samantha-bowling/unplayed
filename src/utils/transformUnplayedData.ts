@@ -1,6 +1,6 @@
 
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
-import { calculateCleanScore } from './clean-score-utils';
+import { calculateCleanScore, calculateRecentlyPlayedGames } from './clean-score-utils';
 import { processGenres, countGenres } from './genre-processing';
 
 /**
@@ -95,15 +95,8 @@ export const transformUserGameData = (
     playtime: game.playtimeMinutes
   }));
 
-  // Calculate recently played games count
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  const recentlyPlayedCount = gamesList.filter(game => {
-    if (!game.lastPlayed) return false;
-    const lastPlayedDate = new Date(game.lastPlayed);
-    return lastPlayedDate >= thirtyDaysAgo;
-  }).length;
+  // Calculate recently played games count using simplified method
+  const recentlyPlayedCount = calculateRecentlyPlayedGames(gamesList);
 
   // Calculate total potential gameplay hours
   const potentialGameplayHours = gamesList.reduce((sum, game) => {
@@ -113,8 +106,7 @@ export const transformUserGameData = (
   const playedGames = gamesList.filter(game => game.playtimeMinutes > 0).length;
   const totalPlaytimeHours = totalPlaytime / 60;
 
-  // Calculate enhanced clean score using the same algorithm as the leaderboard
-  // This returns legacy format for backward compatibility
+  // Calculate enhanced clean score using the simplified algorithm
   const { 
     cleanScore, 
     breakdown: legacyCleanScoreBreakdown, 
@@ -126,8 +118,8 @@ export const transformUserGameData = (
     playedGames, 
     userGamesData.length, 
     totalPlaytimeHours, 
-    gamesList,
-    recentlyPlayedCount
+    gamesList
+    // Don't pass recentlyPlayedCount - let the function calculate it
   );
 
   return {
