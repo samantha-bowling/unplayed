@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,20 +11,20 @@ import TopDustContributors from "@/components/dust/TopDustContributors";
 import DustScorePerGame from "@/components/dust/DustScorePerGame";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
 import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
+import { useMetricsRefresh } from '@/hooks/useMetricsRefresh';
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("dustScore");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
   
   // Use Phase 2 hooks for real calculated data
   const { data: userMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useUserMetrics();
@@ -46,11 +47,11 @@ const DustPage = () => {
   }, [userMetrics, dustBreakdowns, cleanScoreBreakdowns]);
 
   const refreshData = async () => {
-    setIsRefreshing(true);
-    toast.loading("Refreshing dust data...");
-    
     try {
-      // Invalidate and refetch Phase 2 queries
+      // Trigger backend recalculation using the proper metrics refresh
+      await refreshUserMetrics();
+      
+      // Then invalidate and refetch the data to get the updated values
       await queryClient.invalidateQueries({ 
         queryKey: queryKeys.userMetrics(user?.id)
       });
@@ -71,13 +72,9 @@ const DustPage = () => {
       if (refetchCleanBreakdowns) {
         await refetchCleanBreakdowns();
       }
-      
-      toast.success("Dust data refreshed successfully");
     } catch (error) {
       console.error("Error refreshing dust data:", error);
-      toast.error("Failed to refresh dust data");
-    } finally {
-      setIsRefreshing(false);
+      // Error handling is already done in useMetricsRefresh hook via toast
     }
   };
 
@@ -124,6 +121,19 @@ const DustPage = () => {
     cleanStreakMetadata: undefined // Will need real data
   };
 
+  // Format the last updated date
+  const formatLastUpdated = (dateString: string) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric'
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -138,6 +148,11 @@ const DustPage = () => {
               <p className="text-lg text-gray-300">
                 A totally scientific breakdown of your glorious neglect.
               </p>
+              {userMetrics?.lastCalculated && (
+                <p className="text-sm text-gray-400 mt-1">
+                  Last updated: {formatLastUpdated(userMetrics.lastCalculated)}
+                </p>
+              )}
             </div>
             
             <TooltipProvider>
@@ -150,11 +165,11 @@ const DustPage = () => {
                     className="text-unplayed-mint border-unplayed-mint/30 bg-unplayed-mint/10 hover:bg-unplayed-mint/20"
                   >
                     <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    {isRefreshing ? "Refreshing..." : "Refresh Data"}
+                    {isRefreshing ? "Recalculating..." : "Refresh Data"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Update the dust report with latest data</p>
+                  <p>Recalculate dust scores and metrics from your latest library data</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
