@@ -43,7 +43,7 @@ export const useDustBreakdowns = () => {
         ageScore: breakdown.age_score,
         ownershipScore: breakdown.ownership_score,
         playtimeFactor: breakdown.playtime_factor,
-        imageUrl: breakdown.image_url,
+        imageUrl: breakdown.image_url || breakdown.header_image,
         headerImage: breakdown.header_image,
         releaseDate: breakdown.release_date,
         playtimeMinutes: breakdown.playtime_minutes || 0
