@@ -27,17 +27,41 @@ export const optimizedQueryKeys = {
     byGameIds: (gameIds: number[]) => ['estimates', 'games', [...gameIds].sort()] as const,
   },
   
+  // Phase 2 metrics keys
+  metrics: {
+    user: (userId?: string) => ['user-metrics', userId] as const,
+    spending: (userId?: string) => ['spendingMetrics', userId] as const,
+    library: (userId?: string) => ['library', userId] as const,
+    shelfLife: (userId?: string) => ['shelf-life-data', userId] as const,
+    genreStats: (userId?: string) => ['genre-stats', userId] as const,
+  },
+  
   // Helper functions for cache management
   helpers: {
     // Get all user-related keys for bulk invalidation
     allUserData: (userId?: string): QueryKey[] => [
       optimizedQueryKeys.profile.base(userId),
       optimizedQueryKeys.unplayed.data(userId),
+      // Phase 2 metrics
+      optimizedQueryKeys.metrics.user(userId),
+      optimizedQueryKeys.metrics.spending(userId),
+      optimizedQueryKeys.metrics.library(userId),
+      optimizedQueryKeys.metrics.shelfLife(userId),
+      optimizedQueryKeys.metrics.genreStats(userId),
     ],
     
     // Get unplayed-specific keys
     unplayedData: (userId?: string): QueryKey[] => [
       optimizedQueryKeys.unplayed.data(userId),
+    ],
+    
+    // Get Phase 2 metrics keys only
+    phase2Metrics: (userId?: string): QueryKey[] => [
+      optimizedQueryKeys.metrics.user(userId),
+      optimizedQueryKeys.metrics.spending(userId),
+      optimizedQueryKeys.metrics.library(userId),
+      optimizedQueryKeys.metrics.shelfLife(userId),
+      optimizedQueryKeys.metrics.genreStats(userId),
     ],
   }
 };
@@ -60,6 +84,16 @@ export const useOptimizedCacheManagement = () => {
       // Invalidate unplayed data and dependencies
       invalidateUnplayed: (userId?: string): QueryKey[] => [
         ...optimizedQueryKeys.helpers.unplayedData(userId),
+      ],
+      
+      // Invalidate all Phase 2 metrics
+      invalidatePhase2Metrics: (userId?: string): QueryKey[] => [
+        ...optimizedQueryKeys.helpers.phase2Metrics(userId),
+      ],
+      
+      // Invalidate everything for comprehensive refresh
+      invalidateAllUserData: (userId?: string): QueryKey[] => [
+        ...optimizedQueryKeys.helpers.allUserData(userId),
       ],
     }
   };

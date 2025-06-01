@@ -1,3 +1,4 @@
+
 // FilterOptions type for shared use across hooks
 export interface FilterOptions {
   search: string;
@@ -60,7 +61,26 @@ export const queryKeys = {
         queryKeys.spendingData(userId),
         queryKeys.spendingConfidence(userId),
         queryKeys.profile(userId),
-        queryKeys.detailedDustData(userId)
+        queryKeys.detailedDustData(userId),
+        // Phase 2 metrics
+        queryKeys.userMetrics(userId),
+        queryKeys.genreStats(userId),
+        queryKeys.shelfLifeData(userId),
+        queryKeys.dustBreakdowns(userId),
+        queryKeys.cleanScoreBreakdowns(userId),
+        queryKeys.spendingMetrics(userId),
+      ];
+    },
+    
+    // Add Phase 2 specific helper
+    phase2Metrics: (userId: string) => {
+      return [
+        queryKeys.userMetrics(userId),
+        queryKeys.genreStats(userId),
+        queryKeys.shelfLifeData(userId),
+        queryKeys.dustBreakdowns(userId),
+        queryKeys.cleanScoreBreakdowns(userId),
+        queryKeys.spendingMetrics(userId),
       ];
     }
   }

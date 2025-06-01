@@ -86,9 +86,15 @@ const IndexOptimized = () => {
           description: "This may take a moment to update all your stats."
         });
         
-        // Use optimized cache invalidation
-        const userDataKeys = queryKeys.helpers.allUserData(user.id);
-        userDataKeys.forEach(key => {
+        // Use comprehensive cache invalidation for both Phase 1 and Phase 2 data
+        const allUserDataKeys = queryKeys.helpers.allUserData(user.id);
+        allUserDataKeys.forEach(key => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+        
+        // Also invalidate optimized query keys
+        const optimizedKeys = utils.invalidateAllUserData(user.id);
+        optimizedKeys.forEach(key => {
           queryClient.invalidateQueries({ queryKey: key });
         });
         
@@ -112,7 +118,7 @@ const IndexOptimized = () => {
         description: "Please try again later."
       });
     }
-  }, [user?.id, refreshUserMetrics, isRefreshing, queryKeys, queryClient, refetch, refreshProfile, refreshSpendingMetrics]);
+  }, [user?.id, refreshUserMetrics, isRefreshing, queryKeys, queryClient, refetch, refreshProfile, refreshSpendingMetrics, utils]);
 
   // Enhanced import function with improved UX
   const importSteamLibrary = useCallback(async () => {

@@ -4,11 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/hooks/use-query-keys';
 
 export const useMetricsRefresh = () => {
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refreshUserMetrics = async () => {
@@ -36,6 +39,12 @@ export const useMetricsRefresh = () => {
       }
 
       if (data?.success) {
+        // Invalidate Phase 2 metrics cache after successful backend refresh
+        const phase2Keys = queryKeys.helpers.phase2Metrics(user.id);
+        phase2Keys.forEach(key => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+        
         toast({
           title: "Metrics refreshed successfully",
           description: `Updated metrics for ${data.metrics?.totalGames || 0} games.`
