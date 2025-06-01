@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Clock, Trophy, TrendingUp, Calendar, Users, Gamepad2, Star, Target, DollarSign, Zap, HelpCircle } from 'lucide-react';
 import { useLibraryData } from '@/hooks/use-library-data';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import {
   Tooltip,
@@ -14,7 +16,10 @@ import {
 import GenreGalaxy from './GenreGalaxy';
 
 const LibraryOverview = () => {
-  const { games: libraryGames, isLoading } = useLibraryData();
+  const { games: libraryGames, isLoading: libraryLoading } = useLibraryData();
+  const { data: userMetrics, isLoading: metricsLoading } = useUserMetrics();
+
+  const isLoading = libraryLoading || metricsLoading;
 
   if (isLoading) {
     return (
@@ -33,18 +38,23 @@ const LibraryOverview = () => {
     );
   }
 
-  // Calculate all statistics from real library data
-  const totalGames = libraryGames.length;
+  // Use Phase 2 metrics for aggregate statistics
+  const totalGames = userMetrics?.totalGames || 0;
+  const playedGamesCount = userMetrics?.playedGames || 0;
+  const unplayedGames = userMetrics?.unplayedGames || 0;
+  const totalPlaytimeHours = userMetrics?.totalPlaytimeHours || 0;
+  const recentlyActiveGames = userMetrics?.recentlyPlayedCount || 0;
+  
+  // Calculate completion rate from Phase 2 metrics
+  const completionRate = totalGames > 0 ? Math.round((playedGamesCount / totalGames) * 100) : 0;
+
+  // Use Phase 1 data for detailed game analysis (top played games, value champion, etc.)
   const playedGames = libraryGames.filter(game => {
     const playtime = game.userGame?.playtime_minutes || 0;
     return playtime > 0;
   });
-  const unplayedGames = totalGames - playedGames.length;
-  
-  // Calculate completion rate
-  const completionRate = totalGames > 0 ? Math.round((playedGames.length / totalGames) * 100) : 0;
 
-  // Get top 3 most played games
+  // Get top 3 most played games from Phase 1 data
   const topPlayedGames = [...playedGames]
     .sort((a, b) => {
       const playtimeA = a.userGame?.playtime_minutes || 0;
@@ -53,24 +63,7 @@ const LibraryOverview = () => {
     })
     .slice(0, 3);
 
-  // Calculate total playtime
-  const totalPlaytimeMinutes = libraryGames.reduce((total, game) => {
-    const playtime = game.userGame?.playtime_minutes || 0;
-    return total + playtime;
-  }, 0);
-  const totalPlaytimeHours = Math.round(totalPlaytimeMinutes / 60);
-
-  // Calculate games with recent activity (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const recentlyActiveGames = libraryGames.filter(game => {
-    const lastPlayed = game.userGame?.last_played_date;
-    if (!lastPlayed) return false;
-    return new Date(lastPlayed) >= thirtyDaysAgo;
-  }).length;
-
-  // Calculate Value Champion (best playtime-to-price ratio)
+  // Calculate Value Champion from Phase 1 data (detailed analysis)
   const calculateValueChampion = () => {
     const gamesWithPriceAndPlaytime = playedGames.filter(game => {
       const playtime = game.userGame?.playtime_minutes || 0;
@@ -102,7 +95,7 @@ const LibraryOverview = () => {
     };
   };
 
-  // Calculate Quick vs Deep gaming style
+  // Calculate Gaming Style from Phase 1 data (detailed analysis)
   const calculateGamingStyle = () => {
     if (playedGames.length === 0) return { style: 'No Data', percentage: 0 };
 
@@ -137,9 +130,9 @@ const LibraryOverview = () => {
   const valueChampion = calculateValueChampion();
   const gamingStyle = calculateGamingStyle();
 
-  // Calculate playtime distribution
+  // Calculate playtime distribution using Phase 1 data for detailed breakdown
   const playtimeDistribution = {
-    unplayed: unplayedGames,
+    unplayed: unplayedGames, // Use Phase 2 aggregate
     light: playedGames.filter(game => {
       const playtime = game.userGame?.playtime_minutes || 0;
       return playtime > 0 && playtime < 120; // Less than 2 hours
@@ -154,7 +147,7 @@ const LibraryOverview = () => {
     }).length
   };
 
-  // Get top genres for Galaxy View
+  // Get top genres for Galaxy View from Phase 1 data
   const genreCount: Record<string, number> = {};
   libraryGames.forEach(game => {
     const genres = game.genres || [];
@@ -174,10 +167,22 @@ const LibraryOverview = () => {
     return `${hours}h`;
   };
 
+  console.log('LibraryOverview data sources:', {
+    phase2Metrics: {
+      totalGames,
+      playedGamesCount,
+      unplayedGames,
+      totalPlaytimeHours,
+      recentlyActiveGames
+    },
+    phase1GameCount: libraryGames.length,
+    phase1PlayedCount: playedGames.length
+  });
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Header Stats */}
+        {/* Header Stats - Using Phase 2 metrics for aggregate data */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-black/20 border border-gray-700">
             <CardContent className="p-4">
@@ -196,7 +201,7 @@ const LibraryOverview = () => {
               <div className="flex items-center space-x-2">
                 <Trophy className="h-5 w-5 text-green-400" />
                 <div>
-                  <p className="text-2xl font-bold text-white">{playedGames.length}</p>
+                  <p className="text-2xl font-bold text-white">{playedGamesCount}</p>
                   <p className="text-sm text-gray-400">Games Played</p>
                 </div>
               </div>
@@ -208,7 +213,7 @@ const LibraryOverview = () => {
               <div className="flex items-center space-x-2">
                 <Clock className="h-5 w-5 text-blue-400" />
                 <div>
-                  <p className="text-2xl font-bold text-white">{totalPlaytimeHours}h</p>
+                  <p className="text-2xl font-bold text-white">{Math.round(totalPlaytimeHours)}h</p>
                   <p className="text-sm text-gray-400">Total Playtime</p>
                 </div>
               </div>
@@ -230,7 +235,7 @@ const LibraryOverview = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Played Games */}
+          {/* Top Played Games - Using Phase 1 detailed data */}
           <Card className="bg-black/20 border border-gray-700 flex flex-col h-full">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -284,7 +289,7 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Playtime Distribution */}
+          {/* Playtime Distribution - Using hybrid data */}
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -339,7 +344,7 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Activity Insights - Updated with new metrics */}
+          {/* Activity Insights - Using Phase 2 metrics with Phase 1 analysis */}
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -415,7 +420,7 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Genre Galaxy - Replaces Top Genres */}
+          {/* Genre Galaxy - Using Phase 1 detailed data */}
           <GenreGalaxy genres={topGenres} totalGames={totalGames} />
         </div>
       </div>
