@@ -808,6 +808,10 @@ export type Database = {
         }
         Returns: Json
       }
+      calculate_user_metrics_with_clean_score: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       calculate_user_spending_metrics: {
         Args: { p_user_id: string }
         Returns: Json
