@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -5,11 +6,8 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
-import { useMetricsRefresh } from "@/hooks/useMetricsRefresh";
-import { callSupabaseFunction } from '@/utils/supabase-functions';
+import { useRefreshManager } from "@/hooks/useRefreshManager";
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
-import { useSpendingMetrics } from '@/hooks/useSpendingMetrics';
 import DataErrorBoundary from '@/components/DataErrorBoundary';
 
 import Header from "../components/Header";
@@ -29,9 +27,8 @@ import ImportProgressIndicator from "@/components/ImportProgressIndicator";
 import { Button } from "@/components/ui/button";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Import } from "lucide-react";
+import { RefreshCw, Import, DollarSign } from "lucide-react";
 
 // Enhanced import state interface
 interface ImportState {
@@ -55,14 +52,21 @@ const IndexOptimized = () => {
   const isMounted = useIsMounted();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
+  const { profile, isLoading: profileLoading } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: dashboardData, isLoading: dataLoading, lastRefreshed, refetch } = useDashboardData();
+  const { data: dashboardData, isLoading: dataLoading, lastRefreshed } = useDashboardData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
-  const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
-  const queryClient = useQueryClient();
-  const { queryKeys, utils } = useOptimizedCacheManagement();
-  const { refreshMetrics: refreshSpendingMetrics } = useSpendingMetrics();
+  
+  // Use the new refresh manager
+  const {
+    importLibrary,
+    refreshDashboard,
+    refreshPrices,
+    refreshStates,
+    timestamps,
+    canPerformOperation,
+    getRemainingCooldown
+  } = useRefreshManager();
 
   // Memoized loading state
   const isLoading = useMemo(() => profileLoading && user, [profileLoading, user]);
@@ -72,56 +76,8 @@ const IndexOptimized = () => {
     setImportState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Enhanced refresh function with backend metrics refresh first
-  const refreshAllData = useCallback(async () => {
-    if (isRefreshing || !user?.id) return;
-
-    try {
-      // First refresh backend metrics
-      await refreshUserMetrics();
-      
-      // Then refresh cache with a slight delay
-      setTimeout(() => {
-        toast.info("Refreshing your data...", {
-          description: "This may take a moment to update all your stats."
-        });
-        
-        // Use comprehensive cache invalidation for both Phase 1 and Phase 2 data
-        const allUserDataKeys = queryKeys.helpers.allUserData(user.id);
-        allUserDataKeys.forEach(key => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-        
-        // Also invalidate optimized query keys
-        const optimizedKeys = utils.invalidateAllUserData(user.id);
-        optimizedKeys.forEach(key => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-        
-        // Explicit refetch of dashboard data
-        refetch?.();
-        
-        // Refresh profile and spending metrics
-        refreshProfile(true);
-        refreshSpendingMetrics();
-        
-        // Success notification
-        setTimeout(() => {
-          toast.success("Data refresh complete!", { 
-            description: "Your dashboard has been updated with the latest information."
-          });
-        }, 2000);
-      }, 1000);
-    } catch (error) {
-      console.error('Failed to refresh data:', error);
-      toast.error("Failed to refresh data", {
-        description: "Please try again later."
-      });
-    }
-  }, [user?.id, refreshUserMetrics, isRefreshing, queryKeys, queryClient, refetch, refreshProfile, refreshSpendingMetrics, utils]);
-
-  // Enhanced import function with improved UX
-  const importSteamLibrary = useCallback(async () => {
+  // Enhanced import function using the new refresh manager
+  const handleImportSteamLibrary = useCallback(async () => {
     if (!profile?.steam_id) {
       toast.error("Steam account not linked");
       return;
@@ -136,15 +92,11 @@ const IndexOptimized = () => {
     });
     
     try {
-      const data = await callSupabaseFunction('import-library', {
-        steamId: profile.steam_id,
-      });
+      const data = await importLibrary(profile.steam_id);
 
-      console.log("Import response:", data);
-      
-      if (data.success) {
+      if (data?.success) {
         updateImportState({
-          progress: "Library fetch complete!",
+          progress: "Library import complete!",
           percentage: 30,
           status: 'processing',
           totalGames: data.totalGames,
@@ -153,11 +105,6 @@ const IndexOptimized = () => {
 
         if (data.processing === "background" || data.status === "processing") {
           // Background processing mode
-          toast.success(`Found ${data.totalGames || 0} games in your library!`, {
-            description: "Processing in background - your dashboard will update automatically."
-          });
-          
-          // Simulate progress updates for background processing
           let progressCounter = 30;
           const progressInterval = setInterval(() => {
             progressCounter += 8;
@@ -181,8 +128,6 @@ const IndexOptimized = () => {
               helpText: "Your library has been imported and unplayed games prioritized."
             });
             
-            refreshAllData();
-            
             setTimeout(() => {
               updateImportState({
                 isImporting: false,
@@ -201,9 +146,6 @@ const IndexOptimized = () => {
             helpText: `Successfully imported ${data.imported || data.gamesUpserted || 0} games.`
           });
           
-          toast.success(`Successfully imported ${data.imported || data.gamesUpserted || 0} games!`);
-          refreshAllData();
-          
           setTimeout(() => {
             updateImportState({
               isImporting: false,
@@ -213,8 +155,6 @@ const IndexOptimized = () => {
             });
           }, 2000);
         }
-      } else {
-        throw new Error(data.error || "Import failed");
       }
     } catch (err) {
       console.error("Import failed", err);
@@ -226,10 +166,6 @@ const IndexOptimized = () => {
         helpText: err.helpText || "Please try again or check your Steam privacy settings."
       });
       
-      toast.error(`Import failed: ${err.message}`, {
-        description: err.helpText || "Please check your Steam privacy settings and try again."
-      });
-      
       setTimeout(() => {
         updateImportState({
           isImporting: false,
@@ -239,7 +175,7 @@ const IndexOptimized = () => {
         });
       }, 5000);
     }
-  }, [profile?.steam_id, updateImportState, refreshAllData]);
+  }, [profile?.steam_id, updateImportState, importLibrary]);
 
   if (isLoading) {
     return (
@@ -260,6 +196,12 @@ const IndexOptimized = () => {
       </FullScreenModeWrapper>
     );
   }
+
+  // Helper function to format timestamps
+  const formatTimestamp = (timestamp?: Date) => {
+    if (!timestamp) return null;
+    return timestamp.toLocaleString();
+  };
 
   // Memoized hero section content
   const heroContent = useMemo(() => {
@@ -293,52 +235,88 @@ const IndexOptimized = () => {
           <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
             Time to face your backlog.
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={importSteamLibrary}
+                    onClick={handleImportSteamLibrary}
                     className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
-                    disabled={importState.isImporting || isRefreshing}
+                    disabled={importState.isImporting || !canPerformOperation('import')}
                   >
                     <Import className="mr-2 h-4 w-4" />
-                    {importState.isImporting ? "Importing..." : "Import Steam Library"}
+                    {importState.isImporting ? "Importing..." : "Import Library"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Fetch your games from Steam and prioritize unplayed games for enrichment</p>
+                  <p>Import new games from Steam (smart detection)</p>
+                  {!canPerformOperation('import') && (
+                    <p className="text-yellow-300">Cooldown: {getRemainingCooldown('import')}s</p>
+                  )}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
             
-            {!importState.isImporting && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={refreshAllData}
-                      variant="outline"
-                      className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
-                      disabled={isRefreshing}
-                    >
-                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      {isRefreshing ? "Refreshing..." : "Refresh Dashboard"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Update metrics and refresh dashboard with latest data</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={refreshDashboard}
+                    variant="outline"
+                    className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
+                    disabled={refreshStates.isRefreshingDashboard || !canPerformOperation('dashboard')}
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${refreshStates.isRefreshingDashboard ? 'animate-spin' : ''}`} />
+                    {refreshStates.isRefreshingDashboard ? "Refreshing..." : "Refresh Dashboard"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Recalculate your gaming metrics</p>
+                  {!canPerformOperation('dashboard') && (
+                    <p className="text-yellow-300">Cooldown: {getRemainingCooldown('dashboard')}s</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={refreshPrices}
+                    variant="outline"
+                    className="bg-green-500/20 text-green-400 font-semibold hover:bg-green-500/30 border-green-500/30"
+                    disabled={refreshStates.isRefreshingPrices || !canPerformOperation('prices')}
+                  >
+                    <DollarSign className={`mr-2 h-4 w-4 ${refreshStates.isRefreshingPrices ? 'animate-spin' : ''}`} />
+                    {refreshStates.isRefreshingPrices ? "Updating..." : "Refresh Prices"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Update game prices from Steam store</p>
+                  {!canPerformOperation('prices') && (
+                    <p className="text-yellow-300">Cooldown: {getRemainingCooldown('prices')}s</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
-          {lastRefreshed && (
-            <p className="text-sm text-gray-500 mt-2">
-              Last updated: {lastRefreshed.toLocaleString()}
-            </p>
-          )}
+          {/* Timestamps display */}
+          <div className="mt-4 text-xs text-gray-500 space-y-1">
+            {timestamps.lastImport && (
+              <p>Last import: {formatTimestamp(timestamps.lastImport)}</p>
+            )}
+            {timestamps.lastDashboardRefresh && (
+              <p>Last dashboard refresh: {formatTimestamp(timestamps.lastDashboardRefresh)}</p>
+            )}
+            {timestamps.lastPriceRefresh && (
+              <p>Last price refresh: {formatTimestamp(timestamps.lastPriceRefresh)}</p>
+            )}
+            {lastRefreshed && (
+              <p>Data last updated: {lastRefreshed.toLocaleString()}</p>
+            )}
+          </div>
           
           <ImportProgressIndicator
             isImporting={importState.isImporting}
@@ -352,7 +330,7 @@ const IndexOptimized = () => {
       );
     }
     return null;
-  }, [user, profile, importState, lastRefreshed, importSteamLibrary, refreshAllData, isRefreshing]);
+  }, [user, profile, importState, timestamps, lastRefreshed, handleImportSteamLibrary, refreshDashboard, refreshPrices, refreshStates, canPerformOperation, getRemainingCooldown]);
 
   return (
     <FullScreenModeWrapper>
