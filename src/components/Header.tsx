@@ -100,7 +100,7 @@ const Header = () => {
                   asChild
                 >
                   <a 
-                    href="https://discord.gg/TvcNPryU8N" 
+                    href="https://discord.gg/YHbr3Ska95" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     aria-label="Join our Discord"
