@@ -12,7 +12,6 @@ import DiscordIcon from './icons/DiscordIcon';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProfile } from '@/hooks/use-profile';
-import AccountDeletionModal from './AccountDeletionModal';
 
 // Import dropdown menu components
 import {
@@ -27,7 +26,6 @@ import {
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showDeletionModal, setShowDeletionModal] = useState(false);
   const { user, signOut, isLoading, status } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -77,6 +75,8 @@ const Header = () => {
           {stableRenderState.isAuthenticated && (
             <>
               <NavLink href="/library" label="Library" />
+              <NavLink href="/dust" label="Dust Score" />
+              <NavLink href="/spend" label="Spending" />
               {/* Hide admin links from main navigation when we have the dropdown */}
               {isAdmin && !stableRenderState.hasProfile && (
                 <>
@@ -204,7 +204,7 @@ const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                // Non-admin authenticated user avatar with dropdown (no preview mode toggle)
+                // Non-admin authenticated user avatar with dropdown (removed delete account)
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="p-0 h-auto flex items-center space-x-2 hover:bg-transparent">
@@ -240,15 +240,6 @@ const Header = () => {
                     >
                       <LogIn className="mr-2 h-4 w-4 rotate-180" />
                       <span>Logout</span>
-                    </DropdownMenuItem>
-                    
-                    {/* Delete Account Option */}
-                    <DropdownMenuItem 
-                      className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800 text-unplayed-red"
-                      onClick={() => setShowDeletionModal(true)}
-                    >
-                      <UserMinus className="mr-2 h-4 w-4" />
-                      <span>Delete Account</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -301,6 +292,8 @@ const Header = () => {
               {user && (
                 <>
                   <NavLink href="/library" label="Library" />
+                  <NavLink href="/dust" label="Dust Score" />
+                  <NavLink href="/spend" label="Spending" />
                   {/* Display admin links in the mobile menu */}
                   {isAdmin && (
                     <>
@@ -335,17 +328,6 @@ const Header = () => {
                   <button onClick={signOut} className="btn-secondary w-full mt-2">
                     Logout
                   </button>
-                  
-                  {/* Delete account button for mobile - removed preview mode toggle */}
-                  {!isAdmin && (
-                    <button 
-                      onClick={() => setShowDeletionModal(true)} 
-                      className="text-unplayed-red hover:text-red-400 transition-colors w-full mt-2"
-                    >
-                      <UserMinus size={16} className="inline mr-1" />
-                      Delete Account
-                    </button>
-                  )}
                 </div>
               ) : (
                 // Show login button in mobile menu instead of Steam login
@@ -361,12 +343,6 @@ const Header = () => {
           </div>
         )}
       </header>
-      
-      {/* Account deletion modal */}
-      <AccountDeletionModal 
-        open={showDeletionModal}
-        onOpenChange={setShowDeletionModal}
-      />
     </>
   );
 };

@@ -1,9 +1,11 @@
 
 import { useState, useCallback } from "react";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
+import { useAuth } from "@/context/AuthContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import AboutDialog from "./AboutDialog";
+import AccountDeletionModal from "./AccountDeletionModal";
 import { Link } from "react-router-dom";
 import DiscordIcon from "./icons/DiscordIcon";
 
@@ -11,7 +13,9 @@ const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [showDeletionModal, setShowDeletionModal] = useState(false);
   const { isFullScreenMode } = useFullScreenMode();
+  const { user } = useAuth();
   
   // Use useCallback to prevent unnecessary re-renders
   const openPrivacyPolicy = useCallback((e: React.MouseEvent) => {
@@ -27,6 +31,11 @@ const Footer = () => {
   const openAbout = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setAboutOpen(true);
+  }, []);
+
+  const openDeletionModal = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowDeletionModal(true);
   }, []);
 
   // Hide footer in full screen mode
@@ -47,6 +56,12 @@ const Footer = () => {
           </div>
           
           <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
+            {/* Show Delete Account for authenticated users first */}
+            {user && (
+              <a href="#" className="text-unplayed-red hover:text-red-400 transition-colors text-sm" onClick={openDeletionModal}>
+                Delete Account
+              </a>
+            )}
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openPrivacyPolicy}>
               Privacy Policy
             </a>
@@ -80,6 +95,7 @@ const Footer = () => {
       {privacyPolicyOpen && <PrivacyPolicyDialog open={privacyPolicyOpen} onOpenChange={setPrivacyPolicyOpen} />}
       {termsOfServiceOpen && <TermsOfServiceDialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen} />}
       {aboutOpen && <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />}
+      {showDeletionModal && <AccountDeletionModal open={showDeletionModal} onOpenChange={setShowDeletionModal} />}
     </footer>
   );
 };
