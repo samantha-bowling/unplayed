@@ -7,8 +7,11 @@ import DustAnalysis from "@/components/DustAnalysis";
 import DustTierDistribution from "@/components/dust/DustTierDistribution";
 import TopDustContributors from "@/components/dust/TopDustContributors";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useDustScoreData from '@/hooks/use-dust-score-data';
 
 const DustPage = () => {
+  const { data: dustData } = useDustScoreData();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -59,7 +62,7 @@ const DustPage = () => {
             </TabsContent>
             
             <TabsContent value="contributors" className="space-y-4">
-              <TopDustContributors />
+              <TopDustContributors contributors={dustData?.topDustContributors || []} />
             </TabsContent>
           </Tabs>
         </div>
