@@ -49,3 +49,9 @@ verify_jwt = true
 
 [functions.fetch-steam-reviews]
 verify_jwt = false
+
+[functions.calculate-leaderboard-rankings]
+verify_jwt = true
+
+[functions.trigger-leaderboard-calculation]
+verify_jwt = true
