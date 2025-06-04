@@ -165,14 +165,17 @@ export const DEMO_DATA: DemoDataType = {
   cleanStreak: 4,
   recentlyPlayedCount: 5,
   
-  // Keep existing demo games data
+  // Enhanced demo games data with proper image fields
   gamesList: [
     {
       id: 1091500,
       name: "Cyberpunk 2077",
       image: "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg",
+      image_url: "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg",
+      header_image: "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg",
       playtimeMinutes: 0,
       releaseDate: "2020-12-10",
+      release_date: "2020-12-10",
       price: 59.99,
       price_cents: 5999,
       genres: ["Action", "RPG"],
@@ -185,8 +188,11 @@ export const DEMO_DATA: DemoDataType = {
       id: 292030,
       name: "The Witcher 3: Wild Hunt",
       image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg",
+      image_url: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg",
+      header_image: "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg",
       playtimeMinutes: 0,
       releaseDate: "2015-05-19",
+      release_date: "2015-05-19",
       price: 39.99,
       price_cents: 3999,
       genres: ["RPG", "Adventure"],
@@ -199,8 +205,11 @@ export const DEMO_DATA: DemoDataType = {
       id: 1097150,
       name: "Fall Guys",
       image: "https://cdn.akamai.steamstatic.com/steam/apps/1097150/header.jpg",
+      image_url: "https://cdn.akamai.steamstatic.com/steam/apps/1097150/header.jpg",
+      header_image: "https://cdn.akamai.steamstatic.com/steam/apps/1097150/header.jpg",
       playtimeMinutes: 120,
       releaseDate: "2020-08-04",
+      release_date: "2020-08-04",
       price: 0,
       price_cents: 0,
       genres: ["Action", "Casual", "Indie"],

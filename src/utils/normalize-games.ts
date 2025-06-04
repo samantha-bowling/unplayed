@@ -70,20 +70,39 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
     };
   }
   
-  // Convert games.library to gamesList if needed
+  // Enhanced demo games processing with proper image field mapping
   const gamesList = Array.isArray(games) 
     ? games.map(game => ({
         id: game.appid || game.id,
         name: game.name || game.title || 'Unknown Game',
         image: game.image || game.imageUrl || game.img_icon_url || '',
+        image_url: game.image_url || game.image || game.imageUrl || game.img_icon_url || '',
+        header_image: game.header_image || game.image || game.imageUrl || '',
         playtimeMinutes: game.playtime_forever || game.playtime || 0,
-        releaseDate: null,
-        genres: [],
-        categories: []
+        releaseDate: game.releaseDate || game.release_date || null,
+        release_date: game.releaseDate || game.release_date || null,
+        genres: game.genres || [],
+        categories: game.categories || [],
+        price: game.price,
+        price_cents: game.price_cents,
+        dustScore: game.dustScore,
+        metacritic_score: game.metacritic_score
       }))
-    : games.gamesList || buildGamesList(games.library || []);
+    : games.gamesList?.map((game: any) => ({
+        ...game,
+        // Ensure all image fields are properly mapped for demo mode
+        image_url: game.image_url || game.image || '',
+        header_image: game.header_image || game.image || '',
+        release_date: game.release_date || game.releaseDate || null
+      })) || buildGamesList(games.library || []);
   
   console.log('normalizeDemoGames processed gamesList:', gamesList.length, 'items');
+  console.log('Sample demo game with image fields:', gamesList[0] ? {
+    name: gamesList[0].name,
+    image: gamesList[0].image,
+    image_url: gamesList[0].image_url,
+    header_image: gamesList[0].header_image
+  } : 'No games');
   
   // If games is already an UnplayedDataType, return it with updated gamesList
   if ('unplayedGames' in games && 'totalGames' in games) {
