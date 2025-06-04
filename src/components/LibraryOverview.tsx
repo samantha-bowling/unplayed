@@ -6,32 +6,32 @@ import { Progress } from '@/components/ui/progress';
 import { GamepadIcon, Clock, Trophy, Star, Activity, Calendar, Gamepad2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
+import { useUserMetrics } from '@/hooks/use-user-metrics';
 import GenreGalaxy from '@/components/GenreGalaxy';
 import { calculateActivityInsights } from '@/utils/activity-insights';
 
 const LibraryOverview = () => {
   const { games: libraryGames } = useLibraryData();
+  const { data: userMetrics } = useUserMetrics();
 
   // Calculate overview statistics
   const stats = React.useMemo(() => {
-    const totalGames = libraryGames.length;
-    const playedGames = libraryGames.filter(game => {
+    // Use userMetrics for top-level stats to ensure consistency with dashboard
+    const totalGames = userMetrics?.totalGames || 0;
+    const playedGames = userMetrics?.playedGames || 0;
+    const unplayedGames = userMetrics?.unplayedGames || 0;
+    const totalPlaytimeHours = userMetrics?.totalPlaytimeHours || 0;
+
+    // Calculate completion rate
+    const completionRate = totalGames > 0 ? Math.round((playedGames / totalGames) * 100) : 0;
+
+    // Get most played games (top 3) - use libraryGames for detailed data
+    const playedGamesList = libraryGames.filter(game => {
       const playtime = game.userGame?.playtime_minutes || 0;
       return playtime > 0;
     });
-    const unplayedGames = totalGames - playedGames.length;
-
-    // Calculate total playtime
-    const totalPlaytimeMinutes = libraryGames.reduce((sum, game) => {
-      return sum + (game.userGame?.playtime_minutes || 0);
-    }, 0);
-    const totalPlaytimeHours = Math.round(totalPlaytimeMinutes / 60);
-
-    // Calculate completion rate
-    const completionRate = totalGames > 0 ? Math.round((playedGames.length / totalGames) * 100) : 0;
-
-    // Get most played games (top 3)
-    const mostPlayedGames = playedGames
+    
+    const mostPlayedGames = playedGamesList
       .sort((a, b) => (b.userGame?.playtime_minutes || 0) - (a.userGame?.playtime_minutes || 0))
       .slice(0, 3)
       .map((game, index) => ({
@@ -41,7 +41,7 @@ const LibraryOverview = () => {
         image: game.header_image || game.image_url
       }));
 
-    // Calculate playtime distribution
+    // Calculate playtime distribution using libraryGames for detailed breakdown
     const playtimeDistribution = {
       unplayed: unplayedGames,
       light: 0, // <2h
@@ -49,7 +49,7 @@ const LibraryOverview = () => {
       heavy: 0 // 10h+
     };
 
-    playedGames.forEach(game => {
+    playedGamesList.forEach(game => {
       const hours = (game.userGame?.playtime_minutes || 0) / 60;
       if (hours < 2) playtimeDistribution.light++;
       else if (hours < 10) playtimeDistribution.moderate++;
@@ -68,19 +68,19 @@ const LibraryOverview = () => {
       .slice(0, 8)
       .map(([genre, count]) => ({ genre, count }));
 
-    // Activity insights - calculate and convert to display messages
+    // Activity insights - calculate and convert to display messages with enhanced styling
     const activityData = calculateActivityInsights(libraryGames);
     const insights = [
-      `You've played ${activityData.recentlyPlayedGames} games in the last 30 days`,
-      `${activityData.recentlyPlayedUnplayed} previously unplayed games were started recently`,
-      `Your clean streak is ${activityData.cleanStreak} days`,
-      `Total playtime: ${Math.round(activityData.totalPlaytimeHours)} hours across all games`,
-      `Average session length: ${Math.round(activityData.averageSessionLength)} hours per game`
+      <>You've played <span className="font-bold text-unplayed-mint">{activityData.recentlyPlayedGames} games</span> in the last 30 days</>,
+      <><span className="font-bold text-unplayed-amber">{activityData.recentlyPlayedUnplayed}</span> previously unplayed games were started recently</>,
+      <>Your clean streak is <span className="font-bold text-green-400">{activityData.cleanStreak} days</span></>,
+      <>Total playtime: <span className="font-bold text-blue-400">{Math.round(activityData.totalPlaytimeHours)} hours</span> across all games</>,
+      <>Average session length: <span className="font-bold text-purple-400">{Math.round(activityData.averageSessionLength)} hours</span> per game</>
     ];
 
     return {
       totalGames,
-      playedGames: playedGames.length,
+      playedGames,
       unplayedGames,
       totalPlaytimeHours,
       completionRate,
@@ -89,7 +89,7 @@ const LibraryOverview = () => {
       topGenres,
       insights
     };
-  }, [libraryGames]);
+  }, [libraryGames, userMetrics]);
 
   return (
     <TooltipProvider>
@@ -278,11 +278,13 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Genre Galaxy */}
-          <GenreGalaxy 
-            genres={stats.topGenres}
-            totalGames={stats.totalGames}
-          />
+          {/* Genre Galaxy with proper glow effects */}
+          <div className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300 rounded-lg">
+            <GenreGalaxy 
+              genres={stats.topGenres}
+              totalGames={stats.totalGames}
+            />
+          </div>
         </div>
       </div>
     </TooltipProvider>

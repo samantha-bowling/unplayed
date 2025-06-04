@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Stars, Sparkles } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -40,7 +40,7 @@ const GenreGalaxy = ({ genres, totalGames }: GenreGalaxyProps) => {
   ];
 
   return (
-    <Card className="bg-black/20 border border-gray-700 h-full">
+    <>
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Stars className="h-5 w-5 text-purple-400" />
@@ -159,7 +159,7 @@ const GenreGalaxy = ({ genres, totalGames }: GenreGalaxyProps) => {
           </p>
         </div>
       </CardContent>
-    </Card>
+    </>
   );
 };
 
