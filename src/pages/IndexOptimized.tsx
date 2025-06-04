@@ -197,7 +197,7 @@ const IndexOptimized = () => {
   }
 
   // Helper function to format timestamps
-  const formatTimestamp = (timestamp?: Date | null) => {
+  const formatTimestamp = (timestamp?: Date) => {
     if (!timestamp) return null;
     return timestamp.toLocaleString();
   };
@@ -301,13 +301,16 @@ const IndexOptimized = () => {
             </TooltipProvider>
           </div>
           
-          {/* Only show the two persistent timestamps */}
+          {/* Updated timestamps - show each independently */}
           <div className="mt-4 text-xs text-gray-500 space-y-1">
             {timestamps.lastImport && (
               <p>Last import: {formatTimestamp(timestamps.lastImport)}</p>
             )}
             {timestamps.lastDashboardRefresh && (
               <p>Last dashboard refresh: {formatTimestamp(timestamps.lastDashboardRefresh)}</p>
+            )}
+            {timestamps.lastPriceRefresh && (
+              <p>Last price refresh: {formatTimestamp(timestamps.lastPriceRefresh)}</p>
             )}
           </div>
           
