@@ -3,24 +3,23 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { GamepadIcon, Clock, Trophy, Star, DollarSign, Calendar, Archive, Gamepad2 } from 'lucide-react';
+import { GamepadIcon, Clock, Trophy, Star, Activity, Calendar, Gamepad2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
-import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
-import CurrencyAmount from '@/components/ui/currency-amount';
+import GenreGalaxy from '@/components/GenreGalaxy';
+import { activityInsights } from '@/utils/activity-insights';
 
 const LibraryOverview = () => {
   const { games: libraryGames } = useLibraryData();
-  const { data: spendingData } = useUnifiedSpendingDataV2();
 
   // Calculate overview statistics
   const stats = React.useMemo(() => {
     const totalGames = libraryGames.length;
-    const unplayedGames = libraryGames.filter(game => {
+    const playedGames = libraryGames.filter(game => {
       const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime === 0;
-    }).length;
-    const playedGames = totalGames - unplayedGames;
+      return playtime > 0;
+    });
+    const unplayedGames = totalGames - playedGames.length;
 
     // Calculate total playtime
     const totalPlaytimeMinutes = libraryGames.reduce((sum, game) => {
@@ -28,37 +27,36 @@ const LibraryOverview = () => {
     }, 0);
     const totalPlaytimeHours = Math.round(totalPlaytimeMinutes / 60);
 
-    // Calculate average playtime for played games
-    const playedGamesWithTime = libraryGames.filter(game => (game.userGame?.playtime_minutes || 0) > 0);
-    const avgPlaytimeHours = playedGamesWithTime.length > 0 
-      ? Math.round(playedGamesWithTime.reduce((sum, game) => sum + (game.userGame?.playtime_minutes || 0), 0) / playedGamesWithTime.length / 60)
-      : 0;
+    // Calculate completion rate
+    const completionRate = totalGames > 0 ? Math.round((playedGames.length / totalGames) * 100) : 0;
 
-    // Calculate games by release decade
-    const currentYear = new Date().getFullYear();
-    const gamesByAge = {
-      recent: 0, // 0-2 years
-      modern: 0, // 3-5 years
-      mature: 0, // 6-10 years
-      vintage: 0, // 11+ years
-      unknown: 0
+    // Get most played games (top 3)
+    const mostPlayedGames = playedGames
+      .sort((a, b) => (b.userGame?.playtime_minutes || 0) - (a.userGame?.playtime_minutes || 0))
+      .slice(0, 3)
+      .map((game, index) => ({
+        rank: index + 1,
+        name: game.name,
+        playtime: Math.round((game.userGame?.playtime_minutes || 0) / 60),
+        image: game.header_image || game.image_url
+      }));
+
+    // Calculate playtime distribution
+    const playtimeDistribution = {
+      unplayed: unplayedGames,
+      light: 0, // <2h
+      moderate: 0, // 2-10h
+      heavy: 0 // 10h+
     };
 
-    libraryGames.forEach(game => {
-      if (game.release_date) {
-        const releaseYear = new Date(game.release_date).getFullYear();
-        const age = currentYear - releaseYear;
-        
-        if (age <= 2) gamesByAge.recent++;
-        else if (age <= 5) gamesByAge.modern++;
-        else if (age <= 10) gamesByAge.mature++;
-        else gamesByAge.vintage++;
-      } else {
-        gamesByAge.unknown++;
-      }
+    playedGames.forEach(game => {
+      const hours = (game.userGame?.playtime_minutes || 0) / 60;
+      if (hours < 2) playtimeDistribution.light++;
+      else if (hours < 10) playtimeDistribution.moderate++;
+      else playtimeDistribution.heavy++;
     });
 
-    // Most common genres
+    // Most common genres for GenreGalaxy
     const genreCount: Record<string, number> = {};
     libraryGames.forEach(game => {
       (game.genres || []).forEach(genre => {
@@ -67,24 +65,29 @@ const LibraryOverview = () => {
     });
     const topGenres = Object.entries(genreCount)
       .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
+      .slice(0, 8)
+      .map(([genre, count]) => ({ genre, count }));
+
+    // Activity insights
+    const insights = activityInsights.generateInsights(libraryGames);
 
     return {
       totalGames,
+      playedGames: playedGames.length,
       unplayedGames,
-      playedGames,
-      unplayedPercentage: totalGames > 0 ? Math.round((unplayedGames / totalGames) * 100) : 0,
       totalPlaytimeHours,
-      avgPlaytimeHours,
-      gamesByAge,
-      topGenres
+      completionRate,
+      mostPlayedGames,
+      playtimeDistribution,
+      topGenres,
+      insights
     };
   }, [libraryGames]);
 
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Quick Stats Grid */}
+        {/* Top Row - Main Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
@@ -110,15 +113,15 @@ const LibraryOverview = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center space-x-2 cursor-help">
-                    <Archive className="h-5 w-5 text-unplayed-red" />
+                    <Trophy className="h-5 w-5 text-green-400" />
                     <div>
-                      <p className="text-2xl font-bold text-white">{stats.unplayedGames}</p>
-                      <p className="text-sm text-gray-400">unplayed</p>
+                      <p className="text-2xl font-bold text-white">{stats.playedGames}</p>
+                      <p className="text-sm text-gray-400">Games Played</p>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Games you haven't played yet</p>
+                  <p>Games you have played (with recorded playtime)</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
@@ -148,112 +151,132 @@ const LibraryOverview = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center space-x-2 cursor-help">
-                    <DollarSign className="h-5 w-5 text-green-400" />
+                    <Gamepad2 className="h-5 w-5 text-unplayed-amber" />
                     <div>
-                      <p className="text-2xl font-bold text-white">
-                        <CurrencyAmount amount={spendingData.unplayedSpent || 0} currency={spendingData.currency} />
-                      </p>
-                      <p className="text-sm text-gray-400">unplayed Value</p>
+                      <p className="text-2xl font-bold text-white">{stats.completionRate}%</p>
+                      <p className="text-sm text-gray-400">Completion Rate</p>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Estimated value of your unplayed games</p>
+                  <p>Percentage of games you've started playing</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
           </Card>
         </div>
 
-        {/* Progress Bars */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Middle Row - Most Played & Playtime Distribution */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Most Played Games */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5 text-unplayed-mint" />
-                <span>Play Progress</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Played Games</span>
-                  <span className="text-sm text-gray-400">
-                    {stats.playedGames} / {stats.totalGames} ({100 - stats.unplayedPercentage}%)
-                  </span>
-                </div>
-                <Progress value={100 - stats.unplayedPercentage} className="h-3" />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">unplayed Games</span>
-                  <span className="text-sm text-gray-400">
-                    {stats.unplayedGames} / {stats.totalGames} ({stats.unplayedPercentage}%)
-                  </span>
-                </div>
-                <Progress value={stats.unplayedPercentage} className="h-3" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-blue-400" />
-                <span>Games by Age</span>
+                <Star className="h-5 w-5 text-unplayed-amber" />
+                <span>Most Played Games</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="text-center">
-                  <p className="text-white font-bold">{stats.gamesByAge.recent}</p>
-                  <p className="text-gray-400">Recent (0-2y)</p>
+              {stats.mostPlayedGames.length > 0 ? (
+                stats.mostPlayedGames.map((game) => (
+                  <div key={game.rank} className="flex items-center space-x-3 p-2 rounded-lg bg-black/30">
+                    <div className="flex-shrink-0 w-8 h-8 bg-unplayed-amber rounded-full flex items-center justify-center">
+                      <span className="text-black font-bold text-sm">#{game.rank}</span>
+                    </div>
+                    {game.image && (
+                      <img 
+                        src={game.image} 
+                        alt={game.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium truncate">{game.name}</p>
+                      <p className="text-sm text-gray-400">{game.playtime}h played</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 text-center py-4">No played games yet</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Playtime Distribution */}
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Activity className="h-5 w-5 text-blue-400" />
+                <span>Playtime Distribution</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">Unplayed</span>
+                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.unplayed} games</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-white font-bold">{stats.gamesByAge.modern}</p>
-                  <p className="text-gray-400">Modern (3-5y)</p>
+                <Progress 
+                  value={(stats.playtimeDistribution.unplayed / stats.totalGames) * 100} 
+                  className="h-2"
+                />
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">Light Play (&lt;2h)</span>
+                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.light} games</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-white font-bold">{stats.gamesByAge.mature}</p>
-                  <p className="text-gray-400">Mature (6-10y)</p>
+                <Progress 
+                  value={(stats.playtimeDistribution.light / stats.totalGames) * 100} 
+                  className="h-2"
+                />
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">Moderate Play (2-10h)</span>
+                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.moderate} games</span>
                 </div>
-                <div className="text-center">
-                  <p className="text-white font-bold">{stats.gamesByAge.vintage}</p>
-                  <p className="text-gray-400">Vintage (11y+)</p>
+                <Progress 
+                  value={(stats.playtimeDistribution.moderate / stats.totalGames) * 100} 
+                  className="h-2"
+                />
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">Heavy Play (10h+)</span>
+                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.heavy} games</span>
                 </div>
+                <Progress 
+                  value={(stats.playtimeDistribution.heavy / stats.totalGames) * 100} 
+                  className="h-2"
+                />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Top Genres */}
-        <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Star className="h-5 w-5 text-unplayed-amber" />
-              <span>Top Genres in Your Library</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {stats.topGenres.map(([genre, count], index) => (
-                <Badge
-                  key={genre}
-                  variant="outline"
-                  className={`text-sm ${
-                    index === 0 ? 'border-unplayed-mint text-unplayed-mint' :
-                    index === 1 ? 'border-unplayed-amber text-unplayed-amber' :
-                    index === 2 ? 'border-orange-400 text-orange-400' :
-                    'border-gray-500 text-gray-300'
-                  }`}
-                >
-                  {genre} ({count})
-                </Badge>
+        {/* Bottom Row - Activity Insights & Genre Galaxy */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Activity Insights */}
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-purple-400" />
+                <span>Activity Insights</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {stats.insights.map((insight, index) => (
+                <div key={index} className="p-3 rounded-lg bg-black/30 border border-gray-700">
+                  <p className="text-white text-sm">{insight}</p>
+                </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Genre Galaxy */}
+          <GenreGalaxy 
+            genres={stats.topGenres}
+            totalGames={stats.totalGames}
+          />
+        </div>
       </div>
     </TooltipProvider>
   );
