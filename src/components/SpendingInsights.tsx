@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -7,6 +6,41 @@ import { useGenreStats } from '@/hooks/use-genre-stats';
 import TopExpensiveUnplayedGames from '@/components/TopExpensiveUnplayedGames';
 import CurrencyAmount from '@/components/ui/currency-amount';
 import { TrendingUp, Gamepad2, Gift } from 'lucide-react';
+import { RAINBOW_COLORS } from '@/utils/genre-processing';
+
+// Helper function to get consistent genre colors
+const getGenreColor = (genre: string, index: number): string => {
+  const GENRE_COLORS: Record<string, string> = {
+    'Action': RAINBOW_COLORS[0],
+    'Adventure': RAINBOW_COLORS[1],
+    'RPG': RAINBOW_COLORS[2],
+    'Strategy': RAINBOW_COLORS[3],
+    'Simulation': RAINBOW_COLORS[4],
+    'Sports': RAINBOW_COLORS[5],
+    'Racing': RAINBOW_COLORS[6],
+    'Indie': RAINBOW_COLORS[7],
+    'Casual': RAINBOW_COLORS[8],
+    'Free to Play': RAINBOW_COLORS[9],
+    'Massively Multiplayer': RAINBOW_COLORS[10],
+    'Early Access': RAINBOW_COLORS[11],
+    'Platformer': RAINBOW_COLORS[0],
+    'Puzzle': RAINBOW_COLORS[1],
+    'Shooter': RAINBOW_COLORS[2],
+    'Visual Novel': RAINBOW_COLORS[3],
+    'Card Game': RAINBOW_COLORS[4],
+    'Survival': RAINBOW_COLORS[5],
+    'Horror': RAINBOW_COLORS[6],
+    'Fighting': RAINBOW_COLORS[7],
+    'Point & Click': RAINBOW_COLORS[8],
+    'Other': '#95a5a6'
+  };
+  
+  if (GENRE_COLORS[genre]) {
+    return GENRE_COLORS[genre];
+  }
+  
+  return RAINBOW_COLORS[index % RAINBOW_COLORS.length];
+};
 
 const SpendingInsights = () => {
   const { data: spendingData } = useUnifiedSpendingDataV2();
@@ -28,14 +62,14 @@ const SpendingInsights = () => {
     }
   ];
 
-  // Prepare top genre spending data with dynamic colors from genre stats
+  // Prepare top genre spending data with vibrant rainbow colors
   const topGenreSpending = genreStats
     ?.slice(0, 6)
-    .map(genre => ({
+    .map((genre, index) => ({
       name: genre.genre_name,
       games: genre.game_count,
       percentage: genre.percentage,
-      color: genre.color_hex // Use the actual color from genre stats
+      color: getGenreColor(genre.genre_name, index) // Use consistent rainbow colors
     })) || [];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
