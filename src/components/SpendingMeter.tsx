@@ -9,7 +9,7 @@ interface SpendingMeterProps {
   currency?: string;
   isLoading: boolean;
   showDetailsLink?: boolean;
-  onHideClick: () => void;
+  onHideClick?: () => void;
   totalSaved?: number | null;
   hasUser: boolean;
 }
@@ -115,12 +115,14 @@ const SpendingMeter = ({
           </Link>
         )}
         
-        <button 
-          onClick={onHideClick}
-          className="mt-6 btn-secondary"
-        >
-          Hide Financial Damage
-        </button>
+        {onHideClick && (
+          <button 
+            onClick={onHideClick}
+            className="mt-6 btn-secondary"
+          >
+            Hide Financial Damage
+          </button>
+        )}
       </div>
       
       <div className="mt-auto text-sm text-gray-400 text-center pb-2">

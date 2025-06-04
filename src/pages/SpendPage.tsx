@@ -56,7 +56,7 @@ const SpendPage = () => {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 bg-black/40 border border-gray-700">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-black/40 border border-gray-700">
                 <TabsTrigger 
                   value="overview"
                   className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
@@ -64,36 +64,55 @@ const SpendPage = () => {
                   Overview
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="distribution"
+                  value="insights"
                   className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
                 >
-                  Distribution
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="top-games"
-                  className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
-                >
-                  Top Games
+                  Insights
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="overview" className="space-y-4">
-                <SpendingMeter
-                  amount={spendingData.unplayedSpent}
-                  currency={spendingData.currency}
-                  isLoading={isLoading}
-                  showDetailsLink={false}
-                  totalSaved={spendingData.unplayedSaved}
-                  hasUser={!!user}
-                />
+                <div className="max-w-2xl mx-auto">
+                  <SpendingMeter
+                    amount={spendingData.unplayedSpent}
+                    currency={spendingData.currency}
+                    isLoading={isLoading}
+                    showDetailsLink={false}
+                    totalSaved={spendingData.unplayedSaved}
+                    hasUser={!!user}
+                  />
+                </div>
               </TabsContent>
               
-              <TabsContent value="distribution" className="space-y-4">
-                <PriceDistributionChart />
-              </TabsContent>
-              
-              <TabsContent value="top-games" className="space-y-4">
-                <TopExpensiveUnplayedGames />
+              <TabsContent value="insights" className="space-y-6">
+                {/* Two column layout for spending insights and top games */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="terminal-container">
+                    <SpendingMeter
+                      amount={spendingData.unplayedSpent}
+                      currency={spendingData.currency}
+                      isLoading={isLoading}
+                      showDetailsLink={false}
+                      totalSaved={spendingData.unplayedSaved}
+                      hasUser={!!user}
+                    />
+                  </div>
+                  
+                  <TopExpensiveUnplayedGames />
+                </div>
+                
+                {/* Full width price distribution chart */}
+                <div className="terminal-container">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-unplayed-mint mb-2">
+                      Price Distribution
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      How your games are distributed across price ranges
+                    </p>
+                  </div>
+                  <PriceDistributionChart />
+                </div>
               </TabsContent>
             </Tabs>
           )}

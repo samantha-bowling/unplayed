@@ -7,7 +7,7 @@ import { GamepadIcon, Clock, Trophy, Star, DollarSign, Calendar, Archive, Gamepa
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
-import { formatCurrency } from '@/lib/utils';
+import CurrencyAmount from '@/components/ui/currency-amount';
 
 const LibraryOverview = () => {
   const { games: libraryGames } = useLibraryData();
@@ -151,7 +151,7 @@ const LibraryOverview = () => {
                     <DollarSign className="h-5 w-5 text-green-400" />
                     <div>
                       <p className="text-2xl font-bold text-white">
-                        {formatCurrency(spendingData.unplayedSpent || 0, spendingData.currency)}
+                        <CurrencyAmount amount={spendingData.unplayedSpent || 0} currency={spendingData.currency} />
                       </p>
                       <p className="text-sm text-gray-400">unplayed Value</p>
                     </div>
