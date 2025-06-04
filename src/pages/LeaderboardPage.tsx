@@ -18,6 +18,7 @@ import { format, parseISO } from "date-fns";
 import RankChangeIndicator from "@/components/RankChangeIndicator";
 import LeaderboardSettingsModal from "@/components/LeaderboardSettingsModal";
 import { useProfile } from "@/hooks/use-profile";
+import SteamLoader from "@/components/SteamLoader";
 
 const LeaderboardPage = () => {
   const { user } = useAuth();
@@ -94,11 +95,11 @@ const LeaderboardPage = () => {
       
       <section className="navbar-offset flex-grow px-4 py-12 text-center relative overflow-hidden">
         <div className="flex items-center justify-center gap-3 mb-4">
-          <Crown className="h-8 w-8 text-unplayed-amber" />
-          <h1 className="text-4xl md:text-5xl font-bold text-unplayed-amber">
+          <Crown className="h-8 w-8 text-unplayed-mint" />
+          <h1 className="text-4xl md:text-5xl font-bold text-unplayed-mint">
             Dust Dynasty
           </h1>
-          <Trophy className="h-8 w-8 text-unplayed-amber" />
+          <Trophy className="h-8 w-8 text-unplayed-mint" />
         </div>
         
         <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-300">
@@ -117,7 +118,7 @@ const LeaderboardPage = () => {
           )}
           {lastUpdated.isLoading && (
             <div className="flex justify-center items-center mb-6">
-              <Skeleton className="h-4 w-40" />
+              <SteamLoader size="sm" message="Loading..." />
             </div>
           )}
 
@@ -170,10 +171,13 @@ const LeaderboardPage = () => {
             <p className="text-gray-400 mb-6">The highest dust scores represent the most neglected gaming libraries.</p>
             
             {isLoading && pagination.page === 1 ? (
-              <div className="space-y-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="w-full h-12" />
-                ))}
+              <div className="flex flex-col items-center space-y-4">
+                <SteamLoader message="Loading dynasty members..." />
+                <div className="space-y-2 w-full">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="w-full h-12" />
+                  ))}
+                </div>
               </div>
             ) : leaderboardData && leaderboardData.length > 0 ? (
               <div className="overflow-x-auto">
