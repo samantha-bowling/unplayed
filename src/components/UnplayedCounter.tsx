@@ -45,10 +45,19 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       };
     }
     
-    // Use user_metrics table values directly - NO count prop override
+    // Use user_metrics table values directly - this ensures consistency with leaderboard
     const actualCount = userMetrics?.unplayedGames ?? 0;
     const totalGames = userMetrics?.totalGames ?? 0;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
+    
+    // Add debugging to verify data consistency
+    console.log('UnplayedCounter - Using user_metrics data:', {
+      actualCount,
+      totalGames,
+      unplayedPercentage,
+      totalDustScore: userMetrics?.totalDustScore,
+      source: 'user_metrics_table'
+    });
     
     return {
       actualCount,

@@ -15,49 +15,6 @@ const corsHeaders = {
 // Constants
 const BATCH_SIZE = 50; // Process 50 users at a time to avoid memory issues
 
-// Enhanced clean score calculation (matches frontend utils/clean-score-utils.ts)
-const calculateEnhancedCleanScore = (
-  playedGames: number,
-  totalGames: number,
-  totalPlaytimeHours: number,
-  recentlyPlayedCount: number
-): { cleanScore: number; breakdown: any } => {
-  if (totalGames === 0) {
-    return {
-      cleanScore: 0,
-      breakdown: { completionRate: 0, engagementFactor: 0, recencyFactor: 0 }
-    };
-  }
-
-  // Small library bonus (libraries under 10 games get a boost)
-  let adjustedPlayedGames = playedGames;
-  if (totalGames < 10) {
-    adjustedPlayedGames = Math.min(playedGames * 1.2, totalGames);
-  }
-
-  // 1. Completion Rate (40% weight)
-  const completionRate = adjustedPlayedGames / totalGames;
-
-  // 2. Engagement Factor (30% weight)
-  const avgPlaytimePerGame = playedGames > 0 ? totalPlaytimeHours / playedGames : 0;
-  const engagementFactor = Math.min(avgPlaytimePerGame / 10, 1); // 10 hours as benchmark
-
-  // 3. Recency Factor (30% weight)
-  const recencyFactor = Math.min(recentlyPlayedCount / totalGames, 1);
-
-  // Calculate final clean score
-  const cleanScore = Math.round((completionRate * 0.4 + engagementFactor * 0.3 + recencyFactor * 0.3) * 100);
-
-  return {
-    cleanScore,
-    breakdown: {
-      completionRate: Math.round(completionRate * 100),
-      engagementFactor: Math.round(engagementFactor * 100),
-      recencyFactor: Math.round(recencyFactor * 100)
-    }
-  };
-};
-
 // Handle requests
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -111,58 +68,37 @@ Deno.serve(async (req) => {
       
       for (const user of userBatch) {
         try {
-          // Get user's games with enhanced data for clean score calculation
-          const { data: userGames, error: gamesError } = await supabase
-            .from('user_games')
+          // Get user metrics directly from user_metrics table for consistency
+          const { data: userMetrics, error: metricsError } = await supabase
+            .from('user_metrics')
             .select(`
-              id, 
-              playtime_minutes, 
-              dust_score,
-              hidden,
-              last_played_date,
-              games:game_id (
-                id, 
-                price_cents
-              )
+              total_games,
+              unplayed_games,
+              played_games,
+              total_dust_score,
+              clean_score,
+              total_library_value_cents
             `)
             .eq('user_id', user.id)
-            .eq('hidden', false);
+            .single();
 
-          if (gamesError) throw gamesError;
+          if (metricsError) {
+            console.error(`Error fetching metrics for user ${user.id}:`, metricsError);
+            continue; // Skip this user if metrics not available
+          }
 
-          // Calculate user stats
-          const totalGames = userGames.length;
-          const unplayedGames = userGames.filter(game => !game.playtime_minutes || game.playtime_minutes < 30).length;
-          const playedGames = totalGames - unplayedGames;
-          const libraryValueCents = userGames.reduce((sum, game) => {
-            return sum + (game.games?.price_cents || 0);
-          }, 0);
+          if (!userMetrics) {
+            console.log(`No metrics found for user ${user.id}, skipping`);
+            continue;
+          }
 
-          // Calculate total dust score (sum of all game dust scores)
-          const dustScore = userGames.reduce((sum, game) => sum + (game.dust_score || 0), 0);
-          
-          // Calculate total playtime in hours
-          const totalPlaytimeHours = userGames.reduce((sum, game) => {
-            return sum + ((game.playtime_minutes || 0) / 60);
-          }, 0);
-
-          // Calculate recently played games count (last 30 days)
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          
-          const recentlyPlayedCount = userGames.filter(game => {
-            if (!game.last_played_date) return false;
-            const lastPlayedDate = new Date(game.last_played_date);
-            return lastPlayedDate >= thirtyDaysAgo;
-          }).length;
-
-          // Calculate enhanced clean score using the same algorithm as frontend
-          const { cleanScore } = calculateEnhancedCleanScore(
-            playedGames,
-            totalGames,
-            totalPlaytimeHours,
-            recentlyPlayedCount
-          );
+          // Use the pre-calculated values from user_metrics for consistency
+          const totalGames = userMetrics.total_games || 0;
+          const unplayedGames = userMetrics.unplayed_games || 0;
+          const playedGames = userMetrics.played_games || 0;
+          const dustScore = userMetrics.total_dust_score || 0; // This is the key consistency fix
+          const cleanScore = userMetrics.clean_score || 0;
+          const libraryValueCents = userMetrics.total_library_value_cents || 0;
 
           // Get previous rankings for this user
           const { data: previousEntry } = await supabase
@@ -179,7 +115,7 @@ Deno.serve(async (req) => {
           leaderboardEntries.push({
             user_id: user.id,
             snapshot_date: timestamp,
-            dust_score: dustScore,
+            dust_score: dustScore, // Using consistent dust score from user_metrics
             clean_score: cleanScore,
             total_games: totalGames,
             played_games: playedGames,
@@ -187,7 +123,7 @@ Deno.serve(async (req) => {
             library_value_cents: libraryValueCents,
             username: user.leaderboard_visibility === 'public' ? user.steam_name : null,
             is_anonymous: user.leaderboard_visibility === 'anonymous',
-            previous_ranking: previousRanking, // Store the previous ranking
+            previous_ranking: previousRanking,
           });
         } catch (err) {
           console.error(`Error processing user ${user.id}:`, err);

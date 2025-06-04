@@ -28,30 +28,28 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
   
   const isDemoMode = isDemo || contextIsDemo;
   
-  // Determine the actual score to display
+  // Determine the actual score to display - ensuring consistency with leaderboard
   const actualScore = useMemo(() => {
     if (isDemoMode) {
       // In demo mode, use demo data dust score
       return demoData.dustScore || 15420; // Fallback demo score
     }
     
-    // For authenticated users, use the passed score prop or user metrics
-    if (score !== undefined) {
-      return score;
-    }
+    // For authenticated users, use user_metrics.totalDustScore for consistency
+    // This is the SAME source the leaderboard uses
+    const consistentScore = userMetrics?.totalDustScore || 0;
     
-    return userMetrics?.totalDustScore || 0;
-  }, [score, userMetrics?.totalDustScore, isDemoMode, demoData.dustScore]);
-
-  // Add debugging for dust score source
-  console.log('DustScoreMeter Debug:', {
-    propsScore: score,
-    userMetricsScore: userMetrics?.totalDustScore,
-    demoScore: demoData.dustScore,
-    actualScore,
-    isDemoMode,
-    isLoading
-  });
+    // Add debugging to verify consistency
+    console.log('DustScoreMeter - Using consistent data source:', {
+      propsScore: score,
+      userMetricsScore: userMetrics?.totalDustScore,
+      actualScore: consistentScore,
+      source: 'user_metrics.totalDustScore',
+      isDemoMode
+    });
+    
+    return consistentScore;
+  }, [userMetrics?.totalDustScore, isDemoMode, demoData.dustScore, score]);
 
   if (isLoading && !isDemoMode) {
     return (

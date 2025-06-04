@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,8 +15,8 @@ export type LeaderboardEntry = {
   unplayed_games: number;
   library_value_cents: number | null;
   ranking: number | null;
-  previous_ranking: number | null; // Added to track previous ranking
-  rank_change: number | null;      // Added to track rank change
+  previous_ranking: number | null;
+  rank_change: number | null;
   snapshot_date: string;
   user_id: string;
 };
@@ -40,7 +41,7 @@ const PAGE_SIZE = 20;
 export const useLeaderboardData = (type: LeaderboardType) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [timeframe, setTimeframe] = useState<'all' | 'month' | 'week'>('all');
+  const [timeframe, setTimeframe] = useState<'all' | 'month' | 'week'>('week'); // Default to 'week' instead of 'all'
   const [pagination, setPagination] = useState<PaginationState>({
     cursor: null,
     hasMore: true,
@@ -108,7 +109,6 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   };
 
   const orderByColumn = type === 'dust' ? 'dust_score' : 'clean_score';
-  // Using string literal instead of comparing strings to avoid TypeScript error
   const orderDirection = 'desc';
 
   const fetchLeaderboardPage = async (
