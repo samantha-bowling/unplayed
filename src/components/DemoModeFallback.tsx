@@ -10,7 +10,7 @@ const DemoModeFallback: React.FC = () => {
   
   const handleDemoMode = () => {
     enableDemo();
-    navigate('/library');
+    navigate('/'); // Changed from '/library' to '/' (homepage)
   };
   
   return (

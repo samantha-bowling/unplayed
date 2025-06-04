@@ -91,7 +91,7 @@ const SteamLoginButton = ({
         <img
           src="/lovable-uploads/0b70a4e5-f3cb-44e0-bb0b-bf29ee038fa3.png"
           alt="Link your Steam account (not affiliated with Valve Corp.)"
-          className={`${fullWidth ? 'w-full' : 'w-auto'} h-auto relative z-10`}
+          className={`${fullWidth ? 'max-w-[200px]' : 'max-w-[160px]'} h-auto relative z-10`}
         />
       </button>
     </div>
