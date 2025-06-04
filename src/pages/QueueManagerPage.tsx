@@ -12,6 +12,7 @@ import BatchProcessingControls from "@/components/admin/BatchProcessingControls"
 import ProcessingFooter from "@/components/admin/ProcessingFooter";
 import SmartPrioritizationCard from "@/components/admin/SmartPrioritizationCard";
 import MetadataConsistencyCard from '@/components/admin/MetadataConsistencyCard';
+import HeaderImageEnhancementCard from '@/components/admin/HeaderImageEnhancementCard';
 import { useBatchProcessor } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
 import { triggerLeaderboardCalculation } from "@/utils/trigger-leaderboard-calculation";
@@ -273,6 +274,8 @@ const QueueManagerPage = () => {
           />
 
           <SmartPrioritizationCard />
+
+          <HeaderImageEnhancementCard />
 
           <Card className="bg-gradient-to-br from-blue-900/40 to-blue-700/20 border-blue-400/30">
             <CardHeader>
