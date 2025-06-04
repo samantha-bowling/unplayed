@@ -1,267 +1,312 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Grid, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ExternalLink, Search, Expand, Minimize, Filter, Grid3X3, List, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useLibraryData } from '@/hooks/useLibraryData';
-import { useRandomPicker } from '@/hooks/useRandomPicker';
-import { getBestGameImage } from '@/utils/image-utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLibraryData } from '@/hooks/use-library-data';
+import { getBestGameImageFromDbData } from '@/utils/image-utils';
+import SteamLoader from './SteamLoader';
+import GameCard from './GameCard';
 
 interface LibraryPreviewProps {
   zenModeFullScreen?: boolean;
 }
 
 const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = false }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showUnplayedOnly, setShowUnplayedOnly] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const { enterFullScreenMode, exitFullScreenMode, isFullScreenMode } = useFullScreenMode();
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { data: libraryData, isLoading } = useLibraryData();
-  const { pickRandomGame } = useRandomPicker();
+  const [limit, setLimit] = useState<number>(12);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [searchFilter, setSearchFilter] = useState<string>('');
+  const [hideIgnored, setHideIgnored] = useState<boolean>(false);
+  const [onlyUnplayed, setOnlyUnplayed] = useState<boolean>(false);
 
-  const displayData = useMemo(() => {
+  // Use the library data hook without any limits
+  const libraryDataResult = useLibraryData();
+
+  // In demo mode, use demo library data; otherwise use ALL real data (no 1000 limit)
+  const libraryGames = useMemo(() => {
     if (isDemo) {
-      return demoData.library || [];
+      // Convert demo data to the expected format
+      return demoData.library.map(game => ({
+        id: game.id,
+        name: game.name,
+        image_url: game.image,
+        header_image: game.image,
+        release_date: null,
+        metacritic_score: null,
+        genres: [],
+        categories: [],
+        userGame: {
+          id: `demo-${game.id}`,
+          game_id: game.id,
+          playtime_minutes: game.playtime,
+          hidden: false,
+          dust_score: Math.floor(Math.random() * 50) + 10,
+          last_played_date: null,
+          acquisition_date: null,
+          notes: null,
+        }
+      }));
     }
-    return libraryData || [];
-  }, [isDemo, demoData.library, libraryData]);
+    // REMOVED: No more artificial limit - use all games from library
+    return libraryDataResult.games || [];
+  }, [isDemo, demoData.library, libraryDataResult.games]);
 
+  const isLoading = isDemo ? false : libraryDataResult.isLoading;
+  const error = isDemo ? null : libraryDataResult.error;
+
+  // Apply filters to the games
   const filteredGames = useMemo(() => {
-    return displayData
-      .filter(game => {
-        const matchesSearch = !searchTerm || 
-          game.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = !showUnplayedOnly || game.playtime === 0;
-        return matchesSearch && matchesFilter;
-      })
-      .slice(0, zenModeFullScreen ? 200 : 20);
-  }, [displayData, searchTerm, showUnplayedOnly, zenModeFullScreen]);
-
-  const handleToggleFullScreen = () => {
-    if (isFullScreenMode) {
-      exitFullScreenMode();
-    } else {
-      enterFullScreenMode('library');
-    }
-  };
-
-  const handleRandomPick = () => {
-    const unplayedGames = displayData.filter(game => game.playtime === 0);
-    const gamesToPick = unplayedGames.length > 0 ? unplayedGames : displayData;
+    let filtered = [...libraryGames];
     
-    if (gamesToPick.length > 0) {
-      const randomGame = gamesToPick[Math.floor(Math.random() * gamesToPick.length)];
-      pickRandomGame({
-        id: randomGame.id,
-        name: randomGame.name,
-        image: randomGame.image
-      });
+    // Apply search filter
+    if (searchFilter) {
+      const searchLower = searchFilter.toLowerCase();
+      filtered = filtered.filter(game => 
+        game.name.toLowerCase().includes(searchLower)
+      );
     }
+
+    // Filter out ignored games if hideIgnored is true
+    if (hideIgnored) {
+      filtered = filtered.filter(game => !game.userGame.hidden);
+    }
+
+    // Filter to only unplayed games if onlyUnplayed is true
+    if (onlyUnplayed) {
+      filtered = filtered.filter(game => 
+        !game.userGame.playtime_minutes || game.userGame.playtime_minutes === 0
+      );
+    }
+
+    return filtered;
+  }, [libraryGames, searchFilter, hideIgnored, onlyUnplayed]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredGames.length / limit);
+  const startIndex = (currentPage - 1) * limit;
+  const endIndex = startIndex + limit;
+  const currentPageGames = filteredGames.slice(startIndex, endIndex);
+
+  // Memoize processed games for performance
+  const processedGames = useMemo(() => {
+    return currentPageGames.map(game => ({
+      ...game,
+      imageUrl: getBestGameImageFromDbData(game, game.id)
+    }));
+  }, [currentPageGames]);
+
+  const handleMarkAsPlayed = async (userGameId: string) => {
+    if (isDemo) {
+      console.log('Demo mode: Mark as played:', userGameId);
+      return;
+    }
+    // Implementation for marking as played
+    console.log('Mark as played:', userGameId);
   };
 
-  if (isLoading) {
-    return (
-      <div className="terminal-container">
-        <h3 className="terminal-header text-2xl mb-4">Library Preview</h3>
-        <div className="terminal-content">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-gray-700 animate-pulse rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleToggleHidden = async (userGameId: string, currentHidden: boolean) => {
+    if (isDemo) {
+      console.log('Demo mode: Toggle hidden:', userGameId, !currentHidden);
+      return;
+    }
+    // Implementation for toggling hidden
+    console.log('Toggle hidden:', userGameId, !currentHidden);
+  };
 
-  if (zenModeFullScreen) {
-    return (
-      <div className="w-full h-screen bg-background p-4 overflow-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-unplayed-mint">Library Zen Mode</h1>
-            <span className="text-gray-400">({filteredGames.length} games shown)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search games..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
-            />
-            <Button
-              onClick={() => setShowUnplayedOnly(!showUnplayedOnly)}
-              variant={showUnplayedOnly ? "default" : "outline"}
-              size="sm"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Unplayed Only
-            </Button>
-            <Button onClick={handleToggleFullScreen} size="sm">
-              <Minimize className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-3">
-          {filteredGames.map(game => (
-            <div key={game.id} className="group relative">
-              <div className="aspect-square bg-gray-800 rounded overflow-hidden">
-                <img
-                  src={getBestGameImage(null, game.image, game.id)}
-                  alt={game.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  loading="lazy"
-                />
-              </div>
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                <span className="text-white text-xs text-center px-2 leading-tight">
-                  {game.name}
-                </span>
-              </div>
-              {game.playtime === 0 && (
-                <div className="absolute top-1 right-1 w-2 h-2 bg-unplayed-mint rounded-full"></div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const handleSaveNote = async (userGameId: string, note: string) => {
+    if (isDemo) {
+      console.log('Demo mode: Save note:', userGameId, note);
+      return;
+    }
+    // Implementation for saving note
+    console.log('Save note:', userGameId, note);
+  };
+
+  const resetFilters = () => {
+    setSearchFilter('');
+    setHideIgnored(false);
+    setOnlyUnplayed(false);
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const previousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchFilter, hideIgnored, onlyUnplayed, limit]);
 
   return (
     <div className="terminal-container">
       <div className="flex items-center justify-between mb-4">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 cursor-help">
-                <h3 className="terminal-header text-2xl">Library Preview</h3>
-                <Info className="h-4 w-4 text-gray-400" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Visit your Library to see your entire collection</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
+        <h3 className="terminal-header text-2xl">Library Preview</h3>
         <div className="flex items-center gap-2">
-          {user && (
-            <Link to="/library">
-              <Button variant="outline" size="sm">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Full Library
-              </Button>
-            </Link>
-          )}
-          <Button
-            onClick={handleToggleFullScreen}
-            variant="outline"
-            size="sm"
-          >
-            <Expand className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6</SelectItem>
+                    <SelectItem value="12">12</SelectItem>
+                    <SelectItem value="24">24</SelectItem>
+                    <SelectItem value="48">48</SelectItem>
+                    <SelectItem value="96">96</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Games to show</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
-      <div className="terminal-content">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex-1">
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search your library..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-black/20 border-gray-600"
+              placeholder="Search games..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="pl-10"
             />
           </div>
-          <Button
-            onClick={() => setShowUnplayedOnly(!showUnplayedOnly)}
-            variant={showUnplayedOnly ? "default" : "outline"}
-            size="sm"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showUnplayedOnly ? "All Games" : "Unplayed Only"}
-          </Button>
-          <Button
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            variant="outline"
-            size="sm"
-          >
-            {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
-          </Button>
         </div>
 
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
-            {filteredGames.map(game => (
-              <div key={game.id} className="group relative">
-                <div className="aspect-square bg-gray-800 rounded overflow-hidden">
-                  <img
-                    src={getBestGameImage(null, game.image, game.id)}
-                    alt={game.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                  <span className="text-white text-xs text-center px-2 leading-tight">
-                    {game.name}
-                  </span>
-                </div>
-                {game.playtime === 0 && (
-                  <div className="absolute top-1 right-1 w-2 h-2 bg-unplayed-mint rounded-full"></div>
-                )}
-              </div>
-            ))}
+        {/* Filter Toggles */}
+        <div className="flex gap-2">
+          <Button
+            variant={onlyUnplayed ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyUnplayed(!onlyUnplayed)}
+          >
+            Only Unplayed
+          </Button>
+          <Button
+            variant={hideIgnored ? "default" : "outline"}
+            size="sm"
+            onClick={() => setHideIgnored(!hideIgnored)}
+          >
+            Hide Ignored
+          </Button>
+          {(searchFilter || onlyUnplayed || hideIgnored) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Results Summary */}
+      <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+        <span>
+          Showing {processedGames.length} of {filteredGames.length} games
+        </span>
+        {totalPages > 1 && (
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+        )}
+      </div>
+
+      <div className="terminal-content">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <SteamLoader message="Loading your library..." size="md" variant="secondary" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-400">
+            <p>Error loading library: {error.message}</p>
+          </div>
+        ) : processedGames.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <p>No games found matching your criteria.</p>
           </div>
         ) : (
-          <div className="space-y-2 mb-4">
-            {filteredGames.map(game => (
-              <div key={game.id} className="flex items-center gap-3 p-2 rounded bg-black/20 hover:bg-black/30 transition-colors">
-                <div className="w-12 h-12 bg-gray-800 rounded overflow-hidden flex-shrink-0">
-                  <img
-                    src={getBestGameImage(null, game.image, game.id)}
-                    alt={game.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white truncate">{game.name}</div>
-                  <div className="text-xs text-gray-400">
-                    {game.playtime === 0 ? 'Unplayed' : `${Math.round(game.playtime / 60)}h played`}
-                  </div>
-                </div>
-                {game.playtime === 0 && (
-                  <div className="w-2 h-2 bg-unplayed-mint rounded-full flex-shrink-0"></div>
-                )}
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {processedGames.map(game => (
+              <GameCard
+                key={game.userGame.id}
+                id={game.userGame.id}
+                gameId={game.id}
+                title={game.name}
+                imageUrl={game.imageUrl}
+                headerImage={game.header_image}
+                dustScore={game.userGame.dust_score}
+                playtimeMinutes={game.userGame.playtime_minutes}
+                isHidden={game.userGame.hidden}
+                notes={game.userGame.notes}
+                onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
+                onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
+                onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
+              />
             ))}
           </div>
         )}
 
-        <div className="flex justify-between items-center text-sm text-gray-400">
-          <span>Showing {filteredGames.length} of {displayData.length} games</span>
-          <div className="flex gap-2">
-            {filteredGames.length > 0 && (
-              <Button onClick={handleRandomPick} size="sm">
-                Random Pick
-              </Button>
-            )}
-            {!isDemo && (
-              <p className="text-xs text-gray-500">
-                Connect Steam to see your full library
-              </p>
-            )}
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={previousPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => goToPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
