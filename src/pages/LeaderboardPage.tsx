@@ -103,7 +103,7 @@ const LeaderboardPage = () => {
         </div>
         
         <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-300">
-          Compete with other players to see who has accumulated the most dust in their gaming library.
+          The proverbial 'Wall of Shame' highlighting players with the biggest and most neglected Steam libraries.
         </p>
 
         <div className="max-w-4xl mx-auto">
