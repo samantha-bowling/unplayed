@@ -1,8 +1,8 @@
 
 import React from 'react';
 import DustScoreMeter from './DustScoreMeter';
-import { DustTierDistribution } from '@/components/dust/DustTierDistribution';
-import { TopDustContributors } from '@/components/dust/TopDustContributors';
+import DustTierDistribution from '@/components/dust/DustTierDistribution';
+import TopDustContributors from '@/components/dust/TopDustContributors';
 
 const DustAnalysis = () => {
   return (
