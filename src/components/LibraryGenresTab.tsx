@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { BookMarked, TrendingUp, Award, SquarePlus, Pyramid } from 'lucide-react';
+import { BookMarked, TrendingUp, Award, SquarePlus, Pyramid, ChartColumnDecreasing, Pizza } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts';
@@ -68,23 +69,33 @@ const LibraryGenresTab = () => {
     played: genre.played
   }));
 
-  // Pizza data - top 8 unplayed genres with pizza-themed colors
+  // Enhanced pizza colors - more pizza-like with richer tones
   const pizzaColors = [
-    '#dc2626', // Red (tomato sauce)
-    '#ea580c', // Orange (cheese)
-    '#facc15', // Yellow (cheese/corn)
-    '#16a34a', // Green (basil/peppers)
-    '#7c2d12', // Brown (pepperoni/meat)
-    '#a16207', // Gold (cheese)
-    '#dc2626', // Red (more tomato)
-    '#15803d'  // Dark green (herbs)
+    '#dc2626', // Deep red (tomato sauce)
+    '#f97316', // Bright orange (cheddar cheese)
+    '#facc15', // Golden yellow (mozzarella)
+    '#16a34a', // Fresh green (basil/peppers)
+    '#8b5a2b', // Rich brown (pepperoni/sausage)
+    '#eab308', // Golden amber (extra cheese)
+    '#b91c1c', // Dark red (marinara)
+    '#15803d'  // Deep green (herbs/olives)
   ];
 
+  // Ensure we have exactly 8 slices for pizza appearance
   const pieData = topUnplayedGenres.slice(0, 8).map((genre, index) => ({
     name: genre.genre,
     value: genre.unplayed,
     color: pizzaColors[index % pizzaColors.length]
   }));
+
+  // If we have fewer than 8 genres, pad with small "Other" slices for visual appeal
+  while (pieData.length < 8) {
+    pieData.push({
+      name: 'Other',
+      value: 0,
+      color: pizzaColors[pieData.length % pizzaColors.length]
+    });
+  }
 
   return (
     <TooltipProvider>
@@ -179,11 +190,11 @@ const LibraryGenresTab = () => {
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Genre Distribution Bar Chart */}
+          {/* Genre Distribution Bar Chart - Updated icon and color */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <BookMarked className="h-5 w-5 text-unplayed-mint" />
+                <ChartColumnDecreasing className="h-5 w-5 text-purple-500" />
                 <span>Top Genres Distribution</span>
                 <Tooltip>
                   <TooltipTrigger>
@@ -222,18 +233,18 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          {/* unplayed Pizza */}
+          {/* Unplayed Pizza - Updated icon, tooltip, and enhanced appearance */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <SquarePlus className="h-5 w-5 text-orange-500" />
-                <span>unplayed Pizza</span>
+                <Pizza className="h-5 w-5 text-orange-500" />
+                <span>Unplayed Pizza</span>
                 <Tooltip>
                   <TooltipTrigger>
                     <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Your unplayed games served as pizza slices! Each slice represents a different genre topping.</p>
+                    <p>Mmm, pizza...</p>
                   </TooltipContent>
                 </Tooltip>
               </CardTitle>
@@ -247,8 +258,11 @@ const LibraryGenresTab = () => {
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
+                      innerRadius={20}
                       dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}`}
+                      label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
+                      stroke="#1f2937"
+                      strokeWidth={2}
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={`slice-${index}`} fill={entry.color} />
@@ -271,12 +285,12 @@ const LibraryGenresTab = () => {
 
         {/* Genre Lists */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top unplayed Genres */}
+          {/* Top Unplayed Genres */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Pyramid className="h-5 w-5 text-unplayed-red" />
-                <span>Top unplayed Genres</span>
+                <span>Top Unplayed Genres</span>
                 <Tooltip>
                   <TooltipTrigger>
                     <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
