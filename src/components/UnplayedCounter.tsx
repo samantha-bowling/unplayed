@@ -1,8 +1,9 @@
+
 import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useUserMetrics } from '@/hooks/use-user-metrics';
+import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { useAnimatedCounter } from '@/hooks/use-animated-counter';
 import {
   Tooltip,
@@ -11,7 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon, Laugh, Smile, Meh, Frown } from 'lucide-react';
-import { calculateRecentlyPlayedGames } from '@/utils/activity-insights';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
@@ -23,11 +23,11 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   compact = false,
   isDemo = false
 }: UnplayedCounterProps) => {
-  const { data: userMetrics } = useUserMetrics();
+  const { data: unplayedData } = useUnplayedData();
   const { isDemo: contextIsDemo, demoData } = useDemoMode();
   const { user } = useAuth();
 
-  // Memoized base calculations
+  // Memoized base calculations using the same data source as other components
   const calculatedData = useMemo(() => {
     const isDemoMode = isDemo || contextIsDemo;
     
@@ -45,9 +45,9 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       };
     }
     
-    // Use user metrics data (now with updated calculation version 3)
-    const actualCount = count ?? userMetrics?.unplayedGames ?? 0;
-    const totalGames = userMetrics?.totalGames ?? 0;
+    // Use the same real-time data source as other components
+    const actualCount = count ?? unplayedData?.unplayedGames ?? 0;
+    const totalGames = unplayedData?.totalGames ?? 0;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     
     return {
@@ -56,7 +56,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       unplayedPercentage,
       isDemoMode
     };
-  }, [count, userMetrics, isDemo, contextIsDemo, demoData]);
+  }, [count, unplayedData, isDemo, contextIsDemo, demoData]);
 
   // Animated counters with demo-aware speed
   const animatedCount = useAnimatedCounter({
