@@ -53,6 +53,39 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
           <h3 className="text-xl font-bold text-unplayed-amber mb-4">FAQ (Frequently Avoided Questions)</h3>
           
           <Accordion type="single" collapsible className="w-full">
+
+            <AccordionItem value="accuracy">
+              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
+                How accurate is this?
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-gray-300">
+                <p>
+                  We use Steam's public Web APIs to give you a bird's-eye view of your library. It's not 100% precise, but it's a fun way to look at your data. ¯\\(ツ)/¯ Did somebody say unplayed Pizza?
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="supabase">
+              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
+                What's up with that supabase.unplayed.wtf URL when I login?
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-gray-300">
+                <p>
+                  We use Supabase for our database and authentication. We don't know how it all works exactly. Maybe magic.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="affiliation">
+              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
+                Is this affiliated with Valve/Steam?
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-gray-300">
+                <p>
+                  Nope. We just love Steam (and its APIs). All trademarks are owned by their respective hoarders—I mean holders.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
             
             <AccordionItem value="dust-score">
               <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
@@ -110,17 +143,6 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionContent>
             </AccordionItem>
             
-            <AccordionItem value="accuracy">
-              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                How accurate is this?
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                <p>
-                  We use Steam's public Web APIs to give you a bird's-eye view of your library. It's not 100% precise, but it's fun and close enough. ¯\\(ツ)/¯ Did somebody say unplayed Pizza?
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-            
             <AccordionItem value="steam-account">
               <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
                 Why do you need my Steam account?
@@ -142,28 +164,6 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               <AccordionContent className="text-sm text-gray-300">
                 <p>
                   If you're Steam-shy or just peeking around, Demo Mode lets you experience unplayed with some fake-but-familiar data.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-            
-            <AccordionItem value="international">
-              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                What's up with that supabase.unplayed.wtf URL?
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                <p>
-                  We use Supabase for our database and authentication. We don't know how it all works exactly. Maybe magic.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-            
-            <AccordionItem value="affiliation">
-              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                Is this affiliated with Valve/Steam?
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                <p>
-                  Nope. We just love Steam (and its APIs). All trademarks are owned by their respective hoarders—I mean holders.
                 </p>
               </AccordionContent>
             </AccordionItem>
