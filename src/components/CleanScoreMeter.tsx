@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -70,9 +69,9 @@ const CleanScoreMeter = ({
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p>
-                Clean Score measures how well you're engaging with your game library based on
-                completion rate, engagement depth, and recent activity.
-                Higher scores indicate more active playing habits.
+                Clean Score measures how well you're engaging with your game library.
+                Based on: Backlog Progress (35%), Recent Activity (30%), Session Quality (20%), Genre Variety (15%).
+                Recently played includes any launched game in the last 30 days.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -124,40 +123,51 @@ const CleanScoreMeter = ({
         <div className="text-center mt-2">
           <p className="text-xl font-medium" style={{ color: getTierColor() }}>{getTierName()}</p>
           
-          {/* Simplified Clean Streak Display */}
+          {/* Updated Clean Streak Display with clarifying tooltip */}
           {hasCleanStreak && (
-            <div className="flex items-center justify-center gap-2 mt-3 p-2 bg-black/20 rounded-lg">
-              <Target 
-                size={18} 
-                className="text-cyan-400"
-              />
-              <div className="text-left">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-cyan-400">
-                    Clean Streak
-                  </span>
-                  <span className="text-sm font-bold text-cyan-400">
-                    {cleanStreak} {cleanStreak === 1 ? 'day' : 'days'}
-                  </span>
-                </div>
-                <span className="text-xs text-gray-400">Consecutive days with 30+ min playtime</span>
-              </div>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center gap-2 mt-3 p-2 bg-black/20 rounded-lg cursor-help">
+                    <Target size={18} className="text-cyan-400" />
+                    <div className="text-left">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium text-cyan-400">Clean Streak</span>
+                        <span className="text-sm font-bold text-cyan-400">
+                          {cleanStreak} {cleanStreak === 1 ? 'day' : 'days'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400">Active gaming consistency</span>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Consecutive period of gaming activity. Based on any playtime in recent days.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
-          {/* Recently Played Unplayed Games */}
+          {/* Recently Played Unplayed Games with clarifying tooltip */}
           {recentlyPlayedUnplayed > 0 && (
-            <div className="flex items-center justify-center gap-2 mt-2 p-2 bg-black/20 rounded-lg">
-              <span className="text-purple-400">⚡</span>
-              <div className="text-left">
-                <div className="text-sm font-medium text-purple-400">
-                  Backlog Progress: {recentlyPlayedUnplayed}
-                </div>
-                <div className="text-xs text-gray-400">
-                  Games conquered from your backlog
-                </div>
-              </div>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center gap-2 mt-2 p-2 bg-black/20 rounded-lg cursor-help">
+                    <span className="text-purple-400">⚡</span>
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-purple-400">
+                        Backlog Progress: {recentlyPlayedUnplayed}
+                      </div>
+                      <div className="text-xs text-gray-400">Games conquered from your backlog</div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Games you've recently started playing from your unplayed collection</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           <p className="text-sm text-gray-400 mt-3">

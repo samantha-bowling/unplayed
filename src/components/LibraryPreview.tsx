@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Grid, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,10 +24,10 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   const [hideIgnored, setHideIgnored] = useState<boolean>(false);
   const [onlyUnplayed, setOnlyUnplayed] = useState<boolean>(false);
 
-  // Use the library data hook only when not in demo mode
+  // Use the library data hook without any limits
   const libraryDataResult = useLibraryData();
 
-  // In demo mode, use demo library data; otherwise use real data
+  // In demo mode, use demo library data; otherwise use ALL real data (no 1000 limit)
   const libraryGames = useMemo(() => {
     if (isDemo) {
       // Convert demo data to the expected format
@@ -46,13 +45,14 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
           game_id: game.id,
           playtime_minutes: game.playtime,
           hidden: false,
-          dust_score: Math.floor(Math.random() * 50) + 10, // Random dust score for demo
+          dust_score: Math.floor(Math.random() * 50) + 10,
           last_played_date: null,
           acquisition_date: null,
           notes: null,
         }
       }));
     }
+    // REMOVED: No more artificial limit - use all games from library
     return libraryDataResult.games || [];
   }, [isDemo, demoData.library, libraryDataResult.games]);
 

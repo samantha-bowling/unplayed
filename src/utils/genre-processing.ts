@@ -51,7 +51,8 @@ const getGenreColor = (genre: string, index: number): string => {
 };
 
 /**
- * Efficiently processes genres with consolidation of genres under 10%
+ * STANDARDIZED: Processes genres with consistent 8-slice pizza (top 7 + Other)
+ * Ensures all genre displays across the app show exactly 8 slices
  */
 export const processGenres = (genreCounts: Map<string, number>): GenreData[] => {
   // Convert and sort in single operation
@@ -60,15 +61,14 @@ export const processGenres = (genreCounts: Map<string, number>): GenreData[] => 
 
   const totalGames = Array.from(genreCounts.values()).reduce((sum, count) => sum + count, 0);
   
-  // Find genres that represent 10% or more
+  // STANDARDIZED: Always take top 7 genres, rest go to "Other"
+  const TOP_GENRE_COUNT = 7;
   const significantGenres: GenreData[] = [];
   let otherCount = 0;
 
   sortedGenres.forEach(([name, value], index) => {
-    const percentage = (value / totalGames) * 100;
-    
-    if (percentage >= 10 && significantGenres.length < 6) {
-      // Keep significant genres (10% or more) up to 6 total
+    if (index < TOP_GENRE_COUNT) {
+      // Keep top 7 genres
       significantGenres.push({
         name,
         value,
@@ -80,16 +80,23 @@ export const processGenres = (genreCounts: Map<string, number>): GenreData[] => 
     }
   });
 
-  // Add "Other" category if there are any genres to consolidate
-  if (otherCount > 0) {
+  // ALWAYS add "Other" category to ensure exactly 8 slices (even if 0 games)
+  significantGenres.push({
+    name: 'Other',
+    value: otherCount,
+    color: GENRE_COLORS.Other || '#95a5a6'
+  });
+
+  // ENSURE exactly 8 slices: if we have less than 7 main genres, pad with empty "Other" categories
+  while (significantGenres.length < 8) {
     significantGenres.push({
       name: 'Other',
-      value: otherCount,
+      value: 0,
       color: GENRE_COLORS.Other || '#95a5a6'
     });
   }
 
-  return significantGenres;
+  return significantGenres.slice(0, 8); // Guarantee exactly 8 slices
 };
 
 /**
@@ -100,8 +107,11 @@ export const countGenres = (data: any[]): Map<string, number> => {
   
   for (let i = 0; i < data.length; i++) {
     const item = data[i];
-    if (item.games?.genres) {
-      item.games.genres.forEach((genre: string) => {
+    // Handle both direct games data and nested games structure
+    const genres = item.games?.genres || item.genres || [];
+    
+    if (Array.isArray(genres)) {
+      genres.forEach((genre: string) => {
         genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
       });
     }
