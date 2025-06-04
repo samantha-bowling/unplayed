@@ -1,7 +1,8 @@
 
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
-import { calculateCleanScore, calculateRecentlyPlayedGames } from './clean-score-utils';
-import { processGenres, countGenres } from './genre-processing';
+import { calculateCleanScore } from './clean-score-utils';
+import { calculateRecentlyPlayedGames, processGenres, countGenres } from './genre-processing';
+import { calculateRecentlyPlayedGames as calculateRecentlyPlayed } from './activity-insights';
 
 /**
  * Transforms user game data into a structured format for the dashboard.
@@ -113,8 +114,8 @@ export const transformUserGameData = (
     playtime: game.playtimeMinutes
   }));
 
-  // Calculate recently played games count using simplified method
-  const recentlyPlayedCount = calculateRecentlyPlayedGames(gamesList);
+  // Calculate recently played games count using standardized method from activity-insights
+  const recentlyPlayedCount = calculateRecentlyPlayed(gamesList);
 
   // Calculate total potential gameplay hours
   const potentialGameplayHours = gamesList.reduce((sum, game) => {
