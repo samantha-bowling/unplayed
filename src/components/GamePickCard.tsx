@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { GamePick } from '@/types/picks.types';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { Clock } from 'lucide-react';
-import { getBestGameImage } from '@/utils/image-utils';
+import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 // Categories for the mood-based filtering with icons
@@ -39,22 +39,20 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
     setImageError(true);
   };
 
-  // Get the best available image with fallback
-  const gameImage = imageError ? '/placeholder.svg' : getBestGameImage(
-    game.header_image || null, 
-    game.image || null, 
-    game.id
-  );
+  // Get the best available image with fallback using the same logic as library games
+  const gameImage = imageError ? '/placeholder.svg' : getBestGameImageFromDbData(game, game.id);
 
   if (compact) {
     return (
       <div className="bg-black/30 rounded p-2 text-sm flex items-center">
-        <img 
-          src={gameImage} 
-          alt={game.name} 
-          className="w-8 h-8 object-cover rounded mr-2" 
-          onError={handleImageError}
-        />
+        <AspectRatio ratio={16 / 9} className="w-12 h-auto mr-2">
+          <img 
+            src={gameImage} 
+            alt={game.name} 
+            className="w-full h-full object-cover rounded" 
+            onError={handleImageError}
+          />
+        </AspectRatio>
         <div className="overflow-hidden">
           <span className="text-gray-300 truncate block">{game.name}</span>
           {pick && (

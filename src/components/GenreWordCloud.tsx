@@ -54,7 +54,7 @@ const GenreWordCloud = () => {
   const getRainbowClass = (index: number) => rainbowClasses[index % rainbowClasses.length];
 
   return (
-    <Card className="bg-black/20 border border-gray-700">
+    <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Worm className="h-5 w-5 text-unplayed-mint" />
