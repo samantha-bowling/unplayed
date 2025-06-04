@@ -19,6 +19,9 @@ const PIZZA_COLORS = [
   '#708090'  // Other (slate gray)
 ];
 
+// Export for compatibility with existing components
+export const RAINBOW_COLORS = PIZZA_COLORS;
+
 /**
  * Process genres into 8 slices: top 7 + "Other"
  */

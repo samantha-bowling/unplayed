@@ -7,6 +7,7 @@ import { Clock, Trophy, TrendingUp, Calendar, Users, Gamepad2, Star, Target, Dol
 import { useLibraryData } from '@/hooks/use-library-data';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
+import { getActivityInsights } from '@/utils/activity-insights';
 import {
   Tooltip,
   TooltipContent,
@@ -43,16 +44,18 @@ const LibraryOverview = () => {
   const playedGamesCount = userMetrics?.playedGames || 0;
   const unplayedGames = userMetrics?.unplayedGames || 0;
   const totalPlaytimeHours = userMetrics?.totalPlaytimeHours || 0;
-  const recentlyActiveGames = userMetrics?.recentlyPlayedCount || 0;
   
   // Calculate completion rate from Phase 2 metrics
   const completionRate = totalGames > 0 ? Math.round((playedGamesCount / totalGames) * 100) : 0;
 
-  // Use Phase 1 data for detailed game analysis (top played games, value champion, etc.)
+  // Use Phase 1 data for detailed game analysis (top played games, activity insights, etc.)
   const playedGames = libraryGames.filter(game => {
     const playtime = game.userGame?.playtime_minutes || 0;
     return playtime > 0;
   });
+
+  // Get activity insights using the new utility with consistent 30+ minute requirement
+  const activityInsights = getActivityInsights(libraryGames);
 
   // Get top 3 most played games from Phase 1 data
   const topPlayedGames = [...playedGames]
@@ -62,73 +65,6 @@ const LibraryOverview = () => {
       return playtimeB - playtimeA;
     })
     .slice(0, 3);
-
-  // Calculate Value Champion from Phase 1 data (detailed analysis)
-  const calculateValueChampion = () => {
-    const gamesWithPriceAndPlaytime = playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      const price = game.price_cents || 0;
-      return playtime > 0 && price > 0;
-    });
-
-    if (gamesWithPriceAndPlaytime.length === 0) return null;
-
-    const valueChampion = gamesWithPriceAndPlaytime.reduce((best, game) => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      const price = game.price_cents || 0;
-      const valueRatio = playtime / (price / 100); // minutes per dollar
-      
-      const bestPlaytime = best.userGame?.playtime_minutes || 0;
-      const bestPrice = best.price_cents || 0;
-      const bestRatio = bestPlaytime / (bestPrice / 100);
-      
-      return valueRatio > bestRatio ? game : best;
-    });
-
-    const championPlaytime = valueChampion.userGame?.playtime_minutes || 0;
-    const championPrice = valueChampion.price_cents || 0;
-    const ratio = championPlaytime / (championPrice / 100);
-    
-    return {
-      game: valueChampion,
-      ratio: Math.round(ratio * 10) / 10 // Round to 1 decimal
-    };
-  };
-
-  // Calculate Gaming Style from Phase 1 data (detailed analysis)
-  const calculateGamingStyle = () => {
-    if (playedGames.length === 0) return { style: 'No Data', percentage: 0 };
-
-    const shortSessions = playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime > 0 && playtime < 120; // Less than 2 hours
-    }).length;
-
-    const longSessions = playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime >= 300; // 5+ hours
-    }).length;
-
-    if (longSessions > shortSessions) {
-      return { 
-        style: 'Deep Diver', 
-        percentage: Math.round((longSessions / playedGames.length) * 100)
-      };
-    } else if (shortSessions > longSessions) {
-      return { 
-        style: 'Quick Explorer', 
-        percentage: Math.round((shortSessions / playedGames.length) * 100)
-      };
-    } else {
-      return { 
-        style: 'Balanced', 
-        percentage: 50
-      };
-    }
-  };
-
-  const valueChampion = calculateValueChampion();
-  const gamingStyle = calculateGamingStyle();
 
   // Calculate playtime distribution using Phase 1 data for detailed breakdown
   const playtimeDistribution = {
@@ -173,10 +109,10 @@ const LibraryOverview = () => {
       playedGamesCount,
       unplayedGames,
       totalPlaytimeHours,
-      recentlyActiveGames
     },
     phase1GameCount: libraryGames.length,
-    phase1PlayedCount: playedGames.length
+    phase1PlayedCount: playedGames.length,
+    activityInsights
   });
 
   return (
@@ -344,7 +280,7 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Activity Insights - Using Phase 2 metrics with Phase 1 analysis */}
+          {/* Activity Insights - Using new activity-insights utility */}
           <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -357,14 +293,14 @@ const LibraryOverview = () => {
                 <div className="flex items-center space-x-2">
                   <div>
                     <p className="text-sm text-gray-400">Recently Active Games</p>
-                    <p className="text-lg font-semibold text-white">{recentlyActiveGames}</p>
+                    <p className="text-lg font-semibold text-white">{activityInsights.recentlyActiveGames}</p>
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Games you've played in the last 30 days</p>
+                      <p>Games with 30+ minutes playtime that you've played in the last 30 days</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -376,8 +312,13 @@ const LibraryOverview = () => {
                   <div>
                     <p className="text-sm text-gray-400">Value Champion</p>
                     <p className="text-lg font-semibold text-white">
-                      {valueChampion ? `${valueChampion.ratio} min/$` : 'No Data'}
+                      {activityInsights.valueChampion ? `${activityInsights.valueChampion.ratio} min/$` : 'No Data'}
                     </p>
+                    {activityInsights.valueChampion && (
+                      <p className="text-xs text-gray-500 truncate max-w-[200px]" title={activityInsights.valueChampion.gameName}>
+                        {activityInsights.valueChampion.gameName}
+                      </p>
+                    )}
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -395,7 +336,7 @@ const LibraryOverview = () => {
                 <div className="flex items-center space-x-2">
                   <div>
                     <p className="text-sm text-gray-400">Gaming Style</p>
-                    <p className="text-lg font-semibold text-white">{gamingStyle.style}</p>
+                    <p className="text-lg font-semibold text-white">{activityInsights.gamingStyle.style}</p>
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -411,8 +352,8 @@ const LibraryOverview = () => {
               
               <div className="mt-4 p-3 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded">
                 <p className="text-sm text-unplayed-mint">
-                  {recentlyActiveGames > 0 
-                    ? `You've been active with ${recentlyActiveGames} games in the last 30 days. Keep it up!`
+                  {activityInsights.recentlyActiveGames > 0 
+                    ? `You've been active with ${activityInsights.recentlyActiveGames} games in the last 30 days. Keep it up!`
                     : "No recent activity detected. Time to dive into your library!"
                   }
                 </p>
