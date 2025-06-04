@@ -12,23 +12,23 @@ const SpendingInsights = () => {
   const { data: spendingData } = useUnifiedSpendingDataV2();
   const { data: genreStats } = useGenreStats();
 
-  // Prepare data for Free vs Paid breakdown
+  // Prepare data for Free vs Paid breakdown with Pac-Man styling
   const libraryCompositionData = [
-    { 
-      name: 'Free Games', 
-      value: spendingData.freeGames, 
-      color: '#10B981',
-      percentage: ((spendingData.freeGames / spendingData.totalGames) * 100).toFixed(1)
-    },
     { 
       name: 'Paid Games', 
       value: spendingData.paidGames, 
-      color: '#A3F7BF',
+      color: '#FACC15', // Yellow for Pac-Man
       percentage: ((spendingData.paidGames / spendingData.totalGames) * 100).toFixed(1)
+    },
+    { 
+      name: 'Free Games', 
+      value: spendingData.freeGames, 
+      color: '#1F2937', // Dark gray to blend with background (Pac-Man mouth)
+      percentage: ((spendingData.freeGames / spendingData.totalGames) * 100).toFixed(1)
     }
   ];
 
-  // Prepare top genre spending data (using top 6 genres)
+  // Prepare top genre spending data with dynamic colors
   const topGenreSpending = genreStats
     ?.slice(0, 6)
     .map(genre => ({
@@ -56,11 +56,11 @@ const SpendingInsights = () => {
     <div className="space-y-6">
       {/* Top Row - Library Composition and Savings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Library Composition */}
+        {/* Library Composition - Pac-Man Style */}
         <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
           <CardHeader>
-            <CardTitle className="flex items-center text-unplayed-mint">
-              <Gamepad2 className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-[#FAFAFA]">
+              <Gamepad2 className="w-5 h-5 mr-2 text-blue-500" />
               Library Composition
             </CardTitle>
             <p className="text-sm text-gray-400">
@@ -75,6 +75,8 @@ const SpendingInsights = () => {
                     data={libraryCompositionData}
                     cx="50%"
                     cy="50%"
+                    startAngle={45}
+                    endAngle={405}
                     outerRadius={80}
                     dataKey="value"
                     label={({ name, percentage }) => `${name}: ${percentage}%`}
@@ -101,8 +103,8 @@ const SpendingInsights = () => {
         {/* Savings Summary */}
         <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
           <CardHeader>
-            <CardTitle className="flex items-center text-unplayed-mint">
-              <Gift className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-[#FAFAFA]">
+              <Gift className="w-5 h-5 mr-2 text-green-500" />
               Your Savings
             </CardTitle>
             <p className="text-sm text-gray-400">
@@ -148,8 +150,8 @@ const SpendingInsights = () => {
       {topGenreSpending.length > 0 && (
         <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
           <CardHeader>
-            <CardTitle className="flex items-center text-unplayed-mint">
-              <TrendingUp className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-[#FAFAFA]">
+              <TrendingUp className="w-5 h-5 mr-2 text-purple-500" />
               Top Genres in Your Library
             </CardTitle>
             <p className="text-sm text-gray-400">
@@ -177,9 +179,12 @@ const SpendingInsights = () => {
                   <Tooltip content={<CustomTooltip />} />
                   <Bar 
                     dataKey="games" 
-                    fill="#A3F7BF"
                     radius={[4, 4, 0, 0]}
-                  />
+                  >
+                    {topGenreSpending.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, DollarSign, RefreshCw, AlertCircle, Info } from 'lucide-react';
+import { Loader2, DollarSign, RefreshCw, AlertCircle, Info, HandCoins } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import CurrencyAmount from '@/components/ui/currency-amount';
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
@@ -54,7 +54,8 @@ const SpendingSummary = () => {
       <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-unplayed-mint">
+            <CardTitle className="text-2xl font-bold text-[#FAFAFA] flex items-center">
+              <HandCoins className="w-6 h-6 mr-2 text-yellow-500" />
               Your Steam Library Value
             </CardTitle>
             <TooltipProvider>
@@ -136,8 +137,8 @@ const SpendingSummary = () => {
       {/* Data Quality & Methodology */}
       <Card className="bg-black/20 border border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center text-lg text-gray-300">
-            <Info className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center text-lg text-[#FAFAFA]">
+            <Info className="w-5 h-5 mr-2 text-blue-400" />
             Data Quality & Methodology
           </CardTitle>
         </CardHeader>

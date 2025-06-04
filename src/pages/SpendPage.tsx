@@ -76,14 +76,6 @@ const SpendPage = () => {
               </TabsContent>
               
               <TabsContent value="insights" className="space-y-6">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-unplayed-mint mb-2">
-                    Library Insights
-                  </h2>
-                  <p className="text-gray-400">
-                    Analysis of {spendingData.totalGames.toLocaleString()} games in your Steam library
-                  </p>
-                </div>
                 <SpendingInsights />
               </TabsContent>
             </Tabs>
