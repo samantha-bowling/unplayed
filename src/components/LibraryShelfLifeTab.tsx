@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -123,7 +124,7 @@ const LibraryShelfLifeTab = () => {
       <div className="space-y-6">
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -142,7 +143,7 @@ const LibraryShelfLifeTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -161,7 +162,7 @@ const LibraryShelfLifeTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -169,18 +170,18 @@ const LibraryShelfLifeTab = () => {
                     <TrendingDown className="h-5 w-5 text-unplayed-red" />
                     <div>
                       <p className="text-2xl font-bold text-white">{shelfLifeStats.agingUnplayedGames.length}</p>
-                      <p className="text-sm text-gray-400">Aging Unplayed</p>
+                      <p className="text-sm text-gray-400">Aging unplayed</p>
                     </div>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Unplayed games that are 3+ years old since release</p>
+                  <p>unplayed games that are 3+ years old since release</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -203,7 +204,7 @@ const LibraryShelfLifeTab = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Games by Decade */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-green-400" />
@@ -243,7 +244,7 @@ const LibraryShelfLifeTab = () => {
           </Card>
 
           {/* Age Distribution */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="h-5 w-5 text-blue-400" />

@@ -99,7 +99,7 @@ const LibraryGenresTab = () => {
 
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -118,7 +118,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -137,7 +137,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -156,7 +156,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -181,7 +181,7 @@ const LibraryGenresTab = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Genre Distribution Bar Chart */}
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <BookMarked className="h-5 w-5 text-unplayed-mint" />
@@ -224,7 +224,7 @@ const LibraryGenresTab = () => {
           </Card>
 
           {/* unplayed Pizza */}
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <SquarePlus className="h-5 w-5 text-orange-500" />
@@ -273,7 +273,7 @@ const LibraryGenresTab = () => {
         {/* Genre Lists */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top unplayed Genres */}
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Pyramid className="h-5 w-5 text-unplayed-red" />
@@ -309,7 +309,7 @@ const LibraryGenresTab = () => {
           </Card>
 
           {/* Most Niche Genres */}
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <Card className="bg-black/20 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Award className="h-5 w-5 text-unplayed-amber" />
@@ -345,8 +345,10 @@ const LibraryGenresTab = () => {
           </Card>
         </div>
 
-        {/* Genre Word Cloud */}
-        <GenreWordCloud />
+        {/* Genre Word Cloud with Glow */}
+        <div className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300 rounded-lg p-6">
+          <GenreWordCloud />
+        </div>
       </div>
     </TooltipProvider>
   );

@@ -17,7 +17,9 @@ const UnplayedPacMan = () => {
   
   // Use the smaller percentage for the mouth opening
   const mouthPercentage = Math.min(playedPercentage, unplayedPercentage);
-  const mouthAngle = (mouthPercentage / 100) * 60; // Max 60 degree mouth opening
+  
+  // Convert mouth percentage to angle (0-90 degrees max)
+  const mouthAngle = (mouthPercentage / 100) * 90;
 
   if (isLoading) {
     return (
@@ -40,38 +42,56 @@ const UnplayedPacMan = () => {
         </p>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-6">
-        <div className="relative w-64 h-64 flex items-center justify-center">
+        <div className="relative w-80 h-64 flex items-center justify-center">
           {/* Blinking dots on the left */}
-          <div className="absolute left-8 top-1/2 transform -translate-y-1/2 space-y-4">
-            <div className="w-3 h-3 bg-yellow-300 rounded-full animate-pulse pacman-dot" style={{ animationDelay: '0s' }} />
-            <div className="w-3 h-3 bg-yellow-300 rounded-full animate-pulse pacman-dot" style={{ animationDelay: '0.5s' }} />
-            <div className="w-3 h-3 bg-yellow-300 rounded-full animate-pulse pacman-dot" style={{ animationDelay: '1s' }} />
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col space-y-6">
+            <div 
+              className="w-4 h-4 bg-yellow-300 rounded-full animate-pulse" 
+              style={{ animationDelay: '0s', animationDuration: '1.5s' }} 
+            />
+            <div 
+              className="w-4 h-4 bg-yellow-300 rounded-full animate-pulse" 
+              style={{ animationDelay: '0.5s', animationDuration: '1.5s' }} 
+            />
+            <div 
+              className="w-4 h-4 bg-yellow-300 rounded-full animate-pulse" 
+              style={{ animationDelay: '1s', animationDuration: '1.5s' }} 
+            />
           </div>
 
           {/* Pac-Man Circle */}
           <div className="relative">
-            <svg width="160" height="160" viewBox="0 0 160 160" className="transform rotate-0">
-              {/* Pac-Man body with mouth */}
-              <path
-                d={`M 80 80 L 80 20 A 60 60 0 1 1 80 140 Z`}
-                fill="#FFD700"
-                stroke="#FFA500"
-                strokeWidth="3"
+            <svg width="120" height="120" viewBox="0 0 120 120" className="transform">
+              {/* Pac-Man body - perfect circle with mouth cut out */}
+              <defs>
+                <clipPath id="pacmanMouth">
+                  <polygon points={`60,60 60,${60 - Math.cos(mouthAngle * Math.PI / 180) * 50} ${60 + Math.sin(mouthAngle * Math.PI / 180) * 50},${60 - Math.cos(mouthAngle * Math.PI / 180) * 50} 110,60 ${60 + Math.sin(mouthAngle * Math.PI / 180) * 50},${60 + Math.cos(mouthAngle * Math.PI / 180) * 50} 60,${60 + Math.cos(mouthAngle * Math.PI / 180) * 50}`} />
+                </clipPath>
+              </defs>
+              
+              {/* Full circle */}
+              <circle 
+                cx="60" 
+                cy="60" 
+                r="50" 
+                fill="#FFD700" 
+                stroke="#FFA500" 
+                strokeWidth="2"
+                clipPath="url(#pacmanMouth)"
                 className="drop-shadow-lg"
-                style={{
-                  clipPath: `polygon(50% 50%, 50% 0%, ${50 + mouthAngle}% ${50 - mouthAngle}%, 100% 0%, 100% 100%, ${50 + mouthAngle}% ${50 + mouthAngle}%, 50% 100%)`
-                }}
               />
+              
               {/* Eye */}
-              <circle cx="65" cy="45" r="6" fill="#000" />
+              <circle cx="50" cy="35" r="4" fill="#000" />
             </svg>
           </div>
 
-          {/* Bouncing Cherry */}
-          <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+          {/* Bouncing Cherry on the right */}
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
             <Cherry 
-              className="w-8 h-8 text-red-500 cherry-bounce cherry-glow" 
+              className="w-8 h-8 text-red-500 animate-bounce" 
               fill="currentColor"
+              style={{ animationDuration: '2s' }}
             />
           </div>
         </div>
@@ -87,7 +107,7 @@ const UnplayedPacMan = () => {
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-unplayed-red">{unplayedPercentage}%</div>
-            <div className="text-sm text-gray-400">Unplayed</div>
+            <div className="text-sm text-gray-400">unplayed</div>
             <div className="text-xs text-gray-500">
               {userMetrics?.unplayedGames || 0} games
             </div>

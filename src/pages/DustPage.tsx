@@ -252,15 +252,18 @@ const DustPage = () => {
                 </TabsContent>
                 
                 <TabsContent value="analysis" className="space-y-4">
+                  {/* Single column layout for Analysis */}
+                  <DustScorePerGame 
+                    avgDustScore={processedData.averageDustScore}
+                    totalGames={processedData.totalGames}
+                    unplayedGames={processedData.unplayedGames}
+                  />
+                  
+                  {/* Two column layout below for Distribution and Pac-Man */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DustScorePerGame 
-                      avgDustScore={processedData.averageDustScore}
-                      totalGames={processedData.totalGames}
-                      unplayedGames={processedData.unplayedGames}
-                    />
                     <DustTierDistribution />
+                    <UnplayedPacMan />
                   </div>
-                  <UnplayedPacMan />
                 </TabsContent>
               </Tabs>
             </>

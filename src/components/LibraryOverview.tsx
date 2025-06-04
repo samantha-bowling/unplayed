@@ -3,426 +3,257 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Trophy, TrendingUp, Calendar, Users, Gamepad2, Star, Target, DollarSign, Zap, HelpCircle } from 'lucide-react';
+import { GamepadIcon, Clock, Trophy, Star, DollarSign, Calendar, Archive, Gamepad2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
-import { useUserMetrics } from '@/hooks/use-user-metrics';
-import { getBestGameImageFromDbData } from '@/utils/image-utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import GenreGalaxy from './GenreGalaxy';
+import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
+import { formatCurrency } from '@/lib/utils';
 
 const LibraryOverview = () => {
-  const { games: libraryGames, isLoading: libraryLoading } = useLibraryData();
-  const { data: userMetrics, isLoading: metricsLoading } = useUserMetrics();
+  const { games: libraryGames } = useLibraryData();
+  const { data: spendingData } = useUnifiedSpendingDataV2();
 
-  const isLoading = libraryLoading || metricsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="bg-black/20 border border-gray-700">
-            <CardContent className="p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-700 rounded w-1/2"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  // Use Phase 2 metrics for aggregate statistics
-  const totalGames = userMetrics?.totalGames || 0;
-  const playedGamesCount = userMetrics?.playedGames || 0;
-  const unplayedGames = userMetrics?.unplayedGames || 0;
-  const totalPlaytimeHours = userMetrics?.totalPlaytimeHours || 0;
-  const recentlyActiveGames = userMetrics?.recentlyPlayedCount || 0;
-  
-  // Calculate completion rate from Phase 2 metrics
-  const completionRate = totalGames > 0 ? Math.round((playedGamesCount / totalGames) * 100) : 0;
-
-  // Use Phase 1 data for detailed game analysis (top played games, value champion, etc.)
-  const playedGames = libraryGames.filter(game => {
-    const playtime = game.userGame?.playtime_minutes || 0;
-    return playtime > 0;
-  });
-
-  // Get top 3 most played games from Phase 1 data
-  const topPlayedGames = [...playedGames]
-    .sort((a, b) => {
-      const playtimeA = a.userGame?.playtime_minutes || 0;
-      const playtimeB = b.userGame?.playtime_minutes || 0;
-      return playtimeB - playtimeA;
-    })
-    .slice(0, 3);
-
-  // Calculate Value Champion from Phase 1 data (detailed analysis)
-  const calculateValueChampion = () => {
-    const gamesWithPriceAndPlaytime = playedGames.filter(game => {
+  // Calculate overview statistics
+  const stats = React.useMemo(() => {
+    const totalGames = libraryGames.length;
+    const unplayedGames = libraryGames.filter(game => {
       const playtime = game.userGame?.playtime_minutes || 0;
-      const price = game.price_cents || 0;
-      return playtime > 0 && price > 0;
-    });
+      return playtime === 0;
+    }).length;
+    const playedGames = totalGames - unplayedGames;
 
-    if (gamesWithPriceAndPlaytime.length === 0) return null;
+    // Calculate total playtime
+    const totalPlaytimeMinutes = libraryGames.reduce((sum, game) => {
+      return sum + (game.userGame?.playtime_minutes || 0);
+    }, 0);
+    const totalPlaytimeHours = Math.round(totalPlaytimeMinutes / 60);
 
-    const valueChampion = gamesWithPriceAndPlaytime.reduce((best, game) => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      const price = game.price_cents || 0;
-      const valueRatio = playtime / (price / 100); // minutes per dollar
-      
-      const bestPlaytime = best.userGame?.playtime_minutes || 0;
-      const bestPrice = best.price_cents || 0;
-      const bestRatio = bestPlaytime / (bestPrice / 100);
-      
-      return valueRatio > bestRatio ? game : best;
-    });
+    // Calculate average playtime for played games
+    const playedGamesWithTime = libraryGames.filter(game => (game.userGame?.playtime_minutes || 0) > 0);
+    const avgPlaytimeHours = playedGamesWithTime.length > 0 
+      ? Math.round(playedGamesWithTime.reduce((sum, game) => sum + (game.userGame?.playtime_minutes || 0), 0) / playedGamesWithTime.length / 60)
+      : 0;
 
-    const championPlaytime = valueChampion.userGame?.playtime_minutes || 0;
-    const championPrice = valueChampion.price_cents || 0;
-    const ratio = championPlaytime / (championPrice / 100);
-    
-    return {
-      game: valueChampion,
-      ratio: Math.round(ratio * 10) / 10 // Round to 1 decimal
+    // Calculate games by release decade
+    const currentYear = new Date().getFullYear();
+    const gamesByAge = {
+      recent: 0, // 0-2 years
+      modern: 0, // 3-5 years
+      mature: 0, // 6-10 years
+      vintage: 0, // 11+ years
+      unknown: 0
     };
-  };
 
-  // Calculate Gaming Style from Phase 1 data (detailed analysis)
-  const calculateGamingStyle = () => {
-    if (playedGames.length === 0) return { style: 'No Data', percentage: 0 };
-
-    const shortSessions = playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime > 0 && playtime < 120; // Less than 2 hours
-    }).length;
-
-    const longSessions = playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime >= 300; // 5+ hours
-    }).length;
-
-    if (longSessions > shortSessions) {
-      return { 
-        style: 'Deep Diver', 
-        percentage: Math.round((longSessions / playedGames.length) * 100)
-      };
-    } else if (shortSessions > longSessions) {
-      return { 
-        style: 'Quick Explorer', 
-        percentage: Math.round((shortSessions / playedGames.length) * 100)
-      };
-    } else {
-      return { 
-        style: 'Balanced', 
-        percentage: 50
-      };
-    }
-  };
-
-  const valueChampion = calculateValueChampion();
-  const gamingStyle = calculateGamingStyle();
-
-  // Calculate playtime distribution using Phase 1 data for detailed breakdown
-  const playtimeDistribution = {
-    unplayed: unplayedGames, // Use Phase 2 aggregate
-    light: playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime > 0 && playtime < 120; // Less than 2 hours
-    }).length,
-    moderate: playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime >= 120 && playtime < 600; // 2-10 hours
-    }).length,
-    heavy: playedGames.filter(game => {
-      const playtime = game.userGame?.playtime_minutes || 0;
-      return playtime >= 600; // 10+ hours
-    }).length
-  };
-
-  // Get top genres for Galaxy View from Phase 1 data
-  const genreCount: Record<string, number> = {};
-  libraryGames.forEach(game => {
-    const genres = game.genres || [];
-    genres.forEach(genre => {
-      genreCount[genre] = (genreCount[genre] || 0) + 1;
+    libraryGames.forEach(game => {
+      if (game.release_date) {
+        const releaseYear = new Date(game.release_date).getFullYear();
+        const age = currentYear - releaseYear;
+        
+        if (age <= 2) gamesByAge.recent++;
+        else if (age <= 5) gamesByAge.modern++;
+        else if (age <= 10) gamesByAge.mature++;
+        else gamesByAge.vintage++;
+      } else {
+        gamesByAge.unknown++;
+      }
     });
-  });
-  
-  const topGenres = Object.entries(genreCount)
-    .map(([genre, count]) => ({ genre, count }))
-    .sort((a, b) => b.count - a.count);
 
-  // Helper function to format playtime
-  const formatPlaytime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.round(minutes / 60);
-    return `${hours}h`;
-  };
+    // Most common genres
+    const genreCount: Record<string, number> = {};
+    libraryGames.forEach(game => {
+      (game.genres || []).forEach(genre => {
+        genreCount[genre] = (genreCount[genre] || 0) + 1;
+      });
+    });
+    const topGenres = Object.entries(genreCount)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
 
-  console.log('LibraryOverview data sources:', {
-    phase2Metrics: {
+    return {
       totalGames,
-      playedGamesCount,
       unplayedGames,
+      playedGames,
+      unplayedPercentage: totalGames > 0 ? Math.round((unplayedGames / totalGames) * 100) : 0,
       totalPlaytimeHours,
-      recentlyActiveGames
-    },
-    phase1GameCount: libraryGames.length,
-    phase1PlayedCount: playedGames.length
-  });
+      avgPlaytimeHours,
+      gamesByAge,
+      topGenres
+    };
+  }, [libraryGames]);
 
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Header Stats - Using Phase 2 metrics for aggregate data */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-black/20 border border-gray-700">
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Gamepad2 className="h-5 w-5 text-unplayed-mint" />
-                <div>
-                  <p className="text-2xl font-bold text-white">{totalGames}</p>
-                  <p className="text-sm text-gray-400">Total Games</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/20 border border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5 text-green-400" />
-                <div>
-                  <p className="text-2xl font-bold text-white">{playedGamesCount}</p>
-                  <p className="text-sm text-gray-400">Games Played</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/20 border border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Clock className="h-5 w-5 text-blue-400" />
-                <div>
-                  <p className="text-2xl font-bold text-white">{Math.round(totalPlaytimeHours)}h</p>
-                  <p className="text-sm text-gray-400">Total Playtime</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/20 border border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Target className="h-5 w-5 text-unplayed-amber" />
-                <div>
-                  <p className="text-2xl font-bold text-white">{completionRate}%</p>
-                  <p className="text-sm text-gray-400">Completion Rate</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Played Games - Using Phase 1 detailed data */}
-          <Card className="bg-black/20 border border-gray-700 flex flex-col h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-unplayed-amber" />
-                <span>Most Played Games</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-center space-y-4">
-              {topPlayedGames.length > 0 ? (
-                topPlayedGames.map((game, index) => {
-                  const playtime = game.userGame?.playtime_minutes || 0;
-                  const gameImage = getBestGameImageFromDbData(game, game.id);
-                  
-                  return (
-                    <div key={game.id} className="flex items-center space-x-3">
-                      {/* Placement Badge */}
-                      <div className="flex-shrink-0">
-                        <Badge variant="outline" className="text-xs font-bold min-w-[32px] justify-center">
-                          #{index + 1}
-                        </Badge>
-                      </div>
-                      
-                      {/* Game Image - 16:9 aspect ratio */}
-                      <div className="flex-shrink-0">
-                        <img 
-                          src={gameImage || '/placeholder.svg'} 
-                          alt={game.name}
-                          className="w-16 h-9 rounded object-cover"
-                          style={{ aspectRatio: '16/9' }}
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Game Name */}
-                      <div className="flex-grow min-w-0">
-                        <p className="text-white font-medium truncate">{game.name}</p>
-                      </div>
-                      
-                      {/* Playtime */}
-                      <div className="flex-shrink-0">
-                        <p className="text-sm text-gray-400 font-medium">{formatPlaytime(playtime)}</p>
-                      </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <GamepadIcon className="h-5 w-5 text-unplayed-mint" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">{stats.totalGames}</p>
+                      <p className="text-sm text-gray-400">Total Games</p>
                     </div>
-                  );
-                })
-              ) : (
-                <p className="text-gray-400 text-center py-4">No games played yet. Start playing to see your top games!</p>
-              )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Total games in your Steam library</p>
+                </TooltipContent>
+              </Tooltip>
             </CardContent>
           </Card>
 
-          {/* Playtime Distribution - Using hybrid data */}
-          <Card className="bg-black/20 border border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-blue-400" />
-                <span>Playtime Distribution</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Unplayed</span>
-                  <span className="text-sm font-medium text-white">{playtimeDistribution.unplayed}</span>
-                </div>
-                <Progress 
-                  value={(playtimeDistribution.unplayed / totalGames) * 100} 
-                  className="h-2"
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Light Play (&lt;2h)</span>
-                  <span className="text-sm font-medium text-white">{playtimeDistribution.light}</span>
-                </div>
-                <Progress 
-                  value={(playtimeDistribution.light / totalGames) * 100} 
-                  className="h-2"
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Moderate Play (2-10h)</span>
-                  <span className="text-sm font-medium text-white">{playtimeDistribution.moderate}</span>
-                </div>
-                <Progress 
-                  value={(playtimeDistribution.moderate / totalGames) * 100} 
-                  className="h-2"
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Heavy Play (10h+)</span>
-                  <span className="text-sm font-medium text-white">{playtimeDistribution.heavy}</span>
-                </div>
-                <Progress 
-                  value={(playtimeDistribution.heavy / totalGames) * 100} 
-                  className="h-2"
-                />
-              </div>
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <Archive className="h-5 w-5 text-unplayed-red" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">{stats.unplayedGames}</p>
+                      <p className="text-sm text-gray-400">unplayed</p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Games you haven't played yet</p>
+                </TooltipContent>
+              </Tooltip>
             </CardContent>
           </Card>
 
-          {/* Activity Insights - Using Phase 2 metrics with Phase 1 analysis */}
-          <Card className="bg-black/20 border border-gray-700">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-green-400" />
-                <span>Activity Insights</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-black/30 rounded">
-                <div className="flex items-center space-x-2">
-                  <div>
-                    <p className="text-sm text-gray-400">Recently Active Games</p>
-                    <p className="text-lg font-semibold text-white">{recentlyActiveGames}</p>
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <Clock className="h-5 w-5 text-blue-400" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">{stats.totalPlaytimeHours}h</p>
+                      <p className="text-sm text-gray-400">Total Playtime</p>
+                    </div>
                   </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Games you've played in the last 30 days</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Users className="h-6 w-6 text-green-400" />
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-black/30 rounded">
-                <div className="flex items-center space-x-2">
-                  <div>
-                    <p className="text-sm text-gray-400">Value Champion</p>
-                    <p className="text-lg font-semibold text-white">
-                      {valueChampion ? `${valueChampion.ratio} min/$` : 'No Data'}
-                    </p>
-                  </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Your best value game based on playtime per dollar spent. Shows which game gave you the most entertainment value for money.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <DollarSign className="h-6 w-6 text-blue-400" />
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-black/30 rounded">
-                <div className="flex items-center space-x-2">
-                  <div>
-                    <p className="text-sm text-gray-400">Gaming Style</p>
-                    <p className="text-lg font-semibold text-white">{gamingStyle.style}</p>
-                  </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Your gaming style based on session lengths. Quick Explorer: prefers shorter sessions (&lt;2h). Deep Diver: prefers longer sessions (5h+). Balanced: mix of both.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Zap className="h-6 w-6 text-purple-400" />
-              </div>
-              
-              <div className="mt-4 p-3 bg-unplayed-mint/10 border border-unplayed-mint/20 rounded">
-                <p className="text-sm text-unplayed-mint">
-                  {recentlyActiveGames > 0 
-                    ? `You've been active with ${recentlyActiveGames} games in the last 30 days. Keep it up!`
-                    : "No recent activity detected. Time to dive into your library!"
-                  }
-                </p>
-              </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Total hours played across all games</p>
+                </TooltipContent>
+              </Tooltip>
             </CardContent>
           </Card>
 
-          {/* Genre Galaxy - Using Phase 1 detailed data */}
-          <GenreGalaxy genres={topGenres} totalGames={totalGames} />
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardContent className="p-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2 cursor-help">
+                    <DollarSign className="h-5 w-5 text-green-400" />
+                    <div>
+                      <p className="text-2xl font-bold text-white">
+                        {formatCurrency(spendingData.unplayedSpent || 0, spendingData.currency)}
+                      </p>
+                      <p className="text-sm text-gray-400">unplayed Value</p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Estimated value of your unplayed games</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Progress Bars */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Trophy className="h-5 w-5 text-unplayed-mint" />
+                <span>Play Progress</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">Played Games</span>
+                  <span className="text-sm text-gray-400">
+                    {stats.playedGames} / {stats.totalGames} ({100 - stats.unplayedPercentage}%)
+                  </span>
+                </div>
+                <Progress value={100 - stats.unplayedPercentage} className="h-3" />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">unplayed Games</span>
+                  <span className="text-sm text-gray-400">
+                    {stats.unplayedGames} / {stats.totalGames} ({stats.unplayedPercentage}%)
+                  </span>
+                </div>
+                <Progress value={stats.unplayedPercentage} className="h-3" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-blue-400" />
+                <span>Games by Age</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="text-center">
+                  <p className="text-white font-bold">{stats.gamesByAge.recent}</p>
+                  <p className="text-gray-400">Recent (0-2y)</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-white font-bold">{stats.gamesByAge.modern}</p>
+                  <p className="text-gray-400">Modern (3-5y)</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-white font-bold">{stats.gamesByAge.mature}</p>
+                  <p className="text-gray-400">Mature (6-10y)</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-white font-bold">{stats.gamesByAge.vintage}</p>
+                  <p className="text-gray-400">Vintage (11y+)</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Genres */}
+        <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Star className="h-5 w-5 text-unplayed-amber" />
+              <span>Top Genres in Your Library</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {stats.topGenres.map(([genre, count], index) => (
+                <Badge
+                  key={genre}
+                  variant="outline"
+                  className={`text-sm ${
+                    index === 0 ? 'border-unplayed-mint text-unplayed-mint' :
+                    index === 1 ? 'border-unplayed-amber text-unplayed-amber' :
+                    index === 2 ? 'border-orange-400 text-orange-400' :
+                    'border-gray-500 text-gray-300'
+                  }`}
+                >
+                  {genre} ({count})
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </TooltipProvider>
   );
