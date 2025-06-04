@@ -46,11 +46,11 @@ const LibraryGenresTab = () => {
   // Top genres by total games
   const topGenres = genreStats.slice(0, 10);
   
-  // Top unplayed genres - limited to 3
+  // Top unplayed genres - get up to 8 for pizza slices
   const topUnplayedGenres = genreStats
     .filter(g => g.unplayed > 0)
     .sort((a, b) => b.unplayed - a.unplayed)
-    .slice(0, 3);
+    .slice(0, 8);
   
   // Most niche genres - limited to 3
   const nicheGenres = genreStats
@@ -81,19 +81,35 @@ const LibraryGenresTab = () => {
     '#15803d'  // Deep green (herbs/olives)
   ];
 
-  // Ensure we have exactly 8 slices for pizza appearance
-  const pieData = topUnplayedGenres.slice(0, 8).map((genre, index) => ({
-    name: genre.genre,
-    value: genre.unplayed,
-    color: pizzaColors[index % pizzaColors.length]
-  }));
+  // Create exactly 8 pizza slices
+  const pieData = [];
+  
+  // Add actual unplayed genres up to 7 slices
+  const actualSlices = topUnplayedGenres.slice(0, 7);
+  actualSlices.forEach((genre, index) => {
+    pieData.push({
+      name: genre.genre,
+      value: genre.unplayed,
+      color: pizzaColors[index % pizzaColors.length]
+    });
+  });
 
-  // If we have fewer than 8 genres, pad with small "Other" slices for visual appeal
+  // Calculate "Other" slice from remaining unplayed genres
+  const otherUnplayedCount = topUnplayedGenres.slice(7).reduce((sum, genre) => sum + genre.unplayed, 0);
+  
+  // Add "Other" slice (even if 0 to maintain pizza appearance)
+  pieData.push({
+    name: 'Other',
+    value: otherUnplayedCount,
+    color: pizzaColors[7]
+  });
+
+  // If we have fewer than 8 slices, pad with small empty slices for visual appeal
   while (pieData.length < 8) {
     pieData.push({
-      name: 'Other',
-      value: 0,
-      color: pizzaColors[pieData.length % pizzaColors.length]
+      name: 'Crust',
+      value: 1, // Small value to show slice
+      color: '#d4a574' // Crust color
     });
   }
 
@@ -233,12 +249,12 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          {/* Unplayed Pizza - Updated icon, tooltip, and enhanced appearance */}
+          {/* unplayed Pizza - Updated with no inner radius and enhanced styling */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Pizza className="h-5 w-5 text-orange-500" />
-                <span>Unplayed Pizza</span>
+                <span>unplayed Pizza</span>
                 <Tooltip>
                   <TooltipTrigger>
                     <span className="text-xs text-gray-400 cursor-help">ⓘ</span>
@@ -257,12 +273,12 @@ const LibraryGenresTab = () => {
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      outerRadius={80}
-                      innerRadius={20}
+                      outerRadius={90}
+                      innerRadius={0}
                       dataKey="value"
-                      label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
+                      label={({ name, value }) => value > 1 ? `${name}: ${value}` : ''}
                       stroke="#1f2937"
-                      strokeWidth={2}
+                      strokeWidth={3}
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={`slice-${index}`} fill={entry.color} />
@@ -303,7 +319,7 @@ const LibraryGenresTab = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {topUnplayedGenres.map((genre, index) => (
+                {topUnplayedGenres.slice(0, 3).map((genre, index) => (
                   <div key={genre.genre} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Badge variant="outline" className="text-xs">
