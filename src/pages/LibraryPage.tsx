@@ -6,7 +6,6 @@ import LibraryOverview from "@/components/LibraryOverview";
 import LibraryGamesTab from "@/components/LibraryGamesTab";
 import LibraryGenresTab from "@/components/LibraryGenresTab";
 import LibraryShelfLifeTab from "@/components/LibraryShelfLifeTab";
-import LibraryDebugInfo from "@/components/LibraryDebugInfo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLibraryData } from "@/hooks/use-library-data";
 
@@ -42,9 +41,6 @@ const LibraryPage = () => {
               Explore your complete Steam library with advanced filtering and organization tools.
             </p>
           </div>
-
-          {/* Temporary debug component */}
-          <LibraryDebugInfo />
 
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
