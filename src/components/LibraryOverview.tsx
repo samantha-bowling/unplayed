@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -191,11 +190,13 @@ const LibraryOverview = () => {
                       <span className="text-black font-bold text-sm">#{game.rank}</span>
                     </div>
                     {game.image && (
-                      <img 
-                        src={game.image} 
-                        alt={game.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
+                      <div className="w-16 h-9 flex-shrink-0">
+                        <img 
+                          src={game.image} 
+                          alt={game.name}
+                          className="w-full h-full object-cover rounded aspect-video"
+                        />
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-medium truncate">{game.name}</p>

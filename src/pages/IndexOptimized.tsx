@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -302,7 +301,7 @@ const IndexOptimized = () => {
             </TooltipProvider>
           </div>
           
-          {/* Operation-specific timestamps only */}
+          {/* Updated timestamps - show each independently */}
           <div className="mt-4 text-xs text-gray-500 space-y-1">
             {timestamps.lastImport && (
               <p>Last import: {formatTimestamp(timestamps.lastImport)}</p>
