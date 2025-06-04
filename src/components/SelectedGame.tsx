@@ -28,7 +28,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   headerMessage = "Your Random Pick",
   isDemo = false
 }) => {
-  const gameImage = getBestGameImage(game.header_image, game.image, game.id);
+  const gameImage = getBestGameImage(game.header_image, game.image_url, game.id);
   
   const {
     review,
@@ -102,15 +102,15 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
               )}
             </div>
             
-            {/* Prominent Play Button */}
+            {/* Prominent Play Button - Standardized styling */}
             <div className="flex-shrink-0">
               <Button 
                 onClick={handlePlayGame}
-                className="bg-green-600 hover:bg-green-700 font-semibold text-lg px-8 py-3"
+                className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
                 size="lg"
                 disabled={disabled}
               >
-                <Play className="w-5 h-5 mr-2" />
+                <Play className="w-4 h-4 mr-2" />
                 Play Now
               </Button>
             </div>

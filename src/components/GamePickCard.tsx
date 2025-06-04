@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { GamePick } from '@/types/picks.types';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { Clock } from 'lucide-react';
-import { getBestGameImageFromDbData } from '@/utils/image-utils';
+import { getBestGameImage } from '@/utils/image-utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 // Categories for the mood-based filtering with icons
@@ -39,8 +39,8 @@ const GamePickCard: React.FC<GamePickCardProps> = ({
     setImageError(true);
   };
 
-  // Get the best available image with fallback using the same logic as library games
-  const gameImage = imageError ? '/placeholder.svg' : getBestGameImageFromDbData(game, game.id);
+  // Use the same image handling approach as the library components
+  const gameImage = imageError ? '/placeholder.svg' : getBestGameImage(game.header_image, game.image_url, game.id);
 
   if (compact) {
     return (
