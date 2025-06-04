@@ -7,7 +7,7 @@ import { GamepadIcon, Clock, Trophy, Star, Activity, Calendar, Gamepad2 } from '
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import GenreGalaxy from '@/components/GenreGalaxy';
-import { activityInsights } from '@/utils/activity-insights';
+import { calculateActivityInsights } from '@/utils/activity-insights';
 
 const LibraryOverview = () => {
   const { games: libraryGames } = useLibraryData();
@@ -68,8 +68,15 @@ const LibraryOverview = () => {
       .slice(0, 8)
       .map(([genre, count]) => ({ genre, count }));
 
-    // Activity insights
-    const insights = activityInsights.generateInsights(libraryGames);
+    // Activity insights - calculate and convert to display messages
+    const activityData = calculateActivityInsights(libraryGames);
+    const insights = [
+      `You've played ${activityData.recentlyPlayedGames} games in the last 30 days`,
+      `${activityData.recentlyPlayedUnplayed} previously unplayed games were started recently`,
+      `Your clean streak is ${activityData.cleanStreak} days`,
+      `Total playtime: ${Math.round(activityData.totalPlaytimeHours)} hours across all games`,
+      `Average session length: ${Math.round(activityData.averageSessionLength)} hours per game`
+    ];
 
     return {
       totalGames,
