@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -17,8 +18,6 @@ import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
 import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
 import { useMetricsRefresh } from '@/hooks/useMetricsRefresh';
-import DustTierDistribution from "@/components/dust/DustTierDistribution";
-import UnplayedPacMan from "@/components/dust/UnplayedPacMan";
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("dustScore");
@@ -250,11 +249,7 @@ const DustPage = () => {
                   />
                 </TabsContent>
                 
-                <TabsContent value="analysis" className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DustTierDistribution />
-                    <UnplayedPacMan />
-                  </div>
+                <TabsContent value="analysis" className="space-y-4">
                   <DustScorePerGame 
                     avgDustScore={processedData.averageDustScore}
                     totalGames={processedData.totalGames}
