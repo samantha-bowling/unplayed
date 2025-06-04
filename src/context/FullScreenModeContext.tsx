@@ -17,7 +17,6 @@ type ComponentSettings = {
 interface FullScreenModeContextType {
   isFullScreenMode: boolean;
   toggleFullScreenMode: () => void;
-  setFullScreenMode: (enabled: boolean) => void;
   focusedComponent: FocusableComponent;
   setFocusedComponent: (component: FocusableComponent) => void;
   enterFullScreenMode: (component: FocusableComponent, settings?: any) => void;
@@ -38,11 +37,6 @@ export const FullScreenModeProvider: React.FC<{ children: React.ReactNode }> = (
   const toggleFullScreenMode = () => {
     setIsFullScreenMode(prev => !prev);
     if (isFullScreenMode) setFocusedComponent(null); // Clear focused component when exiting full screen mode
-  };
-
-  const setFullScreenMode = (enabled: boolean) => {
-    setIsFullScreenMode(enabled);
-    if (!enabled) setFocusedComponent(null);
   };
   
   const enterFullScreenMode = (component: FocusableComponent, settings?: any) => {
@@ -83,8 +77,7 @@ export const FullScreenModeProvider: React.FC<{ children: React.ReactNode }> = (
   return (
     <FullScreenModeContext.Provider value={{ 
       isFullScreenMode, 
-      toggleFullScreenMode,
-      setFullScreenMode,
+      toggleFullScreenMode, 
       focusedComponent, 
       setFocusedComponent,
       enterFullScreenMode,
