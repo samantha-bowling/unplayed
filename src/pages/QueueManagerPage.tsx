@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Zap, Loader2, Calculator } from "lucide-react";
+import { Zap, Loader2, Calculator, Trophy, RefreshCw } from "lucide-react";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
@@ -14,6 +14,7 @@ import SmartPrioritizationCard from "@/components/admin/SmartPrioritizationCard"
 import MetadataConsistencyCard from '@/components/admin/MetadataConsistencyCard';
 import { useBatchProcessor } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
+import { triggerLeaderboardCalculation } from "@/utils/trigger-leaderboard-calculation";
 
 // Interface for queue statistics
 interface QueueStats {
@@ -39,6 +40,7 @@ const QueueManagerPage = () => {
   const [isPrioritizing, setIsPrioritizing] = useState<boolean>(false);
   const [metricsUserId, setMetricsUserId] = useState<string>("");
   const [isCalculatingMetrics, setIsCalculatingMetrics] = useState<boolean>(false);
+  const [isCalculatingLeaderboard, setIsCalculatingLeaderboard] = useState<boolean>(false);
   
   // Fetch queue statistics
   const fetchQueueStats = useCallback(async (): Promise<QueueStats> => {
@@ -230,6 +232,28 @@ const QueueManagerPage = () => {
     }
   };
 
+  const handleLeaderboardCalculation = async () => {
+    try {
+      setIsCalculatingLeaderboard(true);
+      toast.info("Triggering leaderboard calculation...");
+      
+      const result = await triggerLeaderboardCalculation();
+      
+      if (result.success) {
+        toast.success("Leaderboard calculation completed successfully!");
+        console.log("Leaderboard calculation response:", result.data);
+      } else {
+        toast.error(`Failed to calculate leaderboard: ${result.error}`);
+      }
+      
+    } catch (err) {
+      console.error("Error triggering leaderboard calculation:", err);
+      toast.error("Error occurred while calculating leaderboard");
+    } finally {
+      setIsCalculatingLeaderboard(false);
+    }
+  };
+
   return (
     <AdminLayout requiredRole="admin">
       <div className="container mx-auto px-4 py-24">
@@ -240,17 +264,16 @@ const QueueManagerPage = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="space-y-6">
           <QueueStatsCard 
             stats={stats || { pending: 0, processing: 0, completed: 0, failed: 0, total: 0 }}
             onRefresh={fetchStats}
             isLoading={isLoading}
             processedCount={queueProcessor.processedCount}
           />
-          <SmartPrioritizationCard />
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <SmartPrioritizationCard />
+
           <Card className="bg-gradient-to-br from-blue-900/40 to-blue-700/20 border-blue-400/30">
             <CardHeader>
               <CardTitle className="text-lg">Batch Processing Controls</CardTitle>
@@ -285,9 +308,7 @@ const QueueManagerPage = () => {
           </Card>
 
           <MetadataConsistencyCard />
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-purple-900/40 to-purple-700/20 border-purple-400/30">
             <CardHeader>
               <CardTitle className="text-lg">Smart User Prioritization</CardTitle>
@@ -387,6 +408,54 @@ const QueueManagerPage = () => {
                 <p>• Calculates total games, unplayed games, spending data</p>
                 <p>• Generates genre statistics and shelf life data</p>
                 <p>• Creates dust score breakdowns for top contributors</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-900/40 to-yellow-700/20 border-yellow-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Trophy className="mr-2 h-5 w-5" />
+                Leaderboard Management
+              </CardTitle>
+              <CardDescription>
+                Manually trigger leaderboard calculations and rankings updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm space-y-2">
+                <p className="text-gray-400">
+                  This will recalculate all user rankings and update the leaderboard snapshots. 
+                  The leaderboard automatically updates daily at midnight UTC.
+                </p>
+                <p className="text-gray-400">
+                  Manual calculation is useful for testing or when immediate updates are needed.
+                </p>
+              </div>
+
+              <button
+                onClick={handleLeaderboardCalculation}
+                disabled={isCalculatingLeaderboard}
+                className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
+              >
+                {isCalculatingLeaderboard ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Calculating Leaderboard...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Trigger Leaderboard Calculation
+                  </>
+                )}
+              </button>
+              
+              <div className="text-xs text-gray-400 space-y-1">
+                <p>• Processes all users with leaderboard visibility enabled</p>
+                <p>• Calculates dust scores and clean scores for rankings</p>
+                <p>• Updates rank changes compared to previous snapshot</p>
+                <p>• Results appear immediately on the leaderboard page</p>
               </div>
             </CardContent>
           </Card>
