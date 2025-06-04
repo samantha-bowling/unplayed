@@ -9,8 +9,6 @@ import DustScoreBreakdown from "@/components/dust/DustScoreBreakdown";
 import CleanScoreBreakdown from "@/components/dust/CleanScoreBreakdown";
 import TopDustContributors from "@/components/dust/TopDustContributors";
 import DustScorePerGame from "@/components/dust/DustScorePerGame";
-import DustTierDistribution from "@/components/dust/DustTierDistribution";
-import UnplayedPacMan from "@/components/dust/UnplayedPacMan";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -252,18 +250,11 @@ const DustPage = () => {
                 </TabsContent>
                 
                 <TabsContent value="analysis" className="space-y-4">
-                  {/* Single column layout for Analysis */}
                   <DustScorePerGame 
                     avgDustScore={processedData.averageDustScore}
                     totalGames={processedData.totalGames}
                     unplayedGames={processedData.unplayedGames}
                   />
-                  
-                  {/* Two column layout below for Distribution and Pac-Man */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DustTierDistribution />
-                    <UnplayedPacMan />
-                  </div>
                 </TabsContent>
               </Tabs>
             </>
