@@ -23,6 +23,13 @@ const LeaderboardSettingsModal: React.FC<LeaderboardSettingsModalProps> = ({
     profile?.leaderboard_visibility || 'off'
   );
 
+  const handleVisibilityChange = (value: string) => {
+    // Type-safe conversion to the specific union type
+    if (value === 'off' || value === 'anonymous' || value === 'public') {
+      setSelectedVisibility(value);
+    }
+  };
+
   const handleSave = async () => {
     try {
       await updateProfile({ leaderboard_visibility: selectedVisibility });
@@ -76,7 +83,7 @@ const LeaderboardSettingsModal: React.FC<LeaderboardSettingsModalProps> = ({
             <h4 className="font-medium mb-3">Leaderboard Visibility</h4>
             <RadioGroup
               value={selectedVisibility}
-              onValueChange={setSelectedVisibility}
+              onValueChange={handleVisibilityChange}
               className="space-y-3"
             >
               {visibilityOptions.map((option) => {
