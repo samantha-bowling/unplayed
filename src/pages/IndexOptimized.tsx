@@ -54,7 +54,7 @@ const IndexOptimized = () => {
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: dashboardData, isLoading: dataLoading, lastRefreshed } = useDashboardData();
+  const { data: dashboardData, isLoading: dataLoading } = useDashboardData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   
   // Use the new refresh manager
@@ -302,7 +302,7 @@ const IndexOptimized = () => {
             </TooltipProvider>
           </div>
           
-          {/* Timestamps display */}
+          {/* Operation-specific timestamps only */}
           <div className="mt-4 text-xs text-gray-500 space-y-1">
             {timestamps.lastImport && (
               <p>Last import: {formatTimestamp(timestamps.lastImport)}</p>
@@ -312,9 +312,6 @@ const IndexOptimized = () => {
             )}
             {timestamps.lastPriceRefresh && (
               <p>Last price refresh: {formatTimestamp(timestamps.lastPriceRefresh)}</p>
-            )}
-            {lastRefreshed && (
-              <p>Data last updated: {lastRefreshed.toLocaleString()}</p>
             )}
           </div>
           
@@ -330,7 +327,7 @@ const IndexOptimized = () => {
       );
     }
     return null;
-  }, [user, profile, importState, timestamps, lastRefreshed, handleImportSteamLibrary, refreshDashboard, refreshPrices, refreshStates, canPerformOperation, getRemainingCooldown]);
+  }, [user, profile, importState, timestamps, handleImportSteamLibrary, refreshDashboard, refreshPrices, refreshStates, canPerformOperation, getRemainingCooldown]);
 
   return (
     <FullScreenModeWrapper>

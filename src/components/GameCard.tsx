@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Clock, Eye, EyeOff, FileEdit, Check } from 'lucide-react';
+import { Clock, Eye, EyeOff, FileEdit, Check, ExternalLink } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getBestGameImage, formatGameTitle } from '@/utils/image-utils';
 
@@ -53,6 +55,15 @@ const GameCard: React.FC<GameCardProps> = ({
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+  };
+
+  // Generate Steam store URL
+  const getSteamUrl = (gameId: number): string => {
+    return `https://store.steampowered.com/app/${gameId}/`;
+  };
+
+  const handleSteamVisit = () => {
+    window.open(getSteamUrl(gameId), '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -102,71 +113,115 @@ const GameCard: React.FC<GameCardProps> = ({
         "absolute inset-0 bg-black/85 flex flex-col p-4 transition-opacity duration-200",
         isHovered ? "opacity-100" : "opacity-0 pointer-events-none"
       )}>
-        <div className="flex-grow flex flex-col gap-3 justify-center">
-          <Button 
-            onClick={onMarkAsPlayed} 
-            variant="outline"
-            className="bg-unplayed-mint/20 border-unplayed-mint/50 hover:bg-unplayed-mint/30"
-          >
-            <Check className="mr-2 h-4 w-4" /> 
-            Mark as Played
-          </Button>
-          
-          <Button 
-            onClick={onToggleHidden} 
-            variant="outline"
-            className="border-gray-600 hover:bg-gray-800"
-          >
-            {isHidden ? (
-              <>
-                <Eye className="mr-2 h-4 w-4" /> Show Game
-              </>
-            ) : (
-              <>
-                <EyeOff className="mr-2 h-4 w-4" /> Ignore Game
-              </>
-            )}
-          </Button>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline"
-                className="border-gray-600 hover:bg-gray-800"
-              >
-                <FileEdit className="mr-2 h-4 w-4" /> 
-                {notes ? "Edit Note" : "Add Note"}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Game Notes: {title}</DialogTitle>
-              </DialogHeader>
-              
-              <div className="py-4">
-                <Textarea
-                  placeholder="Add your thoughts about this game..."
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  rows={5}
-                />
-              </div>
-              
-              <DialogFooter className="flex sm:justify-between">
-                <DialogClose asChild>
-                  <Button variant="ghost">Cancel</Button>
-                </DialogClose>
-                <DialogClose asChild>
+        <div className="flex-grow flex flex-col justify-center">
+          {/* 2x2 Grid Layout */}
+          <TooltipProvider>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Top Left: Mark as Played */}
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button 
-                    onClick={() => onSaveNote(noteText)}
-                    className="bg-unplayed-mint hover:bg-unplayed-mint/90 text-black"
+                    onClick={onMarkAsPlayed} 
+                    variant="outline"
+                    size="sm"
+                    className="bg-unplayed-mint/20 border-unplayed-mint/50 hover:bg-unplayed-mint/30 p-2 h-12"
                   >
-                    Save Note
+                    <Check className="h-5 w-5" />
                   </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark as Played</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Top Right: Visit on Steam */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={handleSteamVisit}
+                    variant="outline"
+                    size="sm"
+                    className="border-blue-500/50 hover:bg-blue-500/20 p-2 h-12"
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Visit game on Steam</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Bottom Left: Show/Hide Game */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={onToggleHidden} 
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-600 hover:bg-gray-800 p-2 h-12"
+                  >
+                    {isHidden ? (
+                      <Eye className="h-5 w-5" />
+                    ) : (
+                      <EyeOff className="h-5 w-5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isHidden ? "Show Game" : "Ignore Game"}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Bottom Right: Add/Edit Note */}
+              <Dialog>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-600 hover:bg-gray-800 p-2 h-12"
+                      >
+                        <FileEdit className="h-5 w-5" />
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{notes ? "Edit Note" : "Add Note"}</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Game Notes: {title}</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="py-4">
+                    <Textarea
+                      placeholder="Add your thoughts about this game..."
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      rows={5}
+                    />
+                  </div>
+                  
+                  <DialogFooter className="flex sm:justify-between">
+                    <DialogClose asChild>
+                      <Button variant="ghost">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button 
+                        onClick={() => onSaveNote(noteText)}
+                        className="bg-unplayed-mint hover:bg-unplayed-mint/90 text-black"
+                      >
+                        Save Note
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </TooltipProvider>
         </div>
         
         {/* Show notes preview if they exist */}

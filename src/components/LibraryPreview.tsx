@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Grid, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -153,7 +154,16 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
   return (
     <div className="terminal-container">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="terminal-header text-2xl">Library Preview</h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="terminal-header text-2xl cursor-help">Library Preview</h3>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>This is a preview of your library. Visit the Library tab to see your full library with advanced features.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <div className="flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>
