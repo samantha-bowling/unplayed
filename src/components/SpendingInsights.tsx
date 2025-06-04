@@ -28,14 +28,14 @@ const SpendingInsights = () => {
     }
   ];
 
-  // Prepare top genre spending data with dynamic colors
+  // Prepare top genre spending data with dynamic colors from genre stats
   const topGenreSpending = genreStats
     ?.slice(0, 6)
     .map(genre => ({
       name: genre.genre_name,
       games: genre.game_count,
       percentage: genre.percentage,
-      color: genre.color_hex
+      color: genre.color_hex // Use the actual color from genre stats
     })) || [];
 
   const CustomTooltip = ({ active, payload, label }: any) => {

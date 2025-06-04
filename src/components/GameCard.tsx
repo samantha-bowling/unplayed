@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Clock, Eye, EyeOff, FileEdit, Check, ExternalLink } from 'lucide-react';
+import { Clock, Eye, EyeOff, FileEdit, Play, ExternalLink } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -65,6 +66,12 @@ const GameCard: React.FC<GameCardProps> = ({
     window.open(getSteamUrl(gameId), '_blank', 'noopener,noreferrer');
   };
 
+  // Launch game directly using steam:// protocol
+  const handlePlayNow = () => {
+    const steamUrl = `steam://rungameid/${gameId}`;
+    window.open(steamUrl, '_blank');
+  };
+
   return (
     <div 
       className={cn(
@@ -116,20 +123,20 @@ const GameCard: React.FC<GameCardProps> = ({
           {/* 2x2 Grid Layout */}
           <TooltipProvider>
             <div className="grid grid-cols-2 gap-3">
-              {/* Top Left: Mark as Played */}
+              {/* Top Left: Play Now */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    onClick={onMarkAsPlayed} 
+                    onClick={handlePlayNow} 
                     variant="outline"
                     size="sm"
                     className="bg-unplayed-mint/20 border-unplayed-mint/50 hover:bg-unplayed-mint/30 p-2 h-12"
                   >
-                    <Check className="h-5 w-5" />
+                    <Play className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Mark as Played</p>
+                  <p>Play Now</p>
                 </TooltipContent>
               </Tooltip>
 
