@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon, Laugh, Smile, Meh, Frown } from 'lucide-react';
-import { calculateRecentlyPlayedGames } from '@/utils/activity-insights';
 
 interface UnplayedCounterProps extends WithDemoProps {
   count?: number;
@@ -31,6 +31,16 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
   const calculatedData = useMemo(() => {
     const isDemoMode = isDemo || contextIsDemo;
     
+    console.log('UnplayedCounter calculatedData:', {
+      isDemoMode,
+      userMetrics,
+      count,
+      demoData: {
+        unplayedGames: demoData.unplayedGames,
+        totalGames: demoData.totalGames
+      }
+    });
+    
     // Use demo data if in demo mode
     if (isDemoMode) {
       const actualCount = count ?? demoData.unplayedGames;
@@ -45,10 +55,17 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       };
     }
     
-    // Use user metrics data (now with updated calculation version 3)
+    // Use user metrics data
     const actualCount = count ?? userMetrics?.unplayedGames ?? 0;
     const totalGames = userMetrics?.totalGames ?? 0;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
+    
+    console.log('UnplayedCounter calculated values:', {
+      actualCount,
+      totalGames,
+      unplayedPercentage,
+      source: 'userMetrics'
+    });
     
     return {
       actualCount,
