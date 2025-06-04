@@ -116,7 +116,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p>
-                  We use Steam's public Web APIs to give you a birds-eye view of your library. It's not 100% precise, but it's shockingly close—and frankly, good enough to guilt you into action.
+                  We use Steam's public Web APIs to give you a bird's-eye view of your library. It's not 100% precise, but it's fun and close enough. ¯\\(ツ)/¯ Did somebody say unplayed Pizza?
                 </p>
               </AccordionContent>
             </AccordionItem>
