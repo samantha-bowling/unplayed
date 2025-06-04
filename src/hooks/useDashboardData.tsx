@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
@@ -74,7 +73,7 @@ export const useDashboardData = () => {
       if (genreStats && genreStats.length > 0) {
         const genreCounts = new Map<string, number>();
         genreStats.forEach(stat => {
-          genreCounts.set(stat.genreName, stat.gameCount);
+          genreCounts.set(stat.genre_name, stat.game_count);
         });
         transformedGenres = processGenres(genreCounts);
       }
