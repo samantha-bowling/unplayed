@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LibraryHeroSection from "@/components/LibraryHeroSection";
 import LibraryOverview from "@/components/LibraryOverview";
 import LibraryGamesTab from "@/components/LibraryGamesTab";
 import LibraryGenresTab from "@/components/LibraryGenresTab";
@@ -32,14 +31,17 @@ const LibraryPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      {/* Hero section - Removed pt-24 to prevent double padding */}
-      <section className="flex-grow px-4 py-12 text-center relative overflow-hidden">
+      <main className="flex-grow w-full navbar-offset py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <LibraryHeroSection 
-            unplayedCount={unplayedGames}
-            totalGames={totalGames}
-          />
-          
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold font-space text-unplayed-mint mb-2">
+              Your Game Library
+            </h1>
+            <p className="text-lg text-gray-300">
+              Explore your complete Steam library with advanced filtering and organization tools.
+            </p>
+          </div>
+
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
               <TabsTrigger 
@@ -85,7 +87,7 @@ const LibraryPage = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </section>
+      </main>
       
       <Footer />
     </div>

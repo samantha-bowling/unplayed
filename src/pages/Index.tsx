@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -36,6 +37,8 @@ const Index = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<string>("Preparing to import...");
   const [importPercentage, setImportPercentage] = useState(0);
+  const [lastImportTime, setLastImportTime] = useState<Date | null>(null);
+  const [lastDashboardRefreshTime, setLastDashboardRefreshTime] = useState<Date | null>(null);
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
@@ -67,6 +70,7 @@ const Index = () => {
     try {
       // First refresh backend metrics
       await refreshUserMetrics();
+      setLastDashboardRefreshTime(new Date());
       
       // Then refresh cache with a slight delay to ensure backend processing completes
       setTimeout(() => {
@@ -160,6 +164,7 @@ const Index = () => {
           clearInterval(progressInterval);
           setImportPercentage(100);
           setImportProgress("Import complete!");
+          setLastImportTime(new Date());
           toast.success(`Steam library import completed!`, {
             description: "Your dashboard will update shortly."
           });
@@ -174,6 +179,7 @@ const Index = () => {
         }, 20000); // Assume 20 seconds for processing
       } else {
         // Server completed processing synchronously
+        setLastImportTime(new Date());
         toast.success(`Successfully imported ${data.imported || 0} games!`, {
           description: "Your dashboard will update shortly."
         });
@@ -200,7 +206,7 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center">
         <SteamLoader message="Loading your profile..." size="md" variant="secondary" />
       </div>
     );
@@ -256,49 +262,63 @@ const Index = () => {
             Time to face your backlog.
           </p>
           <div className="flex justify-center gap-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={importSteamLibrary}
-                    className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
-                    disabled={isImporting || isRefreshing}
-                  >
-                    <Import className="mr-2 h-4 w-4" />
-                    {isImporting ? "Importing..." : "Import Steam Library"}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Fetch your games from Steam and recalculate dust scores</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {!isImporting && (
+            <div className="flex flex-col items-center">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={refreshAllData}
-                      variant="outline"
-                      className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
-                      disabled={isRefreshing}
+                      onClick={importSteamLibrary}
+                      className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
+                      disabled={isImporting || isRefreshing}
                     >
-                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      {isRefreshing ? "Refreshing..." : "Refresh Dashboard"}
+                      <Import className="mr-2 h-4 w-4" />
+                      {isImporting ? "Importing..." : "Import Steam Library"}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Update metrics and refresh dashboard with latest data</p>
+                    <p>Fetch your games from Steam and recalculate dust scores</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              {lastImportTime && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Last import: {lastImportTime.toLocaleString()}
+                </p>
+              )}
+            </div>
+            
+            {!isImporting && (
+              <div className="flex flex-col items-center">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={refreshAllData}
+                        variant="outline"
+                        className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
+                        disabled={isRefreshing}
+                      >
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        {isRefreshing ? "Refreshing..." : "Refresh Dashboard"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Update metrics and refresh dashboard with latest data</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {lastDashboardRefreshTime && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Last refresh: {lastDashboardRefreshTime.toLocaleString()}
+                  </p>
+                )}
+              </div>
             )}
           </div>
           
           {lastRefreshed && (
             <p className="text-sm text-gray-500 mt-2">
-              Last updated: {new Date(lastRefreshed).toLocaleString()}
+              Data last updated: {new Date(lastRefreshed).toLocaleString()}
             </p>
           )}
           
@@ -328,18 +348,18 @@ const Index = () => {
 
   return (
     <FullScreenModeWrapper>
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="min-h-screen flex flex-col">
         <Header />
 
         {/* Hero */}
-        <section className="w-full navbar-offset pb-8 px-4 bg-background">
+        <section className="w-full navbar-offset pb-8 px-4">
           <div className="max-w-7xl mx-auto text-center">
             {renderHeroSection()}
           </div>
         </section>
 
         {/* Dashboard */}
-        <section id="dashboard" className="w-full py-8 px-4 bg-background">
+        <section id="dashboard" className="w-full py-8 px-4">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-mint">Dashboard</span>
@@ -370,7 +390,7 @@ const Index = () => {
         </section>
 
         {/* Picker - Moved before Library */}
-        <section id="picker" className="w-full py-8 px-4 bg-background">
+        <section id="picker" className="w-full py-8 px-4">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-amber">Picker</span>
@@ -381,7 +401,7 @@ const Index = () => {
         </section>
 
         {/* Library - Moved after Picker */}
-        <section id="library" className="w-full py-8 px-4 bg-background">
+        <section id="library" className="w-full py-8 px-4">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold font-space mb-6 text-center">
               <span className="text-unplayed-pink">Library</span>
@@ -393,7 +413,7 @@ const Index = () => {
 
         {/* CTA */}
         {!user && (
-          <section className="w-full py-10 px-4 bg-background">
+          <section className="w-full py-10 px-4">
             <div className="max-w-7xl mx-auto text-center">
               <h2 className="text-3xl font-bold font-space mb-4 text-white">
                 Ready to confront your backlog?
