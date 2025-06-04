@@ -78,7 +78,7 @@ const SpendPage = () => {
                 onValueChange={setActiveTab}
                 className="space-y-6"
               >
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-black/40 border border-unplayed-mint/20">
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-black/40 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
                   <TabsTrigger 
                     value="overview"
                     className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
@@ -94,7 +94,7 @@ const SpendPage = () => {
                 </TabsList>
                 
                 <TabsContent value="overview" className="space-y-6">
-                  <Card className="terminal-container">
+                  <Card className="terminal-container shadow-[0_0_25px_rgba(163,247,191,0.2)] hover:shadow-[0_0_30px_rgba(163,247,191,0.25)] transition-all duration-300">
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
@@ -111,6 +111,7 @@ const SpendPage = () => {
                           variant="outline"
                           size="sm"
                           disabled={isRefreshing}
+                          className="border-unplayed-mint/30 hover:border-unplayed-mint/50 hover:shadow-[0_0_15px_rgba(163,247,191,0.15)] transition-all duration-300"
                         >
                           <span className="mr-1">{isRefreshing ? 'Recalculating...' : 'Refresh Data'}</span>
                           <TrendingDown size={16} className={isRefreshing ? 'animate-pulse' : ''} />
@@ -219,7 +220,7 @@ const SpendPage = () => {
                 
                 <TabsContent value="insights" className="space-y-6">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="terminal-container">
+                    <Card className="terminal-container shadow-[0_0_25px_rgba(163,247,191,0.2)] hover:shadow-[0_0_30px_rgba(163,247,191,0.25)] transition-all duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <BarChart3 className="h-5 w-5 text-unplayed-pink" />
@@ -276,7 +277,7 @@ const SpendPage = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="terminal-container">
+                    <Card className="terminal-container shadow-[0_0_25px_rgba(163,247,191,0.2)] hover:shadow-[0_0_30px_rgba(163,247,191,0.25)] transition-all duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Trophy className="h-5 w-5 text-unplayed-red" />

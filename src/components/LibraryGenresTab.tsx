@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,7 +91,7 @@ const LibraryGenresTab = () => {
     <TooltipProvider>
       <div className="space-y-6">
         {/* Info Banner */}
-        <div className="bg-unplayed-mint/10 border border-unplayed-mint/20 rounded-lg p-4">
+        <div className="bg-unplayed-mint/10 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] rounded-lg p-4">
           <p className="text-sm text-unplayed-mint">
             📊 Note: Games can belong to multiple genres, so totals may exceed your library size. Genre data comes from Steam's classification system.
           </p>
@@ -98,7 +99,7 @@ const LibraryGenresTab = () => {
 
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -117,7 +118,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -136,7 +137,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -155,7 +156,7 @@ const LibraryGenresTab = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardContent className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -180,7 +181,7 @@ const LibraryGenresTab = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Genre Distribution Bar Chart */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <BookMarked className="h-5 w-5 text-unplayed-mint" />
@@ -223,7 +224,7 @@ const LibraryGenresTab = () => {
           </Card>
 
           {/* unplayed Pizza */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <SquarePlus className="h-5 w-5 text-orange-500" />
@@ -272,7 +273,7 @@ const LibraryGenresTab = () => {
         {/* Genre Lists */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top unplayed Genres */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Pyramid className="h-5 w-5 text-unplayed-red" />
@@ -308,7 +309,7 @@ const LibraryGenresTab = () => {
           </Card>
 
           {/* Most Niche Genres */}
-          <Card className="bg-black/20 border border-gray-700">
+          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Award className="h-5 w-5 text-unplayed-amber" />

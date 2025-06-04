@@ -318,6 +318,42 @@ body.fullscreen-mode {
   animation: cursor-blink 1s infinite;
 }
 
+/* Pac-Man specific animations */
+@keyframes pacman-dot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes cherry-bounce {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes cherry-glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.9));
+  }
+}
+
+.pacman-dot {
+  animation: pacman-dot-blink 1.5s infinite ease-in-out;
+}
+
+.cherry-bounce {
+  animation: cherry-bounce 2s infinite ease-in-out;
+}
+
+.cherry-glow {
+  animation: cherry-glow-pulse 2s infinite ease-in-out;
+}
+
 /* Zen view game items with improved hover and green glow */
 .zen-game-item {
   transition: all 0.3s ease-out;
