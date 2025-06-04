@@ -60,7 +60,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p>
-                  We use Steam's public Web APIs to give you a bird's-eye view of your library. It's not 100% precise, but it's a fun way to look at your data. ¯\\(ツ)/¯ Did somebody say unplayed Pizza?
+                  We use Steam's public Web APIs to give you a bird's-eye view of your library. It's not 100% precise, but it's a fun way to look at your data. ¯\(ツ)/¯ Did somebody say unplayed Pizza?
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -124,7 +124,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
                   That number is calculated based on price data we pull from the Steam Store API. We only count games you haven't played, so it's a nice slap of reality to remind you what that Steam Summer Sale really cost you.
                 </p>
                 <p>
-                  We convert everything to your default currency. Emotional damage not included.
+                  Everything is in USD. Emotional damage not included.
                 </p>
               </AccordionContent>
             </AccordionItem>
