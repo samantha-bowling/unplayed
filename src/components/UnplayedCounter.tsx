@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
@@ -32,7 +33,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     
     // Use demo data if in demo mode
     if (isDemoMode) {
-      const actualCount = count ?? demoData.unplayedGames;
+      const actualCount = demoData.unplayedGames;
       const totalGames = demoData.totalGames;
       const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
       
@@ -44,8 +45,8 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       };
     }
     
-    // Use user_metrics table as the authoritative data source
-    const actualCount = count ?? userMetrics?.unplayedGames ?? 0;
+    // Use user_metrics table values directly - NO count prop override
+    const actualCount = userMetrics?.unplayedGames ?? 0;
     const totalGames = userMetrics?.totalGames ?? 0;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     
@@ -55,7 +56,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       unplayedPercentage,
       isDemoMode
     };
-  }, [count, userMetrics, isDemo, contextIsDemo, demoData]);
+  }, [userMetrics, isDemo, contextIsDemo, demoData]);
 
   // Animated counters with demo-aware speed
   const animatedCount = useAnimatedCounter({
