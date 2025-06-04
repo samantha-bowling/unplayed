@@ -2,7 +2,7 @@
 import { CleanScoreBreakdown as CleanBreakdownType, CleanStreakMetadata } from '@/types/unplayed-data.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, ShieldCheck, Calendar, HelpCircle, Trophy, Target, Brush, Medal, ThumbsUp, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, ThumbsUp, Calendar, Target, Brush } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -95,32 +95,6 @@ const CleanScoreBreakdown = ({
   };
   
   const tierInfo = getTierInfo();
-
-  // Get streak quality icon and color
-  const getStreakQuality = () => {
-    const quality = cleanStreakMetadata?.streakQuality || 'bronze';
-    switch (quality) {
-      case 'gold':
-        return { icon: Trophy, color: '#ffd700', label: 'Gold Streak' };
-      case 'silver':
-        return { icon: Medal, color: '#c0c0c0', label: 'Silver Streak' };
-      default:
-        return { icon: Target, color: '#cd7f32', label: 'Bronze Streak' };
-    }
-  };
-
-  const streakQuality = getStreakQuality();
-
-  // Format dates for display
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'Unknown';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
-  // Determine streak status
-  const isStreakActive = cleanStreakMetadata?.streakStartDate && cleanStreakMetadata?.streakEndDate;
-  const streakStatus = isStreakActive ? 'Active' : 'Ended';
-  const daysSinceEnd = cleanStreakMetadata?.daysSinceEnd;
   
   return (
     <Card className="terminal-container border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)]">
@@ -244,90 +218,6 @@ const CleanScoreBreakdown = ({
                 ))}
               </ul>
             </div>
-
-            {/* Enhanced Clean Streak Section */}
-            <div className="space-y-3">
-              <div className="bg-black/20 rounded-lg p-4">
-                <div className="flex items-center mb-3">
-                  <streakQuality.icon className="h-5 w-5 mr-2" style={{ color: streakQuality.color }} />
-                  <span className="text-gray-300 font-medium mr-1">Clean Streak</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-gray-500 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-sm">
-                        <div className="space-y-2">
-                          <p><strong>Clean Streak:</strong> Consecutive days you've played games in your library</p>
-                          <p><strong>Minimum Play Time:</strong> At least 30 minutes of gameplay counts toward your streak</p>
-                          <p><strong>Streak Quality:</strong> Bronze (1-6 days), Silver (7-29 days), Gold (30+ days)</p>
-                          {cleanStreakMetadata?.averageSessionLength && (
-                            <p><strong>Your Average:</strong> {cleanStreakMetadata.averageSessionLength} min/session</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <span className="ml-auto font-bold" style={{ color: streakQuality.color }}>
-                    {cleanStreak} days
-                  </span>
-                </div>
-                
-                {/* Streak Status */}
-                <div className="flex items-center mb-2">
-                  {isStreakActive ? (
-                    <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-400 mr-2" />
-                  )}
-                  <span className={`text-sm font-medium ${isStreakActive ? 'text-green-400' : 'text-red-400'}`}>
-                    {streakStatus}
-                  </span>
-                  {daysSinceEnd && daysSinceEnd > 0 && (
-                    <span className="text-xs text-gray-400 ml-2">
-                      (ended {daysSinceEnd} days ago)
-                    </span>
-                  )}
-                </div>
-                
-                {/* Streak Dates */}
-                <div className="text-xs text-gray-400 space-y-1">
-                  <p className="font-medium" style={{ color: streakQuality.color }}>
-                    {streakQuality.label}
-                  </p>
-                  {cleanStreakMetadata?.streakStartDate && (
-                    <p>Started: {formatDate(cleanStreakMetadata.streakStartDate)}</p>
-                  )}
-                  {cleanStreakMetadata?.streakEndDate && (
-                    <p>
-                      {isStreakActive ? 'Current as of:' : 'Ended:'} {formatDate(cleanStreakMetadata.streakEndDate)}
-                    </p>
-                  )}
-                  {cleanStreakMetadata?.lastPlayDate && (
-                    <p>Last played: {formatDate(cleanStreakMetadata.lastPlayDate)}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-black/20 rounded-lg p-3">
-                <div className="flex items-center mb-1">
-                  <Calendar className="h-4 w-4 mr-2 text-green-400" />
-                  <span className="text-gray-300 font-medium">Recently Played Games</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-gray-500 cursor-help ml-1" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Unique games with 30+ minutes played in the last 30 days</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <span className="ml-auto text-green-400 font-bold">{recentlyPlayedCount}</span>
-                </div>
-                <p className="text-xs text-gray-400">Games played in the last 30 days with 30+ minutes</p>
-              </div>
-            </div>
           </div>
           
           <div className="space-y-4">
@@ -342,33 +232,6 @@ const CleanScoreBreakdown = ({
               <p className="text-sm text-gray-300">
                 {tierInfo.description}
               </p>
-            </div>
-
-            <div className="bg-black/30 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">Clean Streak System</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-400 mt-1.5 flex-shrink-0"></div>
-                  <div>
-                    <p className="text-green-400 font-medium">Daily Gaming Goal</p>
-                    <p className="text-gray-300">Play any game in your library for 30+ minutes to maintain your streak</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0"></div>
-                  <div>
-                    <p className="text-amber-400 font-medium">Grace Period</p>
-                    <p className="text-gray-300">Miss 1-2 days? No problem! Your streak continues with a small grace buffer</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 flex-shrink-0"></div>
-                  <div>
-                    <p className="text-blue-400 font-medium">Streak Quality</p>
-                    <p className="text-gray-300">Bronze (1-6), Silver (7-29), Gold (30+ days) - aim for consistency!</p>
-                  </div>
-                </div>
-              </div>
             </div>
             
             <div className="bg-black/20 rounded-lg p-4">
