@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useLibraryData } from '@/hooks/use-library-data';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
 import GenreGalaxy from '@/components/GenreGalaxy';
-import { calculateActivityInsights } from '@/utils/activity-insights';
+import HiddenGems from '@/components/HiddenGems';
 
 const LibraryOverview = () => {
   const { games: libraryGames } = useLibraryData();
@@ -67,16 +68,6 @@ const LibraryOverview = () => {
       .slice(0, 8)
       .map(([genre, count]) => ({ genre, count }));
 
-    // Activity insights - calculate and convert to display messages with enhanced styling
-    const activityData = calculateActivityInsights(libraryGames);
-    const insights = [
-      <>You've played <span className="font-bold text-unplayed-mint">{activityData.recentlyPlayedGames} games</span> in the last 30 days</>,
-      <><span className="font-bold text-unplayed-amber">{activityData.recentlyPlayedUnplayed}</span> previously unplayed games were started recently</>,
-      <>Your clean streak is <span className="font-bold text-green-400">{activityData.cleanStreak} days</span></>,
-      <>Total playtime: <span className="font-bold text-blue-400">{Math.round(activityData.totalPlaytimeHours)} hours</span> across all games</>,
-      <>Average session length: <span className="font-bold text-purple-400">{Math.round(activityData.averageSessionLength)} hours</span> per game</>
-    ];
-
     return {
       totalGames,
       playedGames,
@@ -85,8 +76,7 @@ const LibraryOverview = () => {
       completionRate,
       mostPlayedGames,
       playtimeDistribution,
-      topGenres,
-      insights
+      topGenres
     };
   }, [libraryGames, userMetrics]);
 
@@ -260,24 +250,10 @@ const LibraryOverview = () => {
           </Card>
         </div>
 
-        {/* Bottom Row - Activity Insights & Genre Galaxy */}
+        {/* Bottom Row - Hidden Gems & Genre Galaxy */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Activity Insights */}
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-purple-400" />
-                <span>Activity Insights</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {stats.insights.map((insight, index) => (
-                <div key={index} className="p-3 rounded-lg bg-black/30 border border-gray-700">
-                  <p className="text-white text-sm">{insight}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          {/* Hidden Gems - replaces Activity Insights */}
+          <HiddenGems />
 
           {/* Genre Galaxy with proper glow effects */}
           <div className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300 rounded-lg">
