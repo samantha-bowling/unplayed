@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import LibraryHeroSection from "@/components/LibraryHeroSection";
 import LibraryOverview from "@/components/LibraryOverview";
 import LibraryGamesTab from "@/components/LibraryGamesTab";
 import LibraryGenresTab from "@/components/LibraryGenresTab";
@@ -28,20 +29,16 @@ const LibraryPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-unplayed-ink">
+    <div className="min-h-screen flex flex-col">
       <Header />
       
-      <section className="flex-grow px-4 py-12 navbar-offset">
+      {/* Hero section - Removed pt-24 to prevent double padding */}
+      <section className="flex-grow px-4 py-12 text-center relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          {/* Standardized header section */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold font-space text-unplayed-mint mb-2">
-              Command Center
-            </h1>
-            <p className="text-lg text-gray-300">
-              Your complete gaming library overview and management hub
-            </p>
-          </div>
+          <LibraryHeroSection 
+            unplayedCount={unplayedGames}
+            totalGames={totalGames}
+          />
           
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
