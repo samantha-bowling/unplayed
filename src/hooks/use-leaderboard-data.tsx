@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,12 +40,7 @@ const PAGE_SIZE = 20;
 export const useLeaderboardData = (type: LeaderboardType) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [timeframe, setTimeframe] = useState<'all' | 'month' | 'week'>('week'); // Default to 'week' instead of 'all'
-  const [pagination, setPagination] = useState<PaginationState>({
-    cursor: null,
-    hasMore: true,
-    page: 1
-  });
+  const [timeframe, setTimeframe] = useState<'all' | 'month' | 'week'>('week'); // Already defaults to 'week'
   
   // Query for the last updated timestamp
   const lastUpdatedQuery = useQuery({

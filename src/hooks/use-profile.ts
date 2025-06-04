@@ -10,6 +10,7 @@ export type UserProfile = {
   steam_avatar?: string;
   role?: string;
   onboarding_complete?: boolean;
+  leaderboard_visibility?: 'off' | 'anonymous' | 'public';
   created_at?: string;
   updated_at?: string;
   last_sync?: string;
