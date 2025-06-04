@@ -1,7 +1,6 @@
-
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { calculateCleanScore } from './clean-score-utils';
-import { calculateRecentlyPlayedGames, processGenres, countGenres } from './genre-processing';
+import { processGenres, countGenres } from './genre-processing';
 import { calculateRecentlyPlayedGames as calculateRecentlyPlayed } from './activity-insights';
 
 /**
