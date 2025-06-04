@@ -2,6 +2,7 @@
 import { useLibraryImport } from './useLibraryImport';
 import { useDashboardRefresh } from './useDashboardRefresh';
 import { usePriceRefresh } from './usePriceRefresh';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Lightweight coordinator that combines all refresh operations
@@ -12,6 +13,52 @@ export const useRefreshCoordinator = () => {
   const dashboardRefresh = useDashboardRefresh();
   const priceRefresh = usePriceRefresh();
 
+  // Persistent timestamps using localStorage
+  const [persistentTimestamps, setPersistentTimestamps] = useState({
+    lastImport: null as Date | null,
+    lastDashboardRefresh: null as Date | null,
+  });
+
+  // Load timestamps from localStorage on mount
+  useEffect(() => {
+    const savedImport = localStorage.getItem('unplayed_last_import');
+    const savedDashboard = localStorage.getItem('unplayed_last_dashboard_refresh');
+    
+    setPersistentTimestamps({
+      lastImport: savedImport ? new Date(savedImport) : null,
+      lastDashboardRefresh: savedDashboard ? new Date(savedDashboard) : null,
+    });
+  }, []);
+
+  // Save timestamp to localStorage
+  const saveTimestamp = useCallback((key: string, timestamp: Date) => {
+    localStorage.setItem(key, timestamp.toISOString());
+    setPersistentTimestamps(prev => ({
+      ...prev,
+      [key === 'unplayed_last_import' ? 'lastImport' : 'lastDashboardRefresh']: timestamp
+    }));
+  }, []);
+
+  // Enhanced import function that saves timestamp
+  const enhancedImportLibrary = useCallback(async (steamId: string) => {
+    const result = await libraryImport.importLibrary(steamId);
+    if (result?.success) {
+      const now = new Date();
+      saveTimestamp('unplayed_last_import', now);
+    }
+    return result;
+  }, [libraryImport.importLibrary, saveTimestamp]);
+
+  // Enhanced dashboard refresh that saves timestamp
+  const enhancedRefreshDashboard = useCallback(async () => {
+    const result = await dashboardRefresh.refreshDashboard();
+    if (result?.success) {
+      const now = new Date();
+      saveTimestamp('unplayed_last_dashboard_refresh', now);
+    }
+    return result;
+  }, [dashboardRefresh.refreshDashboard, saveTimestamp]);
+
   // Combined refresh states for UI convenience
   const refreshStates = {
     isImporting: libraryImport.isImporting,
@@ -19,11 +66,11 @@ export const useRefreshCoordinator = () => {
     isRefreshingPrices: priceRefresh.isRefreshingPrices,
   };
 
-  // Combined timestamps for UI convenience
+  // Use persistent timestamps instead of hook timestamps
   const timestamps = {
-    lastImport: libraryImport.lastImport,
-    lastDashboardRefresh: dashboardRefresh.lastDashboardRefresh,
-    lastPriceRefresh: priceRefresh.lastPriceRefresh,
+    lastImport: persistentTimestamps.lastImport,
+    lastDashboardRefresh: persistentTimestamps.lastDashboardRefresh,
+    lastPriceRefresh: priceRefresh.lastPriceRefresh, // This one doesn't need persistence
   };
 
   // Combined capability checks
@@ -41,9 +88,9 @@ export const useRefreshCoordinator = () => {
   };
 
   return {
-    // Operations
-    importLibrary: libraryImport.importLibrary,
-    refreshDashboard: dashboardRefresh.refreshDashboard,
+    // Operations with persistent timestamp saving
+    importLibrary: enhancedImportLibrary,
+    refreshDashboard: enhancedRefreshDashboard,
     refreshPrices: priceRefresh.refreshPrices,
     
     // States (for backward compatibility)
