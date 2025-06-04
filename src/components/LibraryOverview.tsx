@@ -6,6 +6,8 @@ import { GamepadIcon, Clock, Trophy, Star, Target, Activity, Palette } from 'luc
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
+import { calculateActivityInsights } from '@/utils/activity-insights';
+import GenreGalaxy from '@/components/GenreGalaxy';
 import CurrencyAmount from '@/components/ui/currency-amount';
 
 const LibraryOverview = () => {
@@ -65,6 +67,46 @@ const LibraryOverview = () => {
       topPlayedGames,
       playtimeDistribution
     };
+  }, [libraryGames]);
+
+  // Calculate activity insights
+  const activityInsights = React.useMemo(() => {
+    return calculateActivityInsights(libraryGames);
+  }, [libraryGames]);
+
+  // Calculate value champion (best value game)
+  const valueChampion = React.useMemo(() => {
+    const playedGames = libraryGames.filter(game => (game.userGame?.playtime_minutes || 0) > 0);
+    if (playedGames.length === 0) return null;
+
+    return playedGames.reduce((best, game) => {
+      const playtimeHours = (game.userGame?.playtime_minutes || 0) / 60;
+      const price = (game.price_cents || 0) / 100;
+      
+      if (price === 0 || playtimeHours === 0) return best;
+      
+      const valueRatio = playtimeHours / price;
+      const bestRatio = best ? ((best.userGame?.playtime_minutes || 0) / 60) / ((best.price_cents || 1) / 100) : 0;
+      
+      return valueRatio > bestRatio ? game : best;
+    }, null as typeof libraryGames[0] | null);
+  }, [libraryGames]);
+
+  // Calculate genre data for Genre Galaxy
+  const genreData = React.useMemo(() => {
+    const genreCounts: { [key: string]: number } = {};
+    
+    libraryGames.forEach(game => {
+      if (game.genres) {
+        game.genres.forEach(genre => {
+          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+        });
+      }
+    });
+
+    return Object.entries(genreCounts)
+      .map(([genre, count]) => ({ genre, count }))
+      .sort((a, b) => b.count - a.count);
   }, [libraryGames]);
 
   return (
@@ -232,34 +274,39 @@ const LibraryOverview = () => {
               <div className="space-y-3">
                 <div>
                   <h4 className="text-sm font-medium text-gray-300 mb-2">Recently Active Games</h4>
-                  <p className="text-gray-400 text-sm">Coming soon - track your recent gaming activity</p>
+                  <p className="text-white font-medium">{activityInsights.recentlyPlayedGames} games played recently</p>
+                  <p className="text-xs text-gray-400">In the last 30 days</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-300 mb-2">Value Champion</h4>
-                  <p className="text-gray-400 text-sm">Coming soon - discover your best value games</p>
+                  {valueChampion ? (
+                    <div>
+                      <p className="text-white font-medium truncate">{valueChampion.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {Math.round((valueChampion.userGame?.playtime_minutes || 0) / 60)}h for ${((valueChampion.price_cents || 0) / 100).toFixed(2)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm">Play some games to see your best value!</p>
+                  )}
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-300 mb-2">Gaming Style</h4>
-                  <p className="text-gray-400 text-sm">Coming soon - analyze your gaming patterns</p>
+                  <p className="text-white font-medium">
+                    {activityInsights.averageSessionLength > 0 
+                      ? `${activityInsights.averageSessionLength.toFixed(1)}h avg session`
+                      : 'Start playing to analyze your style'
+                    }
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Clean streak: {activityInsights.cleanStreak} days
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Palette className="h-5 w-5 text-purple-400" />
-                <span>Genre Galaxy</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center text-gray-400 py-8">
-                <p>Coming soon</p>
-                <p className="text-sm">Explore your gaming universe in a beautiful constellation view</p>
-              </div>
-            </CardContent>
-          </Card>
+          <GenreGalaxy genres={genreData} totalGames={stats.totalGames} />
         </div>
       </div>
     </TooltipProvider>

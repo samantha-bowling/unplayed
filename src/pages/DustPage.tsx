@@ -4,8 +4,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import DustScoreMeter from "@/components/DustScoreMeter";
 import DustAnalysis from "@/components/DustAnalysis";
-import DustTierDistribution from "@/components/DustTierDistribution";
-import DustContributors from "@/components/DustContributors";
+import { DustTierDistribution } from "@/components/dust/DustTierDistribution";
+import { TopDustContributors } from "@/components/dust/TopDustContributors";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DustPage = () => {
@@ -59,7 +59,7 @@ const DustPage = () => {
             </TabsContent>
             
             <TabsContent value="contributors" className="space-y-4">
-              <DustContributors />
+              <TopDustContributors />
             </TabsContent>
           </Tabs>
         </div>

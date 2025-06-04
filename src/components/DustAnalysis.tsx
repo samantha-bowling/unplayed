@@ -1,16 +1,16 @@
 
 import React from 'react';
 import DustScoreMeter from './DustScoreMeter';
-import DustBreakdownChart from './DustBreakdownChart';
-import DustGameCard from './DustGameCard';
+import { DustTierDistribution } from '@/components/dust/DustTierDistribution';
+import { TopDustContributors } from '@/components/dust/TopDustContributors';
 
 const DustAnalysis = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <DustScoreMeter />
-      <DustBreakdownChart />
+      <DustTierDistribution />
       <div className="lg:col-span-2">
-        <DustGameCard />
+        <TopDustContributors />
       </div>
     </div>
   );
