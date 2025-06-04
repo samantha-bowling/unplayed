@@ -5,39 +5,50 @@ import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/hooks/use-query-keys';
 
 export interface GenreStat {
-  genreName: string;
-  gameCount: number;
+  id: string;
+  genre_name: string;
+  game_count: number;
   percentage: number;
-  colorHex: string;
+  color_hex: string;
+  last_calculated: string;
 }
 
 export const useGenreStats = () => {
   const { user } = useAuth();
 
-  return useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.genreStats(user?.id),
     queryFn: async (): Promise<GenreStat[]> => {
-      if (!user) return [];
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-      const { data, error } = await supabase
+      console.log('Fetching genre stats...');
+
+      const { data: genreData, error: genreError } = await supabase
         .from('user_genre_stats')
         .select('*')
         .eq('user_id', user.id)
         .order('game_count', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching genre stats:', error);
-        return [];
+      if (genreError) {
+        console.error('Error fetching genre stats:', genreError);
+        throw genreError;
       }
 
-      return data.map(stat => ({
-        genreName: stat.genre_name,
-        gameCount: stat.game_count,
-        percentage: stat.percentage,
-        colorHex: stat.color_hex
-      }));
+      console.log('Genre stats loaded:', genreData?.length || 0, 'genres');
+      return genreData || [];
     },
     enabled: !!user,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
+
+  return {
+    data: data || [],
+    isLoading,
+    error,
+  };
 };
+
+export default useGenreStats;

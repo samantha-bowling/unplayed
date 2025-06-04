@@ -6,9 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, DollarSign } from "lucide-react";
 import SpendingSummary from "@/components/SpendingSummary";
-import SpendingMeter from "@/components/SpendingMeter";
-import PriceDistributionChart from "@/components/PriceDistributionChart";
 import TopExpensiveUnplayedGames from "@/components/TopExpensiveUnplayedGames";
+import SpendingInsights from "@/components/SpendingInsights";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
@@ -57,18 +56,12 @@ const SpendPage = () => {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 bg-black/40 border border-gray-700">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-black/40 border border-gray-700">
                 <TabsTrigger 
                   value="overview"
                   className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
                 >
                   Overview
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="topgames"
-                  className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
-                >
-                  Top Games
                 </TabsTrigger>
                 <TabsTrigger 
                   value="insights"
@@ -82,59 +75,16 @@ const SpendPage = () => {
                 <SpendingSummary />
               </TabsContent>
               
-              <TabsContent value="topgames" className="space-y-4">
-                <div className="terminal-container shadow-[0_0_20px_rgba(163,247,191,0.15)]">
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-bold text-unplayed-mint mb-2">
-                      Most Expensive Unplayed Games
-                    </h3>
-                    <p className="text-gray-400">
-                      Your biggest backlog investments waiting to be played
-                    </p>
-                  </div>
-                  <TopExpensiveUnplayedGames />
-                </div>
-              </TabsContent>
-              
               <TabsContent value="insights" className="space-y-6">
-                {/* Two column layout for spending insights and analysis */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="terminal-container shadow-[0_0_20px_rgba(163,247,191,0.15)]">
-                    <div className="mb-4">
-                      <h3 className="text-xl font-bold text-unplayed-mint mb-2">
-                        Unplayed Investment
-                      </h3>
-                      <p className="text-sm text-gray-400">
-                        Financial impact of your backlog
-                      </p>
-                    </div>
-                    <SpendingMeter
-                      amount={spendingData.unplayedSpent}
-                      currency={spendingData.currency}
-                      isLoading={isLoading}
-                      showDetailsLink={false}
-                      totalSaved={spendingData.unplayedSaved}
-                      hasUser={!!user}
-                    />
-                  </div>
-                  
-                  <div className="terminal-container shadow-[0_0_20px_rgba(163,247,191,0.15)]">
-                    <TopExpensiveUnplayedGames />
-                  </div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-unplayed-mint mb-2">
+                    Library Insights
+                  </h2>
+                  <p className="text-gray-400">
+                    Analysis of {spendingData.totalGames.toLocaleString()} games in your Steam library
+                  </p>
                 </div>
-                
-                {/* Full width price distribution chart */}
-                <div className="terminal-container shadow-[0_0_20px_rgba(163,247,191,0.15)]">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-unplayed-mint mb-2">
-                      Price Distribution
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      How your games are distributed across price ranges
-                    </p>
-                  </div>
-                  <PriceDistributionChart />
-                </div>
+                <SpendingInsights />
               </TabsContent>
             </Tabs>
           )}
