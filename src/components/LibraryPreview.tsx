@@ -1,315 +1,231 @@
 
-import React, { useState, useMemo } from 'react';
-import { Grid, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAuth } from '@/context/AuthContext';
-import { useDemoMode } from '@/context/DemoModeContext';
+import React, { useMemo, useState } from 'react';
 import { useLibraryData } from '@/hooks/use-library-data';
+import { useDemoMode } from '@/context/DemoModeContext';
+import { useAuth } from '@/context/AuthContext';
+import { useFullScreenMode } from '@/context/FullScreenModeContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Maximize2, Eye, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
-import SteamLoader from './SteamLoader';
-import GameCard from './GameCard';
 
 interface LibraryPreviewProps {
   zenModeFullScreen?: boolean;
 }
 
-const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = false }) => {
+const LibraryPreview = React.memo<LibraryPreviewProps>(({ zenModeFullScreen = false }) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const [limit, setLimit] = useState<number>(12);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [searchFilter, setSearchFilter] = useState<string>('');
-  const [hideIgnored, setHideIgnored] = useState<boolean>(false);
-  const [onlyUnplayed, setOnlyUnplayed] = useState<boolean>(false);
+  const { games: libraryGames, isLoading } = useLibraryData();
+  const { setFullScreenMode, setFocusedComponent } = useFullScreenMode();
+  const [showHidden, setShowHidden] = useState(false);
 
-  // Use the library data hook only when not in demo mode
-  const libraryDataResult = useLibraryData();
-
-  // In demo mode, use demo library data; otherwise use real data
-  const libraryGames = useMemo(() => {
-    if (isDemo) {
-      // Convert demo data to the expected format
-      return demoData.library.map(game => ({
-        id: game.id,
-        name: game.name,
-        image_url: game.image,
-        header_image: game.image,
-        release_date: null,
-        metacritic_score: null,
-        genres: [],
-        categories: [],
-        userGame: {
-          id: `demo-${game.id}`,
-          game_id: game.id,
-          playtime_minutes: game.playtime,
-          hidden: false,
-          dust_score: Math.floor(Math.random() * 50) + 10, // Random dust score for demo
-          last_played_date: null,
-          acquisition_date: null,
-          notes: null,
-        }
-      }));
-    }
-    return libraryDataResult.games || [];
-  }, [isDemo, demoData.library, libraryDataResult.games]);
-
-  const isLoading = isDemo ? false : libraryDataResult.isLoading;
-  const error = isDemo ? null : libraryDataResult.error;
-
-  // Apply filters to the games
-  const filteredGames = useMemo(() => {
-    let filtered = [...libraryGames];
-    
-    // Apply search filter
-    if (searchFilter) {
-      const searchLower = searchFilter.toLowerCase();
-      filtered = filtered.filter(game => 
-        game.name.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Filter out ignored games if hideIgnored is true
-    if (hideIgnored) {
-      filtered = filtered.filter(game => !game.userGame.hidden);
-    }
-
-    // Filter to only unplayed games if onlyUnplayed is true
-    if (onlyUnplayed) {
-      filtered = filtered.filter(game => 
-        !game.userGame.playtime_minutes || game.userGame.playtime_minutes === 0
-      );
-    }
-
-    return filtered;
-  }, [libraryGames, searchFilter, hideIgnored, onlyUnplayed]);
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredGames.length / limit);
-  const startIndex = (currentPage - 1) * limit;
-  const endIndex = startIndex + limit;
-  const currentPageGames = filteredGames.slice(startIndex, endIndex);
-
-  // Memoize processed games for performance
+  // Process games data consistently - show ALL games, not limited subset
   const processedGames = useMemo(() => {
-    return currentPageGames.map(game => ({
-      ...game,
-      imageUrl: getBestGameImageFromDbData(game, game.id)
-    }));
-  }, [currentPageGames]);
-
-  const handleMarkAsPlayed = async (userGameId: string) => {
+    let gamesToProcess = [];
+    
     if (isDemo) {
-      console.log('Demo mode: Mark as played:', userGameId);
-      return;
+      // Use demo data games list
+      gamesToProcess = demoData.gamesList || [];
+    } else {
+      // Use all library games - remove any artificial limits
+      gamesToProcess = libraryGames || [];
     }
-    // Implementation for marking as played
-    console.log('Mark as played:', userGameId);
+
+    // Filter based on hidden state
+    const filteredGames = showHidden 
+      ? gamesToProcess 
+      : gamesToProcess.filter(game => !game.userGame?.hidden);
+
+    console.log('LibraryPreview Debug:', {
+      totalLibraryGames: libraryGames?.length || 0,
+      demoGamesCount: demoData.gamesList?.length || 0,
+      filteredGamesCount: filteredGames.length,
+      showHidden,
+      isDemo
+    });
+
+    // Sort by dust score (highest first) and return ALL games
+    return filteredGames
+      .sort((a, b) => {
+        const dustA = a.userGame?.dust_score || 0;
+        const dustB = b.userGame?.dust_score || 0;
+        return dustB - dustA;
+      });
+  }, [libraryGames, demoData.gamesList, showHidden, isDemo]);
+
+  const handleFullScreen = () => {
+    setFocusedComponent('library');
+    setFullScreenMode(true);
   };
 
-  const handleToggleHidden = async (userGameId: string, currentHidden: boolean) => {
-    if (isDemo) {
-      console.log('Demo mode: Toggle hidden:', userGameId, !currentHidden);
-      return;
-    }
-    // Implementation for toggling hidden
-    console.log('Toggle hidden:', userGameId, !currentHidden);
+  const toggleHiddenGames = () => {
+    setShowHidden(!showHidden);
   };
 
-  const handleSaveNote = async (userGameId: string, note: string) => {
-    if (isDemo) {
-      console.log('Demo mode: Save note:', userGameId, note);
-      return;
-    }
-    // Implementation for saving note
-    console.log('Save note:', userGameId, note);
-  };
-
-  const resetFilters = () => {
-    setSearchFilter('');
-    setHideIgnored(false);
-    setOnlyUnplayed(false);
-  };
-
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
-
-  const nextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
-
-  const previousPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-
-  // Reset page when filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchFilter, hideIgnored, onlyUnplayed, limit]);
-
-  return (
-    <div className="terminal-container">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="terminal-header text-2xl">Library Preview</h3>
-        <div className="flex items-center gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="6">6</SelectItem>
-                    <SelectItem value="12">12</SelectItem>
-                    <SelectItem value="24">24</SelectItem>
-                    <SelectItem value="48">48</SelectItem>
-                    <SelectItem value="96">96</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Games to show</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-
-      {/* Search and Filter Controls */}
-      <div className="flex flex-col gap-4 mb-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search games..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="pl-10"
-            />
+  if (isLoading && !isDemo) {
+    return (
+      <div className="terminal-container">
+        <h3 className="terminal-header text-2xl mb-4">Library Preview</h3>
+        <div className="terminal-content p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-unplayed-mint"></div>
+            <span className="ml-3 text-gray-400">Loading your library...</span>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Filter Toggles */}
-        <div className="flex gap-2">
-          <Button
-            variant={onlyUnplayed ? "default" : "outline"}
-            size="sm"
-            onClick={() => setOnlyUnplayed(!onlyUnplayed)}
-          >
-            Only Unplayed
-          </Button>
-          <Button
-            variant={hideIgnored ? "default" : "outline"}
-            size="sm"
-            onClick={() => setHideIgnored(!hideIgnored)}
-          >
-            Hide Ignored
-          </Button>
-          {(searchFilter || onlyUnplayed || hideIgnored) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetFilters}
-            >
-              Clear Filters
-            </Button>
+  if (!processedGames.length) {
+    return (
+      <div className="terminal-container">
+        <h3 className="terminal-header text-2xl mb-4">Library Preview</h3>
+        <div className="terminal-content p-8 text-center">
+          <p className="text-gray-400 mb-4">No games found in your library.</p>
+          {user && !isDemo && (
+            <p className="text-sm text-gray-500">
+              Import your Steam library to see your games here.
+            </p>
           )}
         </div>
       </div>
+    );
+  }
 
-      {/* Results Summary */}
-      <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
-        <span>
-          Showing {processedGames.length} of {filteredGames.length} games
-        </span>
-        {totalPages > 1 && (
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-        )}
+  if (zenModeFullScreen) {
+    return (
+      <div className="w-full h-full overflow-auto p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+          {processedGames.map((game) => {
+            const imageUrl = getBestGameImageFromDbData(game, game.id);
+            const dustScore = game.userGame?.dust_score || 0;
+            
+            return (
+              <Card key={game.id} className="bg-black/40 border-gray-700 hover:border-unplayed-mint/50 transition-colors">
+                <CardContent className="p-2">
+                  <div className="aspect-[460/215] relative mb-2">
+                    <img
+                      src={imageUrl || '/placeholder.svg'}
+                      alt={game.name}
+                      className="w-full h-full object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                    {dustScore > 0 && (
+                      <div className="absolute top-1 right-1 bg-unplayed-pink text-white text-xs px-1 py-0.5 rounded">
+                        {dustScore}
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="text-xs font-medium text-white truncate" title={game.name}>
+                    {game.name}
+                  </h4>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Show first 12 games in preview mode, but indicate total count
+  const previewGames = processedGames.slice(0, 12);
+  const totalCount = processedGames.length;
+
+  return (
+    <div className="terminal-container">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="terminal-header text-2xl mb-0">Library Preview</h3>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleHiddenGames}
+            className="text-xs bg-black/50 border-gray-700 hover:bg-black/70"
+          >
+            {showHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showHidden ? 'Hide Hidden' : 'Show Hidden'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFullScreen}
+            className="text-xs bg-black/50 border-gray-700 hover:bg-black/70"
+          >
+            <Maximize2 size={14} className="mr-1" />
+            Full View
+          </Button>
+        </div>
       </div>
 
       <div className="terminal-content">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <SteamLoader message="Loading your library..." size="md" variant="secondary" />
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-400">
-            <p>Error loading library: {error.message}</p>
-          </div>
-        ) : processedGames.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <p>No games found matching your criteria.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {processedGames.map(game => (
-              <GameCard
-                key={game.userGame.id}
-                id={game.userGame.id}
-                gameId={game.id}
-                title={game.name}
-                imageUrl={game.imageUrl}
-                headerImage={game.header_image}
-                dustScore={game.userGame.dust_score}
-                playtimeMinutes={game.userGame.playtime_minutes}
-                isHidden={game.userGame.hidden}
-                notes={game.userGame.notes}
-                onMarkAsPlayed={() => handleMarkAsPlayed(game.userGame.id)}
-                onToggleHidden={() => handleToggleHidden(game.userGame.id, game.userGame.hidden || false)}
-                onSaveNote={(note) => handleSaveNote(game.userGame.id, note)}
-              />
-            ))}
-          </div>
-        )}
+        <div className="mb-4 text-center">
+          <p className="text-sm text-gray-400">
+            Showing {previewGames.length} of {totalCount.toLocaleString()} games
+            {!showHidden && ' (hidden games excluded)'}
+          </p>
+        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={previousPage}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+          {previewGames.map((game) => {
+            const imageUrl = getBestGameImageFromDbData(game, game.id);
+            const dustScore = game.userGame?.dust_score || 0;
+            const isHidden = game.userGame?.hidden || false;
             
-            <div className="flex gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page = i + 1;
-                return (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => goToPage(page)}
-                    className="w-8 h-8 p-0"
-                  >
-                    {page}
-                  </Button>
-                );
-              })}
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={nextPage}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        )}
+            return (
+              <Card 
+                key={game.id} 
+                className={`bg-black/40 border-gray-700 hover:border-unplayed-mint/50 transition-colors ${
+                  isHidden ? 'opacity-60' : ''
+                }`}
+              >
+                <CardContent className="p-2">
+                  <div className="aspect-[460/215] relative mb-2">
+                    <img
+                      src={imageUrl || '/placeholder.svg'}
+                      alt={game.name}
+                      className="w-full h-full object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                    {dustScore > 0 && (
+                      <div className="absolute top-1 right-1 bg-unplayed-pink text-white text-xs px-1 py-0.5 rounded">
+                        {dustScore}
+                      </div>
+                    )}
+                    {isHidden && (
+                      <div className="absolute bottom-1 left-1 bg-gray-800 text-white text-xs px-1 py-0.5 rounded">
+                        Hidden
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="text-xs font-medium text-white truncate" title={game.name}>
+                    {game.name}
+                  </h4>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="text-center">
+          <Link 
+            to="/library" 
+            className="inline-flex items-center px-4 py-2 bg-unplayed-mint text-black rounded-md hover:bg-unplayed-mint/90 transition-colors font-medium"
+          >
+            View Full Library ({totalCount.toLocaleString()} games)
+          </Link>
+        </div>
       </div>
     </div>
   );
-};
+});
+
+LibraryPreview.displayName = 'LibraryPreview';
 
 export default LibraryPreview;
