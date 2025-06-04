@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Clock, Eye, EyeOff, FileEdit, Check, ExternalLink } from 'lucide-react';
 import { 
@@ -147,7 +146,7 @@ const GameCard: React.FC<GameCardProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Visit game on Steam</p>
+                  <p>Visit on Steam</p>
                 </TooltipContent>
               </Tooltip>
 
