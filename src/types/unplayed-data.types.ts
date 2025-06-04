@@ -6,6 +6,7 @@ export interface GameListItem {
   id: number;
   name: string;
   image: string | null;
+  image_url?: string | null; // Added for picker component compatibility
   header_image?: string | null;
   playtimeMinutes: number;
   lastPlayed?: string | null; // Added missing property
