@@ -65,17 +65,6 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="supabase">
-              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
-                What's up with that supabase.unplayed.wtf URL when I login?
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-gray-300">
-                <p>
-                  We use Supabase for our database and authentication. We don't know how it all works exactly. Maybe magic.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-
             <AccordionItem value="affiliation">
               <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
                 Is this affiliated with Valve/Steam?
@@ -139,6 +128,17 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
                 </p>
                 <p>
                   Bonus: once it lands on a game, you can hit "Give me a reason" to get a recent positive Steam review for it. It's like peer pressure, but helpful.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="supabase">
+              <AccordionTrigger className="text-sm font-medium text-unplayed-mint">
+                What's up with that supabase.unplayed.wtf URL when I login?
+              </AccordionTrigger>
+              <AccordionContent className="text-sm text-gray-300">
+                <p>
+                  We use Supabase for our database and authentication.
                 </p>
               </AccordionContent>
             </AccordionItem>
