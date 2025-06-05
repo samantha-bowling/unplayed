@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,14 +11,15 @@ import { useUserMetrics } from '@/hooks/use-user-metrics';
 import GenreGalaxy from '@/components/GenreGalaxy';
 import HiddenGems from '@/components/HiddenGems';
 
-// Enhanced playtime tier definitions with PC gaming culture-coded names
+// Enhanced playtime tier definitions with heat map text colors
 const PLAYTIME_TIERS = [
   {
     name: "Curiosity Killed",
     range: "0-5h",
     min: 0,
     max: 5,
-    color: "bg-gray-500",
+    color: "bg-gray-500", // Keep for reference but won't use for progress bars
+    textColor: "text-blue-300", // Cool blue for low playtime
     description: "Just a quick peek... or so you thought"
   },
   {
@@ -26,6 +28,7 @@ const PLAYTIME_TIERS = [
     min: 5,
     max: 25,
     color: "bg-blue-500",
+    textColor: "text-blue-400", // Slightly warmer blue
     description: "Casual gaming sessions when you have time"
   },
   {
@@ -34,6 +37,7 @@ const PLAYTIME_TIERS = [
     min: 25,
     max: 100,
     color: "bg-green-500",
+    textColor: "text-green-400", // Medium intensity green
     description: "This game has caught your attention"
   },
   {
@@ -42,6 +46,7 @@ const PLAYTIME_TIERS = [
     min: 100,
     max: 500,
     color: "bg-yellow-500",
+    textColor: "text-yellow-400", // Getting warmer with yellow
     description: "What's sunlight again?"
   },
   {
@@ -50,6 +55,7 @@ const PLAYTIME_TIERS = [
     min: 500,
     max: 1000,
     color: "bg-orange-500",
+    textColor: "text-orange-400", // Warm orange for high playtime
     description: "Friends and family are concerned"
   },
   {
@@ -58,6 +64,7 @@ const PLAYTIME_TIERS = [
     min: 1000,
     max: 5000,
     color: "bg-red-500",
+    textColor: "text-red-400", // Hot red for very high playtime
     description: "You've transcended mere mortal gaming"
   },
   {
@@ -66,6 +73,7 @@ const PLAYTIME_TIERS = [
     min: 5000,
     max: Infinity,
     color: "bg-purple-500",
+    textColor: "text-purple-400", // Extreme heat with purple
     description: "Gaming deity - others worship your Steam profile"
   }
 ];
@@ -114,6 +122,7 @@ const LibraryOverview = () => {
       min: 0,
       max: 0,
       color: "bg-gray-600",
+      textColor: "text-gray-400", // Cool gray for unplayed
       description: "Games sitting in your library, waiting patiently",
       count: unplayedGames
     };
@@ -282,7 +291,7 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Enhanced Playtime Distribution */}
+          {/* Enhanced Playtime Distribution with Heat Map Tier Titles */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -299,7 +308,7 @@ const LibraryOverview = () => {
                         <TooltipTrigger asChild>
                           <div className="flex justify-between items-center cursor-help">
                             <div>
-                              <span className="text-white font-medium">{tier.name}</span>
+                              <span className={`font-medium ${tier.textColor}`}>{tier.name}</span>
                               <span className="text-sm text-gray-400 ml-2">({tier.range})</span>
                             </div>
                             <span className="text-sm text-gray-400">{tier.count} games</span>
@@ -313,9 +322,6 @@ const LibraryOverview = () => {
                       <Progress 
                         value={(tier.count / stats.totalGames) * 100} 
                         className="h-2"
-                        style={{
-                          '--progress-background': tier.color.replace('bg-', '').replace('-500', '').replace('-600', '')
-                        } as React.CSSProperties}
                       />
                     </div>
                   ))}
