@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 // Set up the Supabase client
@@ -23,9 +22,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // This function needs to be scheduled to run periodically
-    const timestamp = new Date().toISOString();
-    console.log(`Starting leaderboard calculation at ${timestamp}`);
+    // Calculate standardized snapshot date (today at midnight UTC)
+    const now = new Date();
+    const snapshotDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+    
+    console.log(`Starting leaderboard calculation for snapshot date: ${snapshotDate}`);
+
+    // Delete existing entries for today's snapshot to prevent duplicates
+    console.log('Cleaning up existing entries for today...');
+    const { error: deleteError } = await supabase
+      .from('leaderboard_snapshots')
+      .delete()
+      .eq('snapshot_date', snapshotDate);
+
+    if (deleteError) {
+      console.error('Error deleting existing entries:', deleteError);
+    } else {
+      console.log('Successfully cleaned up existing entries for today');
+    }
 
     // Get all users who opted into the leaderboard (public or anonymous)
     const { data: eligibleUsers, error: userError } = await supabase
@@ -37,10 +51,11 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${eligibleUsers.length} eligible users`);
 
-    // Get the previous snapshot date (for calculating rank changes)
+    // Get the previous snapshot date (most recent snapshot before today)
     const { data: previousSnapshotData, error: previousError } = await supabase
       .from('leaderboard_snapshots')
       .select('snapshot_date')
+      .lt('snapshot_date', snapshotDate)
       .order('snapshot_date', { ascending: false })
       .limit(1);
 
@@ -96,26 +111,28 @@ Deno.serve(async (req) => {
           const totalGames = userMetrics.total_games || 0;
           const unplayedGames = userMetrics.unplayed_games || 0;
           const playedGames = userMetrics.played_games || 0;
-          const dustScore = userMetrics.total_dust_score || 0; // This is the key consistency fix
+          const dustScore = userMetrics.total_dust_score || 0;
           const cleanScore = userMetrics.clean_score || 0;
           const libraryValueCents = userMetrics.total_library_value_cents || 0;
 
-          // Get previous rankings for this user
-          const { data: previousEntry } = await supabase
-            .from('leaderboard_snapshots')
-            .select('ranking')
-            .eq('user_id', user.id)
-            .eq('snapshot_date', previousSnapshotDate)
-            .limit(1);
+          // Get previous rankings for this user from the previous snapshot
+          let previousRanking = null;
+          if (previousSnapshotDate) {
+            const { data: previousEntry } = await supabase
+              .from('leaderboard_snapshots')
+              .select('ranking')
+              .eq('user_id', user.id)
+              .eq('snapshot_date', previousSnapshotDate)
+              .limit(1);
 
-          // Store previous ranking if it exists
-          const previousRanking = previousEntry && previousEntry.length > 0 ? previousEntry[0].ranking : null;
+            previousRanking = previousEntry && previousEntry.length > 0 ? previousEntry[0].ranking : null;
+          }
 
-          // Add to batch for upsert
+          // Add to batch for insert
           leaderboardEntries.push({
             user_id: user.id,
-            snapshot_date: timestamp,
-            dust_score: dustScore, // Using consistent dust score from user_metrics
+            snapshot_date: snapshotDate, // Use standardized snapshot date
+            dust_score: dustScore,
             clean_score: cleanScore,
             total_games: totalGames,
             played_games: playedGames,
@@ -131,29 +148,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Bulk upsert all leaderboard entries for this batch
+      // Bulk insert all leaderboard entries for this batch
       if (leaderboardEntries.length > 0) {
-        const { error: upsertError } = await supabase
+        const { error: insertError } = await supabase
           .from('leaderboard_snapshots')
-          .upsert(leaderboardEntries);
+          .insert(leaderboardEntries);
 
-        if (upsertError) {
-          console.error(`Error upserting batch ${batchIndex + 1}:`, upsertError);
+        if (insertError) {
+          console.error(`Error inserting batch ${batchIndex + 1}:`, insertError);
         } else {
-          console.log(`Successfully upserted ${leaderboardEntries.length} leaderboard entries for batch ${batchIndex + 1}`);
+          console.log(`Successfully inserted ${leaderboardEntries.length} leaderboard entries for batch ${batchIndex + 1}`);
         }
       }
     }
     
     // Update rankings with a direct SQL query for better performance
     // For dust score rankings
-    const { error: dustRankError } = await supabase.rpc('update_leaderboard_dust_rankings', { snapshot_timestamp: timestamp });
+    const { error: dustRankError } = await supabase.rpc('update_leaderboard_dust_rankings', { snapshot_timestamp: snapshotDate });
     if (dustRankError) {
       console.error('Error updating dust rankings:', dustRankError);
     }
     
     // For clean score rankings
-    const { error: cleanRankError } = await supabase.rpc('update_leaderboard_clean_rankings', { snapshot_timestamp: timestamp });
+    const { error: cleanRankError } = await supabase.rpc('update_leaderboard_clean_rankings', { snapshot_timestamp: snapshotDate });
     if (cleanRankError) {
       console.error('Error updating clean rankings:', cleanRankError);
     }
@@ -162,45 +179,47 @@ Deno.serve(async (req) => {
     if (previousSnapshotDate) {
       console.log('Calculating rank changes...');
       
-      // We need to use raw SQL for this more complex update
-      const { error: rankChangeError } = await supabase.rpc('update_rank_changes', { 
-        current_snapshot: timestamp,
-        previous_snapshot: previousSnapshotDate 
-      });
-      
-      if (rankChangeError) {
-        console.error('Error calculating rank changes:', rankChangeError);
+      const { data: currentEntries } = await supabase
+        .from('leaderboard_snapshots')
+        .select('id, user_id, ranking, previous_ranking')
+        .eq('snapshot_date', snapshotDate);
         
-        // Fallback: manually update rank changes
-        console.log('Using fallback method to calculate rank changes...');
-        
-        const { data: currentEntries } = await supabase
-          .from('leaderboard_snapshots')
-          .select('id, user_id, ranking, previous_ranking')
-          .eq('snapshot_date', timestamp);
-          
-        if (currentEntries) {
-          for (const entry of currentEntries) {
-            if (entry.previous_ranking !== null && entry.ranking !== null) {
-              const rankChange = entry.previous_ranking - entry.ranking; // Positive means improved rank
-              
-              await supabase
-                .from('leaderboard_snapshots')
-                .update({ rank_change: rankChange })
-                .eq('id', entry.id);
-            }
+      if (currentEntries) {
+        for (const entry of currentEntries) {
+          if (entry.previous_ranking !== null && entry.ranking !== null) {
+            const rankChange = entry.previous_ranking - entry.ranking; // Positive means improved rank
+            
+            await supabase
+              .from('leaderboard_snapshots')
+              .update({ rank_change: rankChange })
+              .eq('id', entry.id);
           }
-          console.log('Finished fallback rank change calculations');
         }
-      } else {
-        console.log('Rank changes calculated successfully');
+        console.log('Finished rank change calculations');
       }
+    }
+
+    // Clean up old snapshots (keep last 30 days)
+    const retentionDate = new Date();
+    retentionDate.setDate(retentionDate.getDate() - 30);
+    const retentionDateISO = new Date(Date.UTC(retentionDate.getUTCFullYear(), retentionDate.getUTCMonth(), retentionDate.getUTCDate())).toISOString();
+    
+    console.log(`Cleaning up snapshots older than ${retentionDateISO}`);
+    const { error: cleanupError } = await supabase
+      .from('leaderboard_snapshots')
+      .delete()
+      .lt('snapshot_date', retentionDateISO);
+    
+    if (cleanupError) {
+      console.error('Error during cleanup:', cleanupError);
+    } else {
+      console.log('Successfully cleaned up old snapshots');
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
       processed: eligibleUsers.length,
-      timestamp 
+      snapshot_date: snapshotDate
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
