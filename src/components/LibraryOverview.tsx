@@ -1,14 +1,74 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { GamepadIcon, Clock, Trophy, Star, Activity, Calendar, Gamepad2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLibraryData } from '@/hooks/use-library-data';
 import { useUserMetrics } from '@/hooks/use-user-metrics';
 import GenreGalaxy from '@/components/GenreGalaxy';
 import HiddenGems from '@/components/HiddenGems';
+
+// Enhanced playtime tier definitions with PC gaming culture-coded names
+const PLAYTIME_TIERS = [
+  {
+    name: "Curiosity Killed",
+    range: "0-5h",
+    min: 0,
+    max: 5,
+    color: "bg-gray-500",
+    description: "Just a quick peek... or so you thought"
+  },
+  {
+    name: "Weekend Warrior",
+    range: "5-25h", 
+    min: 5,
+    max: 25,
+    color: "bg-blue-500",
+    description: "Casual gaming sessions when you have time"
+  },
+  {
+    name: "Getting Serious",
+    range: "25-100h",
+    min: 25,
+    max: 100,
+    color: "bg-green-500",
+    description: "This game has caught your attention"
+  },
+  {
+    name: "No Life Territory",
+    range: "100-500h",
+    min: 100,
+    max: 500,
+    color: "bg-yellow-500",
+    description: "What's sunlight again?"
+  },
+  {
+    name: "Send Help",
+    range: "500-1000h",
+    min: 500,
+    max: 1000,
+    color: "bg-orange-500",
+    description: "Friends and family are concerned"
+  },
+  {
+    name: "Ascended",
+    range: "1000-5000h",
+    min: 1000,
+    max: 5000,
+    color: "bg-red-500",
+    description: "You've transcended mere mortal gaming"
+  },
+  {
+    name: "Legendary Status",
+    range: "5000+ hours",
+    min: 5000,
+    max: Infinity,
+    color: "bg-purple-500",
+    description: "Gaming deity - others worship your Steam profile"
+  }
+];
 
 const LibraryOverview = () => {
   const { games: libraryGames } = useLibraryData();
@@ -41,20 +101,42 @@ const LibraryOverview = () => {
         image: game.header_image || game.image_url
       }));
 
-    // Calculate playtime distribution using libraryGames for detailed breakdown
-    const playtimeDistribution = {
-      unplayed: unplayedGames,
-      light: 0, // <2h
-      moderate: 0, // 2-10h
-      heavy: 0 // 10h+
+    // Calculate enhanced playtime distribution using new 7-tier system
+    const playtimeDistribution = PLAYTIME_TIERS.map(tier => ({
+      ...tier,
+      count: 0
+    }));
+
+    // Add unplayed games as a special case (they don't fit in the hour-based tiers)
+    const unplayedTier = {
+      name: "Unplayed",
+      range: "0h",
+      min: 0,
+      max: 0,
+      color: "bg-gray-600",
+      description: "Games sitting in your library, waiting patiently",
+      count: unplayedGames
     };
 
+    // Categorize played games into tiers
     playedGamesList.forEach(game => {
       const hours = (game.userGame?.playtime_minutes || 0) / 60;
-      if (hours < 2) playtimeDistribution.light++;
-      else if (hours < 10) playtimeDistribution.moderate++;
-      else playtimeDistribution.heavy++;
+      
+      // Find the appropriate tier for this game
+      for (const tier of playtimeDistribution) {
+        if (hours >= tier.min && (tier.max === Infinity || hours < tier.max)) {
+          tier.count++;
+          break;
+        }
+      }
     });
+
+    // Filter out tiers with 0 games and add unplayed if it has games
+    const activeTiers = [];
+    if (unplayedTier.count > 0) {
+      activeTiers.push(unplayedTier);
+    }
+    activeTiers.push(...playtimeDistribution.filter(tier => tier.count > 0));
 
     // Most common genres for GenreGalaxy
     const genreCount: Record<string, number> = {};
@@ -75,7 +157,7 @@ const LibraryOverview = () => {
       totalPlaytimeHours,
       completionRate,
       mostPlayedGames,
-      playtimeDistribution,
+      playtimeDistribution: activeTiers,
       topGenres
     };
   }, [libraryGames, userMetrics]);
@@ -200,7 +282,7 @@ const LibraryOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Playtime Distribution */}
+          {/* Enhanced Playtime Distribution */}
           <Card className="bg-black/20 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -208,44 +290,43 @@ const LibraryOverview = () => {
                 <span>Playtime Distribution</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Unplayed</span>
-                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.unplayed} games</span>
+            <CardContent>
+              <ScrollArea className="h-64">
+                <div className="space-y-3 pr-4">
+                  {stats.playtimeDistribution.map((tier, index) => (
+                    <div key={tier.name} className="space-y-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex justify-between items-center cursor-help">
+                            <div>
+                              <span className="text-white font-medium">{tier.name}</span>
+                              <span className="text-sm text-gray-400 ml-2">({tier.range})</span>
+                            </div>
+                            <span className="text-sm text-gray-400">{tier.count} games</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="font-medium">{tier.name}</p>
+                          <p className="text-xs text-gray-300">{tier.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Progress 
+                        value={(tier.count / stats.totalGames) * 100} 
+                        className="h-2"
+                        style={{
+                          '--progress-background': tier.color.replace('bg-', '').replace('-500', '').replace('-600', '')
+                        } as React.CSSProperties}
+                      />
+                    </div>
+                  ))}
+                  
+                  {stats.playtimeDistribution.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <p>No playtime data available</p>
+                    </div>
+                  )}
                 </div>
-                <Progress 
-                  value={(stats.playtimeDistribution.unplayed / stats.totalGames) * 100} 
-                  className="h-2"
-                />
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Light Play (&lt;2h)</span>
-                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.light} games</span>
-                </div>
-                <Progress 
-                  value={(stats.playtimeDistribution.light / stats.totalGames) * 100} 
-                  className="h-2"
-                />
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Moderate Play (2-10h)</span>
-                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.moderate} games</span>
-                </div>
-                <Progress 
-                  value={(stats.playtimeDistribution.moderate / stats.totalGames) * 100} 
-                  className="h-2"
-                />
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Heavy Play (10h+)</span>
-                  <span className="text-sm text-gray-400">{stats.playtimeDistribution.heavy} games</span>
-                </div>
-                <Progress 
-                  value={(stats.playtimeDistribution.heavy / stats.totalGames) * 100} 
-                  className="h-2"
-                />
-              </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
