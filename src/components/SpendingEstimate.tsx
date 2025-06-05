@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import SpendingMeter from './SpendingMeter';
 
 interface SpendingEstimateProps {
@@ -11,9 +13,11 @@ interface SpendingEstimateProps {
 const SpendingEstimate = ({ 
   showMoreDetailsLink = true 
 }: SpendingEstimateProps) => {
-  const { data: spendingData, isLoading: dataLoading } = useUnifiedSpendingDataV2();
+  const { data: spendingData, isLoading: dataLoading, refreshSpendingData } = useUnifiedSpendingDataV2();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(false);
+  const [isAutoCalculating, setIsAutoCalculating] = useState(false);
   
   console.log('SpendingEstimate - Using unified spending data V2:', {
     unplayedSpent: spendingData.unplayedSpent,
@@ -21,6 +25,77 @@ const SpendingEstimate = ({
     lastCalculated: spendingData.lastCalculated,
     source: 'user_spending_metrics_v2'
   });
+
+  // Check if we have meaningful spending data
+  const hasSpendingData = spendingData.lastCalculated && spendingData.unplayedSpent >= 0;
+
+  const handleShowDamage = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to view your spending data.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // If we already have recent data, just show it
+    if (hasSpendingData) {
+      setIsVisible(true);
+      return;
+    }
+
+    // If no data exists, auto-trigger calculation
+    console.log('No spending data found, auto-triggering calculation...');
+    setIsAutoCalculating(true);
+    
+    try {
+      toast({
+        title: "Calculating your spending",
+        description: "Analyzing your library value for the first time..."
+      });
+
+      // Call the spending calculation function directly
+      const { data: functionResult, error } = await supabase.functions.invoke(
+        'calculate-user-spending',
+        {
+          body: {
+            user_id: user.id,
+            force_refresh: true
+          }
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      if (!functionResult?.success) {
+        throw new Error(functionResult?.error || 'Failed to calculate spending metrics');
+      }
+
+      // Refresh the spending data to get the latest values
+      await refreshSpendingData();
+      
+      toast({
+        title: "Spending calculated!",
+        description: "Your library value has been analyzed successfully."
+      });
+
+      // Now show the results
+      setIsVisible(true);
+      
+    } catch (error) {
+      console.error('Error auto-calculating spending:', error);
+      toast({
+        title: "Calculation failed",
+        description: "There was a problem calculating your spending. Please try refreshing your dashboard.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAutoCalculating(false);
+    }
+  };
 
   return (
     <div className="terminal-container equal-height-container">
@@ -51,12 +126,20 @@ const SpendingEstimate = ({
             </p>
             
             <button 
-              onClick={() => setIsVisible(true)}
-              className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              disabled={dataLoading}
+              onClick={handleShowDamage}
+              className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={dataLoading || isAutoCalculating}
             >
-              {dataLoading ? 'Loading...' : 'Show me the damage'}
+              {isAutoCalculating ? 'Calculating...' : 
+               dataLoading ? 'Loading...' : 
+               'Show me the damage'}
             </button>
+            
+            {isAutoCalculating && (
+              <p className="text-sm text-gray-400 mt-2">
+                This may take a moment for first-time calculation
+              </p>
+            )}
           </div>
         )}
       </div>
