@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +16,7 @@ const SpendingEstimate = ({
 }: SpendingEstimateProps) => {
   const { data: spendingData, isLoading: dataLoading, refreshSpendingData } = useUnifiedSpendingDataV2();
   const { user } = useAuth();
+  const { isDemo, demoData } = useDemoMode();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(false);
   const [isAutoCalculating, setIsAutoCalculating] = useState(false);
@@ -25,6 +27,56 @@ const SpendingEstimate = ({
     lastCalculated: spendingData.lastCalculated,
     source: 'user_spending_metrics_v2'
   });
+
+  // In demo mode, use demo data
+  if (isDemo) {
+    const demoSpendingData = {
+      unplayedSpent: demoData.unplayedSpent || 189.50,
+      currency: 'USD',
+      lastCalculated: new Date().toISOString(),
+      unplayedSaved: 45.25 // Demo savings amount
+    };
+
+    return (
+      <div className="terminal-container equal-height-container">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="terminal-header text-2xl">unplayed Value</h3>
+            <p className="text-sm text-gray-400">
+              How much your unplayed games are worth
+            </p>
+          </div>
+        </div>
+        
+        <div className="terminal-content flex flex-col h-full">
+          {isVisible ? (
+            <SpendingMeter
+              amount={demoSpendingData.unplayedSpent}
+              currency={demoSpendingData.currency}
+              isLoading={false}
+              showDetailsLink={showMoreDetailsLink}
+              onHideClick={() => setIsVisible(false)}
+              totalSaved={demoSpendingData.unplayedSaved}
+              hasUser={true} // Show as if user is connected in demo
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <p className="text-gray-300 mb-6">
+                Ready to see how much your unplayed games are worth?
+              </p>
+              
+              <button 
+                onClick={() => setIsVisible(true)}
+                className="bg-unplayed-pink hover:bg-unplayed-pink/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                Show me the damage
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Check if we have meaningful spending data
   const hasSpendingData = spendingData.lastCalculated && spendingData.unplayedSpent >= 0;
