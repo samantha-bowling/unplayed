@@ -247,11 +247,19 @@ const IndexOptimized = () => {
                     {importState.isImporting ? "Importing..." : "Import Library"}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Import new games from Steam (smart detection)</p>
-                  {!canPerformOperation('import') && (
-                    <p className="text-yellow-300">Cooldown: {getRemainingCooldown('import')}s</p>
-                  )}
+                <TooltipContent side="bottom" className="max-w-sm p-4">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold text-unplayed-pink">Import Steam Library</p>
+                    <div className="space-y-1">
+                      <p><strong>What it does:</strong> Syncs new games from your Steam library using smart detection</p>
+                      <p><strong>When to use:</strong> After buying new games or when you notice missing games in your library</p>
+                      <p><strong>How often:</strong> Only when needed - not required for regular use</p>
+                      <p><strong>Smart detection:</strong> Only imports games that aren't already tracked</p>
+                      {!canPerformOperation('import') && (
+                        <p className="text-yellow-300"><strong>Cooldown:</strong> {getRemainingCooldown('import')}s remaining (2-min limit)</p>
+                      )}
+                    </div>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -269,11 +277,19 @@ const IndexOptimized = () => {
                     {refreshStates.isRefreshingDashboard ? "Refreshing..." : "Refresh Dashboard"}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Recalculate your gaming metrics</p>
-                  {!canPerformOperation('dashboard') && (
-                    <p className="text-yellow-300">Cooldown: {getRemainingCooldown('dashboard')}s</p>
-                  )}
+                <TooltipContent side="bottom" className="max-w-sm p-4">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold text-unplayed-mint">Refresh Dashboard</p>
+                    <div className="space-y-1">
+                      <p><strong>What it does:</strong> Recalculates all your gaming metrics, dust scores, and statistics</p>
+                      <p><strong>When to use:</strong> After playing games, making library changes, or if data seems outdated</p>
+                      <p><strong>How often:</strong> Use sparingly - once per day at most for significant changes</p>
+                      <p><strong>Performance:</strong> Triggers intensive calculations across your entire library</p>
+                      {!canPerformOperation('dashboard') && (
+                        <p className="text-yellow-300"><strong>Cooldown:</strong> {getRemainingCooldown('dashboard')}s remaining (1-min limit)</p>
+                      )}
+                    </div>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
