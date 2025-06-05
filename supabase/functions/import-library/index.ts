@@ -16,6 +16,81 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
+// Helper function to trigger user metrics calculation
+async function triggerUserMetricsCalculation(userId: string, authToken: string) {
+  try {
+    console.log(`🧮 Triggering user metrics calculation for user ${userId}`);
+    
+    const { data, error } = await supabase.functions.invoke('calculate-user-metrics', {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      }
+    });
+
+    if (error) {
+      console.error('Error triggering user metrics calculation:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ User metrics calculation completed successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception during user metrics calculation:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Helper function to trigger spending metrics calculation
+async function triggerSpendingCalculation(userId: string, authToken: string) {
+  try {
+    console.log(`💰 Triggering spending calculation for user ${userId}`);
+    
+    const { data, error } = await supabase.functions.invoke('calculate-user-spending', {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: { 
+        user_id: userId,
+        force_refresh: true 
+      }
+    });
+
+    if (error) {
+      console.error('Error triggering spending calculation:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Spending calculation completed successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception during spending calculation:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Helper function to run the complete calculation chain
+async function runCalculationChain(userId: string, authToken: string) {
+  console.log(`🔄 Starting automated calculation chain for user ${userId}`);
+  
+  const results = {
+    userMetrics: { success: false, error: null },
+    spending: { success: false, error: null }
+  };
+
+  // Run user metrics calculation first
+  const metricsResult = await triggerUserMetricsCalculation(userId, authToken);
+  results.userMetrics = metricsResult;
+
+  // Run spending calculation (regardless of metrics result)
+  const spendingResult = await triggerSpendingCalculation(userId, authToken);
+  results.spending = spendingResult;
+
+  const successCount = (results.userMetrics.success ? 1 : 0) + (results.spending.success ? 1 : 0);
+  
+  console.log(`📊 Calculation chain completed: ${successCount}/2 successful`);
+  return results;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -298,6 +373,22 @@ serve(async (req) => {
         results.totalProcessed = results.newGamesImported + results.existingGamesUpdated;
 
         console.log(`🎯 Import completed:`, results);
+
+        // **NEW: Auto-trigger calculation chain after successful import**
+        if (results.totalProcessed > 0) {
+          console.log(`🤖 Auto-triggering calculation chain for user ${userId}...`);
+          const calculationResults = await runCalculationChain(userId, authHeader);
+          
+          // Log calculation results but don't fail the import if calculations fail
+          if (calculationResults.userMetrics.success && calculationResults.spending.success) {
+            console.log(`🎉 Import and auto-calculations completed successfully!`);
+            results.warnings.push('Metrics and spending data calculated automatically');
+          } else {
+            console.warn(`⚠️ Import succeeded but some calculations failed:`, calculationResults);
+            results.warnings.push('Import successful, but some metric calculations failed. You may need to refresh your dashboard.');
+          }
+        }
+
         return results;
 
       } catch (error) {
@@ -317,17 +408,18 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({
         success: true,
-        message: "Enhanced library import started",
+        message: "Enhanced library import started with auto-calculations",
         totalGames: steamGames.length,
         newGamesFound: newGames.length,
         existingGames: existingGames.length,
         processing: "background",
         status: "processing",
-        helpText: "Your games are being imported with smart detection to preserve existing data.",
+        helpText: "Your games are being imported with smart detection and metrics will be calculated automatically.",
         improvements: [
           "Only new games will be imported",
           "Existing games will have playtime updated only", 
           "Enriched metadata (images, descriptions) will be preserved",
+          "Metrics and spending data will be calculated automatically",
           "Large libraries are handled more reliably"
         ]
       }), {
@@ -352,6 +444,7 @@ serve(async (req) => {
           "Smart import detection implemented",
           "Preserved enriched metadata",
           "Enhanced Steam API handling",
+          "Automatic metrics calculation",
           "Better error handling and validation"
         ]
       }), {
