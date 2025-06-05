@@ -3,6 +3,7 @@ import React, { useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
+import { useDemoMode } from '@/context/DemoModeContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import {
   Tooltip as UITooltip,
@@ -22,10 +23,19 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   activeGenre = null
 }: GenreHoardingProps) => {
   const { user } = useAuth();
+  const { isDemo: contextIsDemo, demoData } = useDemoMode();
   const { data: dashboardData } = useDashboardData();
 
-  // Memoize genre data to prevent unnecessary recalculations
-  const genreData = useMemo(() => dashboardData.genres, [dashboardData.genres]);
+  // Use demo mode from context or prop
+  const isDemoMode = contextIsDemo || isDemo;
+
+  // Memoize genre data - use demo data when in demo mode, otherwise use dashboard data
+  const genreData = useMemo(() => {
+    if (isDemoMode) {
+      return demoData.genres;
+    }
+    return dashboardData.genres;
+  }, [isDemoMode, demoData.genres, dashboardData.genres]);
 
   // Memoize most hoarded genre calculation
   const mostHoardedGenre = useMemo(() => {
@@ -62,7 +72,7 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   }, [activeGenre]);
 
   return (
-    <div className={`terminal-container w-full h-full ${isDemo ? 'relative' : ''}`}>
+    <div className={`terminal-container w-full h-full ${isDemoMode ? 'relative' : ''}`}>
       <h3 className="terminal-header text-2xl mb-2">Your Hoarded Genres</h3>
       <TooltipProvider>
         <UITooltip>
@@ -162,7 +172,7 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
         </div>
       )}
 
-      {isDemo && !document.cookie.includes("demo_note_dismissed") && (
+      {isDemoMode && !document.cookie.includes("demo_note_dismissed") && (
         <div className="mt-auto pt-4 text-center">
           <p className="text-sm text-unplayed-mint">
             You're in Demo Mode. Sign in to track your Genre breakdown.
