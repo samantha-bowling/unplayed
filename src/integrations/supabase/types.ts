@@ -842,6 +842,10 @@ export type Database = {
           days_since_check: number
         }[]
       }
+      get_total_game_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_user_game_dust_breakdown: {
         Args: { p_user_game_id: string }
         Returns: Json

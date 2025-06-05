@@ -1,4 +1,3 @@
-
 import { useCallback, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { useAuthPermission } from "@/hooks/use-auth-permission";
 const AdminSupportPage = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [isRefreshingCount, setIsRefreshingCount] = useState(false);
-  const [totalGameCount, setTotalGameCount] = useState<number>(19400000);
+  const [totalGameCount, setTotalGameCount] = useState<number>(1946); // Updated default to current actual count
   const location = useLocation();
   const { isAdmin } = useAuthPermission();
   
@@ -25,13 +24,11 @@ const AdminSupportPage = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Fetch total game count from Supabase
+  // Fetch total game count using the new database function
   const fetchTotalGameCount = useCallback(async () => {
     try {
       setIsRefreshingCount(true);
-      const { count, error } = await supabase
-        .from('user_games')
-        .select('*', { count: 'exact', head: true });
+      const { data, error } = await supabase.rpc('get_total_game_count');
         
       if (error) {
         console.error('Error fetching total game count:', error);
@@ -39,8 +36,8 @@ const AdminSupportPage = () => {
         return;
       }
       
-      if (count !== null) {
-        setTotalGameCount(count);
+      if (data !== null) {
+        setTotalGameCount(data);
         toast.success('Game count refreshed successfully');
       }
     } catch (err) {

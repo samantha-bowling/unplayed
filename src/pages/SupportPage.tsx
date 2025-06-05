@@ -63,26 +63,24 @@ const SupportPage = ({ totalGameCountProp }: SupportPageProps) => {
   const [showFinalResult, setShowFinalResult] = useState(false);
   const [animatedAmount, setAnimatedAmount] = useState(0);
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
-  const [totalGameCount, setTotalGameCount] = useState<number>(19400000); // Default value before fetch
+  const [totalGameCount, setTotalGameCount] = useState<number>(1946); // Updated default to current actual count
   
-  // Use prop if provided (from admin page), otherwise fetch from Supabase
+  // Use prop if provided (from admin page), otherwise fetch from database function
   useEffect(() => {
     if (totalGameCountProp) {
       setTotalGameCount(totalGameCountProp);
     } else {
       const fetchTotalGameCount = async () => {
         try {
-          const { count, error } = await supabase
-            .from('user_games')
-            .select('*', { count: 'exact', head: true });
-            
+          const { data, error } = await supabase.rpc('get_total_game_count');
+          
           if (error) {
             console.error('Error fetching total game count:', error);
             return;
           }
           
-          if (count !== null) {
-            setTotalGameCount(count);
+          if (data !== null) {
+            setTotalGameCount(data);
           }
         } catch (err) {
           console.error('Error in fetchTotalGameCount:', err);
