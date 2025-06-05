@@ -101,9 +101,16 @@ const LeaderboardPage = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-unplayed-mint">
               Dust Dynasty
             </h1>
+            <Trophy className="h-8 w-8 text-unplayed-mint" />
+          </div>
+          
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300">
+              The proverbial 'Wall of Shame' highlighting players with the biggest and most neglected Steam libraries.
+            </p>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-6 w-6 text-gray-400 hover:text-unplayed-mint cursor-help" />
+                <Info className="h-5 w-5 text-gray-400 hover:text-unplayed-mint cursor-help flex-shrink-0" />
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-sm p-4">
                 <div className="space-y-2 text-sm">
@@ -118,12 +125,7 @@ const LeaderboardPage = () => {
                 </div>
               </TooltipContent>
             </Tooltip>
-            <Trophy className="h-8 w-8 text-unplayed-mint" />
           </div>
-          
-          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-300">
-            The proverbial 'Wall of Shame' highlighting players with the biggest and most neglected Steam libraries.
-          </p>
 
           <div className="max-w-4xl mx-auto">
             {/* Last Updated Timestamp */}
