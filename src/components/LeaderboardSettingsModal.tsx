@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -22,6 +22,13 @@ const LeaderboardSettingsModal: React.FC<LeaderboardSettingsModalProps> = ({
   const [selectedVisibility, setSelectedVisibility] = useState(
     profile?.leaderboard_visibility || 'off'
   );
+
+  // Sync local state with profile data when it loads
+  useEffect(() => {
+    if (profile?.leaderboard_visibility) {
+      setSelectedVisibility(profile.leaderboard_visibility);
+    }
+  }, [profile?.leaderboard_visibility]);
 
   const handleVisibilityChange = (value: string) => {
     // Type-safe conversion to the specific union type
