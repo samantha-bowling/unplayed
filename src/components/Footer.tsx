@@ -1,5 +1,6 @@
 
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useAuth } from "@/context/AuthContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
@@ -16,6 +17,7 @@ const Footer = () => {
   const [showDeletionModal, setShowDeletionModal] = useState(false);
   const { isFullScreenMode } = useFullScreenMode();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Use useCallback to prevent unnecessary re-renders
   const openPrivacyPolicy = useCallback((e: React.MouseEvent) => {
@@ -37,6 +39,12 @@ const Footer = () => {
     e.preventDefault();
     setShowDeletionModal(true);
   }, []);
+
+  const handleSupportersClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/support');
+    window.scrollTo(0, 0);
+  }, [navigate]);
 
   // Hide footer in full screen mode
   if (isFullScreenMode) {
@@ -71,9 +79,9 @@ const Footer = () => {
             <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openAbout}>
               About
             </a>
-            <Link to="/support" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm">
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={handleSupportersClick}>
               Supporters
-            </Link>
+            </a>
             <a href="https://discord.gg/YHbr3Ska95" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm flex items-center gap-1">
               <DiscordIcon size={16} className="opacity-80" />
               Discord
