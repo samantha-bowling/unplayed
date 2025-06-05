@@ -16,7 +16,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-// Helper function to trigger user metrics calculation
+// Helper function to trigger user metrics calculation with error handling
 async function triggerUserMetricsCalculation(userId: string, authToken: string) {
   try {
     console.log(`🧮 Triggering user metrics calculation for user ${userId}`);
@@ -40,7 +40,7 @@ async function triggerUserMetricsCalculation(userId: string, authToken: string) 
   }
 }
 
-// Helper function to trigger spending metrics calculation
+// Helper function to trigger spending metrics calculation with error handling
 async function triggerSpendingCalculation(userId: string, authToken: string) {
   try {
     console.log(`💰 Triggering spending calculation for user ${userId}`);
@@ -68,7 +68,7 @@ async function triggerSpendingCalculation(userId: string, authToken: string) {
   }
 }
 
-// Helper function to run the complete calculation chain
+// Helper function to run the complete calculation chain with improved sequencing
 async function runCalculationChain(userId: string, authToken: string) {
   console.log(`🔄 Starting automated calculation chain for user ${userId}`);
   
@@ -77,13 +77,21 @@ async function runCalculationChain(userId: string, authToken: string) {
     spending: { success: false, error: null }
   };
 
-  // Run user metrics calculation first
+  // Run user metrics calculation first (sequential for data consistency)
   const metricsResult = await triggerUserMetricsCalculation(userId, authToken);
   results.userMetrics = metricsResult;
 
-  // Run spending calculation (regardless of metrics result)
-  const spendingResult = await triggerSpendingCalculation(userId, authToken);
-  results.spending = spendingResult;
+  // Only run spending calculation if metrics succeeded OR if metrics failed non-critically
+  if (metricsResult.success || !metricsResult.error?.includes('critical')) {
+    // Small delay to ensure metrics are committed before spending calculation
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const spendingResult = await triggerSpendingCalculation(userId, authToken);
+    results.spending = spendingResult;
+  } else {
+    console.warn('⚠️ Skipping spending calculation due to critical metrics failure');
+    results.spending = { success: false, error: 'Skipped due to metrics failure' };
+  }
 
   const successCount = (results.userMetrics.success ? 1 : 0) + (results.spending.success ? 1 : 0);
   

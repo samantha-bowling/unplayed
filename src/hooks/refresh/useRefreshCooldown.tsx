@@ -13,9 +13,9 @@ interface RefreshTimestamps {
 }
 
 const DEFAULT_COOLDOWNS: CooldownConfig = {
-  import: 2 * 60 * 1000, // 2 minutes
-  dashboard: 1 * 60 * 1000, // 1 minute
-  prices: 5 * 60 * 1000, // 5 minutes
+  import: 2 * 60 * 1000, // 2 minutes (unchanged)
+  dashboard: 1 * 60 * 1000, // 1 minute (unchanged) 
+  prices: 3 * 60 * 1000, // 3 minutes (reduced from 5 minutes)
 };
 
 export const useRefreshCooldown = (cooldowns: CooldownConfig = DEFAULT_COOLDOWNS) => {
