@@ -1,3 +1,4 @@
+
 import { UnplayedDataType, GameListItem } from '@/types/unplayed-data.types';
 import { calculateCleanScore } from './clean-score-utils';
 import { processGenres, countGenres } from './genre-processing';
@@ -49,20 +50,25 @@ export const transformUserGameData = (
     // Accumulate total dust score (sum, not average)
     totalDustScore += dustScore;
 
-    // Populate games list
+    // Populate games list with proper image field mapping
     gamesList.push({
       id: game.game_id,
       name: gameData.name,
       image: gameData.image_url || gameData.header_image || '',
+      image_url: gameData.image_url || null, // Add image_url field for picker compatibility
+      header_image: gameData.header_image || null, // Add header_image field for picker compatibility
       playtimeMinutes: playtimeMinutes,
       lastPlayed: game.last_played_date || null,
       added: null, // No longer using acquisition_date
       price: price,
+      price_cents: gameData.price_cents || null, // Add price_cents for compatibility
       genres: gameData.genres || [],
       notes: game.notes || null,
       hidden: game.hidden || false,
       releaseDate: gameData.release_date || null,
+      release_date: gameData.release_date || null, // Add release_date for compatibility
       metacritic: gameData.metacritic_score || null,
+      metacritic_score: gameData.metacritic_score || null, // Add metacritic_score for compatibility
       categories: gameData.categories || [],
       completionEstimate: gameEstimatesData[game.game_id]?.completionist || null,
       mainStoryEstimate: gameEstimatesData[game.game_id]?.main_story || null,
