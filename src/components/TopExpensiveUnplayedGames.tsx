@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2, DollarSign, ExternalLink } from 'lucide-react';
+import { Loader2, BadgeDollarSign, ExternalLink } from 'lucide-react';
 import { useTopExpensiveUnplayedGames } from '@/hooks/useTopExpensiveUnplayedGames';
 import CurrencyAmount from '@/components/ui/currency-amount';
 import { Button } from '@/components/ui/button';
@@ -29,15 +29,18 @@ const TopExpensiveUnplayedGames = () => {
     return (
       <div className="terminal-container shadow-[0_0_20px_rgba(163,247,191,0.15)] p-6">
         <div className="mb-6">
-          <h3 className="text-2xl font-bold text-unplayed-mint mb-2">
-            Most Expensive Unplayed Games
-          </h3>
+          <div className="flex items-center gap-2 mb-2">
+            <BadgeDollarSign className="w-6 h-6 text-yellow-500" />
+            <h3 className="text-2xl font-bold text-[#FAFAFA]">
+              Most Expensive Unplayed Games
+            </h3>
+          </div>
           <p className="text-gray-400">
             Your priciest backlog investments waiting to be played
           </p>
         </div>
         <div className="text-center py-8 text-gray-400">
-          <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <BadgeDollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>No expensive unplayed games found</p>
         </div>
       </div>
@@ -47,9 +50,12 @@ const TopExpensiveUnplayedGames = () => {
   return (
     <div className="terminal-container shadow-[0_0_20px_rgba(163,247,191,0.15)] p-6">
       <div className="mb-6">
-        <h3 className="text-2xl font-bold text-unplayed-mint mb-2">
-          Most Expensive Unplayed Games
-        </h3>
+        <div className="flex items-center gap-2 mb-2">
+          <BadgeDollarSign className="w-6 h-6 text-yellow-500" />
+          <h3 className="text-2xl font-bold text-[#FAFAFA]">
+            Most Expensive Unplayed Games
+          </h3>
+        </div>
         <p className="text-gray-400">
           Your priciest backlog investments waiting to be played
         </p>
