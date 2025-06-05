@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { useRefreshCooldown } from './useRefreshCooldown';
 import { useRefreshCache } from './useRefreshCache';
@@ -45,12 +44,40 @@ export const useLibraryImport = () => {
       if (data.success) {
         markOperationPerformed('import');
         
-        toast({
-          title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
-          description: data.status === 'complete' 
-            ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games.`
-            : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background.`
-        });
+        // Detect partial failures based on warnings
+        const hasWarnings = data.warnings && data.warnings.length > 0;
+        const hasCalculationFailures = hasWarnings && 
+          data.warnings.some(warning => 
+            warning.includes('calculation') || 
+            warning.includes('metrics') || 
+            warning.includes('dashboard')
+          );
+
+        if (hasCalculationFailures) {
+          // Partial success - import worked but calculations failed
+          toast({
+            title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
+            description: data.status === 'complete' 
+              ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games. Dashboard metrics are calculating in the background - refresh your dashboard in 2-3 minutes for updated stats.`
+              : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background. Dashboard metrics will calculate automatically - refresh your dashboard in a few minutes for updated stats.`
+          });
+        } else if (hasWarnings) {
+          // Other warnings (non-critical)
+          toast({
+            title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
+            description: data.status === 'complete' 
+              ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games. ${data.warnings[0]}`
+              : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background. ${data.warnings[0]}`
+          });
+        } else {
+          // Complete success (existing behavior)
+          toast({
+            title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
+            description: data.status === 'complete' 
+              ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games.`
+              : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background.`
+          });
+        }
 
         // Invalidate unplayed and library caches after import
         invalidateCacheDelayed('unplayed', 1000);
