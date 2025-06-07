@@ -27,6 +27,12 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
 }) => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
+  const handleDontShowAgainChange = (checked: boolean | "indeterminate") => {
+    if (typeof checked === 'boolean') {
+      setDontShowAgain(checked);
+    }
+  };
+
   const handleClose = () => {
     if (dontShowAgain) {
       // Store preference in localStorage
@@ -67,7 +73,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <Checkbox
               id="dontShowAgain"
               checked={dontShowAgain}
-              onCheckedChange={setDontShowAgain}
+              onCheckedChange={handleDontShowAgainChange}
             />
             <label
               htmlFor="dontShowAgain"
