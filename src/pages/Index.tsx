@@ -12,6 +12,7 @@ import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
+import OnboardingModal from '@/components/OnboardingModal';
 import DustScoreMeter from "../components/DustScoreMeter";
 import UnplayedCounter from "../components/UnplayedCounter";
 import GenreHoarding from "../components/GenreHoarding";
@@ -34,6 +35,7 @@ import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<string>("Preparing to import...");
   const [importPercentage, setImportPercentage] = useState(0);
@@ -62,6 +64,23 @@ const Index = () => {
     cleanScore: unplayedData?.cleanScore || 0,
     cleanTier: unplayedData?.cleanTier || null
   };
+
+  // Check if we should show onboarding modal
+  useEffect(() => {
+    if (user && profile?.steam_id && !dataLoading && safeData.totalGames === 0 && !isImporting) {
+      // Check if user has dismissed the onboarding modal
+      try {
+        const dismissed = localStorage.getItem('unplayed_onboarding_dismissed');
+        if (!dismissed) {
+          setOnboardingModalOpen(true);
+        }
+      } catch (error) {
+        console.warn('Failed to check onboarding preference:', error);
+        // Show modal anyway if localStorage fails
+        setOnboardingModalOpen(true);
+      }
+    }
+  }, [user, profile?.steam_id, dataLoading, safeData.totalGames, isImporting]);
 
   // Enhanced function to update data with metrics refresh first
   const refreshAllData = async () => {
@@ -435,7 +454,15 @@ const Index = () => {
 
         <Footer />
         {isMounted && (
-          <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+          <>
+            <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+            <OnboardingModal
+              open={onboardingModalOpen}
+              onClose={() => setOnboardingModalOpen(false)}
+              onImportLibrary={importSteamLibrary}
+              steamName={profile?.steam_name}
+            />
+          </>
         )}
       </div>
     </FullScreenModeWrapper>
