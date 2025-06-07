@@ -316,6 +316,30 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_calculation_locks: {
+        Row: {
+          expires_at: string
+          id: string
+          lock_key: string
+          locked_at: string
+          locked_by: string
+        }
+        Insert: {
+          expires_at?: string
+          id?: string
+          lock_key: string
+          locked_at?: string
+          locked_by: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          lock_key?: string
+          locked_at?: string
+          locked_by?: string
+        }
+        Relationships: []
+      }
       leaderboard_snapshots: {
         Row: {
           clean_score: number

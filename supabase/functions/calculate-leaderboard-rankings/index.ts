@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 // Set up the Supabase client
@@ -13,6 +14,59 @@ const corsHeaders = {
 
 // Constants
 const BATCH_SIZE = 50; // Process 50 users at a time to avoid memory issues
+const LOCK_KEY = 'leaderboard_calculation';
+const LOCK_TIMEOUT_MINUTES = 10;
+
+// Acquire execution lock to prevent concurrent runs
+async function acquireLock(): Promise<boolean> {
+  try {
+    console.log('Attempting to acquire execution lock...');
+    
+    // First, clean up any expired locks
+    await supabase
+      .from('leaderboard_calculation_locks')
+      .delete()
+      .lt('expires_at', new Date().toISOString());
+
+    // Try to insert a new lock
+    const { error } = await supabase
+      .from('leaderboard_calculation_locks')
+      .insert({
+        lock_key: LOCK_KEY,
+        locked_by: 'calculate-leaderboard-rankings',
+        expires_at: new Date(Date.now() + LOCK_TIMEOUT_MINUTES * 60 * 1000).toISOString()
+      });
+
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        console.log('Lock already exists - another calculation is in progress');
+        return false;
+      }
+      console.error('Error acquiring lock:', error);
+      return false;
+    }
+
+    console.log('Successfully acquired execution lock');
+    return true;
+  } catch (err) {
+    console.error('Exception while acquiring lock:', err);
+    return false;
+  }
+}
+
+// Release execution lock
+async function releaseLock(): Promise<void> {
+  try {
+    console.log('Releasing execution lock...');
+    await supabase
+      .from('leaderboard_calculation_locks')
+      .delete()
+      .eq('lock_key', LOCK_KEY);
+    console.log('Successfully released execution lock');
+  } catch (err) {
+    console.error('Error releasing lock:', err);
+  }
+}
 
 // Handle requests
 Deno.serve(async (req) => {
@@ -21,25 +75,25 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Try to acquire lock before proceeding
+  const lockAcquired = await acquireLock();
+  if (!lockAcquired) {
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Leaderboard calculation already in progress. Please try again later.',
+      code: 'CALCULATION_IN_PROGRESS'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 409 // Conflict
+    });
+  }
+
   try {
     // Calculate standardized snapshot date (today at midnight UTC)
     const now = new Date();
     const snapshotDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
     
     console.log(`Starting leaderboard calculation for snapshot date: ${snapshotDate}`);
-
-    // Delete existing entries for today's snapshot to prevent duplicates
-    console.log('Cleaning up existing entries for today...');
-    const { error: deleteError } = await supabase
-      .from('leaderboard_snapshots')
-      .delete()
-      .eq('snapshot_date', snapshotDate);
-
-    if (deleteError) {
-      console.error('Error deleting existing entries:', deleteError);
-    } else {
-      console.log('Successfully cleaned up existing entries for today');
-    }
 
     // Get all users who opted into the leaderboard (public or anonymous)
     const { data: eligibleUsers, error: userError } = await supabase
@@ -79,8 +133,6 @@ Deno.serve(async (req) => {
       console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${userBatch.length} users)`);
       
       // Process each user in the batch
-      const leaderboardEntries = [];
-      
       for (const user of userBatch) {
         try {
           // Get user metrics directly from user_metrics table for consistency
@@ -128,36 +180,33 @@ Deno.serve(async (req) => {
             previousRanking = previousEntry && previousEntry.length > 0 ? previousEntry[0].ranking : null;
           }
 
-          // Add to batch for insert
-          leaderboardEntries.push({
-            user_id: user.id,
-            snapshot_date: snapshotDate, // Use standardized snapshot date
-            dust_score: dustScore,
-            clean_score: cleanScore,
-            total_games: totalGames,
-            played_games: playedGames,
-            unplayed_games: unplayedGames,
-            library_value_cents: libraryValueCents,
-            username: user.leaderboard_visibility === 'public' ? user.steam_name : null,
-            is_anonymous: user.leaderboard_visibility === 'anonymous',
-            previous_ranking: previousRanking,
-          });
+          // UPSERT leaderboard entry (this prevents duplicates)
+          const { error: upsertError } = await supabase
+            .from('leaderboard_snapshots')
+            .upsert({
+              user_id: user.id,
+              snapshot_date: snapshotDate,
+              dust_score: dustScore,
+              clean_score: cleanScore,
+              total_games: totalGames,
+              played_games: playedGames,
+              unplayed_games: unplayedGames,
+              library_value_cents: libraryValueCents,
+              username: user.leaderboard_visibility === 'public' ? user.steam_name : null,
+              is_anonymous: user.leaderboard_visibility === 'anonymous',
+              previous_ranking: previousRanking,
+            }, {
+              onConflict: 'user_id,snapshot_date', // Use the unique constraint we created
+              ignoreDuplicates: false // Update existing entries
+            });
+
+          if (upsertError) {
+            console.error(`Error upserting leaderboard entry for user ${user.id}:`, upsertError);
+            // Continue with next user instead of failing entire operation
+          }
         } catch (err) {
           console.error(`Error processing user ${user.id}:`, err);
           // Continue with next user
-        }
-      }
-
-      // Bulk insert all leaderboard entries for this batch
-      if (leaderboardEntries.length > 0) {
-        const { error: insertError } = await supabase
-          .from('leaderboard_snapshots')
-          .insert(leaderboardEntries);
-
-        if (insertError) {
-          console.error(`Error inserting batch ${batchIndex + 1}:`, insertError);
-        } else {
-          console.log(`Successfully inserted ${leaderboardEntries.length} leaderboard entries for batch ${batchIndex + 1}`);
         }
       }
     }
@@ -216,6 +265,9 @@ Deno.serve(async (req) => {
       console.log('Successfully cleaned up old snapshots');
     }
 
+    // Release the lock before returning success
+    await releaseLock();
+
     return new Response(JSON.stringify({ 
       success: true, 
       processed: eligibleUsers.length,
@@ -226,6 +278,10 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error calculating leaderboard:', error);
+    
+    // Always release the lock in case of error
+    await releaseLock();
+    
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
