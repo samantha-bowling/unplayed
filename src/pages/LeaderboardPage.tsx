@@ -104,28 +104,9 @@ const LeaderboardPage = () => {
             <Trophy className="h-8 w-8 text-unplayed-mint" />
           </div>
           
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300">
-              The proverbial 'Wall of Shame' highlighting players with the biggest and most neglected Steam libraries.
-            </p>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-5 w-5 text-gray-400 hover:text-unplayed-mint cursor-help flex-shrink-0" />
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-sm p-4">
-                <div className="space-y-2 text-sm">
-                  <p className="font-semibold text-unplayed-mint">How the Dust Dynasty works:</p>
-                  <ul className="space-y-1 text-left">
-                    <li>• <strong>Dust Score:</strong> Higher scores = more neglected gaming libraries</li>
-                    <li>• <strong>Daily Updates:</strong> Rankings refresh once per day with the latest data</li>
-                    <li>• <strong>Single Entry:</strong> Each user appears only once per timeframe</li>
-                    <li>• <strong>Rank Changes:</strong> Track your movement compared to the previous day</li>
-                    <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
-                  </ul>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300 mb-8">
+            The proverbial 'Wall of Shame' highlighting players with the biggest and most neglected Steam libraries.
+          </p>
 
           <div className="max-w-4xl mx-auto">
             {/* Last Updated Timestamp */}
@@ -157,8 +138,8 @@ const LeaderboardPage = () => {
               )}
             </div>
 
-            {/* Timeframe Selector */}
-            <div className="mb-6 flex justify-center">
+            {/* Timeframe Selector with Tooltip */}
+            <div className="mb-6 flex justify-center items-center gap-4">
               <div className="bg-black/30 inline-flex rounded-lg p-1">
                 <button
                   onClick={() => setTimeframe('week')}
@@ -185,6 +166,24 @@ const LeaderboardPage = () => {
                   All Time
                 </button>
               </div>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-5 w-5 text-gray-400 hover:text-unplayed-mint cursor-help flex-shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-sm p-4">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold text-unplayed-mint">How the Dust Dynasty works:</p>
+                    <ul className="space-y-1 text-left">
+                      <li>• <strong>Dust Score:</strong> Higher scores = more neglected gaming libraries</li>
+                      <li>• <strong>Daily Updates:</strong> Rankings refresh once per day with the latest data</li>
+                      <li>• <strong>Single Entry:</strong> Each user appears only once per timeframe</li>
+                      <li>• <strong>Rank Changes:</strong> Track your movement compared to the previous day</li>
+                      <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
+                    </ul>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             </div>
             
             <div className="glass-panel p-6">
