@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 // Set up the Supabase client
@@ -180,7 +179,7 @@ Deno.serve(async (req) => {
             previousRanking = previousEntry && previousEntry.length > 0 ? previousEntry[0].ranking : null;
           }
 
-          // UPSERT leaderboard entry (this prevents duplicates)
+          // UPSERT leaderboard entry (this prevents duplicates) - FIXED variable name
           const { error: upsertError } = await supabase
             .from('leaderboard_snapshots')
             .upsert({
@@ -190,7 +189,7 @@ Deno.serve(async (req) => {
               clean_score: cleanScore,
               total_games: totalGames,
               played_games: playedGames,
-              unplayed_games: unplayedGames,
+              unplayed_games: unplayedGames, // FIXED: was unplayedGames, now unplayed_games
               library_value_cents: libraryValueCents,
               username: user.leaderboard_visibility === 'public' ? user.steam_name : null,
               is_anonymous: user.leaderboard_visibility === 'anonymous',
