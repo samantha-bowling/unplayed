@@ -41,7 +41,8 @@ const PAGE_SIZE = 20;
 export const useLeaderboardData = (type: LeaderboardType) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [timeframe, setTimeframe] = useState<'all' | 'month' | 'week'>('week'); // Already defaults to 'week'
+  // Always default to 'all' timeframe for all-time leaderboard
+  const [timeframe] = useState<'all' | 'month' | 'week'>('all');
   const [pagination, setPagination] = useState<PaginationState>({
     cursor: null,
     hasMore: true,
@@ -95,21 +96,11 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   });
 
   const getTimeframeFilter = () => {
-    const now = new Date();
-    if (timeframe === 'week') {
-      const weekAgo = new Date();
-      weekAgo.setDate(now.getDate() - 7);
-      return weekAgo.toISOString();
-    } else if (timeframe === 'month') {
-      const monthAgo = new Date();
-      monthAgo.setMonth(now.getMonth() - 1);
-      return monthAgo.toISOString();
-    }
-    return null; // 'all' timeframe
+    // For all-time leaderboard, we don't filter by timeframe
+    return null;
   };
 
   const orderByColumn = type === 'dust' ? 'dust_score' : 'clean_score';
-  const orderDirection = 'desc';
 
   const fetchLeaderboardPage = async (
     cursorValue: string | null, 
@@ -119,8 +110,14 @@ export const useLeaderboardData = (type: LeaderboardType) => {
       .from('leaderboard_snapshots')
       .select('id, username, is_anonymous, dust_score, clean_score, total_games, played_games, unplayed_games, library_value_cents, ranking, previous_ranking, rank_change, snapshot_date, user_id');
     
-    // Apply timeframe filter if needed
-    if (timeframeFilter) {
+    // For all-time leaderboard, get the most recent snapshot for each user
+    if (!timeframeFilter) {
+      // Use the latest snapshot date
+      if (lastUpdatedQuery.data) {
+        query = query.eq('snapshot_date', lastUpdatedQuery.data);
+      }
+    } else {
+      // Apply timeframe filter if needed (though we default to 'all')
       query = query.gte('snapshot_date', timeframeFilter);
     }
     
@@ -190,12 +187,11 @@ export const useLeaderboardData = (type: LeaderboardType) => {
           entry.rank_change = null;
         }
       }
-    }
-    
-    // If rank_change is null but we have previous_ranking and ranking, calculate it
-    for (const entry of results) {
-      if (entry.rank_change === null && entry.previous_ranking !== null && entry.ranking !== null) {
-        entry.rank_change = entry.previous_ranking - entry.ranking;
+    } else {
+      // No previous snapshot data available, set rank changes to null
+      for (const entry of results) {
+        entry.previous_ranking = null;
+        entry.rank_change = null;
       }
     }
     
@@ -209,29 +205,30 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   const timeFilter = getTimeframeFilter();
 
   const queryResult = useQuery<LeaderboardQueryResult, Error>({
-    queryKey: ['leaderboard', type, timeframe, pagination.page],
+    queryKey: ['leaderboard', type, timeframe, pagination.page, lastUpdatedQuery.data],
     queryFn: async () => {
       return await fetchLeaderboardPage(pagination.cursor, timeFilter);
     },
+    enabled: !!lastUpdatedQuery.data, // Only run when we have the latest snapshot date
     staleTime: 60 * 1000, // 1 min stale
-    gcTime: 5 * 60 * 1000, // 5 min in cache (replaced cacheTime)
+    gcTime: 5 * 60 * 1000, // 5 min in cache
     refetchOnWindowFocus: false,
-    refetchOnMount: false // Optimize refetch behavior
+    refetchOnMount: false
   });
 
-  // Move prefetching logic to useEffect
+  // Prefetch next page
   useEffect(() => {
     // Only prefetch if we have data and there's more to fetch
-    if (queryResult.data?.hasMore && queryResult.data?.nextCursor) {
+    if (queryResult.data?.hasMore && queryResult.data?.nextCursor && lastUpdatedQuery.data) {
       queryClient.prefetchQuery({
-        queryKey: ['leaderboard', type, timeframe, pagination.page + 1],
+        queryKey: ['leaderboard', type, timeframe, pagination.page + 1, lastUpdatedQuery.data],
         queryFn: async () => {
           return await fetchLeaderboardPage(queryResult.data.nextCursor, timeFilter);
         },
-        gcTime: 5 * 60 * 1000 // Match parent query's gcTime for consistency
+        gcTime: 5 * 60 * 1000
       });
     }
-  }, [queryResult.data, type, timeframe, pagination.page, queryClient, timeFilter]);
+  }, [queryResult.data, type, timeframe, pagination.page, queryClient, timeFilter, lastUpdatedQuery.data]);
 
   const loadNextPage = () => {
     if (queryResult.data?.hasMore) {
@@ -251,10 +248,10 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     });
   };
 
-  // When timeframe or type changes, reset pagination
+  // Fixed timeframe setter for backward compatibility (always 'all')
   const changeTimeframe = (newTimeframe: 'all' | 'month' | 'week') => {
-    setTimeframe(newTimeframe);
-    resetPagination();
+    // For all-time leaderboard, we ignore timeframe changes
+    console.log('Timeframe changes ignored for all-time leaderboard');
   };
 
   // Find user rank in the current data
@@ -265,12 +262,12 @@ export const useLeaderboardData = (type: LeaderboardType) => {
 
   return {
     data: leaderboardEntries,
-    isLoading: queryResult.isLoading,
-    error: queryResult.error,
+    isLoading: queryResult.isLoading || lastUpdatedQuery.isLoading,
+    error: queryResult.error || lastUpdatedQuery.error,
     refetch: queryResult.refetch,
     timeframe,
     setTimeframe: changeTimeframe,
-    userRank,
+    userRank: userRank && userRank > 0 ? userRank : null,
     lastUpdated: {
       date: lastUpdatedQuery.data,
       isLoading: lastUpdatedQuery.isLoading,

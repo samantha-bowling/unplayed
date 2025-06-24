@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import useRealtimeLeaderboard from "@/hooks/use-realtime-leaderboard";
+import useLeaderboardData from "@/hooks/use-leaderboard-data";
 import { 
   Pagination, 
   PaginationContent, 
   PaginationItem 
 } from "@/components/ui/pagination";
-import { Loader2, Settings, Crown, Trophy, Info, RotateCcw } from "lucide-react";
+import { Loader2, Settings, Crown, Trophy, Info, RotateCcw, Sparkles } from "lucide-react";
 import RankChangeIndicator from "@/components/RankChangeIndicator";
 import LeaderboardSettingsModal from "@/components/LeaderboardSettingsModal";
+import LeaderboardWelcomeModal from "@/components/LeaderboardWelcomeModal";
 import { useProfile } from "@/hooks/use-profile";
 import SteamLoader from "@/components/SteamLoader";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -25,6 +26,7 @@ const LeaderboardPage = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   
   const { 
     data: leaderboardData,
@@ -33,9 +35,16 @@ const LeaderboardPage = () => {
     refetch,
     userRank,
     pagination
-  } = useRealtimeLeaderboard();
+  } = useLeaderboardData('dust');
 
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Show welcome modal for first-time visitors
+  useEffect(() => {
+    if (user && profile && !profile.leaderboard_prompt_shown) {
+      setWelcomeOpen(true);
+    }
+  }, [user, profile]);
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -63,7 +72,20 @@ const LeaderboardPage = () => {
     if (!user) {
       return {
         message: "Connect your Steam account to see your position in the Dust Dynasty!",
-        variant: "connect" as const
+        variant: "connect" as const,
+        showCTA: true,
+        ctaText: "Connect Steam",
+        ctaAction: () => window.location.href = '/auth'
+      };
+    }
+
+    if (!profile?.leaderboard_prompt_shown) {
+      return {
+        message: "Welcome! Ready to join the ultimate gaming backlog competition?",
+        variant: "welcome" as const,
+        showCTA: true,
+        ctaText: "Learn More",
+        ctaAction: () => setWelcomeOpen(true)
       };
     }
 
@@ -71,24 +93,42 @@ const LeaderboardPage = () => {
     
     switch (visibility) {
       case 'off':
-        return {
-          message: "Join the Dust Dynasty! Configure your leaderboard settings to compete.",
-          variant: "join" as const
-        };
+        if (profile?.leaderboard_opted_out_explicitly) {
+          return {
+            message: "You're browsing privately. Want to see how you'd rank?",
+            variant: "private" as const,
+            showCTA: true,
+            ctaText: "Join Competition",
+            ctaAction: () => setSettingsOpen(true)
+          };
+        } else {
+          return {
+            message: "Join the Dust Dynasty! Configure your settings to compete.",
+            variant: "join" as const,
+            showCTA: true,
+            ctaText: "Join Now",
+            ctaAction: () => setSettingsOpen(true)
+          };
+        }
       case 'anonymous':
         return {
           message: `You're competing anonymously in the Dust Dynasty${userRank ? ` at rank #${userRank}` : ''}!`,
-          variant: "anonymous" as const
+          variant: "anonymous" as const,
+          showCTA: false
         };
       case 'public':
         return {
           message: `Welcome to the Dust Dynasty${userRank ? `, you're ranked #${userRank}` : ''}!`,
-          variant: "public" as const
+          variant: "public" as const,
+          showCTA: false
         };
       default:
         return {
           message: "Configure your leaderboard settings to join the Dust Dynasty.",
-          variant: "join" as const
+          variant: "join" as const,
+          showCTA: true,
+          ctaText: "Configure",
+          ctaAction: () => setSettingsOpen(true)
         };
     }
   };
@@ -109,8 +149,16 @@ const LeaderboardPage = () => {
             <Trophy className="h-8 w-8 text-unplayed-mint" />
           </div>
           
-          <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300 mb-8">
-            The proverbial 'Wall of Shame' highlighting players with the biggest and most neglected Steam libraries.
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-unplayed-amber" />
+            <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300">
+              The ultimate gaming backlog leaderboard - celebrating the art of digital game collecting!
+            </p>
+            <Sparkles className="h-5 w-5 text-unplayed-amber" />
+          </div>
+          
+          <p className="text-sm text-gray-400 mb-8">
+            All-time rankings based on historical dust scores and library growth
           </p>
 
           <div className="max-w-4xl mx-auto">
@@ -148,8 +196,8 @@ const LeaderboardPage = () => {
                     <p className="font-semibold text-unplayed-mint">How the Dust Dynasty works:</p>
                     <ul className="space-y-1 text-left">
                       <li>• <strong>Dust Score:</strong> Higher scores = more neglected gaming libraries</li>
-                      <li>• <strong>Real-Time:</strong> Rankings update as users' metrics change</li>
-                      <li>• <strong>All-Time:</strong> Shows lifetime accumulated dust scores</li>
+                      <li>• <strong>All-Time:</strong> Historical rankings based on snapshot data</li>
+                      <li>• <strong>Rank Changes:</strong> Green ↑ means rank improved, red ↓ means rank dropped</li>
                       <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
                     </ul>
                   </div>
@@ -179,6 +227,7 @@ const LeaderboardPage = () => {
                         <TableHead className="text-right">Dust Score</TableHead>
                         <TableHead className="text-right hidden md:table-cell">Games</TableHead>
                         <TableHead className="text-right hidden md:table-cell">Unplayed</TableHead>
+                        <TableHead className="text-center hidden sm:table-cell">Change</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -192,7 +241,7 @@ const LeaderboardPage = () => {
                           >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
-                                {entry.ranking <= 3 && (
+                                {entry.ranking && entry.ranking <= 3 && (
                                   <Crown className={`h-4 w-4 ${
                                     entry.ranking === 1 ? 'text-yellow-400' : 
                                     entry.ranking === 2 ? 'text-gray-400' : 
@@ -216,6 +265,9 @@ const LeaderboardPage = () => {
                             </TableCell>
                             <TableCell className="text-right hidden md:table-cell">
                               {entry.unplayed_games.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-center hidden sm:table-cell">
+                              <RankChangeIndicator rankChange={entry.rank_change} />
                             </TableCell>
                           </TableRow>
                         );
@@ -262,16 +314,35 @@ const LeaderboardPage = () => {
             {/* User Status Message */}
             <div className={`mt-8 p-4 rounded-md ${
               statusInfo.variant === 'connect' ? 'border border-unplayed-pink/30 bg-black/50' :
+              statusInfo.variant === 'welcome' ? 'border border-unplayed-mint/30 bg-unplayed-mint/5' :
               statusInfo.variant === 'join' ? 'border border-unplayed-amber/30 bg-black/50' :
+              statusInfo.variant === 'private' ? 'border border-gray-500/30 bg-black/50' :
               'glass-panel'
             }`}>
-              <p className={`${
-                statusInfo.variant === 'connect' ? 'text-unplayed-pink' :
-                statusInfo.variant === 'join' ? 'text-unplayed-amber' :
-                'text-unplayed-amber'
-              } font-semibold`}>
-                {statusInfo.message}
-              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className={`${
+                  statusInfo.variant === 'connect' ? 'text-unplayed-pink' :
+                  statusInfo.variant === 'welcome' ? 'text-unplayed-mint' :
+                  statusInfo.variant === 'join' ? 'text-unplayed-amber' :
+                  statusInfo.variant === 'private' ? 'text-gray-300' :
+                  'text-unplayed-amber'
+                } font-semibold text-center sm:text-left`}>
+                  {statusInfo.message}
+                </p>
+                {statusInfo.showCTA && statusInfo.ctaAction && (
+                  <Button 
+                    onClick={statusInfo.ctaAction}
+                    size="sm"
+                    className={`${
+                      statusInfo.variant === 'connect' ? 'bg-unplayed-pink hover:bg-unplayed-pink/90' :
+                      statusInfo.variant === 'welcome' ? 'bg-unplayed-mint hover:bg-unplayed-mint/90 text-black' :
+                      'bg-unplayed-amber hover:bg-unplayed-amber/90 text-black'
+                    } font-semibold`}
+                  >
+                    {statusInfo.ctaText}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -281,6 +352,11 @@ const LeaderboardPage = () => {
         <LeaderboardSettingsModal
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
+        />
+        
+        <LeaderboardWelcomeModal
+          open={welcomeOpen}
+          onOpenChange={setWelcomeOpen}
         />
       </div>
     </TooltipProvider>

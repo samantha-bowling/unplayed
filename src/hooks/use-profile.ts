@@ -11,6 +11,8 @@ export type UserProfile = {
   role?: string;
   onboarding_complete?: boolean;
   leaderboard_visibility?: 'off' | 'anonymous' | 'public';
+  leaderboard_prompt_shown?: boolean;
+  leaderboard_opted_out_explicitly?: boolean;
   created_at?: string;
   updated_at?: string;
   last_sync?: string;
