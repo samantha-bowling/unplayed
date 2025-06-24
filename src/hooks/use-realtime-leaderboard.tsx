@@ -30,8 +30,8 @@ export const useRealtimeLeaderboard = () => {
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    // Query user_metrics with users data for real-time leaderboard
-    const { data, error } = await supabase
+    // First, get user metrics with user info
+    const { data: metricsData, error: metricsError } = await supabase
       .from('user_metrics')
       .select(`
         user_id,
@@ -40,33 +40,53 @@ export const useRealtimeLeaderboard = () => {
         total_games,
         played_games,
         unplayed_games,
-        total_library_value_cents,
-        users!inner (
-          steam_name,
-          leaderboard_visibility
-        )
+        total_library_value_cents
       `)
-      .not('users.leaderboard_visibility', 'eq', 'off')
       .order('total_dust_score', { ascending: false })
       .range(from, to);
 
-    if (error) throw error;
+    if (metricsError) throw metricsError;
+
+    if (!metricsData || metricsData.length === 0) {
+      return { data: [], hasMore: false };
+    }
+
+    // Get user IDs to fetch user info
+    const userIds = metricsData.map(entry => entry.user_id);
+
+    // Get user visibility settings
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, steam_name, leaderboard_visibility')
+      .in('id', userIds)
+      .not('leaderboard_visibility', 'eq', 'off');
+
+    if (usersError) throw usersError;
 
     // Transform the data to match our expected format
-    const transformedData: RealtimeLeaderboardEntry[] = data.map((entry, index) => ({
-      user_id: entry.user_id,
-      username: entry.users.leaderboard_visibility === 'public' ? entry.users.steam_name : null,
-      is_anonymous: entry.users.leaderboard_visibility === 'anonymous',
-      dust_score: entry.total_dust_score,
-      clean_score: entry.clean_score,
-      total_games: entry.total_games,
-      played_games: entry.played_games,
-      unplayed_games: entry.unplayed_games,
-      library_value_cents: entry.total_library_value_cents,
-      ranking: from + index + 1
-    }));
+    const transformedData: RealtimeLeaderboardEntry[] = metricsData
+      .map((entry, index) => {
+        const userInfo = usersData?.find(u => u.id === entry.user_id);
+        
+        // Skip users who don't have visibility settings or are set to 'off'
+        if (!userInfo) return null;
 
-    const hasMore = data.length === PAGE_SIZE;
+        return {
+          user_id: entry.user_id,
+          username: userInfo.leaderboard_visibility === 'public' ? userInfo.steam_name : null,
+          is_anonymous: userInfo.leaderboard_visibility === 'anonymous',
+          dust_score: entry.total_dust_score,
+          clean_score: entry.clean_score,
+          total_games: entry.total_games,
+          played_games: entry.played_games,
+          unplayed_games: entry.unplayed_games,
+          library_value_cents: entry.total_library_value_cents,
+          ranking: from + index + 1
+        };
+      })
+      .filter(Boolean) as RealtimeLeaderboardEntry[];
+
+    const hasMore = metricsData.length === PAGE_SIZE;
 
     return {
       data: transformedData,
