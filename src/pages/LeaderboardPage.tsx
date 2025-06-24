@@ -267,7 +267,7 @@ const LeaderboardPage = () => {
                               {entry.unplayed_games.toLocaleString()}
                             </TableCell>
                             <TableCell className="text-center hidden sm:table-cell">
-                              <RankChangeIndicator rankChange={entry.rank_change} />
+                              <RankChangeIndicator change={entry.rank_change} />
                             </TableCell>
                           </TableRow>
                         );
