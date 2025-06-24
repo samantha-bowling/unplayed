@@ -7,14 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import useLeaderboardData from "@/hooks/use-leaderboard-data";
+import useRealtimeLeaderboard from "@/hooks/use-realtime-leaderboard";
 import { 
   Pagination, 
   PaginationContent, 
   PaginationItem 
 } from "@/components/ui/pagination";
-import { Clock, Loader2, Settings, Crown, Trophy, Info } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { Loader2, Settings, Crown, Trophy, Info, RotateCcw } from "lucide-react";
 import RankChangeIndicator from "@/components/RankChangeIndicator";
 import LeaderboardSettingsModal from "@/components/LeaderboardSettingsModal";
 import { useProfile } from "@/hooks/use-profile";
@@ -31,12 +30,10 @@ const LeaderboardPage = () => {
     data: leaderboardData,
     isLoading,
     error,
-    timeframe,
-    setTimeframe,
+    refetch,
     userRank,
-    pagination,
-    lastUpdated
-  } = useLeaderboardData("dust");
+    pagination
+  } = useRealtimeLeaderboard();
 
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -44,6 +41,14 @@ const LeaderboardPage = () => {
     setLoadingMore(true);
     await pagination.loadNextPage();
     setLoadingMore(false);
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    toast({
+      title: "Refreshing leaderboard",
+      description: "Getting the latest rankings..."
+    });
   };
 
   if (error) {
@@ -109,23 +114,16 @@ const LeaderboardPage = () => {
           </p>
 
           <div className="max-w-4xl mx-auto">
-            {/* Last Updated Timestamp */}
-            {lastUpdated.date && !lastUpdated.isLoading && (
-              <div className="flex justify-center items-center mb-6 text-sm text-gray-400">
-                <Clock className="h-4 w-4 mr-1" />
-                <span>
-                  Last updated: {format(parseISO(lastUpdated.date), "MMMM d, yyyy 'at' h:mm a")}
-                </span>
-              </div>
-            )}
-            {lastUpdated.isLoading && (
-              <div className="flex justify-center items-center mb-6">
-                <SteamLoader size="sm" message="Loading..." />
-              </div>
-            )}
-
             {/* User Actions */}
             <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Refresh Rankings
+              </Button>
               {user && (
                 <Button
                   onClick={() => setSettingsOpen(true)}
@@ -138,35 +136,9 @@ const LeaderboardPage = () => {
               )}
             </div>
 
-            {/* Timeframe Selector with Tooltip */}
+            {/* Info Tooltip */}
             <div className="mb-6 flex justify-center items-center gap-4">
-              <div className="bg-black/30 inline-flex rounded-lg p-1">
-                <button
-                  onClick={() => setTimeframe('week')}
-                  className={`px-4 py-2 rounded-md ${timeframe === 'week' ? 
-                    'bg-unplayed-amber/20 text-unplayed-amber' : 
-                    'text-gray-400 hover:text-gray-300'}`}
-                >
-                  This Week
-                </button>
-                <button
-                  onClick={() => setTimeframe('month')}
-                  className={`px-4 py-2 rounded-md ${timeframe === 'month' ? 
-                    'bg-unplayed-amber/20 text-unplayed-amber' : 
-                    'text-gray-400 hover:text-gray-300'}`}
-                >
-                  This Month
-                </button>
-                <button
-                  onClick={() => setTimeframe('all')}
-                  className={`px-4 py-2 rounded-md ${timeframe === 'all' ? 
-                    'bg-unplayed-amber/20 text-unplayed-amber' : 
-                    'text-gray-400 hover:text-gray-300'}`}
-                >
-                  All Time
-                </button>
-              </div>
-              
+              <h2 className="text-2xl font-bold text-unplayed-amber">All-Time Dynasty Rankings</h2>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Info className="h-5 w-5 text-gray-400 hover:text-unplayed-mint cursor-help flex-shrink-0" />
@@ -176,9 +148,8 @@ const LeaderboardPage = () => {
                     <p className="font-semibold text-unplayed-mint">How the Dust Dynasty works:</p>
                     <ul className="space-y-1 text-left">
                       <li>• <strong>Dust Score:</strong> Higher scores = more neglected gaming libraries</li>
-                      <li>• <strong>Daily Updates:</strong> Rankings refresh once per day with the latest data</li>
-                      <li>• <strong>Single Entry:</strong> Each user appears only once per timeframe</li>
-                      <li>• <strong>Rank Changes:</strong> Track your movement compared to the previous day</li>
+                      <li>• <strong>Real-Time:</strong> Rankings update as users' metrics change</li>
+                      <li>• <strong>All-Time:</strong> Shows lifetime accumulated dust scores</li>
                       <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
                     </ul>
                   </div>
@@ -187,7 +158,6 @@ const LeaderboardPage = () => {
             </div>
             
             <div className="glass-panel p-6">
-              <h2 className="text-2xl font-bold mb-4 text-unplayed-amber">Dynasty Rankings</h2>
               <p className="text-gray-400 mb-6">The highest dust scores represent the most neglected gaming libraries.</p>
               
               {isLoading && pagination.page === 1 ? (
@@ -205,7 +175,6 @@ const LeaderboardPage = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">Rank</TableHead>
-                        <TableHead className="w-12">Change</TableHead>
                         <TableHead>Player</TableHead>
                         <TableHead className="text-right">Dust Score</TableHead>
                         <TableHead className="text-right hidden md:table-cell">Games</TableHead>
@@ -213,30 +182,26 @@ const LeaderboardPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {leaderboardData.map((entry, index) => {
+                      {leaderboardData.map((entry) => {
                         const isCurrentUser = user && entry.user_id === user.id;
-                        const globalRank = ((pagination.page - 1) * 20) + index + 1;
                         
                         return (
                           <TableRow 
-                            key={entry.id}
+                            key={entry.user_id}
                             className={isCurrentUser ? "bg-unplayed-amber/10" : ""}
                           >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
-                                {globalRank <= 3 && (
+                                {entry.ranking <= 3 && (
                                   <Crown className={`h-4 w-4 ${
-                                    globalRank === 1 ? 'text-yellow-400' : 
-                                    globalRank === 2 ? 'text-gray-400' : 
+                                    entry.ranking === 1 ? 'text-yellow-400' : 
+                                    entry.ranking === 2 ? 'text-gray-400' : 
                                     'text-amber-600'
                                   }`} />
                                 )}
-                                {globalRank}
+                                {entry.ranking}
                                 {isCurrentUser && <span className="ml-1 text-unplayed-amber">•</span>}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <RankChangeIndicator change={entry.rank_change} />
                             </TableCell>
                             <TableCell>
                               {entry.is_anonymous ? 
