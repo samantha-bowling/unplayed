@@ -13,7 +13,7 @@ import {
   PaginationContent, 
   PaginationItem 
 } from "@/components/ui/pagination";
-import { Loader2, Settings, Crown, Trophy, Info, RotateCcw, Sparkles } from "lucide-react";
+import { Loader2, Settings, Crown, Trophy, Info, RotateCcw } from "lucide-react";
 import RankChangeIndicator from "@/components/RankChangeIndicator";
 import LeaderboardSettingsModal from "@/components/LeaderboardSettingsModal";
 import LeaderboardWelcomeModal from "@/components/LeaderboardWelcomeModal";
@@ -67,6 +67,16 @@ const LeaderboardPage = () => {
       description: "There was a problem loading the leaderboard data.",
     });
   }
+
+  // Calculate correct rankings based on dust score
+  const leaderboardWithCorrectRanks = leaderboardData?.map((entry, index) => {
+    // Calculate rank based on position in sorted array (starting from page offset)
+    const calculatedRank = (pagination.page - 1) * 20 + index + 1;
+    return {
+      ...entry,
+      calculatedRank
+    };
+  }) || [];
 
   const getUserStatusMessage = () => {
     if (!user) {
@@ -150,11 +160,9 @@ const LeaderboardPage = () => {
           </div>
           
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles className="h-5 w-5 text-unplayed-amber" />
             <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300">
               The ultimate gaming backlog leaderboard - celebrating the art of digital game collecting!
             </p>
-            <Sparkles className="h-5 w-5 text-unplayed-amber" />
           </div>
           
           <p className="text-sm text-gray-400 mb-8">
@@ -217,7 +225,7 @@ const LeaderboardPage = () => {
                     ))}
                   </div>
                 </div>
-              ) : leaderboardData && leaderboardData.length > 0 ? (
+              ) : leaderboardWithCorrectRanks && leaderboardWithCorrectRanks.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -231,7 +239,7 @@ const LeaderboardPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {leaderboardData.map((entry) => {
+                      {leaderboardWithCorrectRanks.map((entry) => {
                         const isCurrentUser = user && entry.user_id === user.id;
                         
                         return (
@@ -241,14 +249,14 @@ const LeaderboardPage = () => {
                           >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
-                                {entry.ranking && entry.ranking <= 3 && (
+                                {entry.calculatedRank && entry.calculatedRank <= 3 && (
                                   <Crown className={`h-4 w-4 ${
-                                    entry.ranking === 1 ? 'text-yellow-400' : 
-                                    entry.ranking === 2 ? 'text-gray-400' : 
+                                    entry.calculatedRank === 1 ? 'text-yellow-400' : 
+                                    entry.calculatedRank === 2 ? 'text-gray-400' : 
                                     'text-amber-600'
                                   }`} />
                                 )}
-                                {entry.ranking}
+                                {entry.calculatedRank}
                                 {isCurrentUser && <span className="ml-1 text-unplayed-amber">•</span>}
                               </div>
                             </TableCell>
