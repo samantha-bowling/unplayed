@@ -11,8 +11,13 @@ import useLeaderboardData from "@/hooks/use-leaderboard-data";
 import { 
   Pagination, 
   PaginationContent, 
-  PaginationItem 
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
 } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Settings, Crown, Trophy, Info, RotateCcw } from "lucide-react";
 import RankChangeIndicator from "@/components/RankChangeIndicator";
 import LeaderboardSettingsModal from "@/components/LeaderboardSettingsModal";
@@ -37,20 +42,12 @@ const LeaderboardPage = () => {
     pagination
   } = useLeaderboardData('dust');
 
-  const [loadingMore, setLoadingMore] = useState(false);
-
   // Show welcome modal for first-time visitors
   useEffect(() => {
     if (user && profile && !profile.leaderboard_prompt_shown) {
       setWelcomeOpen(true);
     }
   }, [user, profile]);
-
-  const handleLoadMore = async () => {
-    setLoadingMore(true);
-    await pagination.loadNextPage();
-    setLoadingMore(false);
-  };
 
   const handleRefresh = () => {
     refetch();
@@ -71,12 +68,37 @@ const LeaderboardPage = () => {
   // Calculate correct rankings based on dust score
   const leaderboardWithCorrectRanks = leaderboardData?.map((entry, index) => {
     // Calculate rank based on position in sorted array (starting from page offset)
-    const calculatedRank = (pagination.page - 1) * 20 + index + 1;
+    const calculatedRank = (pagination.page - 1) * pagination.pageSize + index + 1;
     return {
       ...entry,
       calculatedRank
     };
   }) || [];
+
+  // Generate page numbers for pagination
+  const generatePageNumbers = () => {
+    const currentPage = pagination.page;
+    const totalPages = pagination.totalPages;
+    const pages = [];
+    
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show smart pagination with ellipsis
+      if (currentPage <= 4) {
+        pages.push(1, 2, 3, 4, 5, '...', totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   const getUserStatusMessage = () => {
     if (!user) {
@@ -214,7 +236,28 @@ const LeaderboardPage = () => {
             </div>
             
             <div className="glass-panel p-6">
-              <p className="text-gray-400 mb-6">The highest dust scores represent the most neglected gaming libraries.</p>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <p className="text-gray-400">The highest dust scores represent the most neglected gaming libraries.</p>
+                
+                {/* Page Size Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Show:</span>
+                  <Select
+                    value={pagination.pageSize.toString()}
+                    onValueChange={(value) => pagination.setPageSize(Number(value))}
+                  >
+                    <SelectTrigger className="w-20 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-400">per page</span>
+                </div>
+              </div>
               
               {isLoading && pagination.page === 1 ? (
                 <div className="flex flex-col items-center space-y-4">
@@ -283,29 +326,50 @@ const LeaderboardPage = () => {
                     </TableBody>
                   </Table>
 
-                  {/* Load More Button */}
-                  {pagination.hasMore && (
-                    <div className="mt-6">
+                  {/* Enhanced Pagination */}
+                  {pagination.totalPages > 1 && (
+                    <div className="mt-6 flex flex-col items-center gap-4">
                       <Pagination>
                         <PaginationContent>
+                          {/* Previous Button */}
                           <PaginationItem>
-                            <button
-                              onClick={handleLoadMore}
-                              disabled={loadingMore || !pagination.hasMore}
-                              className="flex items-center px-4 py-2 text-sm font-medium bg-unplayed-amber/20 hover:bg-unplayed-amber/30 text-unplayed-amber rounded-md disabled:opacity-50 disabled:pointer-events-none"
-                            >
-                              {loadingMore ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Loading more...
-                                </>
+                            <PaginationPrevious 
+                              onClick={() => pagination.goToPage(pagination.page - 1)}
+                              className={pagination.page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                          </PaginationItem>
+                          
+                          {/* Page Numbers */}
+                          {generatePageNumbers().map((pageNum, index) => (
+                            <PaginationItem key={index}>
+                              {pageNum === '...' ? (
+                                <PaginationEllipsis />
                               ) : (
-                                "Load More Players"
+                                <PaginationLink
+                                  onClick={() => pagination.goToPage(pageNum as number)}
+                                  isActive={pagination.page === pageNum}
+                                  className="cursor-pointer"
+                                >
+                                  {pageNum}
+                                </PaginationLink>
                               )}
-                            </button>
+                            </PaginationItem>
+                          ))}
+                          
+                          {/* Next Button */}
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => pagination.goToPage(pagination.page + 1)}
+                              className={pagination.page === pagination.totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
                           </PaginationItem>
                         </PaginationContent>
                       </Pagination>
+                      
+                      {/* Pagination Info */}
+                      <div className="text-sm text-gray-400 text-center">
+                        Showing {((pagination.page - 1) * pagination.pageSize) + 1} to {Math.min(pagination.page * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} players
+                      </div>
                     </div>
                   )}
                 </div>

@@ -27,6 +27,8 @@ type PaginationState = {
   cursor: string | null;
   hasMore: boolean;
   page: number;
+  pageSize: number;
+  totalItems: number;
 };
 
 // Define the type for the query result
@@ -34,9 +36,10 @@ type LeaderboardQueryResult = {
   data: LeaderboardEntry[];
   hasMore: boolean;
   nextCursor: string | null;
+  totalCount: number;
 };
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 export const useLeaderboardData = (type: LeaderboardType) => {
   const { user } = useAuth();
@@ -46,7 +49,9 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   const [pagination, setPagination] = useState<PaginationState>({
     cursor: null,
     hasMore: true,
-    page: 1
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    totalItems: 0
   });
   
   // Query for the last updated timestamp
@@ -102,8 +107,28 @@ export const useLeaderboardData = (type: LeaderboardType) => {
 
   const orderByColumn = type === 'dust' ? 'dust_score' : 'clean_score';
 
+  // Query for total count
+  const countQuery = useQuery({
+    queryKey: ['leaderboard-count', type, lastUpdatedQuery.data],
+    queryFn: async () => {
+      if (!lastUpdatedQuery.data) return 0;
+      
+      const { count, error } = await supabase
+        .from('leaderboard_snapshots')
+        .select('*', { count: 'exact', head: true })
+        .eq('snapshot_date', lastUpdatedQuery.data);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!lastUpdatedQuery.data,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000
+  });
+
   const fetchLeaderboardPage = async (
-    cursorValue: string | null, 
+    pageNumber: number,
+    pageSize: number,
     timeframeFilter: string | null
   ): Promise<LeaderboardQueryResult> => {
     let query = supabase
@@ -121,41 +146,21 @@ export const useLeaderboardData = (type: LeaderboardType) => {
       query = query.gte('snapshot_date', timeframeFilter);
     }
     
-    // Apply cursor pagination if cursor exists
-    if (cursorValue) {
-      // For dust score or clean score, we're ordering by descending score
-      if (type === 'dust') {
-        query = query.lt('dust_score', Number(cursorValue.split('|')[0]));
-      } else {
-        query = query.lt('clean_score', Number(cursorValue.split('|')[0]));
-      }
-      
-      // Add tie-breaker on user_id to ensure stable ordering
-      const userId = cursorValue.split('|')[1];
-      if (userId) {
-        query = query.or(`user_id.gt.${userId},${orderByColumn}.lt.${Number(cursorValue.split('|')[0])}`);
-      }
-    }
+    // Apply offset pagination
+    const from = (pageNumber - 1) * pageSize;
+    const to = from + pageSize - 1;
     
-    // Order by the appropriate score column and limit results
+    // Order by the appropriate score column and apply pagination
     const { data, error } = await query
       .order(orderByColumn, { ascending: false })
       .order('user_id', { ascending: true }) // Tie-breaker for stable pagination
-      .limit(PAGE_SIZE + 1); // Fetch one extra to determine if we have more pages
+      .range(from, to);
     
     if (error) throw error;
     
-    // Check if we have more pages
-    const hasMore = data && data.length > PAGE_SIZE;
-    // Remove the extra item if we have more pages
-    const results = hasMore ? data.slice(0, PAGE_SIZE) : data;
-    
-    // Build the next cursor from the last item
-    let nextCursor = null;
-    if (hasMore && results.length > 0) {
-      const lastItem = results[results.length - 1];
-      nextCursor = `${lastItem[orderByColumn]}|${lastItem.user_id}`;
-    }
+    const results = data || [];
+    const totalCount = countQuery.data || 0;
+    const hasMore = (pageNumber * pageSize) < totalCount;
     
     // If we have a previous snapshot, fetch rank information to calculate changes
     if (previousSnapshotQuery.data) {
@@ -198,18 +203,19 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     return {
       data: results as LeaderboardEntry[],
       hasMore,
-      nextCursor
+      nextCursor: null, // Not needed for offset pagination
+      totalCount
     };
   };
 
   const timeFilter = getTimeframeFilter();
 
   const queryResult = useQuery<LeaderboardQueryResult, Error>({
-    queryKey: ['leaderboard', type, timeframe, pagination.page, lastUpdatedQuery.data],
+    queryKey: ['leaderboard', type, timeframe, pagination.page, pagination.pageSize, lastUpdatedQuery.data],
     queryFn: async () => {
-      return await fetchLeaderboardPage(pagination.cursor, timeFilter);
+      return await fetchLeaderboardPage(pagination.page, pagination.pageSize, timeFilter);
     },
-    enabled: !!lastUpdatedQuery.data, // Only run when we have the latest snapshot date
+    enabled: !!lastUpdatedQuery.data && !!countQuery.data, // Only run when we have the latest snapshot date and count
     staleTime: 60 * 1000, // 1 min stale
     gcTime: 5 * 60 * 1000, // 5 min in cache
     refetchOnWindowFocus: false,
@@ -219,32 +225,40 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   // Prefetch next page
   useEffect(() => {
     // Only prefetch if we have data and there's more to fetch
-    if (queryResult.data?.hasMore && queryResult.data?.nextCursor && lastUpdatedQuery.data) {
+    if (queryResult.data?.hasMore && lastUpdatedQuery.data && countQuery.data) {
       queryClient.prefetchQuery({
-        queryKey: ['leaderboard', type, timeframe, pagination.page + 1, lastUpdatedQuery.data],
+        queryKey: ['leaderboard', type, timeframe, pagination.page + 1, pagination.pageSize, lastUpdatedQuery.data],
         queryFn: async () => {
-          return await fetchLeaderboardPage(queryResult.data.nextCursor, timeFilter);
+          return await fetchLeaderboardPage(pagination.page + 1, pagination.pageSize, timeFilter);
         },
         gcTime: 5 * 60 * 1000
       });
     }
-  }, [queryResult.data, type, timeframe, pagination.page, queryClient, timeFilter, lastUpdatedQuery.data]);
+  }, [queryResult.data, type, timeframe, pagination.page, pagination.pageSize, queryClient, timeFilter, lastUpdatedQuery.data, countQuery.data]);
 
-  const loadNextPage = () => {
-    if (queryResult.data?.hasMore) {
-      setPagination({
-        cursor: queryResult.data.nextCursor,
-        hasMore: queryResult.data.hasMore,
-        page: pagination.page + 1
-      });
-    }
+  const goToPage = (page: number) => {
+    setPagination(prev => ({
+      ...prev,
+      page: Math.max(1, Math.min(page, Math.ceil((queryResult.data?.totalCount || 0) / prev.pageSize)))
+    }));
+  };
+
+  const setPageSize = (size: number) => {
+    setPagination(prev => ({
+      ...prev,
+      pageSize: size,
+      page: 1,
+      totalItems: queryResult.data?.totalCount || 0
+    }));
   };
 
   const resetPagination = () => {
     setPagination({
       cursor: null,
       hasMore: true,
-      page: 1
+      page: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+      totalItems: 0
     });
   };
 
@@ -260,10 +274,20 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     ? leaderboardEntries.findIndex(entry => entry.user_id === user.id) + 1 
     : null;
 
+  // Update total items when query data changes
+  useEffect(() => {
+    if (queryResult.data?.totalCount !== undefined) {
+      setPagination(prev => ({
+        ...prev,
+        totalItems: queryResult.data.totalCount
+      }));
+    }
+  }, [queryResult.data?.totalCount]);
+
   return {
     data: leaderboardEntries,
-    isLoading: queryResult.isLoading || lastUpdatedQuery.isLoading,
-    error: queryResult.error || lastUpdatedQuery.error,
+    isLoading: queryResult.isLoading || lastUpdatedQuery.isLoading || countQuery.isLoading,
+    error: queryResult.error || lastUpdatedQuery.error || countQuery.error,
     refetch: queryResult.refetch,
     timeframe,
     setTimeframe: changeTimeframe,
@@ -281,7 +305,11 @@ export const useLeaderboardData = (type: LeaderboardType) => {
     pagination: {
       hasMore: queryResult.data?.hasMore || false,
       page: pagination.page,
-      loadNextPage
+      pageSize: pagination.pageSize,
+      totalItems: pagination.totalItems,
+      totalPages: Math.ceil(pagination.totalItems / pagination.pageSize),
+      goToPage,
+      setPageSize
     }
   };
 };
