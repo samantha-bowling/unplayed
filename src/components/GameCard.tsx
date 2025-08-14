@@ -88,6 +88,10 @@ const GameCard: React.FC<GameCardProps> = ({
           alt={title}
           className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder.svg';
+          }}
         />
         
         {/* Dust score */}
