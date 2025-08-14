@@ -5,8 +5,10 @@ import { useAuth, AuthStatus } from "@/context/AuthContext";
 import SteamLoader from "@/components/SteamLoader";
 import LoadingFallback from "@/components/LoadingFallback";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useTransition, Suspense, lazy } from "react";
+import { useTransition, Suspense, lazy, useEffect } from "react";
 import { UserRole } from "@/utils/auth-utils";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
 
 // Lazy load all page components for better code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -30,6 +32,15 @@ const SteamAuthHandler = lazy(() => import("@/pages/SteamAuthHandler"));
 const App = () => {
   const { status } = useAuth();
   const [isPending] = useTransition();
+  const { trackCustomMetric } = usePerformanceMonitor();
+
+  // Track app initialization time
+  useEffect(() => {
+    const startTime = performance.now();
+    return () => {
+      trackCustomMetric('app_initialization', performance.now() - startTime);
+    };
+  }, [trackCustomMetric]);
 
   // Show central loading UI only during initial app loading
   if (status === AuthStatus.LOADING) {
@@ -41,8 +52,10 @@ const App = () => {
   }
 
   return (
-    <Suspense fallback={<LoadingFallback message="Loading content..." />}>
-      <Routes>
+    <>
+      <PWAInstallBanner />
+      <Suspense fallback={<LoadingFallback message="Loading content..." />}>
+        <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<AuthPage />} />
@@ -134,15 +147,16 @@ const App = () => {
 
         {/* 404 handler */}
         <Route path="*" element={<NotFound />} />
-      </Routes>
-      
-      {/* Global transition loading indicator */}
-      {isPending && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <SteamLoader message="Processing..." size="sm" variant="secondary" />
-        </div>
-      )}
-    </Suspense>
+        </Routes>
+        
+        {/* Global transition loading indicator */}
+        {isPending && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <SteamLoader message="Processing..." size="sm" variant="secondary" />
+          </div>
+        )}
+      </Suspense>
+    </>
   );
 };
 

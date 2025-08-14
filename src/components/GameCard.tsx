@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getBestGameImage, formatGameTitle } from '@/utils/image-utils';
+import LazyImage from '@/components/ui/lazy-image';
 
 interface GameCardProps {
   id: string;
@@ -83,15 +84,13 @@ const GameCard: React.FC<GameCardProps> = ({
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="aspect-video w-full relative">
-        <img 
+        <LazyImage
           src={getBestGameImage(headerImage, imageUrl, gameId)}
-          alt={title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder.svg';
-          }}
+          alt={`${title} game cover`}
+          className="w-full h-full"
+          fallbackSrc="/placeholder.svg"
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          format="auto"
         />
         
         {/* Dust score */}

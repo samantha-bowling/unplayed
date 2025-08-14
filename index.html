@@ -4,9 +4,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#8b5cf6" />
     <title>Unplayed.wtf - Conquer Your Steam Backlog</title>
     <meta name="description" content="Unplayed helps PC gamers discover games in their Steam library they've never played." />
     <meta name="author" content="Unplayed.wtf" />
+    <link rel="manifest" href="/manifest.json" />
 
     <meta property="og:title" content="Unplayed.wtf" />
     <meta property="og:description" content="Conquer your massive Steam backlog and discover unplayed games." />
@@ -31,5 +33,14 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(error => console.log('SW registration failed'));
+        });
+      }
+    </script>
   </body>
 </html>
