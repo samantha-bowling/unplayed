@@ -32,16 +32,20 @@ export default defineConfig(({ mode }) => ({
           // Core libraries
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
-          charts: ['recharts'],
+          charts: ['recharts', './src/components/PriceDistributionChart.tsx'],
           auth: ['@supabase/supabase-js'],
           query: ['@tanstack/react-query'],
+          // Heavy components  
+          'game-grid': ['./src/components/GameGrid.tsx'],
+          'donor-grid': ['./src/components/DonorGrid.tsx'],
           // Admin pages
           admin: [
             './src/pages/AdminDashboardPage.tsx',
             './src/pages/AdminSupportPage.tsx',
             './src/pages/AdminAccountDeletionsPage.tsx',
             './src/pages/QueueManagerPage.tsx',
-            './src/pages/AdminHltbDataPage.tsx'
+            './src/pages/AdminHltbDataPage.tsx',
+            './src/components/admin/HeaderImageEnhancementCard.tsx'
           ]
         },
       },
