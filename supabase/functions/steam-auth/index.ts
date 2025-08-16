@@ -159,12 +159,30 @@ serve(async (req) => {
         );
       }
 
-      // Get Steam user profile information
-      const steamApiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`;
-      console.log(`[Steam Auth] Fetching Steam profile for Steam ID: ${steamId}`);
-      const steamRes = await fetch(steamApiUrl);
-      const steamData = await steamRes.json();
-      const player = steamData?.response?.players?.[0];
+      // Get Steam user profile information using canary flag
+      const { isCanaryEnabledForUser } = await import("../shared/canary.ts");
+      const { steamFetch } = await import("../shared/steam-client.ts");
+      const { STEAM_ENDPOINTS } = await import("../shared/steam-client.ts");
+      
+      const useV2 = isCanaryEnabledForUser(uid);
+      let player;
+      
+      if (useV2) {
+        console.log(`[Steam Auth] Fetching Steam profile (v2 client) for Steam ID: ${steamId}`);
+        const steamData = await steamFetch<any>(
+          STEAM_ENDPOINTS.GET_PLAYER_SUMMARIES,
+          { steamids: steamId },
+          { apiKey: STEAM_API_KEY },
+          uid
+        );
+        player = steamData?.response?.players?.[0];
+      } else {
+        console.log(`[Steam Auth] Fetching Steam profile (legacy client) for Steam ID: ${steamId}`);
+        const steamApiUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`;
+        const steamRes = await fetch(steamApiUrl);
+        const steamData = await steamRes.json();
+        player = steamData?.response?.players?.[0];
+      }
 
       if (!player) {
         console.error(`[Steam Auth] Steam player data not found for Steam ID: ${steamId}`);

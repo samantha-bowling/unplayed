@@ -128,21 +128,31 @@ async function logSteamCall(
   userId?: string | null
 ): Promise<void> {
   try {
-    // This will be implemented when we have Supabase client available
-    // For now, just console log
     console.log(`Steam call log: ${endpoint} - ${status} - ${errCode} - ${durationMs}ms - ${attempts} attempts`);
     
-    // TODO: Insert into steam_call_logs table when available
-    // const { error } = await supabase
-    //   .from('steam_call_logs')
-    //   .insert({
-    //     endpoint,
-    //     status,
-    //     err_code: errCode,
-    //     duration_ms: Math.round(durationMs),
-    //     attempts,
-    //     user_id: userId
-    //   });
+    // Import Supabase client dynamically to avoid circular dependencies
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.49.4");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { error } = await supabase
+        .from('steam_call_logs')
+        .insert({
+          endpoint,
+          status,
+          err_code: errCode,
+          duration_ms: Math.round(durationMs),
+          attempts,
+          user_id: userId
+        });
+        
+      if (error) {
+        console.warn("Failed to insert Steam call log:", error);
+      }
+    }
     
   } catch (logError) {
     console.warn("Failed to log Steam API call:", logError);

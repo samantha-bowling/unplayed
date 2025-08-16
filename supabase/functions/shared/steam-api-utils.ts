@@ -89,22 +89,54 @@ export async function makeRateLimitedSteamRequest(
  */
 export async function fetchSteamLibrary(
   steamId: string, 
-  steamApiKey: string
+  steamApiKey: string,
+  userId?: string | null
 ): Promise<SteamGame[]> {
   console.log(`Fetching Steam library for Steam ID: ${steamId}`);
   
-  // Primary fetch with free games included
-  const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamApiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
+  // Import clients based on canary flag
+  const { isCanaryEnabledForUser } = await import("./canary.ts");
+  const { steamFetch } = await import("./steam-client.ts");
+  const { STEAM_ENDPOINTS } = await import("./steam-client.ts");
   
-  const steamResponse = await makeRateLimitedSteamRequest(steamApiUrl);
-  const steamData: SteamLibraryResponse = await steamResponse.json();
+  const useV2 = isCanaryEnabledForUser(userId);
+  let games: SteamGame[] = [];
+  let gameCount = 0;
   
-  if (!steamData?.response) {
-    throw new Error("Invalid response from Steam API. Please check your Steam ID and privacy settings.");
+  if (useV2) {
+    console.log(`📡 Fetching Steam library (v2 client) for Steam ID: ${steamId}`);
+    const steamData = await steamFetch<SteamLibraryResponse>(
+      STEAM_ENDPOINTS.GET_OWNED_GAMES,
+      {
+        steamid: steamId,
+        format: 'json',
+        include_appinfo: true,
+        include_played_free_games: true
+      },
+      { apiKey: steamApiKey },
+      userId
+    );
+    
+    if (!steamData?.response) {
+      throw new Error("Invalid response from Steam API. Please check your Steam ID and privacy settings.");
+    }
+    
+    games = steamData.response.games || [];
+    gameCount = steamData.response.game_count || 0;
+  } else {
+    console.log(`📡 Fetching Steam library (legacy client) for Steam ID: ${steamId}`);
+    const steamApiUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamApiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
+    
+    const steamResponse = await makeRateLimitedSteamRequest(steamApiUrl);
+    const steamData: SteamLibraryResponse = await steamResponse.json();
+    
+    if (!steamData?.response) {
+      throw new Error("Invalid response from Steam API. Please check your Steam ID and privacy settings.");
+    }
+    
+    games = steamData.response.games || [];
+    gameCount = steamData.response.game_count || 0;
   }
-  
-  const games = steamData.response.games || [];
-  const gameCount = steamData.response.game_count || 0;
   
   console.log(`Steam API returned ${games.length} games, reported count: ${gameCount}`);
   
