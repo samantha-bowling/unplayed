@@ -4,6 +4,7 @@ import GameCard from './GameCard';
 import GameCardSkeleton from './GameCardSkeleton';
 import { LibraryGame } from '@/hooks/use-library-data';
 import { Loader2 } from 'lucide-react';
+import { getBestGameImage } from '@/utils/image-utils';
 import { 
   Pagination, 
   PaginationContent, 
@@ -165,19 +166,31 @@ const PaginatedGameGrid: React.FC<PaginatedGameGridProps> = ({
                 id={`game-${game.id}`}
                 className={`transition-all duration-300 ${focusedGameId === game.id ? 'scale-105 ring-2 ring-unplayed-mint rounded-lg shadow-lg shadow-unplayed-mint/25' : ''}`}
               >
-                <GameCard
-                  id={game.userGame.id}
-                  gameId={game.id}
-                  title={game.name}
-                  imageUrl={game.image_url || game.header_image}
-                  dustScore={game.userGame.dust_score}
-                  playtimeMinutes={game.userGame.playtime_minutes}
-                  isHidden={game.userGame.hidden}
-                  notes={game.userGame.notes}
-                  onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
-                  onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
-                  onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
-                />
+                {(() => {
+                  // Temporary adapter until global adapter is wired
+                  const uiGame = {
+                    imageUrl: getBestGameImage(game.header_image, game.image_url, game.id),
+                    headerImage: game.header_image ?? null,
+                    playtimeMinutes: game.userGame?.playtime_minutes ?? 0,
+                  };
+                  
+                  return (
+                    <GameCard
+                      id={game.userGame.id}
+                      gameId={game.id}
+                      title={game.name}
+                      imageUrl={uiGame.imageUrl}
+                      headerImage={uiGame.headerImage}
+                      dustScore={game.userGame.dust_score}
+                      playtimeMinutes={uiGame.playtimeMinutes}
+                      isHidden={game.userGame.hidden}
+                      notes={game.userGame.notes}
+                      onMarkAsPlayed={() => onMarkAsPlayed(game.userGame.id)}
+                      onToggleHidden={() => onToggleHidden(game.userGame.id, !(game.userGame.hidden))}
+                      onSaveNote={(note) => onSaveNote(game.userGame.id, note)}
+                    />
+                  );
+                })()}
               </div>
             ))}
           </div>
