@@ -11,6 +11,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
+import EnhancedErrorBoundary from '@/components/EnhancedErrorBoundary';
 
 // Enhanced QueryClient configuration for Phase 2
 const queryClient = new QueryClient({
@@ -35,23 +36,25 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <DemoModeProvider>
-            <FullScreenModeProvider>
-              <App />
-              <ReactQueryDevtools 
-                initialIsOpen={false} 
-                buttonPosition="bottom-left"
-              />
-            </FullScreenModeProvider>
-          </DemoModeProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <EnhancedErrorBoundary componentName="Application Root">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <DemoModeProvider>
+              <FullScreenModeProvider>
+                <App />
+                <ReactQueryDevtools 
+                  initialIsOpen={false} 
+                  buttonPosition="bottom-left"
+                />
+              </FullScreenModeProvider>
+            </DemoModeProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </EnhancedErrorBoundary>
 );
