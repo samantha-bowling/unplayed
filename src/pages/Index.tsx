@@ -6,8 +6,9 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
-import { useRefreshCoordinator } from "@/hooks/refresh/useRefreshCoordinator";
-import { useLibraryImport } from "@/hooks/refresh/useLibraryImport";
+import { useMetricsRefresh } from "@/hooks/useMetricsRefresh";
+import { callSupabaseFunction } from '@/utils/supabase-functions';
+import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -27,24 +28,30 @@ import { Button } from "@/components/ui/button";
 import { useUnplayedData } from "@/hooks/useUnplayedData";
 import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Import } from "lucide-react";
+import { RefreshCw, Import, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<string>("Preparing to import...");
+  const [importPercentage, setImportPercentage] = useState(0);
+  const [lastImportTime, setLastImportTime] = useState<Date | null>(null);
+  const [lastDashboardRefreshTime, setLastDashboardRefreshTime] = useState<Date | null>(null);
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile, isLoading: profileLoading } = useProfile();
+  const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
   const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
-  
-  // Use the new refresh coordinator and library import
-  const { refreshAllData } = useRefreshCoordinator();
-  const { importLibrary, isImporting } = useLibraryImport();
+  const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
+  const queryClient = useQueryClient();
+  const { queryKeys, utils } = useOptimizedCacheManagement();
 
   // Main loading state when checking auth and profile
   const isLoading = profileLoading && user;
@@ -75,23 +82,52 @@ const Index = () => {
     }
   }, [user, profile?.steam_id, dataLoading, safeData.totalGames, isImporting]);
 
-  // Simple refresh wrapper that uses the coordinator
-  const handleRefreshAllData = async () => {
-    if (!user) return;
+  // Enhanced function to update data with metrics refresh first
+  const refreshAllData = async () => {
+    if (isRefreshing || !user) return;
 
     try {
-      toast.info("Refreshing your data...", {
-        description: "This may take a moment to update all your stats."
-      });
+      // First refresh backend metrics
+      await refreshUserMetrics();
+      setLastDashboardRefreshTime(new Date());
       
-      await refreshAllData();
-      
-      // Explicit refetch of dashboard data
-      refetch?.();
-      
-      toast.success("Data refresh complete!", { 
-        description: "Your dashboard has been updated with the latest information."
-      });
+      // Then refresh cache with a slight delay to ensure backend processing completes
+      setTimeout(() => {
+        toast.info("Refreshing your data...", {
+          description: "This may take a moment to update all your stats."
+        });
+        
+        // Use optimized cache invalidation
+        const keysToInvalidate = [
+          ...utils.invalidateUnplayed(user?.id),
+          ...utils.invalidateProfile(user?.id),
+          // Invalidate specific dashboard-related queries
+          ['detailedDustData', user?.id],
+          ['libraryGames', user?.id],
+          ['paginatedLibraryGames', user?.id],
+          ['libraryGamesCount', user?.id],
+          ['pickerGames', user?.id],
+          ['spendingData', user?.id]
+        ];
+        
+        // Efficiently invalidate only necessary queries
+        keysToInvalidate.forEach(queryKey => {
+          queryClient.invalidateQueries({ queryKey });
+        });
+        
+        // Explicit refetch of dashboard data
+        refetch?.();
+        
+        // Refresh profile as well
+        refreshProfile(true);
+        
+        // Notify success after a short delay
+        setTimeout(() => {
+          toast.success("Data refresh complete!", { 
+            description: "Your dashboard has been updated with the latest information."
+          });
+        }, 2000);
+      }, 1000);
     } catch (error) {
       console.error('Failed to refresh data:', error);
       toast.error("Failed to refresh data", {
@@ -100,18 +136,90 @@ const Index = () => {
     }
   };
   
-  // Simple import wrapper that uses the library import hook
-  const handleImportSteamLibrary = async () => {
+  // Function to import Steam library with progress updates
+  const importSteamLibrary = async () => {
     if (!profile?.steam_id) {
       toast.error("Steam account not linked");
       return;
     }
     
+    // Start import process
+    setIsImporting(true);
+    setImportProgress("Connecting to Steam...");
+    setImportPercentage(10);
+    
+    toast.loading("Importing your Steam library...", {
+      description: "This may take a few minutes for large libraries."
+    });
+    
     try {
-      await importLibrary(profile.steam_id);
+      // Use the Netlify redirect path instead of direct Supabase function URL
+      const data = await callSupabaseFunction('import-library', {
+        steamId: profile.steam_id,
+      });
+
+      console.log("Import response:", data);
+      
+      // If the server is processing in the background
+      if (data.processing === "background") {
+        // Show progress updates to user
+        setImportProgress("Fetching game details...");
+        setImportPercentage(30);
+        
+        // Poll for completion status or simulate progress
+        let progressCounter = 30;
+        const progressInterval = setInterval(() => {
+          progressCounter += 5;
+          if (progressCounter >= 90) {
+            clearInterval(progressInterval);
+          }
+          setImportPercentage(progressCounter);
+          setImportProgress(`Processing games (${progressCounter}%)...`);
+        }, 2000);
+        
+        // Wait a reasonable amount of time, then assume processing is done
+        // In a production app, you'd poll a status endpoint instead
+        setTimeout(() => {
+          clearInterval(progressInterval);
+          setImportPercentage(100);
+          setImportProgress("Import complete!");
+          setLastImportTime(new Date());
+          toast.success(`Steam library import completed!`, {
+            description: "Your dashboard will update shortly."
+          });
+          
+          // Update all data
+          refreshAllData();
+          
+          // Reset state after a delay
+          setTimeout(() => {
+            setIsImporting(false);
+          }, 1000);
+        }, 20000); // Assume 20 seconds for processing
+      } else {
+        // Server completed processing synchronously
+        setLastImportTime(new Date());
+        toast.success(`Successfully imported ${data.imported || 0} games!`, {
+          description: "Your dashboard will update shortly."
+        });
+        
+        setImportPercentage(100);
+        setImportProgress("Import complete!");
+        
+        // Update all data
+        refreshAllData();
+        
+        // Reset state after a delay
+        setTimeout(() => {
+          setIsImporting(false);
+        }, 1000);
+      }
     } catch (err) {
-      // Error handling is done in the hook
       console.error("Import failed", err);
+      toast.error(`Import failed: ${err.message}`);
+      setIsImporting(false);
+      setImportProgress("Import failed");
+      setImportPercentage(0);
     }
   };
 
@@ -178,9 +286,9 @@ const Index = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={handleImportSteamLibrary}
+                      onClick={importSteamLibrary}
                       className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
-                      disabled={isImporting}
+                      disabled={isImporting || isRefreshing}
                     >
                       <Import className="mr-2 h-4 w-4" />
                       {isImporting ? "Importing..." : "Import Steam Library"}
@@ -191,6 +299,11 @@ const Index = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              {lastImportTime && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Last import: {lastImportTime.toLocaleString()}
+                </p>
+              )}
             </div>
             
             {!isImporting && (
@@ -199,13 +312,13 @@ const Index = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={handleRefreshAllData}
+                        onClick={refreshAllData}
                         variant="outline"
                         className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
-                        disabled={false}
+                        disabled={isRefreshing}
                       >
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Refresh Dashboard
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        {isRefreshing ? "Refreshing..." : "Refresh Dashboard"}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -213,6 +326,11 @@ const Index = () => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                {lastDashboardRefreshTime && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Last refresh: {lastDashboardRefreshTime.toLocaleString()}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -226,11 +344,18 @@ const Index = () => {
           {isImporting && (
             <div className="mt-6 max-w-md mx-auto">
               <div className="flex items-center justify-center mb-2">
-                <SteamLoader message="Importing your library..." size="sm" variant="secondary" />
+                <SteamLoader message={isImporting ? importProgress : "Import complete!"} size="sm" variant="secondary" />
               </div>
+              <Progress value={importPercentage} className="h-2" />
               <p className="text-sm text-gray-400 mt-2">
-                This may take a few minutes for large libraries. You can leave this page during the import process.
+                This may take a few minutes for large libraries
               </p>
+              <div className="mt-4 text-sm bg-unplayed-mint/10 p-3 rounded-md flex items-start">
+                <AlertCircle className="w-4 h-4 text-unplayed-mint mr-2 mt-0.5 flex-shrink-0" />
+                <p className="text-gray-300">
+                  You can leave this page during the import process. Your games will still be imported in the background.
+                </p>
+              </div>
             </div>
           )}
         </>
@@ -334,7 +459,7 @@ const Index = () => {
             <OnboardingModal
               open={onboardingModalOpen}
               onClose={() => setOnboardingModalOpen(false)}
-              onImportLibrary={handleImportSteamLibrary}
+              onImportLibrary={importSteamLibrary}
               steamName={profile?.steam_name}
             />
           </>

@@ -24,19 +24,13 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    // Prevent multiple React runtimes
-    dedupe: ['react', 'react-dom'],
-  },
-  optimizeDeps: {
-    // Ensure prebundling uses a single copy
-    include: ['react', 'react-dom', 'react/jsx-runtime'],
   },
   build: {
     rollupOptions: {
       output: {
         manualChunks: {
-          // Do NOT split react/react-dom - let Vite handle core libraries
-          router: ['react-router-dom'],
+          // Core libraries
+          vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
           charts: ['recharts', './src/components/PriceDistributionChart.tsx'],
           auth: ['@supabase/supabase-js'],
