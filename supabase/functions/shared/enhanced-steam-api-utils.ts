@@ -37,54 +37,25 @@ export async function fetchCompleteSteamLibrary(
     try {
       console.log(`🔄 Attempt ${attempt + 1}/${retryAttempts}`);
 
-      // Import clients based on canary flag
-      const { isCanaryEnabledForUser } = await import("./canary.ts");
-      const { steamFetch } = await import("./steam-client.ts");
-      const { makeRateLimitedSteamRequest } = await import("./legacy-steam-client.ts");
-      const { STEAM_ENDPOINTS } = await import("./steam-client.ts");
-      
-      const useV2 = isCanaryEnabledForUser(null); // No userId available at this level
-      
-      let response: Response;
-      if (useV2) {
-        console.log(`📡 Fetching from Steam API (v2 client)...`);
-        const steamData = await steamFetch<any>(
-          STEAM_ENDPOINTS.GET_OWNED_GAMES,
-          {
-            steamid: steamId,
-            format: 'json',
-            include_appinfo: includeAppInfo ? 1 : 0,
-            include_played_free_games: includePlayedFreeGames ? 1 : 0
-          },
-          { apiKey }
-        );
-        
-        if (!steamData.response) {
-          throw new Error('Invalid Steam API response structure');
-        }
-        
-        allGames = steamData.response.games || [];
-      } else {
-        console.log(`📡 Fetching from Steam API (legacy client)...`);
-        const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?` +
-          `key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=${includeAppInfo ? 1 : 0}` +
-          `&include_played_free_games=${includePlayedFreeGames ? 1 : 0}`;
+      // Primary approach: GetOwnedGames with app info
+      const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?` +
+        `key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=${includeAppInfo ? 1 : 0}` +
+        `&include_played_free_games=${includePlayedFreeGames ? 1 : 0}`;
 
-        response = await makeRateLimitedSteamRequest(ownedGamesUrl);
-        
-        if (!response.ok) {
-          throw new Error(`Steam API responded with ${response.status}: ${response.statusText}`);
-        }
+      console.log(`📡 Fetching from Steam API...`);
+      const response = await fetch(ownedGamesUrl);
 
-        const data = await response.json();
-        
-        if (!data.response) {
-          throw new Error('Invalid Steam API response structure');
-        }
-
-        allGames = data.response.games || [];
+      if (!response.ok) {
+        throw new Error(`Steam API responded with ${response.status}: ${response.statusText}`);
       }
 
+      const data = await response.json();
+      
+      if (!data.response) {
+        throw new Error('Invalid Steam API response structure');
+      }
+
+      allGames = data.response.games || [];
       console.log(`✅ Successfully fetched ${allGames.length} games`);
 
       // If we got a reasonable number of games, break out of retry loop

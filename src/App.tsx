@@ -3,44 +3,31 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth, AuthStatus } from "@/context/AuthContext";
 import SteamLoader from "@/components/SteamLoader";
-import LoadingFallback from "@/components/LoadingFallback";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import AuthPage from "./pages/AuthPage";
+import LibraryPage from "./pages/LibraryPage";
+import AuthDebugPage from "./pages/AuthDebugPage";
+import SupportPage from "./pages/SupportPage";
+import AdminSupportPage from "./pages/AdminSupportPage";
+import AdminSteamDataPage from "./pages/AdminSteamDataPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
+import QueueManagerPage from "./pages/QueueManagerPage";
+import AdminHltbDataPage from "./pages/AdminHltbDataPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import DustPage from "./pages/DustPage";
+import SpendPage from "./pages/SpendPage";
+import LoginErrorPage from "./pages/LoginErrorPage";
+import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
+import SteamAuthHandler from "@/pages/SteamAuthHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useTransition, Suspense, lazy, useEffect } from "react";
+import { useTransition, Suspense } from "react";
 import { UserRole } from "@/utils/auth-utils";
-import { PWAInstallBanner } from "@/components/PWAInstallBanner";
-import { usePerformanceMonitor } from "@/hooks/use-performance-monitor";
-
-// Lazy load all page components for better code splitting
-const Index = lazy(() => import("./pages/Index"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const AuthPage = lazy(() => import("./pages/AuthPage"));
-const LibraryPage = lazy(() => import("./pages/LibraryPage"));
-const AuthDebugPage = lazy(() => import("./pages/AuthDebugPage"));
-const SupportPage = lazy(() => import("./pages/SupportPage"));
-const AdminSupportPage = lazy(() => import("./pages/AdminSupportPage"));
-const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
-const AdminAccountDeletionsPage = lazy(() => import("./pages/AdminAccountDeletionsPage"));
-const QueueManagerPage = lazy(() => import("./pages/QueueManagerPage"));
-const AdminHltbDataPage = lazy(() => import("./pages/AdminHltbDataPage"));
-const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
-const DustPage = lazy(() => import("./pages/DustPage"));
-const SpendPage = lazy(() => import("./pages/SpendPage"));
-const LoginErrorPage = lazy(() => import("./pages/LoginErrorPage"));
-const AuthCallbackHandler = lazy(() => import("@/pages/AuthCallbackHandler"));
-const SteamAuthHandler = lazy(() => import("@/pages/SteamAuthHandler"));
 
 const App = () => {
   const { status } = useAuth();
   const [isPending] = useTransition();
-  const { trackCustomMetric } = usePerformanceMonitor();
-
-  // Track app initialization time
-  useEffect(() => {
-    const startTime = performance.now();
-    return () => {
-      trackCustomMetric('app_initialization', performance.now() - startTime);
-    };
-  }, [trackCustomMetric]);
 
   // Show central loading UI only during initial app loading
   if (status === AuthStatus.LOADING) {
@@ -52,10 +39,12 @@ const App = () => {
   }
 
   return (
-    <>
-      <PWAInstallBanner />
-      <Suspense fallback={<LoadingFallback message="Loading content..." />}>
-        <Routes>
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <SteamLoader message="Loading content..." size="md" variant="secondary" />
+      </div>
+    }>
+      <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<AuthPage />} />
@@ -147,16 +136,15 @@ const App = () => {
 
         {/* 404 handler */}
         <Route path="*" element={<NotFound />} />
-        </Routes>
-        
-        {/* Global transition loading indicator */}
-        {isPending && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <SteamLoader message="Processing..." size="sm" variant="secondary" />
-          </div>
-        )}
-      </Suspense>
-    </>
+      </Routes>
+      
+      {/* Global transition loading indicator */}
+      {isPending && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <SteamLoader message="Processing..." size="sm" variant="secondary" />
+        </div>
+      )}
+    </Suspense>
   );
 };
 

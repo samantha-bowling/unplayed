@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import LibraryFilters from '@/components/LibraryFilters';
-import LazyGameGrid from '@/components/lazy/LazyGameGrid';
+import GameGrid from '@/components/GameGrid';
 import PaginatedGameGrid from '@/components/PaginatedGameGrid';
 import LibraryPreview from '@/components/LibraryPreview';
 import { SortOption } from '@/hooks/use-library-data';
@@ -131,7 +131,7 @@ const LibraryContent: React.FC<LibraryContentProps> = ({
               setPageSize={paginatedData.setPageSize}
             />
           ) : (
-            <LazyGameGrid 
+            <GameGrid 
               games={legacyData.games}
               isLoading={legacyData.isLoading}
               onMarkAsPlayed={onMarkAsPlayed}

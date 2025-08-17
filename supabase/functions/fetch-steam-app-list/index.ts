@@ -60,49 +60,32 @@ serve(async (req) => {
     const syncId = syncData.id;
     console.log(`Created sync record with ID: ${syncId}`);
 
-    // Fetch the list of all apps from Steam API using canary flag
+    // Fetch the list of all apps from Steam API
+    const steamApiUrl = `https://api.steampowered.com/ISteamApps/GetAppList/v2/?key=${STEAM_API_KEY}`;
+    
     console.log("Fetching from Steam API...");
+    const response = await fetch(steamApiUrl);
     
-    const { isCanaryEnabledForUser } = await import("../shared/canary.ts");
-    const { steamFetch } = await import("../shared/steam-client.ts");
-    const { STEAM_ENDPOINTS } = await import("../shared/steam-client.ts");
-    
-    const useV2 = isCanaryEnabledForUser(null); // No specific user for this operation
-    let data;
-    
-    if (useV2) {
-      console.log("Using Steam client v2 for app list fetch");
-      data = await steamFetch<any>(
-        STEAM_ENDPOINTS.GET_APP_LIST,
-        {},
-        { apiKey: STEAM_API_KEY }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Steam API error:", response.status, errorText);
+      
+      // Update the sync record with error status
+      await supabase
+        .from("steam_app_sync")
+        .update({ status: "error" })
+        .eq("id", syncId);
+      
+      return new Response(
+        JSON.stringify({ error: "Error fetching Steam app list", details: errorText }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
-    } else {
-      console.log("Using legacy Steam client for app list fetch");
-      const steamApiUrl = `https://api.steampowered.com/ISteamApps/GetAppList/v2/?key=${STEAM_API_KEY}`;
-      const response = await fetch(steamApiUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Steam API error:", response.status, errorText);
-        
-        // Update the sync record with error status
-        await supabase
-          .from("steam_app_sync")
-          .update({ status: "error" })
-          .eq("id", syncId);
-        
-        return new Response(
-          JSON.stringify({ error: "Error fetching Steam app list", details: errorText }),
-          {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      
-      data = await response.json();
     }
+    
+    const data = await response.json();
     const apps = data?.applist?.apps || [];
     
     console.log(`Received ${apps.length} apps from Steam API`);
