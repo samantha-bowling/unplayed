@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { BookOpenCheck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import parse from 'html-react-parser';
+import { sanitizeReviewHtml, convertBBCodeToHtml } from '@/lib/sanitize';
 
 interface GameReviewCardProps {
   review: {
@@ -109,13 +111,11 @@ const GameReviewCard: React.FC<GameReviewCardProps> = ({
     return new Date(timestamp * 1000).toLocaleDateString();
   };
 
-  // Handle special characters and formatting in review text
-  const formatReviewText = (text: string) => {
-    // Very basic sanitization - a more comprehensive approach would use a proper HTML sanitizer
-    return text
-      .replace(/\\r\\n|\\n|\\r/g, '\n') // Convert escape sequences to actual line breaks
-      .replace(/\[b\](.*?)\[\/b\]/g, '<strong>$1</strong>') // Convert BBCode bold to HTML
-      .replace(/\[i\](.*?)\[\/i\]/g, '<em>$1</em>'); // Convert BBCode italics to HTML
+  // Safe review content component
+  const SafeReviewContent = ({ content }: { content: string }) => {
+    const processed = convertBBCodeToHtml(content);
+    const sanitized = sanitizeReviewHtml(processed);
+    return <div className="text-sm text-gray-200 mb-3 whitespace-pre-wrap">{parse(sanitized)}</div>;
   };
 
   return (
@@ -132,10 +132,7 @@ const GameReviewCard: React.FC<GameReviewCardProps> = ({
         )}
       </div>
       
-      <div 
-        className="text-sm text-gray-200 mb-3 whitespace-pre-wrap" 
-        dangerouslySetInnerHTML={{ __html: formatReviewText(review.review) }}
-      ></div>
+      <SafeReviewContent content={review.review} />
       
       <div className="flex justify-between items-center text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">
         <div>
