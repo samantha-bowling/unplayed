@@ -39,7 +39,7 @@ type LeaderboardQueryResult = {
   totalCount: number;
 };
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 
 export const useLeaderboardData = (type: LeaderboardType) => {
   const { user } = useAuth();

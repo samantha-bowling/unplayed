@@ -249,6 +249,7 @@ const LeaderboardPage = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
                       <SelectItem value="20">20</SelectItem>
                       <SelectItem value="50">50</SelectItem>
                       <SelectItem value="100">100</SelectItem>
@@ -269,42 +270,51 @@ const LeaderboardPage = () => {
                 </div>
               ) : leaderboardWithCorrectRanks && leaderboardWithCorrectRanks.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16">Rank</TableHead>
-                        <TableHead>Player</TableHead>
-                        <TableHead className="text-right">Dust Score</TableHead>
+                <Table className="table-fixed w-full">
+                  <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-24 text-unplayed-mint font-bold text-base py-3 px-2">Rank</TableHead>
+                        <TableHead className="text-unplayed-mint font-bold text-base py-3 px-3">Player</TableHead>
+                        <TableHead className="text-right text-unplayed-mint font-bold text-base py-3 px-2 w-32">Dust Score</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {leaderboardWithCorrectRanks.map((entry) => {
                         const isCurrentUser = user && entry.user_id === user.id;
+                        const displayName = entry.is_anonymous ? 'Anonymous Player' : entry.username || 'Unknown Player';
+                        
+                        // Top 3 highlighting
+                        const top3Styles = 
+                          entry.calculatedRank === 1 
+                            ? "bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-l-4 border-yellow-400" 
+                            : entry.calculatedRank === 2 
+                            ? "bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-l-4 border-gray-400" 
+                            : entry.calculatedRank === 3 
+                            ? "bg-gradient-to-r from-amber-600/20 to-amber-700/20 border-l-4 border-amber-600"
+                            : "";
                         
                         return (
                           <TableRow 
                             key={entry.user_id}
-                            className={isCurrentUser ? "bg-unplayed-amber/10" : ""}
+                            className={`
+                              ${isCurrentUser ? "bg-unplayed-amber/10" : ""}
+                              ${top3Styles}
+                            `}
                           >
-                            <TableCell className="font-medium">
+                            <TableCell className="font-medium py-3 px-2 w-24">
+                              {entry.calculatedRank}
+                            </TableCell>
+                            <TableCell className="py-3 px-3">
                               <div className="flex items-center gap-2">
-                                {entry.calculatedRank && entry.calculatedRank <= 3 && (
-                                  <Crown className={`h-4 w-4 ${
-                                    entry.calculatedRank === 1 ? 'text-yellow-400' : 
-                                    entry.calculatedRank === 2 ? 'text-gray-400' : 
-                                    'text-amber-600'
-                                  }`} />
-                                )}
-                                {entry.calculatedRank}
-                                {isCurrentUser && <span className="ml-1 text-unplayed-amber">•</span>}
+                                <span>
+                                  {displayName}
+                                  {isCurrentUser && (
+                                    <span className="ml-2 text-xs text-unplayed-amber">(You)</span>
+                                  )}
+                                </span>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              {entry.is_anonymous ? 
-                                "Anonymous Player" : 
-                                entry.username || "Unknown Player"}
-                            </TableCell>
-                            <TableCell className="text-right font-mono font-bold text-unplayed-amber">
+                            <TableCell className="text-right font-mono font-bold text-unplayed-amber py-3 px-2 w-32">
                               {entry.dust_score.toLocaleString()}
                             </TableCell>
                           </TableRow>
