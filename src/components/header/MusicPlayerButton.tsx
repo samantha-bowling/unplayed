@@ -18,13 +18,7 @@ const MusicPlayerButton = () => {
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (status === 'idle' || status === 'paused') {
-      // Start playback if not playing
-      togglePlayPause();
-    } else if (isPlaying) {
-      // Toggle drawer visibility if already playing
-      setIsOpen(!isOpen);
-    }
+    setIsOpen(!isOpen);
   };
 
   return (

@@ -22,9 +22,9 @@ export const AudioPlayerCompact = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Visualizer */}
-      <div className="h-16 flex items-center justify-center">
+      <div className="h-24 flex items-center justify-center">
         <AudioVisualizer />
       </div>
 
@@ -41,14 +41,14 @@ export const AudioPlayerCompact = () => {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4">
-        <AudioPlayerControls />
-      </div>
-
-      {/* Volume */}
-      <div className="flex justify-center">
-        <AudioVolumeControl />
+      {/* Controls + Volume */}
+      <div className="flex items-center justify-between px-2">
+        <div className="flex-1 flex justify-center">
+          <AudioPlayerControls />
+        </div>
+        <div className="flex-shrink-0">
+          <AudioVolumeControl />
+        </div>
       </div>
     </div>
   );
