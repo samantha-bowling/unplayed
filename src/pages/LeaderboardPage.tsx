@@ -227,7 +227,6 @@ const LeaderboardPage = () => {
                     <ul className="space-y-1 text-left">
                       <li>• <strong>Dust Score:</strong> Higher scores = more neglected gaming libraries</li>
                       <li>• <strong>All-Time:</strong> Historical rankings based on snapshot data</li>
-                      <li>• <strong>Rank Changes:</strong> Green ↑ means rank improved, red ↓ means rank dropped</li>
                       <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
                     </ul>
                   </div>
@@ -276,9 +275,6 @@ const LeaderboardPage = () => {
                         <TableHead className="w-16">Rank</TableHead>
                         <TableHead>Player</TableHead>
                         <TableHead className="text-right">Dust Score</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">Games</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">Unplayed</TableHead>
-                        <TableHead className="text-center hidden sm:table-cell">Change</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -310,15 +306,6 @@ const LeaderboardPage = () => {
                             </TableCell>
                             <TableCell className="text-right font-mono font-bold text-unplayed-amber">
                               {entry.dust_score.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right hidden md:table-cell">
-                              {entry.total_games.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right hidden md:table-cell">
-                              {entry.unplayed_games.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-center hidden sm:table-cell">
-                              <RankChangeIndicator change={entry.rank_change} />
                             </TableCell>
                           </TableRow>
                         );
@@ -383,7 +370,9 @@ const LeaderboardPage = () => {
               )}
             </div>
             
-            {/* User Status Message */}
+            {/* User Status Message - Only show for non-participating users */}
+            {(statusInfo.variant === 'connect' || statusInfo.variant === 'welcome' || 
+              statusInfo.variant === 'join' || statusInfo.variant === 'private') && (
             <div className={`mt-8 p-4 rounded-md ${
               statusInfo.variant === 'connect' ? 'border border-unplayed-pink/30 bg-black/50' :
               statusInfo.variant === 'welcome' ? 'border border-unplayed-mint/30 bg-unplayed-mint/5' :
@@ -416,6 +405,7 @@ const LeaderboardPage = () => {
                 )}
               </div>
             </div>
+            )}
           </div>
         </section>
         
