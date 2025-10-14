@@ -16,7 +16,8 @@ const MusicPlayerButton = () => {
     ? (isOpen ? 'Hide Player' : `${currentTrack.title} - ${currentTrack.artist}`)
     : 'Play Music';
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (status === 'idle' || status === 'paused') {
       // Start playback if not playing
       togglePlayPause();
@@ -27,7 +28,7 @@ const MusicPlayerButton = () => {
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={setIsOpen}>
+    <Drawer open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
