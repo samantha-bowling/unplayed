@@ -43,18 +43,37 @@ serve(async (req) => {
 
     // Security check - users can only calculate their own metrics unless admin
     if (targetUserId !== user.id) {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile || profile.role !== 'admin') {
+      const { data: isAdminResult, error: adminCheckError } = await supabase
+        .rpc('is_admin', { check_user_id: user.id });
+      
+      if (adminCheckError) {
+        console.error('❌ Failed to check admin status:', adminCheckError);
         return new Response(
-          JSON.stringify({ error: 'Forbidden' }),
+          JSON.stringify({ error: 'Failed to verify permissions' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const isAdmin = isAdminResult === true;
+      
+      if (!isAdmin) {
+        console.error(`❌ User ${user.id} attempted to calculate spending for ${targetUserId}`);
+        
+        // Log unauthorized access attempt
+        await supabase.from('admin_audit_logs').insert({
+          user_id: user.id,
+          action: 'unauthorized_spending_calc_attempt',
+          target_user_id: targetUserId,
+          metadata: { endpoint: 'calculate-user-spending' }
+        });
+        
+        return new Response(
+          JSON.stringify({ error: 'Forbidden: Cannot calculate spending for other users' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      
+      console.log(`🔓 Admin ${user.id} calculating spending for ${targetUserId}`);
     }
 
     console.log(`Calculating spending metrics for user ${targetUserId}${force_refresh ? ' (forced refresh)' : ''}`);

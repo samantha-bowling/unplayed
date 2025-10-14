@@ -19,66 +19,69 @@ export enum UserRole {
 /**
  * Check if a user has admin privileges
  * 
- * This standardizes admin checks across the application by checking both 
- * app_metadata.roles and profile.role for backward compatibility.
+ * PRIMARY SOURCE: auth.users.app_metadata.roles (immutable by clients)
+ * This is the ONLY source of truth for role checking in the Hybrid security model.
+ * 
+ * @param user - User object from Supabase auth
+ * @param profile - Optional user profile (NOT USED for role checks)
+ * @returns boolean indicating if user is admin
  */
 export const isAdmin = (user?: User | null, profile?: UserProfile | null): boolean => {
-  // Early return if no user
   if (!user) return false;
   
-  // Check app_metadata first (Supabase recommended approach)
-  if (user.app_metadata?.roles?.includes(UserRole.ADMIN)) {
+  // ONLY check app_metadata.roles (source of truth)
+  const roles = user.app_metadata?.roles;
+  if (Array.isArray(roles) && roles.includes('admin')) {
     return true;
   }
   
-  // Fallback to profile.role (legacy approach)
-  if (profile?.role === UserRole.ADMIN) {
-    return true;
-  }
-  
+  // No fallback - roles MUST be in app_metadata
   return false;
 };
 
 /**
  * Check if user has a specific role
+ * 
+ * PRIMARY SOURCE: auth.users.app_metadata.roles (immutable by clients)
+ * 
+ * @param user - User object from Supabase auth
+ * @param role - Role to check for
+ * @param profile - Optional user profile (NOT USED for role checks)
+ * @returns boolean indicating if user has the role
  */
 export const hasRole = (user: User | null, role: string, profile?: UserProfile | null): boolean => {
-  // Early return if no user or role
-  if (!user || !role) return false;
+  if (!user) return false;
   
-  // Check app_metadata roles array
-  if (user.app_metadata?.roles?.includes(role)) {
+  // ONLY check app_metadata.roles (source of truth)
+  const roles = user.app_metadata?.roles;
+  if (Array.isArray(roles) && roles.includes(role)) {
     return true;
   }
   
-  // Fallback to profile.role if it matches exactly
-  if (profile?.role === role) {
-    return true;
-  }
-  
+  // No fallback - roles MUST be in app_metadata
   return false;
 };
 
 /**
  * Get all roles for a user
  * 
- * This combines roles from both app_metadata and profile for a complete list
+ * PRIMARY SOURCE: auth.users.app_metadata.roles (immutable by clients)
+ * 
+ * @param user - User object from Supabase auth
+ * @param profile - Optional user profile (NOT USED for role checks)
+ * @returns Array of role strings
  */
 export const getUserRoles = (user: User | null, profile?: UserProfile | null): string[] => {
   if (!user) return [];
   
-  const metadataRoles = user.app_metadata?.roles || [];
-  const profileRole = profile?.role;
-  
-  // Combine and deduplicate roles
-  const allRoles = [...metadataRoles];
-  
-  // Add profile role if it exists and is not already in the list
-  if (profileRole && !allRoles.includes(profileRole)) {
-    allRoles.push(profileRole);
+  // ONLY get roles from app_metadata (source of truth)
+  const appMetadataRoles = user.app_metadata?.roles;
+  if (Array.isArray(appMetadataRoles)) {
+    return [...appMetadataRoles];
   }
   
-  return allRoles;
+  // No fallback - roles MUST be in app_metadata
+  return [];
 };
 
 /**

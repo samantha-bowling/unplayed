@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          target_user_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       donors: {
         Row: {
           amount_cents: number | null
@@ -761,6 +788,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          synced_at: string | null
+          synced_from_metadata: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          synced_at?: string | null
+          synced_from_metadata?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          synced_at?: string | null
+          synced_from_metadata?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_shelf_life: {
         Row: {
           game_id: number
@@ -994,11 +1048,26 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      has_role: {
+        Args: {
+          check_role: Database["public"]["Enums"]["app_role"]
+          check_user_id: string
+        }
+        Returns: boolean
+      }
       increment: {
         Args: { value: number }
         Returns: number
       }
+      is_admin: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
       is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_admin_legacy: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -1012,6 +1081,13 @@ export type Database = {
           message: string
           total_count: number
           updated_count: number
+        }[]
+      }
+      sync_user_roles_from_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          errors_count: number
+          synced_count: number
         }[]
       }
       track_user_price_request: {
@@ -1036,7 +1112,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1163,6 +1239,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

@@ -13,11 +13,21 @@ export async function callUpsertUser(payload: UpsertUserPayload) {
   try {
     console.log('🔄 Calling upsert-user with payload:', payload);
     
-    // Use the Netlify redirect path instead of direct Supabase function URL
+    // Get auth session for JWT token
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session?.access_token) {
+      console.error('❌ No active session found');
+      throw new Error('Authentication required to update user profile');
+    }
+    
+    // Use the Netlify redirect path with auth header
     const response = await fetch(`/api/upsert-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify(payload),
     });
