@@ -63,11 +63,23 @@ const MusicPlayerButton = () => {
           side="bottom"
           align="end"
           sideOffset={8}
-          className="w-[380px] p-0 bg-black/80 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] backdrop-blur-sm transition-all duration-300"
+          className="w-[380px] p-0 bg-black/95 border border-unplayed-mint/20 shadow-[0_0_20px_rgba(163,247,191,0.15)] hover:shadow-[0_0_25px_rgba(163,247,191,0.2)] backdrop-blur-sm transition-all duration-300"
         >
-          <div className="border-b border-unplayed-mint/20 bg-black/30 p-3 overflow-hidden relative">
+          <div className="border-b border-unplayed-mint/20 bg-black/50 p-3 overflow-hidden relative">
             <div className="flex animate-marquee-slow">
               <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2 whitespace-nowrap pr-8">
+                🎵 Now Playing
+              </h3>
+              <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2 whitespace-nowrap pr-8" aria-hidden="true">
+                🎵 Now Playing
+              </h3>
+              <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2 whitespace-nowrap pr-8" aria-hidden="true">
+                🎵 Now Playing
+              </h3>
+              <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2 whitespace-nowrap pr-8" aria-hidden="true">
+                🎵 Now Playing
+              </h3>
+              <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2 whitespace-nowrap pr-8" aria-hidden="true">
                 🎵 Now Playing
               </h3>
               <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2 whitespace-nowrap pr-8" aria-hidden="true">
