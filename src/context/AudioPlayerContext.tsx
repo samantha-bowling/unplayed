@@ -203,7 +203,7 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Frequency data update loop
   useEffect(() => {
-    if (state.status !== 'playing' || !state.isExpanded) {
+    if (state.status !== 'playing') {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
