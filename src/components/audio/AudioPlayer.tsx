@@ -21,9 +21,9 @@ export const AudioPlayer = () => {
   const isLoading = status === 'loading';
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-8">
+    <div className="w-full">
       <motion.div 
-        className="terminal-container relative overflow-hidden"
+        className="relative overflow-hidden"
         initial={false}
         animate={{ height: isExpanded ? 'auto' : '48px' }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -104,8 +104,8 @@ export const AudioPlayer = () => {
                 <AudioProgressBar />
               </div>
 
-              {/* Bottom row: Metadata left, Controls right */}
-              <div className="flex items-center justify-between gap-4">
+              {/* Bottom row: Metadata and Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                 {/* Left: Track metadata */}
                 <div className="flex flex-col min-w-0 flex-shrink">
                   <span className="font-space text-sm font-medium text-white truncate">
