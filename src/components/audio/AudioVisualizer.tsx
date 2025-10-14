@@ -3,11 +3,14 @@ import { useAudioPlayer } from '@/context/AudioPlayerContext';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useMemo, useRef } from 'react';
 
-const BAR_COUNT = 10;
+const BAR_COUNT = 20;
+const MOBILE_BAR_COUNT = 10;
 
 export const AudioVisualizer = () => {
   const { frequencyData, status } = useAudioPlayer();
   const prefersReducedMotion = usePrefersReducedMotion();
+  const isMobile = window.innerWidth < 768;
+  const barCount = isMobile ? MOBILE_BAR_COUNT : BAR_COUNT;
   const previousHeights = useRef<number[]>(new Array(BAR_COUNT).fill(0.2));
   
   const isPlaying = status === 'playing';
@@ -21,10 +24,10 @@ export const AudioVisualizer = () => {
   const bars = useMemo(() => {
     if (!isPlaying) {
       // Idle state - gentle pulse
-      return new Array(BAR_COUNT).fill(0.2);
+      return new Array(barCount).fill(0.2);
     }
 
-    const dataSlice = Array.from(frequencyData.slice(0, BAR_COUNT));
+    const dataSlice = Array.from(frequencyData.slice(0, barCount));
     
     return dataSlice.map((value, index) => {
       // Logarithmic weighting for more musical feel
@@ -42,16 +45,16 @@ export const AudioVisualizer = () => {
       // Clamp between min and max
       return Math.max(0.15, Math.min(1, smoothed));
     });
-  }, [frequencyData, isPlaying]);
+  }, [frequencyData, isPlaying, barCount]);
 
   // Fallback for reduced motion or low-end devices
   if (prefersReducedMotion || isLowEndDevice) {
     return (
-      <div className="flex items-end gap-1 h-12 w-20" aria-hidden="true">
-        {new Array(BAR_COUNT).fill(0).map((_, i) => (
+      <div className="flex items-end justify-center gap-1 h-8 w-full" aria-hidden="true">
+        {new Array(barCount).fill(0).map((_, i) => (
           <div
             key={i}
-            className="w-1.5 rounded-full bg-gradient-to-t from-unplayed-mint via-unplayed-pink to-unplayed-amber opacity-50"
+            className="w-1 sm:w-1.5 rounded-full bg-gradient-to-t from-unplayed-mint via-unplayed-pink to-unplayed-amber opacity-50"
             style={{ height: '40%' }}
           />
         ))}
@@ -60,11 +63,11 @@ export const AudioVisualizer = () => {
   }
 
   return (
-    <div className="flex items-end gap-1 h-12 w-20" aria-hidden="true">
+    <div className="flex items-end justify-center gap-1 h-8 w-full" aria-hidden="true">
       {bars.map((value, i) => (
         <motion.div
           key={i}
-          className="w-1.5 rounded-full bg-gradient-to-t from-unplayed-mint via-unplayed-pink to-unplayed-amber shadow-sm shadow-unplayed-mint/20"
+          className="w-1 sm:w-1.5 rounded-full bg-gradient-to-t from-unplayed-mint via-unplayed-pink to-unplayed-amber shadow-sm shadow-unplayed-mint/20"
           animate={{
             height: `${value * 100}%`
           }}
@@ -73,7 +76,7 @@ export const AudioVisualizer = () => {
             ease: 'linear' 
           }}
           style={{ 
-            minHeight: '8px',
+            minHeight: '6px',
             willChange: 'height'
           }}
         />

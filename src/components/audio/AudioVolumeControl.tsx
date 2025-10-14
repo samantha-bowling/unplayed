@@ -28,13 +28,13 @@ export const AudioVolumeControl = ({ compact = false }: AudioVolumeControlProps)
   }
 
   return (
-    <div className="flex items-center gap-2 w-28">
+    <div className="flex items-center gap-1.5 w-20">
       <button
         onClick={toggleMute}
         aria-label={isMuted ? 'Unmute' : 'Mute'}
-        className="text-gray-400 hover:text-unplayed-mint transition-colors"
+        className="text-gray-400 hover:text-unplayed-mint transition-colors flex-shrink-0"
       >
-        <VolumeIcon size={16} />
+        <VolumeIcon size={14} />
       </button>
       <Slider
         value={[isMuted ? 0 : volume * 100]}

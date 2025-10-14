@@ -8,12 +8,11 @@ const PLAYLIST = [
     artist: "Sam \"Nobody\" Stafford",
     src: '/assets/music/a-small-chance.mp3'
   },
-  // Placeholder for second song
   {
     id: 2,
-    title: 'Coming Soon',
+    title: 'Mission Prep 3',
     artist: "Sam \"Nobody\" Stafford",
-    src: '' // Will be added later
+    src: '/assets/music/mission-prep-3.mp3'
   }
 ];
 

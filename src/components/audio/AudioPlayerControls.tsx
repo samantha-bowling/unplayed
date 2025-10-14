@@ -9,16 +9,16 @@ export const AudioPlayerControls = () => {
   const isLoading = status === 'loading';
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Button
         variant="ghost"
         size="icon"
         onClick={skipPrevious}
         disabled={isLoading}
         aria-label="Skip to previous track"
-        className="h-8 w-8 text-gray-400 hover:text-unplayed-mint transition-colors"
+        className="h-7 w-7 text-gray-400 hover:text-unplayed-mint transition-colors"
       >
-        <SkipBack size={16} />
+        <SkipBack size={14} />
       </Button>
       
       <Button
@@ -27,9 +27,9 @@ export const AudioPlayerControls = () => {
         onClick={rewind}
         disabled={isLoading}
         aria-label="Rewind 10 seconds"
-        className="h-8 w-8 text-gray-400 hover:text-unplayed-mint transition-colors"
+        className="h-7 w-7 text-gray-400 hover:text-unplayed-mint transition-colors"
       >
-        <RotateCcw size={16} />
+        <RotateCcw size={14} />
       </Button>
       
       <Button
@@ -38,9 +38,9 @@ export const AudioPlayerControls = () => {
         onClick={togglePlayPause}
         disabled={isLoading}
         aria-label={isPlaying ? 'Pause' : 'Play'}
-        className="h-9 w-9 text-gray-400 hover:text-unplayed-mint transition-colors"
+        className="h-8 w-8 text-gray-400 hover:text-unplayed-mint transition-colors"
       >
-        {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+        {isPlaying ? <Pause size={18} /> : <Play size={18} />}
       </Button>
       
       <Button
@@ -49,9 +49,9 @@ export const AudioPlayerControls = () => {
         onClick={skipNext}
         disabled={isLoading}
         aria-label="Skip to next track"
-        className="h-8 w-8 text-gray-400 hover:text-unplayed-mint transition-colors"
+        className="h-7 w-7 text-gray-400 hover:text-unplayed-mint transition-colors"
       >
-        <SkipForward size={16} />
+        <SkipForward size={14} />
       </Button>
     </div>
   );
