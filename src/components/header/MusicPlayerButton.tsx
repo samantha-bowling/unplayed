@@ -28,10 +28,10 @@ const MusicPlayerButton = () => {
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <TooltipProvider>
-          <Tooltip>
+    <TooltipProvider>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <Tooltip>
+          <PopoverTrigger asChild>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
@@ -59,29 +59,29 @@ const MusicPlayerButton = () => {
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>{tooltipText}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </PopoverTrigger>
+          </PopoverTrigger>
+          <TooltipContent>
+            <p>{tooltipText}</p>
+          </TooltipContent>
+        </Tooltip>
 
-      <PopoverContent
-        side="bottom"
-        align="end"
-        sideOffset={8}
-        className="w-[380px] p-0 bg-black/95 border-gray-700 backdrop-blur-sm shadow-2xl"
-      >
-        <div className="border-b border-gray-700 bg-black/50 p-3">
-          <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2">
-            🎵 Now Playing
-          </h3>
-        </div>
-        <div className="p-4">
-          <AudioPlayerCompact />
-        </div>
-      </PopoverContent>
-    </Popover>
+        <PopoverContent
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          className="w-[380px] p-0 bg-black/95 border-gray-700 backdrop-blur-sm shadow-2xl"
+        >
+          <div className="border-b border-gray-700 bg-black/50 p-3">
+            <h3 className="text-unplayed-mint font-space text-sm flex items-center gap-2">
+              🎵 Now Playing
+            </h3>
+          </div>
+          <div className="p-4">
+            <AudioPlayerCompact />
+          </div>
+        </PopoverContent>
+      </Popover>
+    </TooltipProvider>
   );
 };
 
