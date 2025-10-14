@@ -4,15 +4,16 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAudioPlayer } from '@/context/AudioPlayerContext';
-import { FloatingMusicPlayer } from '@/components/audio/FloatingMusicPlayer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { AudioPlayerCompact } from '@/components/audio/AudioPlayerCompact';
 
 const MusicPlayerButton = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { currentTrack, status, togglePlayPause } = useAudioPlayer();
   
   const isPlaying = status === 'playing';
   const tooltipText = isPlaying 
-    ? (isVisible ? 'Hide Player' : `${currentTrack.title} - ${currentTrack.artist}`)
+    ? (isOpen ? 'Hide Player' : `${currentTrack.title} - ${currentTrack.artist}`)
     : 'Play Music';
 
   const handleClick = () => {
@@ -20,13 +21,13 @@ const MusicPlayerButton = () => {
       // Start playback if not playing
       togglePlayPause();
     } else if (isPlaying) {
-      // Toggle modal visibility if already playing
-      setIsVisible(!isVisible);
+      // Toggle drawer visibility if already playing
+      setIsOpen(!isOpen);
     }
   };
 
   return (
-    <>
+    <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -47,7 +48,7 @@ const MusicPlayerButton = () => {
               >
                 <Music2 size={18} className={isPlaying ? 'text-unplayed-mint' : 'text-gray-400'} />
               </motion.div>
-              {isPlaying && !isVisible && (
+              {isPlaying && !isOpen && (
                 <motion.div
                   className="absolute top-1 right-1 w-2 h-2 bg-unplayed-mint rounded-full"
                   animate={{ opacity: [1, 0.3, 1] }}
@@ -62,8 +63,17 @@ const MusicPlayerButton = () => {
         </Tooltip>
       </TooltipProvider>
 
-      <FloatingMusicPlayer isVisible={isVisible} onClose={() => setIsVisible(false)} />
-    </>
+      <DrawerContent className="max-h-[450px] bg-black/95 border-gray-700 backdrop-blur-sm">
+        <DrawerHeader className="border-b border-gray-700 bg-black/50">
+          <DrawerTitle className="text-unplayed-mint font-space text-sm flex items-center gap-2">
+            🎵 Now Playing
+          </DrawerTitle>
+        </DrawerHeader>
+        <div className="p-4">
+          <AudioPlayerCompact />
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
