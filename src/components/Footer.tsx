@@ -9,6 +9,7 @@ import AboutDialog from "./AboutDialog";
 import AccountDeletionModal from "./AccountDeletionModal";
 import { Link } from "react-router-dom";
 import DiscordIcon from "./icons/DiscordIcon";
+import { AudioPlayer } from "./audio/AudioPlayer";
 
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
@@ -52,8 +53,10 @@ const Footer = () => {
   }
   
   return (
-    <footer className="w-full p-6 mt-16 relative z-10">
-      <div className="max-w-7xl mx-auto">
+    <footer className="w-full relative z-10">
+      <AudioPlayer />
+      
+      <div className="max-w-7xl mx-auto p-6 mt-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <Link to="/" className="text-xl font-space font-bold">
