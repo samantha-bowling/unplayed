@@ -34,8 +34,8 @@ export const AudioPlayerCompact = () => {
         <AudioProgressBar />
       </div>
 
-      {/* Track Info */}
-      <div className="text-center space-y-1">
+      {/* Track Info - Closer to visualizer */}
+      <div className="text-center space-y-1 -mt-2">
         <div className="text-white font-semibold text-sm truncate">
           {currentTrack.title}
         </div>
