@@ -432,6 +432,20 @@ body.fullscreen-mode {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Marquee animation for music player */
+@keyframes marquee-slow {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-slow {
+  animation: marquee-slow 15s linear infinite;
+}
+
 /* Additional responsive helper classes */
 @media (max-width: 640px) {
   .mobile-full-width {
