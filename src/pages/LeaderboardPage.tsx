@@ -273,9 +273,9 @@ const LeaderboardPage = () => {
                 <Table className="table-fixed w-full">
                   <TableHeader>
                     <TableRow>
-                        <TableHead className="w-24 text-unplayed-mint font-bold text-base py-3 px-2">Rank</TableHead>
-                        <TableHead className="text-unplayed-mint font-bold text-base py-3 px-3">Player</TableHead>
-                        <TableHead className="text-right text-unplayed-mint font-bold text-base py-3 px-2 w-32">Dust Score</TableHead>
+                        <TableHead className="w-24 text-center text-unplayed-mint font-bold text-base py-3 px-2">Rank</TableHead>
+                        <TableHead className="text-center text-unplayed-mint font-bold text-base py-3 px-2">Player</TableHead>
+                        <TableHead className="text-center text-unplayed-mint font-bold text-base py-3 px-2 w-28">Dust Score</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -283,38 +283,32 @@ const LeaderboardPage = () => {
                         const isCurrentUser = user && entry.user_id === user.id;
                         const displayName = entry.is_anonymous ? 'Anonymous Player' : entry.username || 'Unknown Player';
                         
-                        // Top 3 highlighting
-                        const top3Styles = 
-                          entry.calculatedRank === 1 
-                            ? "bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-l-4 border-yellow-400" 
-                            : entry.calculatedRank === 2 
-                            ? "bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-l-4 border-gray-400" 
-                            : entry.calculatedRank === 3 
-                            ? "bg-gradient-to-r from-amber-600/20 to-amber-700/20 border-l-4 border-amber-600"
-                            : "";
-                        
                         return (
                           <TableRow 
                             key={entry.user_id}
-                            className={`
-                              ${isCurrentUser ? "bg-unplayed-amber/10" : ""}
-                              ${top3Styles}
-                            `}
+                            className={isCurrentUser ? "bg-unplayed-amber/10" : ""}
                           >
-                            <TableCell className="font-medium py-3 px-2 w-24">
-                              {entry.calculatedRank}
-                            </TableCell>
-                            <TableCell className="py-3 px-3">
-                              <div className="flex items-center gap-2">
-                                <span>
-                                  {displayName}
-                                  {isCurrentUser && (
-                                    <span className="ml-2 text-xs text-unplayed-amber">(You)</span>
-                                  )}
-                                </span>
+                            <TableCell className="font-medium py-3 px-2 w-24 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                {entry.calculatedRank === 1 && <Crown className="h-4 w-4 text-yellow-400" />}
+                                {entry.calculatedRank === 2 && <Crown className="h-4 w-4 text-gray-400" />}
+                                {entry.calculatedRank === 3 && <Crown className="h-4 w-4 text-amber-600" />}
+                                {entry.calculatedRank}
                               </div>
                             </TableCell>
-                            <TableCell className="text-right font-mono font-bold text-unplayed-amber py-3 px-2 w-32">
+                            <TableCell className="py-3 px-2 text-center">
+                              <span className={`
+                                ${entry.calculatedRank === 1 ? "text-yellow-400 font-bold" : ""}
+                                ${entry.calculatedRank === 2 ? "text-gray-300 font-semibold" : ""}
+                                ${entry.calculatedRank === 3 ? "text-amber-500 font-semibold" : ""}
+                              `}>
+                                {displayName}
+                              </span>
+                              {isCurrentUser && (
+                                <span className="ml-2 text-xs text-unplayed-amber">(You)</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center font-mono font-bold text-unplayed-amber py-3 px-2 w-28">
                               {entry.dust_score.toLocaleString()}
                             </TableCell>
                           </TableRow>
