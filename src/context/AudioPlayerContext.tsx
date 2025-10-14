@@ -149,10 +149,22 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         // Replay current track
         audio.currentTime = 0;
         audio.play();
-      } else {
-        // Auto-advance to next track (loops if 'all', stops if 'off')
+      } else if (state.repeatMode === 'all') {
+        // Loop back to first track
         const nextIndex = (state.currentTrackIndex + 1) % PLAYLIST.length;
         dispatch({ type: 'SET_TRACK_INDEX', payload: nextIndex });
+      } else {
+        // repeatMode === 'off'
+        // Check if there's a next track
+        if (state.currentTrackIndex < PLAYLIST.length - 1) {
+          // Play next track
+          const nextIndex = state.currentTrackIndex + 1;
+          dispatch({ type: 'SET_TRACK_INDEX', payload: nextIndex });
+        } else {
+          // End of playlist, stop playback
+          dispatch({ type: 'SET_STATUS', payload: 'paused' });
+          audio.currentTime = 0; // Reset to beginning of last track
+        }
       }
     };
 
