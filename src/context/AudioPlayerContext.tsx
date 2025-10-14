@@ -17,6 +17,7 @@ const PLAYLIST = [
 ];
 
 type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'error';
+type RepeatMode = 'off' | 'one' | 'all';
 
 interface AudioPlayerState {
   currentTrackIndex: number;
@@ -28,6 +29,7 @@ interface AudioPlayerState {
   isMuted: boolean;
   previousVolume: number;
   frequencyData: Uint8Array;
+  repeatMode: RepeatMode;
   errorMessage?: string;
 }
 
@@ -41,7 +43,8 @@ type AudioPlayerAction =
   | { type: 'TOGGLE_MUTE' }
   | { type: 'SET_TRACK_INDEX'; payload: number }
   | { type: 'UPDATE_FREQUENCY_DATA'; payload: Uint8Array }
-  | { type: 'SET_ERROR'; payload: string };
+  | { type: 'SET_ERROR'; payload: string }
+  | { type: 'TOGGLE_REPEAT' };
 
 const initialState: AudioPlayerState = {
   currentTrackIndex: 0,
@@ -53,6 +56,7 @@ const initialState: AudioPlayerState = {
   isMuted: false,
   previousVolume: 0.75,
   frequencyData: new Uint8Array(32),
+  repeatMode: 'off',
 };
 
 function audioPlayerReducer(state: AudioPlayerState, action: AudioPlayerAction): AudioPlayerState {
@@ -81,6 +85,11 @@ function audioPlayerReducer(state: AudioPlayerState, action: AudioPlayerAction):
       return { ...state, frequencyData: action.payload };
     case 'SET_ERROR':
       return { ...state, status: 'error', errorMessage: action.payload };
+    case 'TOGGLE_REPEAT':
+      const modes: RepeatMode[] = ['off', 'one', 'all'];
+      const currentIndex = modes.indexOf(state.repeatMode);
+      const nextMode = modes[(currentIndex + 1) % modes.length];
+      return { ...state, repeatMode: nextMode };
     default:
       return state;
   }
@@ -97,6 +106,7 @@ interface AudioPlayerContextType extends AudioPlayerState {
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   toggleExpanded: () => void;
+  toggleRepeat: () => void;
   currentTrack: typeof PLAYLIST[0];
 }
 
@@ -109,6 +119,7 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     volume: parseFloat(localStorage.getItem('audioPlayerVolume') || '0.75'),
     isExpanded: localStorage.getItem('audioPlayerExpanded') === 'true',
     currentTrackIndex: parseInt(localStorage.getItem('audioPlayerTrackIndex') || '0', 10),
+    repeatMode: (localStorage.getItem('audioPlayerRepeatMode') as RepeatMode) || 'off',
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -134,9 +145,15 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
 
     const handleEnded = () => {
-      // Auto-advance to next track
-      const nextIndex = (state.currentTrackIndex + 1) % PLAYLIST.length;
-      dispatch({ type: 'SET_TRACK_INDEX', payload: nextIndex });
+      if (state.repeatMode === 'one') {
+        // Replay current track
+        audio.currentTime = 0;
+        audio.play();
+      } else {
+        // Auto-advance to next track (loops if 'all', stops if 'off')
+        const nextIndex = (state.currentTrackIndex + 1) % PLAYLIST.length;
+        dispatch({ type: 'SET_TRACK_INDEX', payload: nextIndex });
+      }
     };
 
     const handleError = () => {
@@ -267,6 +284,11 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     localStorage.setItem('audioPlayerExpanded', state.isExpanded.toString());
   }, [state.isExpanded]);
 
+  // Sync repeat mode
+  useEffect(() => {
+    localStorage.setItem('audioPlayerRepeatMode', state.repeatMode);
+  }, [state.repeatMode]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -383,6 +405,10 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     dispatch({ type: 'TOGGLE_EXPANDED' });
   }, []);
 
+  const toggleRepeat = useCallback(() => {
+    dispatch({ type: 'TOGGLE_REPEAT' });
+  }, []);
+
   const contextValue: AudioPlayerContextType = {
     ...state,
     play,
@@ -395,6 +421,7 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setVolume,
     toggleMute,
     toggleExpanded,
+    toggleRepeat,
     currentTrack: PLAYLIST[state.currentTrackIndex],
   };
 

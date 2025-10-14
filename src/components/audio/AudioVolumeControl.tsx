@@ -28,7 +28,7 @@ export const AudioVolumeControl = ({ compact = false }: AudioVolumeControlProps)
   }
 
   return (
-    <div className="flex items-center gap-1.5 w-20">
+    <div className="flex items-center gap-1.5 w-full">
       <button
         onClick={toggleMute}
         aria-label={isMuted ? 'Unmute' : 'Mute'}

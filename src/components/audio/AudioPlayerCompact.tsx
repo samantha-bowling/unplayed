@@ -4,6 +4,7 @@ import { AudioVisualizer } from './AudioVisualizer';
 import { AudioProgressBar } from './AudioProgressBar';
 import { AudioPlayerControls } from './AudioPlayerControls';
 import { AudioVolumeControl } from './AudioVolumeControl';
+import { AudioRepeatButton } from './AudioRepeatButton';
 
 export const AudioPlayerCompact = () => {
   const { currentTrack, status } = useAudioPlayer();
@@ -28,8 +29,10 @@ export const AudioPlayerCompact = () => {
         <AudioVisualizer />
       </div>
 
-      {/* Progress Bar */}
-      <AudioProgressBar />
+      {/* Progress Bar - Closer to visualizer */}
+      <div className="-mt-2">
+        <AudioProgressBar />
+      </div>
 
       {/* Track Info */}
       <div className="text-center space-y-1">
@@ -41,12 +44,20 @@ export const AudioPlayerCompact = () => {
         </div>
       </div>
 
-      {/* Controls + Volume */}
-      <div className="flex items-center justify-between px-2">
+      {/* Full-width Controls Layout */}
+      <div className="flex items-center justify-between gap-3 px-2">
+        {/* Left: Repeat Button */}
+        <div className="flex-shrink-0">
+          <AudioRepeatButton />
+        </div>
+
+        {/* Center: Playback Controls */}
         <div className="flex-1 flex justify-center">
           <AudioPlayerControls />
         </div>
-        <div className="flex-shrink-0">
+
+        {/* Right: Volume Controls (Extended) */}
+        <div className="flex-shrink-0 min-w-[140px]">
           <AudioVolumeControl />
         </div>
       </div>
