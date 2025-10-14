@@ -15,11 +15,20 @@ export const FloatingMusicPlayer = ({ isVisible, onClose }: FloatingMusicPlayerP
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem('floatingPlayerPosition');
     if (saved) {
-      return JSON.parse(saved);
+      try {
+        const parsed = JSON.parse(saved);
+        // Validate position is within bounds
+        if (parsed.x >= 0 && parsed.y >= 0 && parsed.x <= window.innerWidth - PLAYER_WIDTH && parsed.y <= window.innerHeight - PLAYER_HEIGHT) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Invalid player position in localStorage');
+      }
     }
+    // Default to top-right position
     return {
       x: window.innerWidth - PLAYER_WIDTH - 20,
-      y: window.innerHeight - PLAYER_HEIGHT - 20,
+      y: 80, // Below header
     };
   });
 
@@ -42,12 +51,12 @@ export const FloatingMusicPlayer = ({ isVisible, onClose }: FloatingMusicPlayerP
       onDragEnd={(_, info) => {
         setPosition({ x: info.point.x, y: info.point.y });
       }}
-      initial={position}
-      style={{
+      animate={{
         x: position.x,
         y: position.y,
       }}
-      className="fixed z-50 w-[350px] bg-black/95 border border-gray-700 rounded-lg shadow-2xl backdrop-blur-sm"
+      initial={false}
+      className="fixed z-[9999] w-[350px] bg-black/95 border border-gray-700 rounded-lg shadow-2xl backdrop-blur-sm"
     >
       {/* Draggable Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-700 cursor-move bg-black/50">
