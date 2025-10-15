@@ -19,6 +19,7 @@ export type ProfileBadgeType =
   | 'total_games'
   | 'total_playtime'
   | 'top_genre'
+  | 'top_played_game'
   | 'dustiest_game'
   | 'clean_score'
   | 'clean_streak'
@@ -69,6 +70,20 @@ export const PROFILE_BADGES: Record<ProfileBadgeType, ProfileBadge> = {
         label: 'Top Genre',
         value: topGenre?.genre_name || 'None',
         subtitle: topGenre ? `${topGenre.game_count} games` : undefined,
+      };
+    },
+  },
+  top_played_game: {
+    id: 'top_played_game',
+    name: 'Top Played Game',
+    icon: TrendingUp,
+    description: 'Your most played game by hours',
+    format: (topPlayedGame) => {
+      const hours = topPlayedGame?.playtime_hours || 0;
+      return {
+        label: 'Top Played Game',
+        value: topPlayedGame?.game_name || 'None',
+        subtitle: hours > 0 ? `${Math.round(hours)}h played` : undefined,
       };
     },
   },

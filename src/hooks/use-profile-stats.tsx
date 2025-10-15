@@ -24,6 +24,10 @@ export type ProfileStats = {
     current_dust_score: number;
     header_image?: string;
   } | null;
+  topPlayedGame: {
+    game_name: string;
+    playtime_hours: number;
+  } | null;
   leaderboardRank: number | null;
 };
 
@@ -38,7 +42,7 @@ export function useProfileStats(userId: string | undefined) {
       if (!userId) throw new Error('User ID required');
 
       // Batch all queries in parallel for efficiency
-      const [metricsResult, genreStatsResult, dustiestGameResult, leaderboardResult] = 
+      const [metricsResult, genreStatsResult, dustiestGameResult, topPlayedGameResult, leaderboardResult] = 
         await Promise.all([
           // User metrics
           supabase
@@ -64,6 +68,15 @@ export function useProfileStats(userId: string | undefined) {
             .limit(1)
             .maybeSingle(),
           
+          // Top played game
+          supabase
+            .from('user_games')
+            .select('playtime_minutes, game_id, games(name)')
+            .eq('user_id', userId)
+            .order('playtime_minutes', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          
           // Leaderboard rank
           supabase
             .from('leaderboard_snapshots')
@@ -78,12 +91,22 @@ export function useProfileStats(userId: string | undefined) {
       if (metricsResult.error) throw metricsResult.error;
       if (genreStatsResult.error) throw genreStatsResult.error;
       if (dustiestGameResult.error) throw dustiestGameResult.error;
+      if (topPlayedGameResult.error) throw topPlayedGameResult.error;
       if (leaderboardResult.error) throw leaderboardResult.error;
+
+      // Process top played game data
+      const topPlayedGame = topPlayedGameResult.data
+        ? {
+            game_name: (topPlayedGameResult.data.games as any)?.name || 'Unknown',
+            playtime_hours: (topPlayedGameResult.data.playtime_minutes || 0) / 60,
+          }
+        : null;
 
       return {
         metrics: metricsResult.data,
         genreStats: genreStatsResult.data || [],
         dustiestGame: dustiestGameResult.data,
+        topPlayedGame,
         leaderboardRank: leaderboardResult.data?.ranking || null,
       };
     },

@@ -918,6 +918,7 @@ export type Database = {
       }
       users: {
         Row: {
+          background_animation_pack: string
           created_at: string
           id: string
           last_sync: string | null
@@ -927,15 +928,19 @@ export type Database = {
           onboarding_complete: boolean | null
           profile_badge_1: string
           profile_badge_2: string
+          profile_badge_3: string
           profile_tagline: string | null
           profile_theme: string
+          profile_username: string | null
           role: string | null
+          show_mint_glow: boolean
           steam_avatar: string | null
           steam_id: string
           steam_name: string
           updated_at: string
         }
         Insert: {
+          background_animation_pack?: string
           created_at?: string
           id: string
           last_sync?: string | null
@@ -945,15 +950,19 @@ export type Database = {
           onboarding_complete?: boolean | null
           profile_badge_1?: string
           profile_badge_2?: string
+          profile_badge_3?: string
           profile_tagline?: string | null
           profile_theme?: string
+          profile_username?: string | null
           role?: string | null
+          show_mint_glow?: boolean
           steam_avatar?: string | null
           steam_id: string
           steam_name: string
           updated_at?: string
         }
         Update: {
+          background_animation_pack?: string
           created_at?: string
           id?: string
           last_sync?: string | null
@@ -963,9 +972,12 @@ export type Database = {
           onboarding_complete?: boolean | null
           profile_badge_1?: string
           profile_badge_2?: string
+          profile_badge_3?: string
           profile_tagline?: string | null
           profile_theme?: string
+          profile_username?: string | null
           role?: string | null
+          show_mint_glow?: boolean
           steam_avatar?: string | null
           steam_id?: string
           steam_name?: string

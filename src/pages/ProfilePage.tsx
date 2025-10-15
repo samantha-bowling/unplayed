@@ -1,6 +1,6 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ExternalLink, Crown, Sparkles } from 'lucide-react';
+import { ExternalLink, Crown, Sparkles, ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +22,7 @@ import { motion } from 'framer-motion';
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const isOwnProfile = currentUser?.id === userId;
 
   // Fetch the user's public profile
@@ -91,25 +92,31 @@ export default function ProfilePage() {
   // Get badge configurations
   const badge1Type = (profile.profile_badge_1 as ProfileBadgeType) || 'total_games';
   const badge2Type = (profile.profile_badge_2 as ProfileBadgeType) || 'total_playtime';
+  const badge3Type = (profile.profile_badge_3 as ProfileBadgeType) || 'clean_score';
+  
   const badge1Config = PROFILE_BADGES[badge1Type];
   const badge2Config = PROFILE_BADGES[badge2Type];
+  const badge3Config = PROFILE_BADGES[badge3Type];
 
-  // Format badge data based on type
-  const getBadgeData = (type: ProfileBadgeType) => {
+  // Format badge data based on type using correct config
+  const getBadgeData = (type: ProfileBadgeType, config: typeof badge1Config) => {
     switch (type) {
       case 'top_genre':
-        return badge1Config.format(stats?.genreStats);
+        return config.format(stats?.genreStats);
       case 'dustiest_game':
-        return badge1Config.format(stats?.dustiestGame);
+        return config.format(stats?.dustiestGame);
       case 'leaderboard_rank':
-        return badge1Config.format(stats?.leaderboardRank);
+        return config.format(stats?.leaderboardRank);
+      case 'top_played_game':
+        return config.format(stats?.topPlayedGame);
       default:
-        return badge1Config.format(stats?.metrics);
+        return config.format(stats?.metrics);
     }
   };
 
-  const badge1Data = getBadgeData(badge1Type);
-  const badge2Data = getBadgeData(badge2Type);
+  const badge1Data = getBadgeData(badge1Type, badge1Config);
+  const badge2Data = getBadgeData(badge2Type, badge2Config);
+  const badge3Data = getBadgeData(badge3Type, badge3Config);
 
   // Check if user is in top 3
   const isTop3 = stats?.leaderboardRank && stats.leaderboardRank <= 3;
@@ -160,20 +167,31 @@ export default function ProfilePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 py-8 max-w-4xl"
+        className="container mx-auto px-4 py-6 max-w-3xl"
       >
+        {/* Back Navigation */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="mb-4 gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+        
         <Card className="overflow-hidden">
           {/* Header with gradient */}
-          <div className={`bg-gradient-to-r ${themeConfig.gradient} p-8 relative`}>
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <Avatar className="h-24 w-24 border-4 border-white/20">
+          <div className={`bg-gradient-to-r ${themeConfig.gradient} p-6 relative`}>
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+              <Avatar className="h-20 w-20 border-4 border-white/20">
                 <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
                 <AvatarFallback>{profile.steam_name?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
               
               <div className="flex-1 text-center md:text-left">
-                <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                  <h1 className="text-3xl font-bold text-white">{profile.steam_name}</h1>
+                <div className="flex items-center gap-2 justify-center md:justify-start mb-1">
+                  <h1 className="text-2xl font-bold text-white">{profile.steam_name}</h1>
                   {isTop3 && (
                     <TooltipProvider>
                       <Tooltip>
@@ -189,7 +207,7 @@ export default function ProfilePage() {
                 </div>
                 
                 {profile.profile_tagline && (
-                  <p className="text-white/90 italic text-lg mb-3">"{profile.profile_tagline}"</p>
+                  <p className="text-white/90 italic text-base mb-2">"{profile.profile_tagline}"</p>
                 )}
                 
                 {profile.steam_id && (
@@ -220,15 +238,15 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <CardContent className="p-8 space-y-6">
+          <CardContent className="p-6 space-y-4">
             {/* Dust Score Hero Card */}
             <Card className="bg-gradient-to-br from-dust-score-start to-dust-score-end border-white/10">
-              <CardContent className="p-6 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Sparkles className="h-5 w-5 text-white" />
-                  <h2 className="text-xl font-semibold text-white">Dust Score</h2>
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Sparkles className="h-4 w-4 text-white" />
+                  <h2 className="text-lg font-semibold text-white">Dust Score</h2>
                 </div>
-                <div className="text-5xl font-bold text-white mb-2">
+                <div className="text-4xl font-bold text-white mb-1">
                   {dustScore.toLocaleString()}
                 </div>
                 <TooltipProvider>
@@ -247,7 +265,7 @@ export default function ProfilePage() {
             </Card>
 
             {/* User-Selected Stat Badges */}
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 justify-items-center">
               <StatBadge
                 icon={badge1Config.icon}
                 label={badge1Data.label}
@@ -262,10 +280,17 @@ export default function ProfilePage() {
                 subtitle={badge2Data.subtitle}
                 theme={theme}
               />
+              <StatBadge
+                icon={badge3Config.icon}
+                label={badge3Data.label}
+                value={badge3Data.value}
+                subtitle={badge3Data.subtitle}
+                theme={theme}
+              />
             </div>
 
             {/* Share Section */}
-            <div className="pt-6 border-t">
+            <div className="pt-4 border-t">
               <ShareProfile
                 username={profile.steam_name || 'Unknown'}
                 dustScore={dustScore}

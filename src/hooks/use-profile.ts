@@ -17,6 +17,10 @@ export type UserProfile = {
   profile_tagline?: string;
   profile_badge_1?: string;
   profile_badge_2?: string;
+  profile_badge_3?: string;
+  profile_username?: string;
+  show_mint_glow?: boolean;
+  background_animation_pack?: string;
   created_at?: string;
   updated_at?: string;
   last_sync?: string;

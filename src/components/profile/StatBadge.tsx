@@ -14,23 +14,23 @@ export function StatBadge({ icon: Icon, label, value, subtitle, theme = 'dust_ti
 
   return (
     <div 
-      className={`rounded-lg p-4 bg-gradient-to-r ${gradient} border border-white/10 backdrop-blur-sm`}
+      className={`rounded-lg p-3 bg-gradient-to-r ${gradient} border border-white/10 backdrop-blur-sm transition-transform hover:scale-105 w-full max-w-xs`}
       role="group"
       aria-label={`${label}: ${value}`}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-1">
-          <Icon className="h-5 w-5 text-white/90" aria-hidden="true" />
+      <div className="flex items-start gap-2">
+        <div className="flex-shrink-0 mt-0.5">
+          <Icon className="h-4 w-4 text-white/90" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-white/70 uppercase tracking-wide mb-1">
+          <div className="text-xs text-white/70 uppercase tracking-wide mb-0.5">
             {label}
           </div>
-          <div className="text-2xl font-bold text-white truncate">
+          <div className="text-xl font-bold text-white truncate">
             {value}
           </div>
           {subtitle && (
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-xs text-white/60 mt-0.5">
               {subtitle}
             </div>
           )}

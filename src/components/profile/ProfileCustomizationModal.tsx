@@ -19,6 +19,7 @@ export function ProfileCustomizationModal() {
   const [selectedBadges, setSelectedBadges] = useState<ProfileBadgeType[]>([
     (profile?.profile_badge_1 as ProfileBadgeType) || DEFAULT_BADGES[0],
     (profile?.profile_badge_2 as ProfileBadgeType) || DEFAULT_BADGES[1],
+    (profile?.profile_badge_3 as ProfileBadgeType) || 'clean_score',
   ]);
 
   // Update local state when profile changes
@@ -29,25 +30,33 @@ export function ProfileCustomizationModal() {
       setSelectedBadges([
         (profile.profile_badge_1 as ProfileBadgeType) || DEFAULT_BADGES[0],
         (profile.profile_badge_2 as ProfileBadgeType) || DEFAULT_BADGES[1],
+        (profile.profile_badge_3 as ProfileBadgeType) || 'clean_score',
       ]);
     }
   }, [profile]);
+
+  // Persist theme to localStorage
+  useEffect(() => {
+    if (selectedTheme) {
+      localStorage.setItem('profile_theme', selectedTheme);
+    }
+  }, [selectedTheme]);
 
   const handleBadgeToggle = (badgeId: ProfileBadgeType) => {
     if (selectedBadges.includes(badgeId)) {
       setSelectedBadges(selectedBadges.filter(b => b !== badgeId));
     } else {
-      if (selectedBadges.length < 2) {
+      if (selectedBadges.length < 3) {
         setSelectedBadges([...selectedBadges, badgeId]);
       } else {
-        toast.error('You can only select 2 stat badges');
+        toast.error('You can only select 3 stat badges');
       }
     }
   };
 
   const handleSave = () => {
-    if (selectedBadges.length !== 2) {
-      toast.error('Please select exactly 2 stat badges');
+    if (selectedBadges.length !== 3) {
+      toast.error('Please select exactly 3 stat badges');
       return;
     }
 
@@ -62,11 +71,14 @@ export function ProfileCustomizationModal() {
         profile_tagline: tagline || null,
         profile_badge_1: selectedBadges[0],
         profile_badge_2: selectedBadges[1],
+        profile_badge_3: selectedBadges[2],
       },
       {
         onSuccess: () => {
           toast.success('Profile customization saved!');
           setIsOpen(false);
+          // Reload to reflect theme changes
+          window.location.reload();
         },
         onError: () => {
           toast.error('Failed to save customization');
@@ -144,7 +156,7 @@ export function ProfileCustomizationModal() {
             <div>
               <Label>Stat Badges</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Choose exactly 2 stats to display on your profile ({selectedBadges.length}/2 selected)
+                Choose up to three stats to display alongside your Dust Score ({selectedBadges.length}/3 selected)
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -196,11 +208,11 @@ export function ProfileCustomizationModal() {
                 {tagline && (
                   <div className="text-white/80 italic text-sm mb-4">"{tagline}"</div>
                 )}
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  {selectedBadges.slice(0, 2).map((badgeId) => (
-                    <div key={badgeId} className="bg-white/10 backdrop-blur-sm rounded p-3">
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  {selectedBadges.slice(0, 3).map((badgeId) => (
+                    <div key={badgeId} className="bg-white/10 backdrop-blur-sm rounded p-2">
                       <div className="text-xs text-white/70 uppercase">{PROFILE_BADGES[badgeId].name}</div>
-                      <div className="text-lg font-bold mt-1">Sample</div>
+                      <div className="text-sm font-bold mt-0.5">Sample</div>
                     </div>
                   ))}
                 </div>
@@ -213,7 +225,7 @@ export function ProfileCustomizationModal() {
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isUpdating || selectedBadges.length !== 2}>
+            <Button onClick={handleSave} disabled={isUpdating || selectedBadges.length !== 3}>
               {isUpdating ? 'Saving...' : 'Save Customization'}
             </Button>
           </div>
