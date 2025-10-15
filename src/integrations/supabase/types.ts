@@ -922,6 +922,7 @@ export type Database = {
           created_at: string
           id: string
           last_sync: string | null
+          last_username_change: string | null
           leaderboard_opted_out_explicitly: boolean | null
           leaderboard_prompt_shown: boolean | null
           leaderboard_visibility: string
@@ -945,6 +946,7 @@ export type Database = {
           created_at?: string
           id: string
           last_sync?: string | null
+          last_username_change?: string | null
           leaderboard_opted_out_explicitly?: boolean | null
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
@@ -968,6 +970,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_sync?: string | null
+          last_username_change?: string | null
           leaderboard_opted_out_explicitly?: boolean | null
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
@@ -1011,6 +1014,13 @@ export type Database = {
       }
     }
     Functions: {
+      assign_role: {
+        Args: {
+          target_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: undefined
+      }
       calculate_dust_score: {
         Args: {
           acquisition_date: string
@@ -1110,12 +1120,12 @@ export type Database = {
           updated_count: number
         }[]
       }
-      sync_user_roles_from_metadata: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          errors_count: number
-          synced_count: number
-        }[]
+      revoke_role: {
+        Args: {
+          target_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: undefined
       }
       track_user_price_request: {
         Args: { p_app_ids: number[] }
