@@ -1,7 +1,6 @@
 import { Twitter, MessageCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useMemo } from 'react';
 
 type ShareProfileProps = {
   username: string;
@@ -20,9 +19,7 @@ export function ShareProfile({
   badge2Text,
   profileUrl,
 }: ShareProfileProps) {
-  // Ensure profileUrl uses vanity URL if available
-  const finalProfileUrl = useMemo(() => profileUrl, [profileUrl]);
-  const shareText = `🎮 ${username} on Unplayed\n${dustScore.toLocaleString()} Dust Score${tagline ? `\n"${tagline}"` : ''}${badge1Text ? `\n🏷️ ${badge1Text}` : ''}${badge2Text ? ` • ${badge2Text}` : ''}\n\nCheck it out: ${finalProfileUrl}`;
+  const shareText = `🎮 ${username} on Unplayed\n${dustScore.toLocaleString()} Dust Score${tagline ? `\n"${tagline}"` : ''}${badge1Text ? `\n🏷️ ${badge1Text}` : ''}${badge2Text ? ` • ${badge2Text}` : ''}\n\nCheck it out: ${profileUrl}`;
 
   const handleTwitterShare = () => {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
@@ -30,13 +27,13 @@ export function ShareProfile({
   };
 
   const handleRedditShare = () => {
-    const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(finalProfileUrl)}&title=${encodeURIComponent(`${username}'s Unplayed Profile - ${dustScore.toLocaleString()} Dust Score`)}`;
+    const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(profileUrl)}&title=${encodeURIComponent(`${username}'s Unplayed Profile - ${dustScore.toLocaleString()} Dust Score`)}`;
     window.open(redditUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(finalProfileUrl);
+      await navigator.clipboard.writeText(profileUrl);
       toast.success('Copied your profile link! Share it anywhere 🌐');
     } catch (err) {
       toast.error('Failed to copy link');

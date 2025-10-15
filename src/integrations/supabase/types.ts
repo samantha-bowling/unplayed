@@ -922,7 +922,6 @@ export type Database = {
           created_at: string
           id: string
           last_sync: string | null
-          last_username_change: string | null
           leaderboard_opted_out_explicitly: boolean | null
           leaderboard_prompt_shown: boolean | null
           leaderboard_visibility: string
@@ -946,7 +945,6 @@ export type Database = {
           created_at?: string
           id: string
           last_sync?: string | null
-          last_username_change?: string | null
           leaderboard_opted_out_explicitly?: boolean | null
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
@@ -970,7 +968,6 @@ export type Database = {
           created_at?: string
           id?: string
           last_sync?: string | null
-          last_username_change?: string | null
           leaderboard_opted_out_explicitly?: boolean | null
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string

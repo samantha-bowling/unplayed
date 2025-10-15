@@ -8,7 +8,6 @@ import { useProfileStats } from '@/hooks/use-profile-stats';
 import { UserProfile } from '@/hooks/use-profile';
 import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
 import { PROFILE_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
-import { CLEAN_SCORE_TIERS } from '@/utils/clean-score-utils';
 import { StatBadge } from '@/components/profile/StatBadge';
 import { MainStatCard } from '@/components/profile/MainStatCard';
 import { ShareProfile } from '@/components/profile/ShareProfile';
@@ -19,56 +18,15 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { SteamLoader } from '@/components/SteamLoader';
 import { motion } from 'framer-motion';
 import { ProfileBackgroundAnimations } from '@/components/profile/ProfileBackgroundAnimations';
 import { AnimationPackId } from '@/lib/profile-animation-packs';
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useMemo } from 'react';
 
 export default function ProfilePage() {
-  const { userId: userIdParam } = useParams<{ userId: string }>();
+  const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
-  const [resolvingUsername, setResolvingUsername] = useState(false);
-
-  // Detect if param is UUID or username
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userIdParam || '');
-
-  // Resolve username to userId if needed
-  useEffect(() => {
-    if (!userIdParam) return;
-    
-    if (isUuid) {
-      setResolvedUserId(userIdParam);
-      return;
-    }
-
-    // It's a username, resolve it
-    const resolveUsername = async () => {
-      setResolvingUsername(true);
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id')
-          .ilike('profile_username', userIdParam)
-          .maybeSingle();
-        
-        if (error || !data) {
-          setResolvedUserId(null);
-        } else {
-          setResolvedUserId(data.id);
-        }
-      } finally {
-        setResolvingUsername(false);
-      }
-    };
-
-    resolveUsername();
-  }, [userIdParam, isUuid]);
-
-  const userId = resolvedUserId;
   const isOwnProfile = currentUser?.id === userId;
 
   // Fetch the user's public profile
@@ -91,16 +49,6 @@ export default function ProfilePage() {
 
   // Fetch profile stats
   const { data: stats, isLoading: statsLoading } = useProfileStats(userId);
-
-  // Show loading during username resolution
-  if (resolvingUsername) {
-    return <SteamLoader message="Loading profile..." />;
-  }
-
-  // Show 404 if username not found
-  if (!isUuid && !resolvingUsername && !userId) {
-    return <Navigate to="/404" replace />;
-  }
 
   // Privacy check: Only allow viewing public profiles or own profile
   if (!profileLoading && profile && profile.leaderboard_visibility !== 'public' && !isOwnProfile) {
@@ -147,34 +95,6 @@ export default function ProfilePage() {
   // Get animation settings
   const animationPack = (profile.background_animation_pack || 'gaming') as AnimationPackId;
   const showMintGlow = profile.show_mint_glow ?? true;
-  
-  // Dynamic Dust Tier theme based on Clean Score
-  const adjustBrightness = (hex: string, percent: number): string => {
-    const clamp = (value: number) => Math.min(255, Math.max(0, value));
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = clamp(((num >> 16) + percent));
-    const g = clamp(((num >> 8 & 0x00FF) + percent));
-    const b = clamp(((num & 0x0000FF) + percent));
-    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-  };
-
-  const userCleanScore = stats?.metrics?.clean_score || 0;
-  const userTier = useMemo(
-    () => CLEAN_SCORE_TIERS.find(tier => 
-      userCleanScore >= tier.range[0] && userCleanScore <= tier.range[1]
-    ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
-    [userCleanScore]
-  );
-
-  const effectiveTheme = useMemo(
-    () => theme === 'dust_tier' 
-      ? {
-          ...themeConfig,
-          gradient: `from-[${userTier.color}] to-[${adjustBrightness(userTier.color, -30)}]`
-        }
-      : themeConfig,
-    [theme, userTier.color, themeConfig]
-  );
   
   // Get main stat from profile
   const mainStatType = ((profile.profile_main_stat || 'dust_score') as ProfileBadgeType);
@@ -226,9 +146,8 @@ export default function ProfilePage() {
     stats?.leaderboardRank === 2 ? 'text-gray-300' :
     'text-amber-500';
 
-  const profileUrl = profile.profile_username 
-    ? `${window.location.origin}/u/${profile.profile_username}`
-    : `${window.location.origin}/profile/${userId}`;
+  const profileUrl = `${window.location.origin}/profile/${userId}`;
+  const canonicalUrl = `${window.location.origin}/u/${userId}`;
 
   return (
     <>
@@ -242,15 +161,6 @@ export default function ProfilePage() {
         <title>{`${profile.steam_name} on Unplayed`}</title>
         <meta name="description" content={`${profile.profile_tagline || 'Check out my Steam library!'} - ${dustScore.toLocaleString()} Dust Score`} />
         
-        {/* Canonical URL for SEO */}
-        <link 
-          rel="canonical" 
-          href={profile.profile_username 
-            ? `${window.location.origin}/u/${profile.profile_username}` 
-            : `${window.location.origin}/profile/${profile.id}`
-          } 
-        />
-        
         {/* Open Graph */}
         <meta property="og:title" content={`${profile.steam_name} - ${profile.profile_tagline || 'Unplayed Profile'}`} />
         <meta property="og:description" content={`${mainStatData.label}: ${mainStatData.value}${additionalStatsData[0] ? ` | ${additionalStatsData[0].label}: ${additionalStatsData[0].value}` : ''} | ${dustScore.toLocaleString()} total dust`} />
@@ -263,6 +173,9 @@ export default function ProfilePage() {
         <meta name="twitter:title" content={`${profile.steam_name} on Unplayed`} />
         <meta name="twitter:description" content={`${dustScore.toLocaleString()} Dust Score - ${profile.profile_tagline || 'Unplayed gaming stats'}`} />
         <meta name="twitter:image" content={profile.steam_avatar || '/placeholder.svg'} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href={canonicalUrl} />
         
         {/* JSON-LD Structured Data */}
         <script type="application/ld+json">
@@ -296,7 +209,7 @@ export default function ProfilePage() {
         
         <Card className="overflow-hidden">
           {/* Header with gradient */}
-          <div className={`bg-gradient-to-r ${effectiveTheme.gradient} p-6 relative transition-all duration-700`}>
+          <div className={`bg-gradient-to-r ${themeConfig.gradient} p-6 relative`}>
             <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
               <Avatar className="h-20 w-20 border-4 border-white/20">
                 <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
@@ -319,13 +232,6 @@ export default function ProfilePage() {
                     </TooltipProvider>
                   )}
                 </div>
-                
-                {/* Custom vanity URL handle */}
-                {profile.profile_username && (
-                  <p className="text-sm text-white/60 font-mono mb-2 transition-colors hover:text-unplayed-mint">
-                    @{profile.profile_username}
-                  </p>
-                )}
                 
                 {profile.profile_tagline && (
                   <p className="text-white/90 italic text-base mb-2">"{profile.profile_tagline}"</p>
