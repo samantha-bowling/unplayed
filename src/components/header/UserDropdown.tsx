@@ -3,6 +3,7 @@ import { ChevronDown, LogIn, Bug, Shield, Clock, UserMinus, ActivitySquare, User
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/hooks/use-profile';
+import { useAuthPermission } from '@/hooks/use-auth-permission';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,10 +19,8 @@ import {
 const UserDropdown = () => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
+  const { isAdmin } = useAuthPermission();
   const navigate = useNavigate();
-
-  // Check if user has admin role
-  const isAdmin = user?.app_metadata?.roles?.includes('admin');
   
   // Check if user has public profile
   const hasPublicProfile = profile?.leaderboard_visibility === 'public';

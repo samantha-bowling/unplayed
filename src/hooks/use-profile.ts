@@ -8,7 +8,8 @@ export type UserProfile = {
   steam_id?: string;
   steam_name?: string;
   steam_avatar?: string;
-  role?: string;
+  role?: string; // ⚠️ DEPRECATED - kept for backward compatibility
+  roles?: string[]; // ✅ NEW - from user_roles table
   onboarding_complete?: boolean;
   leaderboard_visibility?: 'off' | 'anonymous' | 'public';
   leaderboard_prompt_shown?: boolean;
@@ -52,7 +53,12 @@ export function useProfile() {
       
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          user_roles (
+            role
+          )
+        `)
         .eq('id', user.id)
         .maybeSingle();
       
@@ -61,8 +67,16 @@ export function useProfile() {
         throw error;
       }
       
-      console.log('[useProfile] Profile fetched:', data);
-      return data as UserProfile | null;
+      // Map user_roles array to simple roles string array
+      const profileWithRoles = data ? {
+        ...data,
+        roles: Array.isArray(data.user_roles) 
+          ? data.user_roles.map((r: any) => r.role) 
+          : []
+      } : null;
+      
+      console.log('[useProfile] Profile fetched with roles:', profileWithRoles);
+      return profileWithRoles as UserProfile | null;
     },
     enabled: !!user?.id && !!session,
     staleTime: 60 * 1000, // Consider data fresh for 1 minute

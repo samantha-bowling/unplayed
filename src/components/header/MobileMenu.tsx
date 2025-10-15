@@ -4,6 +4,7 @@ import { Menu, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/hooks/use-profile';
+import { useAuthPermission } from '@/hooks/use-auth-permission';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
@@ -15,10 +16,8 @@ interface MobileMenuProps {
 const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
   const { user, signOut, isLoading } = useAuth();
   const { profile } = useProfile();
+  const { isAdmin } = useAuthPermission();
   const navigate = useNavigate();
-
-  // Check if user has admin role
-  const isAdmin = user?.app_metadata?.roles?.includes('admin');
 
   return (
     <>
