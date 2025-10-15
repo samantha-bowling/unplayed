@@ -21,6 +21,7 @@ export type ProfileBadgeType =
   | 'top_genre'
   | 'top_played_game'
   | 'dustiest_game'
+  | 'dust_score'
   | 'clean_score'
   | 'clean_streak'
   | 'library_value'
@@ -96,6 +97,17 @@ export const PROFILE_BADGES: Record<ProfileBadgeType, ProfileBadge> = {
       label: 'Dustiest Game',
       value: dustiestGame?.game_name || 'None',
       subtitle: dustiestGame ? `${dustiestGame.current_dust_score} Dust` : undefined,
+    }),
+  },
+  dust_score: {
+    id: 'dust_score',
+    name: 'Dust Score',
+    icon: Sparkles,
+    description: 'Your total library dust accumulation',
+    format: (metrics) => ({
+      label: 'Dust Score',
+      value: metrics?.total_dust_score?.toLocaleString() || '0',
+      subtitle: metrics?.unplayed_games ? `${metrics.unplayed_games} Unplayed` : 'No Dust',
     }),
   },
   clean_score: {
