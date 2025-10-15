@@ -18,11 +18,9 @@ export function StatBadge({ icon: Icon, label, value, subtitle, theme = 'dust_ti
       role="group"
       aria-label={`${label}: ${value}`}
     >
-      <div className="flex items-start gap-2">
-        <div className="flex-shrink-0 mt-0.5">
-          <Icon className="h-4 w-4 text-white/90" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-col items-center justify-center text-center gap-2">
+        <Icon className="h-5 w-5 text-white/90" aria-hidden="true" />
+        <div className="flex flex-col items-center">
           <div className="text-xs text-white/70 uppercase tracking-wide mb-0.5">
             {label}
           </div>
