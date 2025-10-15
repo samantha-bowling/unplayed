@@ -2,6 +2,7 @@
 // src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth, AuthStatus } from "@/context/AuthContext";
+import { HelmetProvider } from "react-helmet-async";
 import SteamLoader from "@/components/SteamLoader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -19,6 +20,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
 import LoginErrorPage from "./pages/LoginErrorPage";
+import ProfilePage from "./pages/ProfilePage";
 import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import SteamAuthHandler from "@/pages/SteamAuthHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -39,20 +41,25 @@ const App = () => {
   }
 
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <SteamLoader message="Loading content..." size="md" variant="secondary" />
-      </div>
-    }>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthCallbackHandler />} />
-        <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
-        <Route path="/login-error" element={<LoginErrorPage />} />
-        <Route path="/support" element={<SupportPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
+    <HelmetProvider>
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-screen">
+          <SteamLoader message="Loading content..." size="md" variant="secondary" />
+        </div>
+      }>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackHandler />} />
+          <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
+          <Route path="/login-error" element={<LoginErrorPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          
+          {/* Profile routes - both long and short URLs */}
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/u/:userId" element={<ProfilePage />} />
 
         {/* Admin routes with role protection */}
         <Route
@@ -145,6 +152,7 @@ const App = () => {
         </div>
       )}
     </Suspense>
+    </HelmetProvider>
   );
 };
 

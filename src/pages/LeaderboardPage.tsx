@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -30,6 +31,7 @@ const LeaderboardPage = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   
@@ -297,13 +299,29 @@ const LeaderboardPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="py-3 px-2 text-center">
-                              <span className={`
-                                ${entry.calculatedRank === 1 ? "text-yellow-400 font-bold" : ""}
-                                ${entry.calculatedRank === 2 ? "text-gray-300 font-semibold" : ""}
-                                ${entry.calculatedRank === 3 ? "text-amber-500 font-semibold" : ""}
-                              `}>
-                                {displayName}
-                              </span>
+                              {entry.is_anonymous || !entry.user_id ? (
+                                <span className={`
+                                  ${entry.calculatedRank === 1 ? "text-yellow-400 font-bold" : ""}
+                                  ${entry.calculatedRank === 2 ? "text-gray-300 font-semibold" : ""}
+                                  ${entry.calculatedRank === 3 ? "text-amber-500 font-semibold" : ""}
+                                `}>
+                                  {displayName}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => navigate(`/profile/${entry.user_id}`)}
+                                  className={`
+                                    hover:underline cursor-pointer transition-colors
+                                    ${entry.calculatedRank === 1 ? "text-yellow-400 font-bold hover:text-yellow-300" : ""}
+                                    ${entry.calculatedRank === 2 ? "text-gray-300 font-semibold hover:text-gray-200" : ""}
+                                    ${entry.calculatedRank === 3 ? "text-amber-500 font-semibold hover:text-amber-400" : ""}
+                                    ${entry.calculatedRank > 3 ? "hover:text-unplayed-mint" : ""}
+                                  `}
+                                  aria-label={`View ${displayName}'s profile`}
+                                >
+                                  {displayName}
+                                </button>
+                              )}
                               {isCurrentUser && (
                                 <span className="ml-2 text-xs text-unplayed-amber">(You)</span>
                               )}

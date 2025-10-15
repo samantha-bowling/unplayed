@@ -13,6 +13,10 @@ export type UserProfile = {
   leaderboard_visibility?: 'off' | 'anonymous' | 'public';
   leaderboard_prompt_shown?: boolean;
   leaderboard_opted_out_explicitly?: boolean;
+  profile_theme?: string;
+  profile_tagline?: string;
+  profile_badge_1?: string;
+  profile_badge_2?: string;
   created_at?: string;
   updated_at?: string;
   last_sync?: string;

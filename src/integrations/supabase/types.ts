@@ -925,6 +925,10 @@ export type Database = {
           leaderboard_prompt_shown: boolean | null
           leaderboard_visibility: string
           onboarding_complete: boolean | null
+          profile_badge_1: string
+          profile_badge_2: string
+          profile_tagline: string | null
+          profile_theme: string
           role: string | null
           steam_avatar: string | null
           steam_id: string
@@ -939,6 +943,10 @@ export type Database = {
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
           onboarding_complete?: boolean | null
+          profile_badge_1?: string
+          profile_badge_2?: string
+          profile_tagline?: string | null
+          profile_theme?: string
           role?: string | null
           steam_avatar?: string | null
           steam_id: string
@@ -953,6 +961,10 @@ export type Database = {
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
           onboarding_complete?: boolean | null
+          profile_badge_1?: string
+          profile_badge_2?: string
+          profile_tagline?: string | null
+          profile_theme?: string
           role?: string | null
           steam_avatar?: string | null
           steam_id?: string

@@ -1,0 +1,283 @@
+import { useParams, Navigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { ExternalLink, Crown, Sparkles } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useProfileStats } from '@/hooks/use-profile-stats';
+import { UserProfile } from '@/hooks/use-profile';
+import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
+import { PROFILE_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
+import { StatBadge } from '@/components/profile/StatBadge';
+import { ShareProfile } from '@/components/profile/ShareProfile';
+import { ProfileCustomizationModal } from '@/components/profile/ProfileCustomizationModal';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { motion } from 'framer-motion';
+
+export default function ProfilePage() {
+  const { userId } = useParams<{ userId: string }>();
+  const { user: currentUser } = useAuth();
+  const isOwnProfile = currentUser?.id === userId;
+
+  // Fetch the user's public profile
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['public-profile', userId],
+    queryFn: async () => {
+      if (!userId) throw new Error('User ID required');
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as UserProfile | null;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch profile stats
+  const { data: stats, isLoading: statsLoading } = useProfileStats(userId);
+
+  // Privacy check: Only allow viewing public profiles or own profile
+  if (!profileLoading && profile && profile.leaderboard_visibility !== 'public' && !isOwnProfile) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (profileLoading || statsLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <Skeleton className="h-8 w-64 mt-4" />
+            <Skeleton className="h-4 w-48" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-32 w-full" />
+            <div className="grid md:grid-cols-2 gap-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardContent className="text-center py-12">
+            <p className="text-muted-foreground">Profile not found</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const theme = profile.profile_theme || DEFAULT_THEME;
+  const themeConfig = PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME];
+  const dustScore = stats?.metrics?.total_dust_score || 0;
+  const cleanScoreTier = stats?.metrics?.clean_score_tier || 'dusty';
+  
+  // Get badge configurations
+  const badge1Type = (profile.profile_badge_1 as ProfileBadgeType) || 'total_games';
+  const badge2Type = (profile.profile_badge_2 as ProfileBadgeType) || 'total_playtime';
+  const badge1Config = PROFILE_BADGES[badge1Type];
+  const badge2Config = PROFILE_BADGES[badge2Type];
+
+  // Format badge data based on type
+  const getBadgeData = (type: ProfileBadgeType) => {
+    switch (type) {
+      case 'top_genre':
+        return badge1Config.format(stats?.genreStats);
+      case 'dustiest_game':
+        return badge1Config.format(stats?.dustiestGame);
+      case 'leaderboard_rank':
+        return badge1Config.format(stats?.leaderboardRank);
+      default:
+        return badge1Config.format(stats?.metrics);
+    }
+  };
+
+  const badge1Data = getBadgeData(badge1Type);
+  const badge2Data = getBadgeData(badge2Type);
+
+  // Check if user is in top 3
+  const isTop3 = stats?.leaderboardRank && stats.leaderboardRank <= 3;
+  const crownColor = 
+    stats?.leaderboardRank === 1 ? 'text-yellow-400' :
+    stats?.leaderboardRank === 2 ? 'text-gray-300' :
+    'text-amber-500';
+
+  const profileUrl = `${window.location.origin}/profile/${userId}`;
+  const canonicalUrl = `${window.location.origin}/u/${userId}`;
+
+  return (
+    <>
+      <Helmet>
+        <title>{`${profile.steam_name} on Unplayed`}</title>
+        <meta name="description" content={`${profile.profile_tagline || 'Check out my Steam library!'} - ${dustScore.toLocaleString()} Dust Score`} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={`${profile.steam_name} - ${profile.profile_tagline || 'Unplayed Profile'}`} />
+        <meta property="og:description" content={`${badge1Data.label}: ${badge1Data.value} | ${badge2Data.label}: ${badge2Data.value} | ${dustScore.toLocaleString()} Dust Score`} />
+        <meta property="og:image" content={profile.steam_avatar || '/placeholder.svg'} />
+        <meta property="og:url" content={profileUrl} />
+        <meta property="og:type" content="profile" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${profile.steam_name} on Unplayed`} />
+        <meta name="twitter:description" content={`${dustScore.toLocaleString()} Dust Score - ${profile.profile_tagline || 'Unplayed gaming stats'}`} />
+        <meta name="twitter:image" content={profile.steam_avatar || '/placeholder.svg'} />
+        
+        {/* Canonical */}
+        <link rel="canonical" href={canonicalUrl} />
+        
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            "name": profile.steam_name,
+            "description": profile.profile_tagline || `${profile.steam_name}'s Unplayed profile`,
+            "url": profileUrl,
+            "image": profile.steam_avatar,
+          })}
+        </script>
+      </Helmet>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="container mx-auto px-4 py-8 max-w-4xl"
+      >
+        <Card className="overflow-hidden">
+          {/* Header with gradient */}
+          <div className={`bg-gradient-to-r ${themeConfig.gradient} p-8 relative`}>
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              <Avatar className="h-24 w-24 border-4 border-white/20">
+                <AvatarImage src={profile.steam_avatar} alt={profile.steam_name} />
+                <AvatarFallback>{profile.steam_name?.[0]?.toUpperCase()}</AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+                  <h1 className="text-3xl font-bold text-white">{profile.steam_name}</h1>
+                  {isTop3 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Crown className={`h-6 w-6 ${crownColor}`} aria-label={`Rank ${stats.leaderboardRank}`} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ranked #{stats.leaderboardRank} on the leaderboard!</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+                
+                {profile.profile_tagline && (
+                  <p className="text-white/90 italic text-lg mb-3">"{profile.profile_tagline}"</p>
+                )}
+                
+                {profile.steam_id && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    asChild
+                  >
+                    <a
+                      href={`https://steamcommunity.com/profiles/${profile.steam_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      View Steam Profile
+                    </a>
+                  </Button>
+                )}
+              </div>
+
+              {isOwnProfile && (
+                <div className="mt-4 md:mt-0">
+                  <ProfileCustomizationModal />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <CardContent className="p-8 space-y-6">
+            {/* Dust Score Hero Card */}
+            <Card className="bg-gradient-to-br from-dust-score-start to-dust-score-end border-white/10">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Sparkles className="h-5 w-5 text-white" />
+                  <h2 className="text-xl font-semibold text-white">Dust Score</h2>
+                </div>
+                <div className="text-5xl font-bold text-white mb-2">
+                  {dustScore.toLocaleString()}
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="bg-white/10 text-white border-white/20 cursor-help">
+                        {cleanScoreTier.charAt(0).toUpperCase() + cleanScoreTier.slice(1).replace('-', ' ')}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Dust Tier reflects your backlog size and engagement</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </CardContent>
+            </Card>
+
+            {/* User-Selected Stat Badges */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <StatBadge
+                icon={badge1Config.icon}
+                label={badge1Data.label}
+                value={badge1Data.value}
+                subtitle={badge1Data.subtitle}
+                theme={theme}
+              />
+              <StatBadge
+                icon={badge2Config.icon}
+                label={badge2Data.label}
+                value={badge2Data.value}
+                subtitle={badge2Data.subtitle}
+                theme={theme}
+              />
+            </div>
+
+            {/* Share Section */}
+            <div className="pt-6 border-t">
+              <ShareProfile
+                username={profile.steam_name || 'Unknown'}
+                dustScore={dustScore}
+                tagline={profile.profile_tagline}
+                badge1Text={`${badge1Data.label}: ${badge1Data.value}`}
+                badge2Text={`${badge2Data.label}: ${badge2Data.value}`}
+                profileUrl={profileUrl}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </>
+  );
+}

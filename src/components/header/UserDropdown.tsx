@@ -1,5 +1,5 @@
 
-import { ChevronDown, LogIn, Bug, Shield, Clock, UserMinus, ActivitySquare } from 'lucide-react';
+import { ChevronDown, LogIn, Bug, Shield, Clock, UserMinus, ActivitySquare, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/hooks/use-profile';
@@ -22,6 +22,9 @@ const UserDropdown = () => {
 
   // Check if user has admin role
   const isAdmin = user?.app_metadata?.roles?.includes('admin');
+  
+  // Check if user has public profile
+  const hasPublicProfile = profile?.leaderboard_visibility === 'public';
 
   if (!user || !profile) {
     return (
@@ -120,6 +123,22 @@ const UserDropdown = () => {
         )}
         
         <DropdownMenuSeparator className="bg-gray-700" />
+        
+        {/* My Profile - only show if user has public profile */}
+        {hasPublicProfile && (
+          <>
+            <DropdownMenuGroup>
+              <DropdownMenuItem 
+                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+                onClick={() => navigate(`/profile/${user.id}`)}
+              >
+                <User className="mr-2 h-4 w-4 text-unplayed-mint" />
+                <span>My Profile</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator className="bg-gray-700" />
+          </>
+        )}
         
         <DropdownMenuItem 
           className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
