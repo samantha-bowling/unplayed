@@ -19,6 +19,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion } from 'framer-motion';
+import { ProfileBackgroundAnimations } from '@/components/profile/ProfileBackgroundAnimations';
+import { AnimationPackId } from '@/lib/profile-animation-packs';
+import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -89,6 +92,10 @@ export default function ProfilePage() {
   const themeConfig = PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME];
   const dustScore = stats?.metrics?.total_dust_score || 0;
   
+  // Get animation settings
+  const animationPack = (profile.background_animation_pack || 'gaming') as AnimationPackId;
+  const showMintGlow = profile.show_mint_glow ?? true;
+  
   // Get main stat from profile
   const mainStatType = ((profile.profile_main_stat || 'dust_score') as ProfileBadgeType);
   const mainStatConfig = PROFILE_BADGES[mainStatType];
@@ -144,6 +151,12 @@ export default function ProfilePage() {
 
   return (
     <>
+      {/* Background animations layer */}
+      <ProfileBackgroundAnimations 
+        packId={animationPack}
+        enabled={!!animationPack}
+      />
+      
       <Helmet>
         <title>{`${profile.steam_name} on Unplayed`}</title>
         <meta name="description" content={`${profile.profile_tagline || 'Check out my Steam library!'} - ${dustScore.toLocaleString()} Dust Score`} />
@@ -181,7 +194,7 @@ export default function ProfilePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 py-6 max-w-3xl"
+        className="container mx-auto px-4 py-6 max-w-3xl relative z-10"
       >
         {/* Back Navigation */}
         <Button
@@ -258,6 +271,7 @@ export default function ProfilePage() {
               badgeType={mainStatType}
               data={mainStatData}
               theme={theme}
+              className={cn(showMintGlow && "mint-glow")}
             />
 
             {/* User-Selected Additional Stats */}

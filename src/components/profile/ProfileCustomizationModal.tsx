@@ -8,7 +8,10 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
 import { PROFILE_BADGES, DEFAULT_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
+import { ANIMATION_PACKS, AnimationPackId } from '@/lib/profile-animation-packs';
 import { useProfile } from '@/hooks/use-profile';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 export function ProfileCustomizationModal() {
   const { profile, updateProfile, isUpdating } = useProfile();
@@ -23,6 +26,12 @@ export function ProfileCustomizationModal() {
     [profile?.profile_badge_1, profile?.profile_badge_2, profile?.profile_badge_3]
       .filter(Boolean) as ProfileBadgeType[]
   );
+  const [selectedAnimationPack, setSelectedAnimationPack] = useState<AnimationPackId>(
+    (profile?.background_animation_pack || 'gaming') as AnimationPackId
+  );
+  const [mintGlowEnabled, setMintGlowEnabled] = useState(
+    profile?.show_mint_glow ?? true
+  );
 
   // Update local state when profile changes
   useEffect(() => {
@@ -34,6 +43,8 @@ export function ProfileCustomizationModal() {
         [profile.profile_badge_1, profile.profile_badge_2, profile.profile_badge_3]
           .filter(Boolean) as ProfileBadgeType[]
       );
+      setSelectedAnimationPack((profile.background_animation_pack || 'gaming') as AnimationPackId);
+      setMintGlowEnabled(profile.show_mint_glow ?? true);
     }
   }, [profile]);
 
@@ -85,6 +96,8 @@ export function ProfileCustomizationModal() {
         profile_badge_1: selectedBadges[0] || null,
         profile_badge_2: selectedBadges[1] || null,
         profile_badge_3: selectedBadges[2] || null,
+        background_animation_pack: selectedAnimationPack,
+        show_mint_glow: mintGlowEnabled,
       },
       {
         onSuccess: () => {
@@ -247,45 +260,111 @@ export function ProfileCustomizationModal() {
             </div>
           </div>
 
+          {/* Background Animation Pack */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">🎬 Background Animations</Label>
+            <p className="text-xs text-muted-foreground">Choose animated background theme</p>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.values(ANIMATION_PACKS).map((pack) => {
+                const PackIcon = pack.icon;
+                return (
+                  <button
+                    key={pack.id}
+                    onClick={() => setSelectedAnimationPack(pack.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                      selectedAnimationPack === pack.id
+                        ? "border-unplayed-mint bg-unplayed-mint/10"
+                        : "border-white/10 hover:border-white/30"
+                    )}
+                    aria-label={`Select ${pack.name} animation pack`}
+                    aria-pressed={selectedAnimationPack === pack.id}
+                  >
+                    <PackIcon className="h-5 w-5" />
+                    <span className="text-xs font-medium">{pack.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Mint Glow Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">✨ Mint Glow Effect</Label>
+              <p className="text-xs text-muted-foreground">Add a glowing effect to your main stat</p>
+            </div>
+            <Switch
+              checked={mintGlowEnabled}
+              onCheckedChange={setMintGlowEnabled}
+              aria-label="Toggle mint glow effect"
+            />
+          </div>
+
           {/* Live Preview */}
           <div className="space-y-2">
             <Label>Preview</Label>
-            <motion.div
-              key={selectedTheme}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className={`p-6 rounded-lg bg-gradient-to-r ${PROFILE_THEMES[selectedTheme].gradient} border border-white/10 space-y-3`}
-            >
-              <div className="text-white text-center">
-                <div className="text-2xl font-bold mb-1">{profile?.steam_name || 'Your Name'}</div>
-                {tagline && (
-                  <div className="text-white/80 italic text-sm">"{tagline}"</div>
-                )}
+            <div className="relative overflow-hidden rounded-lg border-2 border-white/20 p-4 h-48">
+              {/* Mini background animations */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+                {ANIMATION_PACKS[selectedAnimationPack].icons.slice(0, 5).map((Icon, i) => (
+                  <div
+                    key={i}
+                    className="absolute"
+                    style={{
+                      top: `${20 + i * 15}%`,
+                      left: `${20 + i * 15}%`,
+                      animation: 'zen-float-slow 8s ease-in-out infinite alternate',
+                      animationDelay: `${i * 0.5}s`,
+                    }}
+                  >
+                    <Icon className="text-white/20" size={16} />
+                  </div>
+                ))}
               </div>
               
-              {/* Main Stat Preview */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
-                <div className="text-xs text-white/70 uppercase mb-1">{PROFILE_BADGES[selectedMainStat].name}</div>
-                <div className="text-2xl font-bold text-white">Featured</div>
-              </div>
-
-              {/* Additional Stats Preview */}
-              {selectedBadges.length > 0 && (
-                <div className={`grid gap-2 ${
-                  selectedBadges.length === 1 ? 'grid-cols-1 max-w-[60%] mx-auto' :
-                  selectedBadges.length === 2 ? 'grid-cols-2' :
-                  'grid-cols-3'
-                }`}>
-                  {selectedBadges.map((badgeId) => (
-                    <div key={badgeId} className="bg-white/10 backdrop-blur-sm rounded p-2 text-center">
-                      <div className="text-[10px] text-white/70 uppercase">{PROFILE_BADGES[badgeId].name}</div>
-                      <div className="text-xs font-bold mt-0.5 text-white">Sample</div>
-                    </div>
-                  ))}
+              {/* Preview main stat card */}
+              <motion.div
+                key={`${selectedTheme}-${mintGlowEnabled}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                  "relative z-10 p-3 rounded-lg space-y-2",
+                  `bg-gradient-to-r ${PROFILE_THEMES[selectedTheme].gradient}`,
+                  mintGlowEnabled && "mint-glow"
+                )}
+              >
+                <div className="text-white text-center">
+                  <div className="text-xl font-bold mb-1">{profile?.steam_name || 'Your Name'}</div>
+                  {tagline && (
+                    <div className="text-white/80 italic text-xs">"{tagline}"</div>
+                  )}
                 </div>
-              )}
-            </motion.div>
+                
+                {/* Main Stat Preview */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 text-center">
+                  <div className="text-[10px] text-white/70 uppercase mb-1">{PROFILE_BADGES[selectedMainStat].name}</div>
+                  <div className="text-lg font-bold text-white">Featured</div>
+                </div>
+
+                {/* Additional Stats Preview */}
+                {selectedBadges.length > 0 && (
+                  <div className={`grid gap-1.5 ${
+                    selectedBadges.length === 1 ? 'grid-cols-1 max-w-[60%] mx-auto' :
+                    selectedBadges.length === 2 ? 'grid-cols-2' :
+                    'grid-cols-3'
+                  }`}>
+                    {selectedBadges.map((badgeId) => (
+                      <div key={badgeId} className="bg-white/10 backdrop-blur-sm rounded p-1.5 text-center">
+                        <div className="text-[9px] text-white/70 uppercase">{PROFILE_BADGES[badgeId].name}</div>
+                        <div className="text-[10px] font-bold mt-0.5 text-white">Sample</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </div>
           </div>
 
           {/* Save Button */}
