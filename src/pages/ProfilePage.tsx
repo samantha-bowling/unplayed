@@ -9,6 +9,7 @@ import { UserProfile } from '@/hooks/use-profile';
 import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
 import { PROFILE_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
 import { StatBadge } from '@/components/profile/StatBadge';
+import { MainStatCard } from '@/components/profile/MainStatCard';
 import { ShareProfile } from '@/components/profile/ShareProfile';
 import { ProfileCustomizationModal } from '@/components/profile/ProfileCustomizationModal';
 import { Button } from '@/components/ui/button';
@@ -87,36 +88,49 @@ export default function ProfilePage() {
   const theme = profile.profile_theme || DEFAULT_THEME;
   const themeConfig = PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME];
   const dustScore = stats?.metrics?.total_dust_score || 0;
-  const cleanScoreTier = stats?.metrics?.clean_score_tier || 'dusty';
   
-  // Get badge configurations
-  const badge1Type = (profile.profile_badge_1 as ProfileBadgeType) || 'total_games';
-  const badge2Type = (profile.profile_badge_2 as ProfileBadgeType) || 'total_playtime';
-  const badge3Type = (profile.profile_badge_3 as ProfileBadgeType) || 'clean_score';
-  
-  const badge1Config = PROFILE_BADGES[badge1Type];
-  const badge2Config = PROFILE_BADGES[badge2Type];
-  const badge3Config = PROFILE_BADGES[badge3Type];
+  // Get main stat from profile
+  const mainStatType = ((profile.profile_main_stat || 'dust_score') as ProfileBadgeType);
+  const mainStatConfig = PROFILE_BADGES[mainStatType];
 
-  // Format badge data based on type using correct config
-  const getBadgeData = (type: ProfileBadgeType, config: typeof badge1Config) => {
-    switch (type) {
-      case 'top_genre':
-        return config.format(stats?.genreStats);
-      case 'dustiest_game':
-        return config.format(stats?.dustiestGame);
-      case 'leaderboard_rank':
-        return config.format(stats?.leaderboardRank);
-      case 'top_played_game':
-        return config.format(stats?.topPlayedGame);
-      default:
-        return config.format(stats?.metrics);
+  // Helper function to get the appropriate data for each badge type
+  const getBadgeData = (badgeType: ProfileBadgeType) => {
+    const config = PROFILE_BADGES[badgeType];
+    if (badgeType === 'top_genre') {
+      return config.format(stats?.genreStats);
+    } else if (badgeType === 'top_played_game') {
+      return config.format(stats?.topPlayedGame);
+    } else if (badgeType === 'dustiest_game') {
+      return config.format(stats?.dustiestGame);
+    } else if (badgeType === 'leaderboard_rank') {
+      return config.format(stats?.leaderboardRank);
     }
+    return config.format(stats?.metrics);
   };
 
-  const badge1Data = getBadgeData(badge1Type, badge1Config);
-  const badge2Data = getBadgeData(badge2Type, badge2Config);
-  const badge3Data = getBadgeData(badge3Type, badge3Config);
+  // Get main stat data
+  const mainStatData = getBadgeData(mainStatType);
+
+  // Filter additional stats (only non-null badges)
+  const additionalStats = [
+    profile.profile_badge_1,
+    profile.profile_badge_2,
+    profile.profile_badge_3,
+  ].filter(Boolean) as ProfileBadgeType[];
+
+  // Get additional stat data for SEO/sharing
+  const additionalStatsData = additionalStats.map(stat => getBadgeData(stat));
+
+  // Dynamic grid columns based on count
+  const getGridColumns = (count: number) => {
+    switch (count) {
+      case 0: return 'hidden';
+      case 1: return 'grid grid-cols-1 max-w-xs mx-auto';
+      case 2: return 'grid grid-cols-1 sm:grid-cols-2 max-w-md mx-auto';
+      case 3: return 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
+      default: return 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
+    }
+  };
 
   // Check if user is in top 3
   const isTop3 = stats?.leaderboardRank && stats.leaderboardRank <= 3;
@@ -136,7 +150,7 @@ export default function ProfilePage() {
         
         {/* Open Graph */}
         <meta property="og:title" content={`${profile.steam_name} - ${profile.profile_tagline || 'Unplayed Profile'}`} />
-        <meta property="og:description" content={`${badge1Data.label}: ${badge1Data.value} | ${badge2Data.label}: ${badge2Data.value} | ${dustScore.toLocaleString()} Dust Score`} />
+        <meta property="og:description" content={`${mainStatData.label}: ${mainStatData.value}${additionalStatsData[0] ? ` | ${additionalStatsData[0].label}: ${additionalStatsData[0].value}` : ''} | ${dustScore.toLocaleString()} total dust`} />
         <meta property="og:image" content={profile.steam_avatar || '/placeholder.svg'} />
         <meta property="og:url" content={profileUrl} />
         <meta property="og:type" content="profile" />
@@ -239,55 +253,32 @@ export default function ProfilePage() {
           </div>
 
           <CardContent className="p-6 space-y-4">
-            {/* Dust Score Hero Card */}
-            <Card className="bg-gradient-to-br from-dust-score-start to-dust-score-end border-white/10">
-              <CardContent className="p-4 text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Sparkles className="h-4 w-4 text-white" />
-                  <h2 className="text-lg font-semibold text-white">Dust Score</h2>
-                </div>
-                <div className="text-4xl font-bold text-white mb-1">
-                  {dustScore.toLocaleString()}
-                </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="bg-white/10 text-white border-white/20 cursor-help">
-                        {cleanScoreTier.charAt(0).toUpperCase() + cleanScoreTier.slice(1).replace('-', ' ')}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Dust Tier reflects your backlog size and engagement</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </CardContent>
-            </Card>
+            {/* Main Stat Hero Card */}
+            <MainStatCard
+              badgeType={mainStatType}
+              data={mainStatData}
+              theme={theme}
+            />
 
-            {/* User-Selected Stat Badges */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 justify-items-center">
-              <StatBadge
-                icon={badge1Config.icon}
-                label={badge1Data.label}
-                value={badge1Data.value}
-                subtitle={badge1Data.subtitle}
-                theme={theme}
-              />
-              <StatBadge
-                icon={badge2Config.icon}
-                label={badge2Data.label}
-                value={badge2Data.value}
-                subtitle={badge2Data.subtitle}
-                theme={theme}
-              />
-              <StatBadge
-                icon={badge3Config.icon}
-                label={badge3Data.label}
-                value={badge3Data.value}
-                subtitle={badge3Data.subtitle}
-                theme={theme}
-              />
-            </div>
+            {/* User-Selected Additional Stats */}
+            {additionalStats.length > 0 && (
+              <div className={`${getGridColumns(additionalStats.length)} gap-3 justify-items-center`}>
+                {additionalStats.map((badgeType) => {
+                  const config = PROFILE_BADGES[badgeType];
+                  const data = getBadgeData(badgeType);
+                  return (
+                    <StatBadge
+                      key={badgeType}
+                      icon={config.icon}
+                      label={data.label}
+                      value={data.value}
+                      subtitle={data.subtitle}
+                      theme={theme}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
             {/* Share Section */}
             <div className="pt-4 border-t">
@@ -295,8 +286,8 @@ export default function ProfilePage() {
                 username={profile.steam_name || 'Unknown'}
                 dustScore={dustScore}
                 tagline={profile.profile_tagline}
-                badge1Text={`${badge1Data.label}: ${badge1Data.value}`}
-                badge2Text={`${badge2Data.label}: ${badge2Data.value}`}
+                badge1Text={`${mainStatData.label}: ${mainStatData.value}`}
+                badge2Text={additionalStatsData[0] ? `${additionalStatsData[0].label}: ${additionalStatsData[0].value}` : ''}
                 profileUrl={profileUrl}
               />
             </div>

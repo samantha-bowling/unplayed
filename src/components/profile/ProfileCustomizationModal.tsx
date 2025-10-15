@@ -16,22 +16,24 @@ export function ProfileCustomizationModal() {
   
   const [selectedTheme, setSelectedTheme] = useState(profile?.profile_theme || DEFAULT_THEME);
   const [tagline, setTagline] = useState(profile?.profile_tagline || '');
-  const [selectedBadges, setSelectedBadges] = useState<ProfileBadgeType[]>([
-    (profile?.profile_badge_1 as ProfileBadgeType) || DEFAULT_BADGES[0],
-    (profile?.profile_badge_2 as ProfileBadgeType) || DEFAULT_BADGES[1],
-    (profile?.profile_badge_3 as ProfileBadgeType) || 'clean_score',
-  ]);
+  const [selectedMainStat, setSelectedMainStat] = useState<ProfileBadgeType>(
+    (profile?.profile_main_stat || 'dust_score') as ProfileBadgeType
+  );
+  const [selectedBadges, setSelectedBadges] = useState<ProfileBadgeType[]>(
+    [profile?.profile_badge_1, profile?.profile_badge_2, profile?.profile_badge_3]
+      .filter(Boolean) as ProfileBadgeType[]
+  );
 
   // Update local state when profile changes
   useEffect(() => {
     if (profile) {
       setSelectedTheme(profile.profile_theme || DEFAULT_THEME);
       setTagline(profile.profile_tagline || '');
-      setSelectedBadges([
-        (profile.profile_badge_1 as ProfileBadgeType) || DEFAULT_BADGES[0],
-        (profile.profile_badge_2 as ProfileBadgeType) || DEFAULT_BADGES[1],
-        (profile.profile_badge_3 as ProfileBadgeType) || 'clean_score',
-      ]);
+      setSelectedMainStat((profile.profile_main_stat || 'dust_score') as ProfileBadgeType);
+      setSelectedBadges(
+        [profile.profile_badge_1, profile.profile_badge_2, profile.profile_badge_3]
+          .filter(Boolean) as ProfileBadgeType[]
+      );
     }
   }, [profile]);
 
@@ -49,19 +51,29 @@ export function ProfileCustomizationModal() {
       if (selectedBadges.length < 3) {
         setSelectedBadges([...selectedBadges, badgeId]);
       } else {
-        toast.error('You can only select 3 stat badges');
+        toast.error('You can only select up to 3 additional stats');
       }
     }
   };
 
   const handleSave = () => {
-    if (selectedBadges.length !== 3) {
-      toast.error('Please select exactly 3 stat badges');
+    if (tagline.length > 50) {
+      toast.error('Tagline must be 50 characters or less');
       return;
     }
 
-    if (tagline.length > 50) {
-      toast.error('Tagline must be 50 characters or less');
+    if (!selectedMainStat) {
+      toast.error('Please select a main stat');
+      return;
+    }
+
+    if (selectedBadges.length > 3) {
+      toast.error('You can only select up to 3 additional stats');
+      return;
+    }
+
+    if (selectedBadges.includes(selectedMainStat)) {
+      toast.error('Main stat cannot be selected as an additional stat');
       return;
     }
 
@@ -69,9 +81,10 @@ export function ProfileCustomizationModal() {
       {
         profile_theme: selectedTheme,
         profile_tagline: tagline || null,
-        profile_badge_1: selectedBadges[0],
-        profile_badge_2: selectedBadges[1],
-        profile_badge_3: selectedBadges[2],
+        profile_main_stat: selectedMainStat,
+        profile_badge_1: selectedBadges[0] || null,
+        profile_badge_2: selectedBadges[1] || null,
+        profile_badge_3: selectedBadges[2] || null,
       },
       {
         onSuccess: () => {
@@ -151,37 +164,34 @@ export function ProfileCustomizationModal() {
             </div>
           </div>
 
-          {/* Badge Selector */}
+          {/* Main Stat Selection */}
           <div className="space-y-3">
             <div>
-              <Label>Stat Badges</Label>
+              <Label>🎯 Featured Stat</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Choose up to three stats to display alongside your Dust Score ({selectedBadges.length}/3 selected)
+                Choose your main stat to display prominently
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.values(PROFILE_BADGES).map((badge) => {
                 const Icon = badge.icon;
-                const isSelected = selectedBadges.includes(badge.id);
+                const isSelected = selectedMainStat === badge.id;
                 return (
                   <button
                     key={badge.id}
-                    onClick={() => handleBadgeToggle(badge.id)}
+                    onClick={() => setSelectedMainStat(badge.id)}
                     className={`relative p-3 rounded-lg border-2 transition-all text-left ${
                       isSelected
                         ? 'border-unplayed-mint bg-unplayed-mint/5'
                         : 'border-border hover:border-muted-foreground'
                     }`}
-                    aria-label={`${isSelected ? 'Deselect' : 'Select'} ${badge.name}`}
+                    aria-label={`${isSelected ? 'Selected' : 'Select'} ${badge.name} as main stat`}
                     aria-pressed={isSelected}
                   >
                     <div className="flex items-start gap-2">
                       <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{badge.name}</div>
-                        <div className="text-xs text-muted-foreground line-clamp-2">
-                          {badge.description}
-                        </div>
                       </div>
                     </div>
                     {isSelected && (
@@ -193,6 +203,50 @@ export function ProfileCustomizationModal() {
             </div>
           </div>
 
+          {/* Additional Stats Selector */}
+          <div className="space-y-3">
+            <div>
+              <Label>📊 Additional Stats (0-3)</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Choose up to three additional stats{selectedBadges.length > 0 && ` (${selectedBadges.length}/3 selected)`}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {Object.values(PROFILE_BADGES)
+                .filter((badge) => badge.id !== selectedMainStat) // Exclude main stat
+                .map((badge) => {
+                  const Icon = badge.icon;
+                  const isSelected = selectedBadges.includes(badge.id);
+                  return (
+                    <button
+                      key={badge.id}
+                      onClick={() => handleBadgeToggle(badge.id)}
+                      className={`relative p-3 rounded-lg border-2 transition-all text-left ${
+                        isSelected
+                          ? 'border-unplayed-mint bg-unplayed-mint/5'
+                          : 'border-border hover:border-muted-foreground'
+                      }`}
+                      aria-label={`${isSelected ? 'Deselect' : 'Select'} ${badge.name}`}
+                      aria-pressed={isSelected}
+                    >
+                      <div className="flex items-start gap-2">
+                        <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm">{badge.name}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            {badge.description}
+                          </div>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <Check className="absolute top-2 right-2 h-4 w-4 text-unplayed-mint" />
+                      )}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+
           {/* Live Preview */}
           <div className="space-y-2">
             <Label>Preview</Label>
@@ -201,22 +255,36 @@ export function ProfileCustomizationModal() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className={`p-6 rounded-lg bg-gradient-to-r ${PROFILE_THEMES[selectedTheme].gradient} border border-white/10`}
+              className={`p-6 rounded-lg bg-gradient-to-r ${PROFILE_THEMES[selectedTheme].gradient} border border-white/10 space-y-3`}
             >
-              <div className="text-white">
+              <div className="text-white text-center">
                 <div className="text-2xl font-bold mb-1">{profile?.steam_name || 'Your Name'}</div>
                 {tagline && (
-                  <div className="text-white/80 italic text-sm mb-4">"{tagline}"</div>
+                  <div className="text-white/80 italic text-sm">"{tagline}"</div>
                 )}
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  {selectedBadges.slice(0, 3).map((badgeId) => (
-                    <div key={badgeId} className="bg-white/10 backdrop-blur-sm rounded p-2">
-                      <div className="text-xs text-white/70 uppercase">{PROFILE_BADGES[badgeId].name}</div>
-                      <div className="text-sm font-bold mt-0.5">Sample</div>
+              </div>
+              
+              {/* Main Stat Preview */}
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                <div className="text-xs text-white/70 uppercase mb-1">{PROFILE_BADGES[selectedMainStat].name}</div>
+                <div className="text-2xl font-bold text-white">Featured</div>
+              </div>
+
+              {/* Additional Stats Preview */}
+              {selectedBadges.length > 0 && (
+                <div className={`grid gap-2 ${
+                  selectedBadges.length === 1 ? 'grid-cols-1 max-w-[60%] mx-auto' :
+                  selectedBadges.length === 2 ? 'grid-cols-2' :
+                  'grid-cols-3'
+                }`}>
+                  {selectedBadges.map((badgeId) => (
+                    <div key={badgeId} className="bg-white/10 backdrop-blur-sm rounded p-2 text-center">
+                      <div className="text-[10px] text-white/70 uppercase">{PROFILE_BADGES[badgeId].name}</div>
+                      <div className="text-xs font-bold mt-0.5 text-white">Sample</div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
             </motion.div>
           </div>
 
@@ -225,7 +293,7 @@ export function ProfileCustomizationModal() {
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isUpdating || selectedBadges.length !== 3}>
+            <Button onClick={handleSave} disabled={isUpdating || !selectedMainStat}>
               {isUpdating ? 'Saving...' : 'Save Customization'}
             </Button>
           </div>

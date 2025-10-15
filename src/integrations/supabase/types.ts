@@ -926,9 +926,10 @@ export type Database = {
           leaderboard_prompt_shown: boolean | null
           leaderboard_visibility: string
           onboarding_complete: boolean | null
-          profile_badge_1: string
-          profile_badge_2: string
-          profile_badge_3: string
+          profile_badge_1: string | null
+          profile_badge_2: string | null
+          profile_badge_3: string | null
+          profile_main_stat: string
           profile_tagline: string | null
           profile_theme: string
           profile_username: string | null
@@ -948,9 +949,10 @@ export type Database = {
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
           onboarding_complete?: boolean | null
-          profile_badge_1?: string
-          profile_badge_2?: string
-          profile_badge_3?: string
+          profile_badge_1?: string | null
+          profile_badge_2?: string | null
+          profile_badge_3?: string | null
+          profile_main_stat?: string
           profile_tagline?: string | null
           profile_theme?: string
           profile_username?: string | null
@@ -970,9 +972,10 @@ export type Database = {
           leaderboard_prompt_shown?: boolean | null
           leaderboard_visibility?: string
           onboarding_complete?: boolean | null
-          profile_badge_1?: string
-          profile_badge_2?: string
-          profile_badge_3?: string
+          profile_badge_1?: string | null
+          profile_badge_2?: string | null
+          profile_badge_3?: string | null
+          profile_main_stat?: string
           profile_tagline?: string | null
           profile_theme?: string
           profile_username?: string | null

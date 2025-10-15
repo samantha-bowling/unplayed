@@ -15,9 +15,10 @@ export type UserProfile = {
   leaderboard_opted_out_explicitly?: boolean;
   profile_theme?: string;
   profile_tagline?: string;
-  profile_badge_1?: string;
-  profile_badge_2?: string;
-  profile_badge_3?: string;
+  profile_main_stat?: string;
+  profile_badge_1?: string | null;
+  profile_badge_2?: string | null;
+  profile_badge_3?: string | null;
   profile_username?: string;
   show_mint_glow?: boolean;
   background_animation_pack?: string;
