@@ -26,16 +26,6 @@ import { AnimationPackId } from '@/lib/profile-animation-packs';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
 
-// Helper function to adjust brightness for dynamic theming (moved outside component to prevent re-renders)
-const adjustBrightness = (hex: string, percent: number): string => {
-  const clamp = (v: number) => Math.min(255, Math.max(0, v));
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = clamp(((num >> 16) + percent));
-  const g = clamp(((num >> 8 & 0x00FF) + percent));
-  const b = clamp(((num & 0x0000FF) + percent));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-};
-
 export default function ProfilePage() {
   const { userId: userIdParam } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
@@ -43,11 +33,8 @@ export default function ProfilePage() {
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [resolvingUsername, setResolvingUsername] = useState(false);
 
-  // Detect if param is UUID or username (memoized to prevent re-renders)
-  const isUuid = useMemo(
-    () => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userIdParam || ''),
-    [userIdParam]
-  );
+  // Detect if param is UUID or username
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userIdParam || '');
 
   // Resolve username to userId if needed
   useEffect(() => {
@@ -154,26 +141,29 @@ export default function ProfilePage() {
   }
 
   const theme = profile.profile_theme || DEFAULT_THEME;
-  
-  // Memoize theme config to prevent infinite re-renders
-  const themeConfig = useMemo(
-    () => PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME],
-    [theme]
-  );
-  
+  const themeConfig = PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME];
   const dustScore = stats?.metrics?.total_dust_score || 0;
   
   // Get animation settings
   const animationPack = (profile.background_animation_pack || 'gaming') as AnimationPackId;
   const showMintGlow = profile.show_mint_glow ?? true;
   
-  // Memoize clean score to guard against missing data and prevent re-renders
-  const cleanScore = useMemo(() => stats?.metrics?.clean_score ?? 0, [stats?.metrics?.clean_score]);
+  // Dynamic Dust Tier theme based on Clean Score
+  const adjustBrightness = (hex: string, percent: number): string => {
+    const clamp = (value: number) => Math.min(255, Math.max(0, value));
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = clamp(((num >> 16) + percent));
+    const g = clamp(((num >> 8 & 0x00FF) + percent));
+    const b = clamp(((num & 0x0000FF) + percent));
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  };
+
+  const userCleanScore = stats?.metrics?.clean_score || 0;
   const userTier = useMemo(
     () => CLEAN_SCORE_TIERS.find(tier => 
-      cleanScore >= tier.range[0] && cleanScore <= tier.range[1]
+      userCleanScore >= tier.range[0] && userCleanScore <= tier.range[1]
     ) || CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
-    [cleanScore]
+    [userCleanScore]
   );
 
   const effectiveTheme = useMemo(
@@ -183,7 +173,7 @@ export default function ProfilePage() {
           gradient: `from-[${userTier.color}] to-[${adjustBrightness(userTier.color, -30)}]`
         }
       : themeConfig,
-    [theme, themeConfig, userTier.color]
+    [theme, userTier.color, themeConfig]
   );
   
   // Get main stat from profile
