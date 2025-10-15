@@ -282,7 +282,7 @@ const AdminHltbDataPage = () => {
   };
 
   return (
-    <AdminLayout requiredRole="admin">
+    <AdminLayout>
       <div className="container max-w-7xl mx-auto px-4 py-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Data Manager</h1>

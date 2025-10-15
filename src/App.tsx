@@ -61,7 +61,16 @@ const App = () => {
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/u/:userId" element={<ProfilePage />} />
 
-        {/* Admin routes with role protection */}
+        {/* 
+          Admin routes with role protection
+          
+          SECURITY: Admin routes use ProtectedRoute with requiredRole='admin', which automatically
+          enables server-side RPC verification via verifyAdminRPC(). This provides defense-in-depth:
+          1. Cached role check (fast UI, prevents flicker)
+          2. Server RPC verification (secure enforcement, prevents privilege escalation)
+          3. 5-second timeout protection (fails closed on network issues)
+          4. Race condition protection (prevents state updates on unmounted components)
+        */}
         <Route
           path="/auth-debug"
           element={

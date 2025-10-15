@@ -57,7 +57,7 @@ const AdminAccountDeletionsPage = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout requiredRole="admin">
+      <AdminLayout>
         <div className="container mx-auto px-4 py-24 flex justify-center">
           <SteamLoader message="Loading account deletion data..." size="md" variant="secondary" />
         </div>
@@ -67,7 +67,7 @@ const AdminAccountDeletionsPage = () => {
 
   if (error) {
     return (
-      <AdminLayout requiredRole="admin">
+      <AdminLayout>
         <div className="container mx-auto px-4 py-24 text-center">
           <h1 className="text-2xl font-bold mb-4 text-unplayed-red">Error</h1>
           <p className="text-gray-400">Failed to load account deletion data.</p>
@@ -77,7 +77,7 @@ const AdminAccountDeletionsPage = () => {
   }
 
   return (
-    <AdminLayout requiredRole="admin">
+    <AdminLayout>
       <div className="container mx-auto px-4 py-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Account Deletions</h1>

@@ -39,9 +39,9 @@ const maliciousPayloads = [
 
 ## Role-Based Access Control (RBAC) ✅ IMPLEMENTED
 
-### Table-First RBAC Architecture (Migration: Phase 0 v1)
+### Table-First RBAC Architecture with Server Verification (Phase 2A)
 
-The application implements a secure, auditable role management system using dedicated database tables.
+The application implements a secure, auditable role management system using dedicated database tables with defense-in-depth verification.
 
 #### Primary Authorization Source
 - **Source of Truth**: `public.user_roles` table
@@ -79,11 +79,29 @@ SELECT public.assign_role('user-uuid-here', 'admin');
 3. Click "Assign Role" → Select "admin"
 4. Confirm (action logged to audit trail)
 
-#### Frontend Implementation
+#### Frontend Implementation (Phase 2A Enhanced)
+
+**Utility Functions:**
 - **Location**: `src/utils/auth-utils.ts`
 - **Functions**: `isAdmin()`, `hasRole()`, `getUserRoles()`
 - **Source**: NEVER checks app_metadata or users.role column
 - **Method**: Calls database RPC functions or reads from user_roles join
+
+**Route Protection (Defense-in-Depth):**
+- **Component**: `src/components/ProtectedRoute.tsx`
+- **Auto-RPC Verification**: Automatically enabled for all admin routes (`requiredRole='admin'`)
+- **Security Layers**:
+  1. **Cached Check First** (fast UI, prevents flicker) - uses `useAuthPermission()` hook
+  2. **Server RPC Verification Second** (secure enforcement) - calls `verifyAdminRPC()`
+  3. **Timeout Protection** (5-second max) - fails closed if RPC times out
+  4. **Race Condition Protection** - prevents state updates on unmounted components
+  5. **Error Handling** - catches and logs RPC failures, denies access on error
+
+**Security Behavior:**
+- Token manipulation attacks fail at RPC layer (cached vs server mismatch detected)
+- Network issues cause access denial (fail-closed policy)
+- All admin access verified server-side on route entry
+- No redundant checks in layout components (clean separation of concerns)
 
 #### Backend Implementation
 - **Edge Functions**: Use `supabase.rpc('is_admin', { check_user_id: userId })` for checks
@@ -98,7 +116,8 @@ SELECT public.assign_role('user-uuid-here', 'admin');
 
 ### Migration History
 - **Pre-Phase 0**: Used `auth.users.app_metadata.roles` (DEPRECATED - privilege escalation risk)
-- **Phase 0**: Migrated to `public.user_roles` table (CURRENT - secure, auditable)
+- **Phase 0**: Migrated to `public.user_roles` table (secure, auditable)
+- **Phase 2A**: Added server-side RPC verification for all admin routes (defense-in-depth)
 - **Legacy Column**: `public.users.role` deprecated, scheduled for removal in v2.0
 - **Removed Function**: `public.sync_user_roles_from_metadata()` (no longer needed)
 
