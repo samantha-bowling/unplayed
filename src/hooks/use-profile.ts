@@ -25,6 +25,7 @@ export type UserProfile = {
   created_at?: string;
   updated_at?: string;
   last_sync?: string;
+  last_username_change?: string;
 };
 
 const PROFILE_CACHE_KEY = 'profile';
@@ -109,6 +110,21 @@ export function useProfile() {
     
     return refetch();
   };
+
+  // Check username availability for vanity URLs
+  const checkUsernameAvailability = async (username: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-username-availability', {
+        body: { username: username.toLowerCase().trim() }
+      });
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to check username availability:', error);
+      throw error;
+    }
+  };
   
   return {
     profile,
@@ -118,6 +134,7 @@ export function useProfile() {
     isUpdating,
     hasSteamLinked,
     refreshProfile,
+    checkUsernameAvailability,
   };
 }
 

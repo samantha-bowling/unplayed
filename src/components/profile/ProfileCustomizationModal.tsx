@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Check } from 'lucide-react';
+import { Settings, Check, XCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
 import { PROFILE_BADGES, DEFAULT_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
@@ -14,7 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 export function ProfileCustomizationModal() {
-  const { profile, updateProfile, isUpdating } = useProfile();
+  const { profile, updateProfile, isUpdating, checkUsernameAvailability } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
   
   const [selectedTheme, setSelectedTheme] = useState(profile?.profile_theme || DEFAULT_THEME);
@@ -33,6 +36,24 @@ export function ProfileCustomizationModal() {
     profile?.show_mint_glow ?? true
   );
 
+  // Vanity URL states
+  const [customUrl, setCustomUrl] = useState(profile?.profile_username || '');
+  const [urlAvailable, setUrlAvailable] = useState<boolean | null>(null);
+  const [checkingUrl, setCheckingUrl] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+
+  // Cooldown calculation
+  const COOLDOWN_DAYS = 30;
+  const lastChange = profile?.last_username_change;
+  const daysSinceChange = lastChange 
+    ? Math.floor((Date.now() - new Date(lastChange).getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const canChangeUrl = !lastChange || (daysSinceChange !== null && daysSinceChange >= COOLDOWN_DAYS);
+  const daysRemaining = lastChange && daysSinceChange !== null
+    ? Math.max(0, COOLDOWN_DAYS - daysSinceChange) 
+    : 0;
+
   // Update local state when profile changes
   useEffect(() => {
     if (profile) {
@@ -45,6 +66,7 @@ export function ProfileCustomizationModal() {
       );
       setSelectedAnimationPack((profile.background_animation_pack || 'gaming') as AnimationPackId);
       setMintGlowEnabled(profile.show_mint_glow ?? true);
+      setCustomUrl(profile.profile_username || '');
     }
   }, [profile]);
 
@@ -54,6 +76,37 @@ export function ProfileCustomizationModal() {
       localStorage.setItem('profile_theme', selectedTheme);
     }
   }, [selectedTheme]);
+
+  // Debounced availability check
+  useEffect(() => {
+    if (!customUrl || customUrl === profile?.profile_username) {
+      setUrlAvailable(null);
+      setUrlError(null);
+      return;
+    }
+
+    if (!/^[a-z0-9_]{3,20}$/.test(customUrl)) {
+      setUrlAvailable(false);
+      setUrlError('3-20 characters: lowercase letters, numbers, underscores only');
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingUrl(true);
+      try {
+        const result = await checkUsernameAvailability(customUrl);
+        setUrlAvailable(result.available);
+        setUrlError(result.error || null);
+      } catch (error) {
+        console.error('Failed to check username:', error);
+        setUrlError('Failed to check availability');
+      } finally {
+        setCheckingUrl(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [customUrl, profile?.profile_username, checkUsernameAvailability]);
 
   const handleBadgeToggle = (badgeId: ProfileBadgeType) => {
     if (selectedBadges.includes(badgeId)) {
@@ -88,29 +141,49 @@ export function ProfileCustomizationModal() {
       return;
     }
 
-    updateProfile(
-      {
-        profile_theme: selectedTheme,
-        profile_tagline: tagline || null,
-        profile_main_stat: selectedMainStat,
-        profile_badge_1: selectedBadges[0] || null,
-        profile_badge_2: selectedBadges[1] || null,
-        profile_badge_3: selectedBadges[2] || null,
-        background_animation_pack: selectedAnimationPack,
-        show_mint_glow: mintGlowEnabled,
+    // If URL changed and is available, show confirmation
+    if (customUrl !== profile?.profile_username && urlAvailable && canChangeUrl) {
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    // If URL didn't change or not set, save directly
+    performSave();
+  };
+
+  const handleConfirmedSave = () => {
+    setShowConfirmDialog(false);
+    performSave();
+  };
+
+  const performSave = () => {
+    const updates: any = {
+      profile_theme: selectedTheme,
+      profile_tagline: tagline || null,
+      profile_main_stat: selectedMainStat,
+      profile_badge_1: selectedBadges[0] || null,
+      profile_badge_2: selectedBadges[1] || null,
+      profile_badge_3: selectedBadges[2] || null,
+      background_animation_pack: selectedAnimationPack,
+      show_mint_glow: mintGlowEnabled,
+    };
+
+    // Only update username if changed and available
+    if (customUrl !== profile?.profile_username && urlAvailable && canChangeUrl) {
+      updates.profile_username = customUrl || null;
+      updates.last_username_change = new Date().toISOString();
+    }
+
+    updateProfile(updates, {
+      onSuccess: () => {
+        toast.success('Profile customization saved!');
+        setIsOpen(false);
+        window.location.reload();
       },
-      {
-        onSuccess: () => {
-          toast.success('Profile customization saved!');
-          setIsOpen(false);
-          // Reload to reflect theme changes
-          window.location.reload();
-        },
-        onError: () => {
-          toast.error('Failed to save customization');
-        },
-      }
-    );
+      onError: () => {
+        toast.error('Failed to save customization');
+      },
+    });
   };
 
   const taglineLength = tagline.length;
@@ -175,6 +248,88 @@ export function ProfileCustomizationModal() {
             >
               {taglineLength}/50 characters
             </div>
+          </div>
+
+          {/* Custom Vanity URL */}
+          <div className="space-y-2 p-4 border border-unplayed-mint/20 rounded-lg bg-unplayed-mint/5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="custom-url">🔗 Custom Vanity URL (Optional)</Label>
+              {!canChangeUrl && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant="secondary" className="text-xs">
+                        Changes available in {daysRemaining} days
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>You can update this again after the cooldown period</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              Set your personal <span className="font-mono text-unplayed-mint">unplayed.wtf</span> link. 
+              <span className="text-white/90 font-medium block mt-1">
+                ✅ This does NOT change your Steam name or display name.
+              </span>
+            </p>
+
+            <div className="relative" aria-live="polite">
+              <Input
+                id="custom-url"
+                placeholder="progamer (lowercase only)"
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value.toLowerCase().trim())}
+                disabled={!canChangeUrl}
+                className={cn(
+                  "font-mono",
+                  urlError && "border-destructive",
+                  urlAvailable && "border-green-500"
+                )}
+              />
+              {checkingUrl && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="animate-spin duration-1500 h-4 w-4 border-2 border-unplayed-mint border-t-transparent rounded-full" />
+                </div>
+              )}
+              {!checkingUrl && urlAvailable === true && (
+                <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+              )}
+              {!checkingUrl && urlAvailable === false && (
+                <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+              )}
+            </div>
+
+            {urlError && (
+              <p className="text-xs text-destructive" role="alert">{urlError}</p>
+            )}
+
+            {customUrl && !urlError && urlAvailable && (
+              <div className="flex items-center gap-2 text-xs animate-fade-in">
+                <span className="text-muted-foreground">Your URL:</span>
+                <code className="px-2 py-1 bg-black/20 rounded text-unplayed-mint font-mono">
+                  unplayed.wtf/u/{customUrl}
+                </code>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              3-20 characters: lowercase letters, numbers, and underscores only
+            </p>
+
+            {!canChangeUrl && lastChange && (
+              <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs">
+                <p className="text-yellow-500">
+                  Last changed: {new Date(lastChange).toLocaleDateString()}
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  You can change your URL again in {daysRemaining} days (30-day cooldown)
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Main Stat Selection */}
@@ -378,6 +533,41 @@ export function ProfileCustomizationModal() {
           </div>
         </div>
       </DialogContent>
+
+      {/* URL Change Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm URL Change</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You're about to change your custom vanity URL to:
+              </p>
+              <div className="p-3 bg-unplayed-mint/10 rounded border border-unplayed-mint/20">
+                <code className="text-unplayed-mint font-mono">
+                  unplayed.wtf/u/{customUrl}
+                </code>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <p className="font-medium text-yellow-500">⚠️ Important:</p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>Your old URL will stop working immediately</li>
+                  <li>You won't be able to change it again for 30 days</li>
+                  <li>This does NOT affect your Steam name or display name</li>
+                  <li>Shared links will need to be updated</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmedSave}>
+              Confirm Change
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
