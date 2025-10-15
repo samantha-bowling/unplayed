@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useProfileStats } from '@/hooks/use-profile-stats';
 import { UserProfile } from '@/hooks/use-profile';
-import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
+import { PROFILE_THEMES, DEFAULT_THEME, getDynamicDustTierGradient } from '@/lib/profile-themes';
 import { PROFILE_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
 import { StatBadge } from '@/components/profile/StatBadge';
 import { MainStatCard } from '@/components/profile/MainStatCard';
@@ -89,8 +89,16 @@ export default function ProfilePage() {
   }
 
   const theme = profile.profile_theme || DEFAULT_THEME;
-  const themeConfig = PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME];
+  let themeConfig = PROFILE_THEMES[theme] || PROFILE_THEMES[DEFAULT_THEME];
   const dustScore = stats?.metrics?.total_dust_score || 0;
+  
+  // Apply dynamic gradient for Dust Tier theme based on actual dust score
+  if (theme === 'dust_tier' && stats?.metrics?.total_dust_score !== undefined) {
+    themeConfig = {
+      ...themeConfig,
+      gradient: getDynamicDustTierGradient(stats.metrics.total_dust_score),
+    };
+  }
   
   // Get animation settings
   const animationPack = (profile.background_animation_pack || 'gaming') as AnimationPackId;
@@ -288,6 +296,7 @@ export default function ProfilePage() {
                       value={data.value}
                       subtitle={data.subtitle}
                       theme={theme}
+                      dynamicGradient={theme === 'dust_tier' ? themeConfig.gradient : undefined}
                     />
                   );
                 })}

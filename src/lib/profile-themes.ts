@@ -10,6 +10,7 @@ export type ProfileTheme = {
   gradient: string; // Tailwind gradient classes
   textColor: string; // Text color for contrast
   isPremium?: boolean; // For future theme unlocks
+  isDynamic?: boolean; // For themes that change based on user data
 };
 
 export const PROFILE_THEMES: Record<string, ProfileTheme> = {
@@ -17,8 +18,9 @@ export const PROFILE_THEMES: Record<string, ProfileTheme> = {
     id: 'dust_tier',
     name: 'Dust Tier',
     description: 'Dynamic colors based on your Dust Score tier',
-    gradient: 'from-dust-score-start to-dust-score-end',
+    gradient: 'from-dust-score-start to-dust-score-end', // Default, overridden when dynamic
     textColor: 'text-white',
+    isDynamic: true,
   },
   steam_classic: {
     id: 'steam_classic',
@@ -58,3 +60,89 @@ export const PROFILE_THEMES: Record<string, ProfileTheme> = {
 };
 
 export const DEFAULT_THEME = 'dust_tier';
+
+/**
+ * Dust Score tier definitions matching DustScoreBreakdown.tsx
+ * Uses exact colors from the existing 8-tier system
+ */
+interface DustTierDefinition {
+  name: string;
+  color: string;
+  range: [number, number | null]; // null for max tier
+  gradient: string;
+}
+
+const DUST_TIERS: DustTierDefinition[] = [
+  {
+    name: "Freshly Polished",
+    color: "#A3F7BF", // Mint Green
+    range: [0, 499],
+    gradient: "from-[#A3F7BF] to-[#7BE3A0]" // Mint to deeper mint
+  },
+  {
+    name: "Light Dusting",
+    color: "#90EE90", // Light Green
+    range: [500, 1499],
+    gradient: "from-[#90EE90] to-[#66D966]" // Light green to deeper green
+  },
+  {
+    name: "Dust Storm Brewing",
+    color: "#FFD700", // Gold
+    range: [1500, 3499],
+    gradient: "from-[#FFD700] to-[#FFA500]" // Gold to orange
+  },
+  {
+    name: "Duststorm Warning",
+    color: "#FF9F39", // Orange
+    range: [3500, 7499],
+    gradient: "from-[#FF9F39] to-[#FF8C00]" // Orange to darker orange
+  },
+  {
+    name: "Hoarder's Horizon",
+    color: "#F6AD55", // Light Orange
+    range: [7500, 14999],
+    gradient: "from-[#F6AD55] to-[#ED8936]" // Light orange to darker orange
+  },
+  {
+    name: "Dust Dynasty",
+    color: "#FF6347", // Tomato Red
+    range: [15000, 34999],
+    gradient: "from-[#FF6347] to-[#DC143C]" // Tomato to crimson
+  },
+  {
+    name: "Legendary Collector",
+    color: "#8A2BE2", // Blue Violet
+    range: [35000, 74999],
+    gradient: "from-[#8A2BE2] to-[#6A1BB2]" // Violet to deeper violet
+  },
+  {
+    name: "Mythical Archive",
+    color: "#FF1493", // Hot Pink
+    range: [75000, null],
+    gradient: "from-[#FF1493] to-[#C71585]" // Hot pink to medium violet red
+  }
+];
+
+/**
+ * Get dynamic gradient for Dust Tier theme based on actual Dust Score
+ * Maps user's dust score to one of 8 tier gradients using existing colors
+ */
+export const getDynamicDustTierGradient = (dustScore?: number): string => {
+  // Default fallback if no dust score provided
+  if (dustScore === undefined || dustScore === null) {
+    return 'from-dust-score-start to-dust-score-end';
+  }
+
+  // Find matching tier based on dust score
+  const tier = DUST_TIERS.find(t => {
+    const [min, max] = t.range;
+    if (max === null) {
+      // Last tier has no upper limit
+      return dustScore >= min;
+    }
+    return dustScore >= min && dustScore <= max;
+  });
+
+  // Return matching gradient or default fallback
+  return tier?.gradient || 'from-dust-score-start to-dust-score-end';
+};
