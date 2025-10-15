@@ -30,7 +30,7 @@ const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
       </button>
 
       {isOpen && (
-        <div className="absolute top-16 right-0 left-0 glass-panel z-10 py-4 md:hidden animate-fade-in">
+        <div className="absolute top-16 right-0 left-0 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg z-10 py-4 md:hidden animate-fade-in">
           <div className="flex flex-col space-y-4 items-center">
             <NavLink href="/" label="Dashboard" />
             {user && (
