@@ -208,16 +208,18 @@ export default function ProfilePage() {
         transition={{ duration: 0.5 }}
         className="container mx-auto px-4 py-6 max-w-3xl relative z-10"
       >
-        {/* Back Navigation */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/')}
-          className="mb-4 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
+        {/* Back Navigation - Only show for authenticated users */}
+        {currentUser && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        )}
         
         <Card className="overflow-hidden">
           {/* Header with gradient */}
