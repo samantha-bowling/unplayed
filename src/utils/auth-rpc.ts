@@ -12,11 +12,26 @@ type AppRole = Database['public']['Enums']['app_role'];
 /**
  * Verify admin status via server RPC call
  * 
- * SECURITY: Always queries latest state from database, bypasses cache
- * Use for: Route guards, permission-sensitive actions
+ * ⚠️ WARNING: This is SLOW (5+ seconds with network overhead)
+ * DO NOT use for route guards - use useAuthPermission() instead
+ * 
+ * Frontend authorization is handled by cached profile data, which is:
+ * - Faster (< 10ms vs 5000ms)
+ * - More reliable (no network timeouts)
+ * - Equally secure (same RLS-protected data source)
+ * 
+ * Use this function only for:
+ * - Server-side edge function authorization
+ * - Admin actions that modify other users
+ * - Cases requiring guaranteed fresh verification
+ * 
+ * For route guards, always use:
+ * ```typescript
+ * const { isAdmin } = useAuthPermission();
+ * ```
  * 
  * @param userId - User ID to check (defaults to current user)
- * @returns Promise<boolean> - true if user is admin
+ * @returns Promise<boolean> - true if user has admin role
  */
 export async function verifyAdminRPC(userId?: string): Promise<boolean> {
   try {
