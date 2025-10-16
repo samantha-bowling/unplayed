@@ -20,7 +20,7 @@ export default function ProtectedRoute({
   verifyWithRPC = requiredRole === 'admin' // Auto-enable RPC verification for admin routes
 }: ProtectedRouteProps) {
   const { status, user } = useAuth();
-  const { hasRole, isLoading: permissionLoading } = useAuthPermission();
+  const { hasRole, isAdmin, isLoading: permissionLoading } = useAuthPermission();
   const location = useLocation();
   const [rpcVerified, setRpcVerified] = useState<boolean | null>(null);
 
@@ -30,13 +30,21 @@ export default function ProtectedRoute({
 
   // Server-side RPC verification for admin routes (defense-in-depth)
   useEffect(() => {
+    console.log('[ProtectedRoute] Effect triggered', { 
+      verifyWithRPC, 
+      requiredRole, 
+      isAdmin, 
+      isLoading,
+      timestamp: new Date().toISOString()
+    });
+
     if (!verifyWithRPC || isLoading) {
       setRpcVerified(true); // Skip RPC for non-admin routes
       return;
     }
 
-    // Only verify if cached check passes
-    if (!hasRole(requiredRole!)) {
+    // Only verify if cached check passes (use stable boolean instead of function)
+    if (requiredRole === 'admin' && !isAdmin) {
       setRpcVerified(false);
       return;
     }
@@ -74,7 +82,7 @@ export default function ProtectedRoute({
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [verifyWithRPC, requiredRole, hasRole, isLoading]);
+  }, [verifyWithRPC, requiredRole, isAdmin, isLoading]);
 
   if (isLoading) {
     return (
