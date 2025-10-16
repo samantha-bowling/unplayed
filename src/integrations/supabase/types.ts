@@ -1059,6 +1059,13 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      get_all_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       get_clean_game_price: {
         Args: { p_fallback_price_cents?: number; p_game_id: number }
         Returns: Json
