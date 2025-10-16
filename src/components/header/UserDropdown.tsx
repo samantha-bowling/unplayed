@@ -1,5 +1,5 @@
 
-import { ChevronDown, LogIn, Bug, Shield, Clock, UserMinus, ActivitySquare, User } from 'lucide-react';
+import { ChevronDown, LogIn, LayoutDashboard, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/hooks/use-profile';
@@ -21,9 +21,6 @@ const UserDropdown = () => {
   const { profile } = useProfile();
   const { isAdmin } = useAuthPermission();
   const navigate = useNavigate();
-  
-  // Check if user has public profile
-  const hasPublicProfile = profile?.leaderboard_visibility === 'public';
 
   if (!user || !profile) {
     return (
@@ -71,42 +68,10 @@ const UserDropdown = () => {
             <DropdownMenuGroup>
               <DropdownMenuItem 
                 className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                onClick={() => navigate('/auth-debug')}
+                onClick={() => navigate('/admin/dashboard')}
               >
-                <Bug className="mr-2 h-4 w-4 text-unplayed-mint" />
-                <span>Auth Debug</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                onClick={() => navigate('/admin/support')}
-              >
-                <Shield className="mr-2 h-4 w-4 text-unplayed-pink" />
-                <span>Admin Support</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                onClick={() => navigate('/admin/hltb-data')}
-              >
-                <Clock className="mr-2 h-4 w-4 text-purple-400" />
-                <span>HLTB Data</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                onClick={() => navigate('/admin/account-deletions')}
-              >
-                <UserMinus className="mr-2 h-4 w-4 text-unplayed-red" />
-                <span>Account Deletions</span>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                onClick={() => navigate('/admin/queue-manager')}
-              >
-                <ActivitySquare className="mr-2 h-4 w-4 text-blue-400" />
-                <span>Queue Manager</span>
+                <LayoutDashboard className="mr-2 h-4 w-4 text-unplayed-mint" />
+                <span>Admin Dashboard</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>
@@ -123,21 +88,17 @@ const UserDropdown = () => {
         
         <DropdownMenuSeparator className="bg-gray-700" />
         
-        {/* My Profile - only show if user has public profile */}
-        {hasPublicProfile && (
-          <>
-            <DropdownMenuGroup>
-              <DropdownMenuItem 
-                className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
-                onClick={() => navigate(`/profile/${user.id}`)}
-              >
-                <User className="mr-2 h-4 w-4 text-unplayed-mint" />
-                <span>My Profile</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator className="bg-gray-700" />
-          </>
-        )}
+        <DropdownMenuGroup>
+          <DropdownMenuItem 
+            className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
+            onClick={() => navigate(`/profile/${user.id}`)}
+          >
+            <User className="mr-2 h-4 w-4 text-unplayed-mint" />
+            <span>My Profile</span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        
+        <DropdownMenuSeparator className="bg-gray-700" />
         
         <DropdownMenuItem 
           className="cursor-pointer hover:bg-gray-800 focus:bg-gray-800"
