@@ -114,6 +114,11 @@ export default function ProfilePage() {
 
   // Helper function to get the appropriate data for each badge type
   const getBadgeData = (badgeType: ProfileBadgeType) => {
+    // Hide library_value for public viewers (not own profile)
+    if (badgeType === 'library_value' && !isOwnProfile) {
+      return { label: 'Library Value', value: 'Private', subtitle: undefined };
+    }
+    
     const config = PROFILE_BADGES[badgeType];
     if (badgeType === 'top_genre') {
       return config.format(stats?.genreStats);
@@ -130,12 +135,17 @@ export default function ProfilePage() {
   // Get main stat data
   const mainStatData = getBadgeData(mainStatType);
 
-  // Filter additional stats (only non-null badges)
+  // Filter additional stats (only non-null badges, exclude library_value for public profiles)
   const additionalStats = [
     profile.profile_badge_1,
     profile.profile_badge_2,
     profile.profile_badge_3,
-  ].filter(Boolean) as ProfileBadgeType[];
+  ].filter(badge => {
+    if (!badge) return false;
+    // Hide library_value badge when viewing others' profiles
+    if (badge === 'library_value' && !isOwnProfile) return false;
+    return true;
+  }) as ProfileBadgeType[];
 
   // Get additional stat data for SEO/sharing
   const additionalStatsData = additionalStats.map(stat => getBadgeData(stat));

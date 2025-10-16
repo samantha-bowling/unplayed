@@ -1211,6 +1211,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_profile_public: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       mark_onboarding_complete: {
         Args: Record<PropertyKey, never>
         Returns: undefined

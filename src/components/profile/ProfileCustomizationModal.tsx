@@ -264,7 +264,9 @@ export function ProfileCustomizationModal() {
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {Object.values(PROFILE_BADGES).map((badge) => {
+              {Object.values(PROFILE_BADGES)
+                .filter((badge) => badge.id !== 'library_value') // Exclude library_value (only visible to owner)
+                .map((badge) => {
                 const Icon = badge.icon;
                 const isSelected = selectedMainStat === badge.id;
                 return (
@@ -305,6 +307,7 @@ export function ProfileCustomizationModal() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.values(PROFILE_BADGES)
                 .filter((badge) => badge.id !== selectedMainStat) // Exclude main stat
+                .filter((badge) => badge.id !== 'library_value') // Exclude library_value (only visible to owner)
                 .map((badge) => {
                   const Icon = badge.icon;
                   const isSelected = selectedBadges.includes(badge.id);
