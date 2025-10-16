@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
+export type ProfileVisibility = 'public' | 'private';
+
 export type UserProfile = {
   id: string;
   steam_id?: string;
@@ -23,6 +25,7 @@ export type UserProfile = {
   profile_username?: string;
   show_mint_glow?: boolean;
   background_animation_pack?: string;
+  profile_visibility?: ProfileVisibility;
   created_at?: string;
   updated_at?: string;
   last_sync?: string;
@@ -107,6 +110,8 @@ export function useProfile() {
     onSuccess: (data) => {
       // Update cache with new profile data
       queryClient.setQueryData([PROFILE_CACHE_KEY, user?.id], data);
+      // Invalidate to ensure fresh data on next fetch
+      queryClient.invalidateQueries({ queryKey: [PROFILE_CACHE_KEY, user?.id] });
       console.log('[useProfile] Profile updated successfully:', data);
     }
   });

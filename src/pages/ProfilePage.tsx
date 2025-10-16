@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const { data: stats, isLoading: statsLoading } = useProfileStats(userId);
 
   // Privacy check: Only allow viewing public profiles or own profile
-  if (!profileLoading && profile && profile.leaderboard_visibility !== 'public' && !isOwnProfile) {
+  if (!profileLoading && profile && profile.profile_visibility === 'private' && !isOwnProfile) {
     return <Navigate to="/" replace />;
   }
 
@@ -303,17 +303,19 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Share Section */}
-            <div className="pt-4 border-t">
-              <ShareProfile
-                username={profile.steam_name || 'Unknown'}
-                dustScore={dustScore}
-                tagline={profile.profile_tagline}
-                badge1Text={`${mainStatData.label}: ${mainStatData.value}`}
-                badge2Text={additionalStatsData[0] ? `${additionalStatsData[0].label}: ${additionalStatsData[0].value}` : ''}
-                profileUrl={profileUrl}
-              />
-            </div>
+            {/* Share Section - Only show for public profiles */}
+            {profile.profile_visibility === 'public' && (
+              <div className="pt-4 border-t">
+                <ShareProfile
+                  username={profile.steam_name || 'Unknown'}
+                  dustScore={dustScore}
+                  tagline={profile.profile_tagline}
+                  badge1Text={`${mainStatData.label}: ${mainStatData.value}`}
+                  badge2Text={additionalStatsData[0] ? `${additionalStatsData[0].label}: ${additionalStatsData[0].value}` : ''}
+                  profileUrl={profileUrl}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

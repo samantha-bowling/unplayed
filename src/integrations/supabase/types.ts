@@ -942,6 +942,7 @@ export type Database = {
           profile_tagline: string | null
           profile_theme: string
           profile_username: string | null
+          profile_visibility: string
           role: string | null
           show_mint_glow: boolean
           steam_avatar: string | null
@@ -966,6 +967,7 @@ export type Database = {
           profile_tagline?: string | null
           profile_theme?: string
           profile_username?: string | null
+          profile_visibility?: string
           role?: string | null
           show_mint_glow?: boolean
           steam_avatar?: string | null
@@ -990,6 +992,7 @@ export type Database = {
           profile_tagline?: string | null
           profile_theme?: string
           profile_username?: string | null
+          profile_visibility?: string
           role?: string | null
           show_mint_glow?: boolean
           steam_avatar?: string | null

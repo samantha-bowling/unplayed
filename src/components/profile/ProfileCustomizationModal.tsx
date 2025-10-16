@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Check } from 'lucide-react';
+import { Settings, Check, Globe, Lock, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { PROFILE_THEMES, DEFAULT_THEME } from '@/lib/profile-themes';
 import { PROFILE_BADGES, DEFAULT_BADGES, ProfileBadgeType } from '@/lib/profile-badges';
 import { ANIMATION_PACKS, AnimationPackId } from '@/lib/profile-animation-packs';
-import { useProfile } from '@/hooks/use-profile';
+import { useProfile, ProfileVisibility } from '@/hooks/use-profile';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +32,9 @@ export function ProfileCustomizationModal() {
   const [mintGlowEnabled, setMintGlowEnabled] = useState(
     profile?.show_mint_glow ?? true
   );
+  const [profileVisibility, setProfileVisibility] = useState<ProfileVisibility>(
+    profile?.profile_visibility || 'public'
+  );
 
   // Update local state when profile changes
   useEffect(() => {
@@ -45,6 +48,7 @@ export function ProfileCustomizationModal() {
       );
       setSelectedAnimationPack((profile.background_animation_pack || 'gaming') as AnimationPackId);
       setMintGlowEnabled(profile.show_mint_glow ?? true);
+      setProfileVisibility(profile.profile_visibility || 'public');
     }
   }, [profile]);
 
@@ -90,6 +94,7 @@ export function ProfileCustomizationModal() {
 
     updateProfile(
       {
+        profile_visibility: profileVisibility,
         profile_theme: selectedTheme,
         profile_tagline: tagline || null,
         profile_main_stat: selectedMainStat,
@@ -130,6 +135,74 @@ export function ProfileCustomizationModal() {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Profile Privacy Setting */}
+          <div className="space-y-3 pb-6 border-b">
+            <div>
+              <Label className="text-base font-semibold">🔒 Profile Privacy</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Control who can view your profile page
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setProfileVisibility('public')}
+                className={`relative p-4 rounded-lg border-2 transition-all text-left ${
+                  profileVisibility === 'public'
+                    ? 'border-unplayed-mint bg-unplayed-mint/5'
+                    : 'border-border hover:border-muted-foreground'
+                }`}
+                aria-label="Set profile to public"
+                aria-pressed={profileVisibility === 'public'}
+              >
+                <div className="flex items-start gap-3">
+                  <Globe className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-medium mb-1">Public</div>
+                    <div className="text-xs text-muted-foreground">
+                      Anyone can view your profile and share it
+                    </div>
+                  </div>
+                </div>
+                {profileVisibility === 'public' && (
+                  <Check className="absolute top-3 right-3 h-5 w-5 text-unplayed-mint" />
+                )}
+              </button>
+
+              <button
+                onClick={() => setProfileVisibility('private')}
+                className={`relative p-4 rounded-lg border-2 transition-all text-left ${
+                  profileVisibility === 'private'
+                    ? 'border-unplayed-mint bg-unplayed-mint/5'
+                    : 'border-border hover:border-muted-foreground'
+                }`}
+                aria-label="Set profile to private"
+                aria-pressed={profileVisibility === 'private'}
+              >
+                <div className="flex items-start gap-3">
+                  <Lock className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-medium mb-1">Private</div>
+                    <div className="text-xs text-muted-foreground">
+                      Only you can view your profile page
+                    </div>
+                  </div>
+                </div>
+                {profileVisibility === 'private' && (
+                  <Check className="absolute top-3 right-3 h-5 w-5 text-unplayed-mint" />
+                )}
+              </button>
+            </div>
+            
+            <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">Note:</strong> This setting is independent of your leaderboard visibility. 
+                You can have a private profile and still appear on the leaderboard.
+              </p>
+            </div>
+          </div>
+
           {/* Theme Picker */}
           <div className="space-y-3">
             <Label htmlFor="theme-picker">Profile Theme</Label>
