@@ -291,6 +291,19 @@ export function ProfileCustomizationModal() {
             </div>
           </div>
 
+          {/* Mint Glow Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">✨ Mint Glow Effect</Label>
+              <p className="text-xs text-muted-foreground">Add a glowing effect to your main stat</p>
+            </div>
+            <Switch
+              checked={mintGlowEnabled}
+              onCheckedChange={setMintGlowEnabled}
+              aria-label="Toggle mint glow effect"
+            />
+          </div>
+
           {/* Additional Stats Selector */}
           <div className="space-y-3">
             <div>
@@ -362,19 +375,6 @@ export function ProfileCustomizationModal() {
                 );
               })}
             </div>
-          </div>
-
-          {/* Mint Glow Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">✨ Mint Glow Effect</Label>
-              <p className="text-xs text-muted-foreground">Add a glowing effect to your main stat</p>
-            </div>
-            <Switch
-              checked={mintGlowEnabled}
-              onCheckedChange={setMintGlowEnabled}
-              aria-label="Toggle mint glow effect"
-            />
           </div>
 
           {/* Live Preview */}
