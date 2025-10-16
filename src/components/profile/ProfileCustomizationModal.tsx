@@ -35,9 +35,6 @@ export function ProfileCustomizationModal() {
   const [profileVisibility, setProfileVisibility] = useState<ProfileVisibility>(
     profile?.profile_visibility || 'public'
   );
-  const [showLibraryValueOnLeaderboard, setShowLibraryValueOnLeaderboard] = useState(
-    profile?.show_library_value_on_leaderboard ?? false
-  );
 
   // Update local state when profile changes
   useEffect(() => {
@@ -52,7 +49,6 @@ export function ProfileCustomizationModal() {
       setSelectedAnimationPack((profile.background_animation_pack || 'gaming') as AnimationPackId);
       setMintGlowEnabled(profile.show_mint_glow ?? true);
       setProfileVisibility(profile.profile_visibility || 'public');
-      setShowLibraryValueOnLeaderboard(profile.show_library_value_on_leaderboard ?? false);
     }
   }, [profile]);
 
@@ -107,7 +103,6 @@ export function ProfileCustomizationModal() {
         profile_badge_3: selectedBadges[2] || null,
         background_animation_pack: selectedAnimationPack,
         show_mint_glow: mintGlowEnabled,
-        show_library_value_on_leaderboard: showLibraryValueOnLeaderboard,
       },
       {
         onSuccess: () => {
@@ -380,38 +375,6 @@ export function ProfileCustomizationModal() {
               onCheckedChange={setMintGlowEnabled}
               aria-label="Toggle mint glow effect"
             />
-          </div>
-
-          {/* Leaderboard Financial Data Visibility */}
-          <div className="space-y-3 pt-6 border-t">
-            <div>
-              <Label className="text-base font-semibold">💰 Leaderboard Financial Data</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Control whether your library value appears on public leaderboards
-              </p>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <div className="flex-1">
-                <div className="font-medium text-sm mb-1">Show Library Value on Leaderboard</div>
-                <p className="text-xs text-muted-foreground">
-                  When enabled, your total library value will be visible on the public leaderboard rankings
-                </p>
-              </div>
-              <Switch
-                checked={showLibraryValueOnLeaderboard}
-                onCheckedChange={setShowLibraryValueOnLeaderboard}
-                aria-label="Toggle library value visibility on leaderboard"
-              />
-            </div>
-            
-            <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <Info className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                <strong className="text-foreground">Privacy Note:</strong> By default, your library value is hidden from public leaderboards. 
-                Only enable this if you're comfortable sharing your spending information publicly.
-              </p>
-            </div>
           </div>
 
           {/* Live Preview */}
