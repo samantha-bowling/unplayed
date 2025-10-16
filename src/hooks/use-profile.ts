@@ -26,6 +26,7 @@ export type UserProfile = {
   show_mint_glow?: boolean;
   background_animation_pack?: string;
   profile_visibility?: ProfileVisibility;
+  show_library_value_on_leaderboard?: boolean;
   created_at?: string;
   updated_at?: string;
   last_sync?: string;
