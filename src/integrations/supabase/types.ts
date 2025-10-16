@@ -253,6 +253,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "game_picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "v_public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       game_prices: {
@@ -427,6 +434,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -663,6 +677,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_games_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_genre_stats: {
@@ -819,6 +840,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_user_roles_public_users"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "v_public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1020,6 +1048,63 @@ export type Database = {
           endpoint: string | null
           p50_ms: number | null
           p95_ms: number | null
+        }
+        Relationships: []
+      }
+      v_public_profiles: {
+        Row: {
+          background_animation_pack: string | null
+          created_at: string | null
+          id: string | null
+          leaderboard_visibility: string | null
+          profile_badge_1: string | null
+          profile_badge_2: string | null
+          profile_badge_3: string | null
+          profile_main_stat: string | null
+          profile_tagline: string | null
+          profile_theme: string | null
+          profile_username: string | null
+          profile_visibility: string | null
+          show_mint_glow: boolean | null
+          steam_avatar: string | null
+          steam_id: string | null
+          steam_name: string | null
+        }
+        Insert: {
+          background_animation_pack?: string | null
+          created_at?: string | null
+          id?: string | null
+          leaderboard_visibility?: string | null
+          profile_badge_1?: string | null
+          profile_badge_2?: string | null
+          profile_badge_3?: string | null
+          profile_main_stat?: string | null
+          profile_tagline?: string | null
+          profile_theme?: string | null
+          profile_username?: string | null
+          profile_visibility?: string | null
+          show_mint_glow?: boolean | null
+          steam_avatar?: string | null
+          steam_id?: string | null
+          steam_name?: string | null
+        }
+        Update: {
+          background_animation_pack?: string | null
+          created_at?: string | null
+          id?: string | null
+          leaderboard_visibility?: string | null
+          profile_badge_1?: string | null
+          profile_badge_2?: string | null
+          profile_badge_3?: string | null
+          profile_main_stat?: string | null
+          profile_tagline?: string | null
+          profile_theme?: string | null
+          profile_username?: string | null
+          profile_visibility?: string | null
+          show_mint_glow?: boolean | null
+          steam_avatar?: string | null
+          steam_id?: string | null
+          steam_name?: string | null
         }
         Relationships: []
       }

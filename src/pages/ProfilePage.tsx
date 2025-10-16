@@ -35,14 +35,18 @@ export default function ProfilePage() {
     queryFn: async () => {
       if (!userId) throw new Error('User ID required');
       
+      // If viewing own profile, query full users table
+      // Otherwise, query read-only public view with restricted columns
+      const tableName = isOwnProfile ? 'users' : 'v_public_profiles';
+      
       const { data, error } = await supabase
-        .from('users')
+        .from(tableName as any)
         .select('*')
         .eq('id', userId)
         .maybeSingle();
       
       if (error) throw error;
-      return data as UserProfile | null;
+      return data as unknown as UserProfile | null;
     },
     enabled: !!userId,
   });
