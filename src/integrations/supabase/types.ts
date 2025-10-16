@@ -971,7 +971,6 @@ export type Database = {
           profile_theme: string
           profile_username: string | null
           profile_visibility: string
-          role: string | null
           show_mint_glow: boolean
           steam_avatar: string | null
           steam_id: string
@@ -996,7 +995,6 @@ export type Database = {
           profile_theme?: string
           profile_username?: string | null
           profile_visibility?: string
-          role?: string | null
           show_mint_glow?: boolean
           steam_avatar?: string | null
           steam_id: string
@@ -1021,7 +1019,6 @@ export type Database = {
           profile_theme?: string
           profile_username?: string | null
           profile_visibility?: string
-          role?: string | null
           show_mint_glow?: boolean
           steam_avatar?: string | null
           steam_id?: string

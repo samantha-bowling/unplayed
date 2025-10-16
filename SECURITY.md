@@ -114,11 +114,26 @@ SELECT public.assign_role('user-uuid-here', 'admin');
 - **Self-Protection**: Admins cannot modify their own admin role
 - **Performance**: Indexed lookups significantly faster than JSONB operations
 
+#### Intentional SECURITY DEFINER Functions ✅
+The following functions use `SECURITY DEFINER` intentionally and correctly:
+- **`is_admin(uuid)`**: Bypasses RLS to check admin role, prevents infinite recursion
+- **`has_role(uuid, app_role)`**: Bypasses RLS to check any role, prevents infinite recursion  
+- **`assign_role(uuid, app_role)`**: Admin-only function with audit logging
+- **`revoke_role(uuid, app_role)`**: Admin-only function with audit logging
+
+These functions are secure because:
+1. They use `SET search_path = pg_temp, public` to prevent schema injection
+2. They access only the specific data needed (role checks)
+3. They include proper authorization checks (admin-only for mutations)
+4. All mutations are logged to audit trail
+
+**Note**: Security linter may flag these as warnings. This is expected and safe.
+
 ### Migration History
 - **Pre-Phase 0**: Used `auth.users.app_metadata.roles` (DEPRECATED - privilege escalation risk)
 - **Phase 0**: Migrated to `public.user_roles` table (secure, auditable)
 - **Phase 2A**: Added server-side RPC verification for all admin routes (defense-in-depth)
-- **Legacy Column**: `public.users.role` deprecated, scheduled for removal in v2.0
+- **v2.0**: Removed legacy `users.role` column (completed)
 - **Removed Function**: `public.sync_user_roles_from_metadata()` (no longer needed)
 
 ## Remaining Security Items ⚠️ NEEDS ATTENTION
