@@ -5,7 +5,7 @@ import { useRefreshCache } from './useRefreshCache';
 import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
 
 export const useDashboardRefresh = () => {
   const { 
@@ -38,28 +38,24 @@ export const useDashboardRefresh = () => {
     try {
       console.log('📊 Starting dashboard metrics refresh...');
 
-      // Step 1: Refresh backend metrics calculation
-      const { data, error } = await supabase.functions.invoke('calculate-user-metrics', {
-        body: { user_id: user.id }
+      // Use direct RPC call with automatic fallback to edge function
+      const result = await calculateUserMetricsDirect(user.id);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to refresh dashboard metrics');
+      }
+
+      markOperationPerformed('dashboard');
+
+      // Invalidate Phase 2 metrics caches after backend calculation
+      invalidateCacheDelayed('phase2-metrics', 1000);
+
+      toast({
+        title: "Dashboard refreshed successfully",
+        description: `Updated metrics for ${result.metrics?.totalGames || 0} games.`
       });
 
-      if (error) throw error;
-
-      if (data?.success) {
-        markOperationPerformed('dashboard');
-
-        // Step 2: Invalidate Phase 2 metrics caches after backend calculation
-        invalidateCacheDelayed('phase2-metrics', 1000);
-
-        toast({
-          title: "Dashboard refreshed successfully",
-          description: `Updated metrics for ${data.metrics?.totalGames || 0} games.`
-        });
-
-        return data;
-      } else {
-        throw new Error(data?.error || 'Failed to refresh dashboard metrics');
-      }
+      return result;
     } catch (error) {
       console.error('Dashboard refresh failed:', error);
       toast({

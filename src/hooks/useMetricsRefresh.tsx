@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
 
 export const useMetricsRefresh = () => {
   const { user } = useAuth();
@@ -29,32 +29,26 @@ export const useMetricsRefresh = () => {
       
       console.log('Refreshing user metrics for user:', user.id);
       
-      const { data, error } = await supabase.functions.invoke('calculate-user-metrics', {
-        body: { user_id: user.id }
+      // Use direct RPC call with automatic fallback to edge function
+      const result = await calculateUserMetricsDirect(user.id);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to refresh user metrics');
+      }
+
+      // Invalidate Phase 2 metrics cache after successful backend refresh
+      const phase2Keys = queryKeys.helpers.phase2Metrics(user.id);
+      phase2Keys.forEach(key => {
+        queryClient.invalidateQueries({ queryKey: key });
       });
-
-      if (error) {
-        console.error('Error refreshing user metrics:', error);
-        throw error;
-      }
-
-      if (data?.success) {
-        // Invalidate Phase 2 metrics cache after successful backend refresh
-        const phase2Keys = queryKeys.helpers.phase2Metrics(user.id);
-        phase2Keys.forEach(key => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-        
-        toast({
-          title: "Metrics refreshed successfully",
-          description: `Updated metrics for ${data.metrics?.totalGames || 0} games.`
-        });
-        
-        console.log('User metrics refresh completed:', data);
-        return data;
-      } else {
-        throw new Error(data?.error || 'Failed to refresh user metrics');
-      }
+      
+      toast({
+        title: "Metrics refreshed successfully",
+        description: `Updated metrics for ${result.metrics?.totalGames || 0} games.`
+      });
+      
+      console.log('User metrics refresh completed:', result);
+      return result;
     } catch (error) {
       console.error('Error refreshing user metrics:', error);
       toast({

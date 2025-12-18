@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { calculateSpendingMetricsDirect } from '@/hooks/useDirectRpcSpending';
 
 export interface UnifiedSpendingData {
   // Total library spending
@@ -110,11 +111,11 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
       return result;
     },
     enabled: !!user && (options.enabled !== false),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 4 * 60 * 60 * 1000, // 4 hours (extended for edge function optimization)
     retry: 2,
   });
 
-  // Unified refresh function that recalculates spending metrics
+  // Unified refresh function that recalculates spending metrics using direct RPC
   const refreshSpendingData = async () => {
     try {
       toast({
@@ -122,26 +123,13 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
         description: "Recalculating your spending metrics..."
       });
 
-      console.log('Calling calculate-user-spending edge function...');
+      console.log('Calling direct RPC for spending metrics...');
 
-      // Call edge function to recalculate and update user_spending_metrics
-      const { data: functionResult, error: functionError } = await supabase.functions.invoke(
-        'calculate-user-spending',
-        {
-          body: {
-            user_id: user?.id,
-            force_refresh: true
-          }
-        }
-      );
+      // Use direct RPC call with automatic fallback to edge function
+      const result = await calculateSpendingMetricsDirect(user?.id || '');
 
-      if (functionError) {
-        console.error('Error calling spending calculation function:', functionError);
-        throw functionError;
-      }
-
-      if (!functionResult?.success) {
-        throw new Error(functionResult?.error || 'Failed to calculate spending metrics');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to calculate spending metrics');
       }
 
       // Refetch the query to update the UI with new data
