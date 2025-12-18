@@ -56,6 +56,6 @@ export const useDustBreakdowns = () => {
       }));
     },
     enabled: !!user,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes (extended for edge function optimization)
   });
 };

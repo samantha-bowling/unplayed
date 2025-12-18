@@ -1143,12 +1143,9 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
-      can_user_refresh_prices: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      can_user_refresh_prices: { Args: { p_user_id: string }; Returns: Json }
       get_all_user_roles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -1176,18 +1173,12 @@ export type Database = {
           user_request_count: number
         }[]
       }
-      get_total_game_count: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      get_total_game_count: { Args: never; Returns: number }
       get_user_game_dust_breakdown: {
         Args: { p_user_game_id: string }
         Returns: Json
       }
-      get_user_library_stats: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      get_user_library_stats: { Args: { p_user_id: string }; Returns: Json }
       has_role: {
         Args: {
           check_role: Database["public"]["Enums"]["app_role"]
@@ -1195,32 +1186,14 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment: {
-        Args: { value: number }
-        Returns: number
-      }
-      is_admin: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_current_user_admin_legacy: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_profile_public: {
-        Args: { check_user_id: string }
-        Returns: boolean
-      }
-      mark_onboarding_complete: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      increment: { Args: { value: number }; Returns: number }
+      is_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      is_current_user_admin: { Args: never; Returns: boolean }
+      is_current_user_admin_legacy: { Args: never; Returns: boolean }
+      is_profile_public: { Args: { check_user_id: string }; Returns: boolean }
+      mark_onboarding_complete: { Args: never; Returns: undefined }
       recalculate_all_dust_scores: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           message: string
           total_count: number
