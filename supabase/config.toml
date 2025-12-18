@@ -1,4 +1,3 @@
-
 project_id = "gwmygthanyycveyqqspr"
 
 [api]
@@ -31,6 +30,9 @@ enabled = true
 site_url = "https://lucid-lamarr-a4467f.lovable.dev"
 
 [functions]
+
+[functions.cleanup-old-data]
+verify_jwt = true
 
 [functions.prioritize-hltb-games]
 verify_jwt = true

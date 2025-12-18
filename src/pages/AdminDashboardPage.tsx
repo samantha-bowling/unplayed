@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { Shield, Bug, UserMinus, ActivitySquare, Database } from 'lucide-react';
+import { Shield, Bug, UserMinus, ActivitySquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthPermission } from '@/hooks/use-auth-permission';
 import AdminLayout from '@/layouts/AdminLayout';
+import { DatabaseCleanupCard } from '@/components/admin/DatabaseCleanupCard';
 
 const AdminDashboardPage = () => {
   const { isAdmin } = useAuthPermission();
@@ -51,7 +52,7 @@ const AdminDashboardPage = () => {
       <div className="container mx-auto px-4 py-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             Central hub for all administrative tools and controls.
           </p>
         </div>
@@ -74,14 +75,22 @@ const AdminDashboardPage = () => {
                     {/* Placeholder for potential stats or status indicators */}
                   </div>
                 </CardContent>
-                <CardFooter className="pt-2 border-t border-gray-800">
-                  <span className="text-sm text-gray-400 hover:text-white transition-colors">
+                <CardFooter className="pt-2 border-t border-border/50">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     Access Tool →
                   </span>
                 </CardFooter>
               </Card>
             </Link>
           ))}
+        </div>
+
+        {/* Quick Utilities Section */}
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold mb-4">Quick Utilities</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DatabaseCleanupCard />
+          </div>
         </div>
       </div>
     </AdminLayout>
