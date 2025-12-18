@@ -24,4 +24,16 @@ export const FEATURE_FLAGS = {
   },
 } as const;
 
+/**
+ * Data retention periods in days for database cleanup.
+ * Only affects non-user-data tables.
+ */
+export const RETENTION_DAYS = {
+  /** Completed/failed entries in steam_app_queue */
+  COMPLETED_QUEUE_ITEMS: 7,
+  /** Old sync status records in steam_app_sync */
+  OLD_SYNC_RECORDS: 30,
+} as const;
+
 export type FeatureFlags = typeof FEATURE_FLAGS;
+export type RetentionDays = typeof RETENTION_DAYS;
