@@ -33,18 +33,6 @@ const DustPage = () => {
   
   const isLoading = metricsLoading || breakdownsLoading || cleanBreakdownsLoading;
 
-  // Debug logging for Phase 2 data
-  useEffect(() => {
-    console.log("DustPage - User Metrics:", userMetrics);
-    console.log("DustPage - Dust Breakdowns:", dustBreakdowns);
-    console.log("DustPage - Clean Score Breakdowns:", cleanScoreBreakdowns);
-    console.log("DustPage - Clean Streak Comparison:", {
-      userMetricsCleanStreak: userMetrics?.cleanStreak,
-      cleanBreakdownsCleanStreak: cleanScoreBreakdowns?.cleanStreakDays,
-      userMetricsRecentlyPlayed: userMetrics?.recentlyPlayedCount,
-      cleanBreakdownsRecentlyPlayed: cleanScoreBreakdowns?.recentlyPlayedCount
-    });
-  }, [userMetrics, dustBreakdowns, cleanScoreBreakdowns]);
 
   const refreshData = async () => {
     try {

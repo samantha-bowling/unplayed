@@ -59,13 +59,15 @@ const LeaderboardPage = () => {
     });
   };
 
-  if (error) {
-    toast({
-      variant: "destructive",
-      title: "Error loading leaderboard",
-      description: "There was a problem loading the leaderboard data.",
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error loading leaderboard",
+        description: "There was a problem loading the leaderboard data.",
+      });
+    }
+  }, [error, toast]);
 
   // Calculate correct rankings based on dust score
   const leaderboardWithCorrectRanks = leaderboardData?.map((entry, index) => {
