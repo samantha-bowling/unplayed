@@ -5,7 +5,6 @@ import { Play, ExternalLink, Calendar, Clock, DollarSign } from 'lucide-react';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { getBestGameImage } from '@/utils/image-utils';
 import { formatDate, formatPlaytime, formatPrice } from '@/utils/format-utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
@@ -67,9 +66,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
       </h2>
       
       {/* Main Game Layout - Image takes 1/3, content takes 2/3 */}
-      <div className="flex gap-6 mb-6">
-        {/* Left: Game Image (1/3 of horizontal space) */}
-        <div className="w-1/3 flex-shrink-0">
+      <div className="flex flex-col md:flex-row gap-6 mb-6">
+        {/* Left: Game Image */}
+        <div className="w-full md:w-1/3 flex-shrink-0">
           <AspectRatio ratio={16 / 9}>
             <img 
               src={gameImage} 

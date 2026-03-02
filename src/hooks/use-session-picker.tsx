@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import useUnplayedData from '@/hooks/useUnplayedData';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { filterGamesByMood, filterOutRecentPicks } from '@/utils/game-mapping';
@@ -7,8 +7,47 @@ import { useAuth } from '@/context/AuthContext';
 
 type PickerScope = 'unplayed' | 'all';
 
+const STORAGE_KEY_PREFIX = 'steam_picker_';
+const EXPIRY_DAYS = 7;
+
+interface PersistedPicks {
+  currentPick: GameListItem | null;
+  previousPick: GameListItem | null;
+  timestamp: string;
+}
+
+function loadPicksFromStorage(userId: string): PersistedPicks | null {
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${userId}`);
+    if (!raw) return null;
+    const parsed: PersistedPicks = JSON.parse(raw);
+    // Expire after 7 days
+    const age = Date.now() - new Date(parsed.timestamp).getTime();
+    if (age > EXPIRY_DAYS * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(`${STORAGE_KEY_PREFIX}${userId}`);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function savePicksToStorage(userId: string, current: GameListItem | null, previous: GameListItem | null) {
+  try {
+    const data: PersistedPicks = {
+      currentPick: current,
+      previousPick: previous,
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(data));
+  } catch {
+    // Storage full or unavailable — silently fail
+  }
+}
+
 /**
- * Simplified session-only picker hook that doesn't persist picks to database
+ * Simplified session-only picker hook with localStorage persistence for authenticated users
  */
 export const useSessionPicker = () => {
   const { data: unplayedData, isLoading: isLoadingLibrary } = useUnplayedData();
@@ -18,113 +57,101 @@ export const useSessionPicker = () => {
   const [preventDuplicates, setPreventDuplicates] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   
-  // Session-only state - tracks current and previous picks
+  // Session state
   const [currentSessionPick, setCurrentSessionPick] = useState<GameListItem | null>(null);
   const [previousSessionPick, setPreviousSessionPick] = useState<GameListItem | null>(null);
   const [hasPickedInSession, setHasPickedInSession] = useState(false);
   
-  // Clear session state when user changes (login/logout)
+  // Hydrate from localStorage on mount / user change
   useEffect(() => {
-    console.log('User authentication changed, clearing session picks');
-    setCurrentSessionPick(null);
-    setPreviousSessionPick(null);
-    setHasPickedInSession(false);
+    if (user?.id) {
+      const stored = loadPicksFromStorage(user.id);
+      if (stored) {
+        setCurrentSessionPick(stored.currentPick);
+        setPreviousSessionPick(stored.previousPick);
+        setHasPickedInSession(!!stored.currentPick);
+      } else {
+        setCurrentSessionPick(null);
+        setPreviousSessionPick(null);
+        setHasPickedInSession(false);
+      }
+    } else {
+      // Unauthenticated — clear session state, no persistence
+      setCurrentSessionPick(null);
+      setPreviousSessionPick(null);
+      setHasPickedInSession(false);
+    }
   }, [user?.id]);
   
-  // Log data received
+  // Persist to localStorage whenever picks change (authenticated only)
   useEffect(() => {
-    console.log('useSessionPicker - unplayedData:', unplayedData);
-    console.log('useSessionPicker - gamesList length:', unplayedData?.gamesList?.length || 0);
-    console.log('useSessionPicker - authenticated:', !!user);
-  }, [unplayedData, user]);
-  
-  // Get recent pick IDs for duplicate prevention (session only)
-  const recentPickIds = useMemo(() => {
-    const ids = [];
-    
-    if (currentSessionPick) {
-      ids.push(currentSessionPick.id);
+    if (user?.id && hasPickedInSession) {
+      savePicksToStorage(user.id, currentSessionPick, previousSessionPick);
     }
-    
+  }, [user?.id, currentSessionPick, previousSessionPick, hasPickedInSession]);
+  
+  // Get recent pick IDs for duplicate prevention
+  const recentPickIds = useMemo(() => {
+    const ids: number[] = [];
+    if (currentSessionPick) ids.push(currentSessionPick.id);
     if (previousSessionPick && previousSessionPick.id !== currentSessionPick?.id) {
       ids.push(previousSessionPick.id);
     }
-    
     return ids;
   }, [currentSessionPick, previousSessionPick]);
   
   // Filter games based on selected criteria
   const filteredGames = useMemo(() => {
-    if (!unplayedData || !unplayedData.gamesList) {
-      console.log('useSessionPicker - No gamesList available');
-      return [];
-    }
+    if (!unplayedData?.gamesList) return [];
     
-    console.log('useSessionPicker - Filtering from gamesList of size:', unplayedData.gamesList.length);
-    
-    // First filter by scope (unplayed vs all)
     let gamePool = unplayedData.gamesList;
     if (scope === 'unplayed') {
       gamePool = gamePool.filter(game => game.playtimeMinutes === 0);
-      console.log('useSessionPicker - After unplayed filter:', gamePool.length);
     }
     
-    // Then filter by mood if selected
     let moodFiltered = gamePool;
     if (activeMood) {
       moodFiltered = filterGamesByMood(moodFiltered, activeMood);
-      console.log('useSessionPicker - After mood filter:', moodFiltered.length);
     }
     
-    // Filter by additional source filters if present
     if (sourceFilter === 'shelfLife' && unplayedData.shelfLife) {
       const oldestGameIds = new Set(unplayedData.shelfLife.map(game => game.id));
       moodFiltered = moodFiltered.filter(game => oldestGameIds.has(game.id));
-      console.log('useSessionPicker - After shelfLife filter:', moodFiltered.length);
     }
     
-    // Finally, filter out recent picks if enabled
     if (preventDuplicates) {
-      const finalFiltered = filterOutRecentPicks(moodFiltered, recentPickIds);
-      console.log('useSessionPicker - After duplicate filter:', finalFiltered.length);
-      return finalFiltered;
+      return filterOutRecentPicks(moodFiltered, recentPickIds);
     }
     
     return moodFiltered;
   }, [unplayedData, scope, activeMood, recentPickIds, preventDuplicates, sourceFilter]);
 
   // Select a random game from the filtered pool
-  const selectRandomGame = (): GameListItem | null => {
-    console.log('selectRandomGame - Selecting from filtered games:', filteredGames.length);
-    
-    if (!filteredGames.length) {
-      console.log('selectRandomGame - No games available after filtering');
-      return null;
-    }
+  const selectRandomGame = useCallback((): GameListItem | null => {
+    if (!filteredGames.length) return null;
     
     const randomIndex = Math.floor(Math.random() * filteredGames.length);
     const selectedGame = filteredGames[randomIndex];
-    
-    console.log('selectRandomGame - Selected game:', selectedGame);
     
     // Move current pick to previous if it exists
     if (currentSessionPick) {
       setPreviousSessionPick(currentSessionPick);
     }
     
-    // Update session state
     setCurrentSessionPick(selectedGame);
     setHasPickedInSession(true);
     
     return selectedGame;
-  };
+  }, [filteredGames, currentSessionPick]);
 
-  // Reset session state when filters change significantly
-  const resetSessionState = () => {
+  const resetSessionState = useCallback(() => {
     setCurrentSessionPick(null);
     setPreviousSessionPick(null);
     setHasPickedInSession(false);
-  };
+    if (user?.id) {
+      localStorage.removeItem(`${STORAGE_KEY_PREFIX}${user.id}`);
+    }
+  }, [user?.id]);
   
   return {
     games: filteredGames,
