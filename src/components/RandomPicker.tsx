@@ -78,7 +78,6 @@ const RandomPicker = ({
   } = useSessionPicker();
 
   const [isSpinning, setIsSpinning] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentQuip, setCurrentQuip] = useState<string>("Ready to select a game...");
   const [destinyMessage, setDestinyMessage] = useState<string>("Your Random Pick");
   
@@ -88,88 +87,53 @@ const RandomPicker = ({
   // Determine if we should show in full screen mode
   const showFullScreenMode = fullScreen && isFullScreenMode;
   
-  // Enhanced logging for debugging
-  useEffect(() => {
-    console.log('=== RandomPicker State Debug ===');
-    console.log('Games available:', games?.length || 0);
-    console.log('Current session pick:', currentSessionPick?.name || 'None');
-    console.log('Previous session pick:', previousSessionPick?.name || 'None');
-    console.log('Has picked in session:', hasPickedInSession);
-    console.log('Demo mode:', isDemo);
-    console.log('================================');
-  }, [games, currentSessionPick, previousSessionPick, hasPickedInSession, isDemo]);
-  
   // Apply initial filters when component mounts or initialFilters changes
   useEffect(() => {
     if (initialFilters) {
-      console.log('Applying initial filters:', initialFilters);
-      
-      // Apply genre or mood filter if provided
       if (initialFilters.mood) {
         setActiveMood(initialFilters.mood);
       } else if (initialFilters.genre) {
-        // Find appropriate mood for the genre
         const genreMood = initialFilters.genre.toLowerCase();
         setActiveMood(genreMood);
       }
 
-      // Auto-spin if requested
       if (initialFilters.shouldAutoSpin) {
-        // Small delay to ensure filters are applied
         const timer = setTimeout(() => {
           handleSpin();
         }, 300);
-        
         return () => clearTimeout(timer);
       }
     }
   }, [initialFilters]);
 
   const handleSpin = () => {
-    if (isSpinning) {
-      console.log('Spin prevented - operation in progress');
-      return;
-    }
-    
-    console.log('=== Starting Spin Process ===');
-    console.log('Current filters:', { scope, activeMood, preventDuplicates });
-    console.log('Available games:', games?.length || 0);
-    console.log('Demo mode:', isDemo);
+    if (isSpinning) return;
     
     // Select a random quip to display
     const randomQuipIndex = Math.floor(Math.random() * selectionQuips.length);
     setCurrentQuip(selectionQuips[randomQuipIndex]);
     
+    // Select the game BEFORE the timeout to avoid stale closure
+    const newSelectedGame = selectRandomGame();
+    
+    if (!newSelectedGame) {
+      toast.error("No matching games found", {
+        description: `Try a different mood or library filter.`,
+      });
+      return;
+    }
+    
     setIsSpinning(true);
 
-    // Simulate picking random game
+    // Use timeout only for animation delay — game is already selected
     setTimeout(() => {
-      console.log('Executing selectRandomGame...');
-      const newSelectedGame = selectRandomGame();
-      
-      if (!newSelectedGame) {
-        console.log('No game was selected - showing error');
-        setIsSpinning(false);
-        toast.error("No matching games found", {
-          description: `Try a different mood or library filter.`,
-        });
-        return;
-      }
-      
-      // Generate a destiny message for the selected game
       setDestinyMessage(getRandomDestinyMessage());
-      
-      console.log('Successfully selected game:', newSelectedGame.name);
-      console.log('=== Spin Process Complete ===');
       setIsSpinning(false);
     }, 2000);
   };
   
   const handleFilterSelect = (filterId: string) => {
-    console.log('Filter selected:', filterId);
     setActiveMood(filterId);
-    setIsDropdownOpen(false);
-    // Reset session state when filters change
     resetSessionState();
   };
   
@@ -178,17 +142,11 @@ const RandomPicker = ({
     
     const steamUrl = `steam://run/${currentSessionPick.id}`;
     window.open(steamUrl, '_blank');
-    
-    toast("Launching game", {
-      description: `Opening ${currentSessionPick.name} in Steam`,
-    });
+    // Toast is handled by SelectedGame — no duplicate here
   };
 
   const handleClearMood = () => {
-    console.log('Clearing mood filter');
     setActiveMood(null);
-    setIsDropdownOpen(false);
-    // Reset session state when filters change
     resetSessionState();
   };
 
@@ -228,29 +186,24 @@ const RandomPicker = ({
   
   return (
     <div className={`w-full ${fullScreen ? 'h-full' : ''}`}>
-      {/* Show the full screen mode toggle in the corner when in full screen mode */}
       {showFullScreenMode && (
         <div className="absolute top-4 right-4 z-10 opacity-30 hover:opacity-100 transition-opacity duration-300">
           <FullScreenModeToggle />
         </div>
       )}
       
-      {/* Main content container with terminal styling */}
       <div className="terminal-container">
         <div className="terminal-header mb-6">Random Game Picker</div>
         
         <div className="terminal-content">
           {/* Controls Section - Mobile responsive layout */}
           <div className={`mb-8 ${isMobile ? 'space-y-4' : 'flex justify-between items-center gap-4'}`}>
-            {/* Left side: Mood, Select Game button, Prevent Duplicates */}
             <div className={`${isMobile ? 'space-y-3' : 'flex items-center gap-4'}`}>
               <div className={isMobile ? 'w-full' : ''}>
                 <MoodFilterDropdown 
                   activeMood={activeMood}
                   onSelectMood={handleFilterSelect}
                   onClearMood={handleClearMood}
-                  isDropdownOpen={isDropdownOpen}
-                  toggleDropdown={() => setIsDropdownOpen(!isDropdownOpen)}
                 />
               </div>
               
@@ -269,10 +222,7 @@ const RandomPicker = ({
                     <input
                       type="checkbox"
                       checked={preventDuplicates}
-                      onChange={() => {
-                        console.log('Prevent duplicates toggled:', !preventDuplicates);
-                        setPreventDuplicates(!preventDuplicates);
-                      }}
+                      onChange={() => setPreventDuplicates(!preventDuplicates)}
                       className="mr-1 h-4 w-4"
                       disabled={isSpinning}
                     />
@@ -282,7 +232,6 @@ const RandomPicker = ({
               )}
             </div>
             
-            {/* Right side: Unplayed/Full Library tabs */}
             {!showFullScreenMode && (
               <Tabs 
                 defaultValue="unplayed" 
@@ -298,7 +247,7 @@ const RandomPicker = ({
             )}
           </div>
           
-          {/* Game display area - shows current session pick */}
+          {/* Game display area */}
           <div className="mb-6">
             {isSpinning ? (
               <GameSpinner quip={currentQuip} />
@@ -321,7 +270,7 @@ const RandomPicker = ({
             )}
           </div>
           
-          {/* Recent Pick section - shows previous session pick */}
+          {/* Recent Pick section */}
           {getRecentPickToShow() && (
             <RecentPick recentPick={getRecentPickToShow()} isDemo={isDemo} />
           )}
@@ -331,5 +280,4 @@ const RandomPicker = ({
   );
 };
 
-// Export the component wrapped with the withDemoIndicator HOC
 export default withDemoIndicator(RandomPicker);
