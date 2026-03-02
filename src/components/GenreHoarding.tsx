@@ -5,6 +5,7 @@ import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -25,6 +26,7 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   const { user } = useAuth();
   const { isDemo: contextIsDemo, demoData } = useDemoMode();
   const { data: dashboardData } = useDashboardData();
+  const isMobile = useIsMobile();
 
   // Use demo mode from context or prop
   const isDemoMode = contextIsDemo || isDemo;
@@ -94,12 +96,12 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
               data={genreData} 
               cx="50%" 
               cy="50%" 
-              labelLine={false} 
-              outerRadius={80} 
-              innerRadius={40} 
+              labelLine={!isMobile} 
+              outerRadius={isMobile ? 60 : 80} 
+              innerRadius={isMobile ? 30 : 40} 
               fill="#8884d8" 
               dataKey="value" 
-              label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={isMobile ? false : ({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
               onClick={handleGenreClick}
               className="cursor-pointer"
             >

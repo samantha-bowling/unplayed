@@ -23,8 +23,8 @@ const GameSpinner: React.FC<GameSpinnerProps> = ({ quip, source }) => {
         </div>
       )}
       
-      {/* Digital effect */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Digital effect - hidden on mobile to prevent overflow */}
+      <div className="absolute inset-0 pointer-events-none hidden sm:block">
         <div className="absolute left-8 top-12 text-sm text-unplayed-mint/30 font-mono">selecting...</div>
         <div className="absolute right-12 bottom-8 text-xs text-unplayed-red/30 font-mono">filtering...</div>
         <div className="absolute right-32 top-24 text-xs text-unplayed-amber/20 font-mono">calculating...</div>

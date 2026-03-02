@@ -31,24 +31,24 @@ const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
       {isOpen && (
         <div className="absolute top-16 right-0 left-0 bg-gray-900 border-t border-gray-800 shadow-xl z-50 py-4 md:hidden animate-fade-in">
           <div className="flex flex-col space-y-4 items-center">
-            <NavLink href="/" label="Dashboard" />
+            <NavLink href="/" label="Dashboard" onClick={onToggle} />
             {user && (
               <>
-                <NavLink href="/library" label="Library" />
-                <NavLink href="/dust" label="Dust Score" />
-                <NavLink href="/spend" label="Spending" />
+                <NavLink href="/library" label="Library" onClick={onToggle} />
+                <NavLink href="/dust" label="Dust Score" onClick={onToggle} />
+                <NavLink href="/spend" label="Spending" onClick={onToggle} />
                 {isAdmin && (
                   <>
-                    <NavLink href="/auth-debug" label="Debug" />
-                    <NavLink href="/admin/support" label="Admin Support" />
-                    <NavLink href="/admin/queue-manager" label="Queue Manager" />
-                    <NavLink href="/admin/account-deletions" label="Account Deletions" />
-                    <NavLink href="/admin/hltb-data" label="HLTB Data" />
+                    <NavLink href="/auth-debug" label="Debug" onClick={onToggle} />
+                    <NavLink href="/admin/support" label="Admin Support" onClick={onToggle} />
+                    <NavLink href="/admin/queue-manager" label="Queue Manager" onClick={onToggle} />
+                    <NavLink href="/admin/account-deletions" label="Account Deletions" onClick={onToggle} />
+                    <NavLink href="/admin/hltb-data" label="HLTB Data" onClick={onToggle} />
                   </>
                 )}
               </>
             )}
-            <NavLink href="/leaderboard" label="Leaderboard" />
+            <NavLink href="/leaderboard" label="Leaderboard" onClick={onToggle} />
             
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
@@ -87,10 +87,11 @@ const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
   );
 };
 
-const NavLink = ({ href, label }: { href: string; label: string }) => (
+const NavLink = ({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) => (
   <Link 
     to={href} 
-    className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200"
+    onClick={onClick}
+    className="text-gray-300 hover:text-unplayed-mint transition-colors duration-200 py-1"
   >
     {label}
   </Link>

@@ -72,7 +72,12 @@
   
   .dashboard-grid {
     @apply grid grid-cols-1 md:grid-cols-3 gap-4;
-    grid-auto-rows: 1fr;
+  }
+  
+  @media (min-width: 768px) {
+    .dashboard-grid {
+      grid-auto-rows: 1fr;
+    }
   }
   
   .terminal-header::after {

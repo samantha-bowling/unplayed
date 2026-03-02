@@ -299,7 +299,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
                     variant={currentPage === page ? "default" : "outline"}
                     size="sm"
                     onClick={() => goToPage(page)}
-                    className="w-8 h-8 p-0"
+                    className="w-10 h-10 sm:w-8 sm:h-8 p-0"
                   >
                     {page}
                   </Button>
