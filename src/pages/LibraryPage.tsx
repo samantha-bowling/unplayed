@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import LibraryOverview from "@/components/LibraryOverview";
@@ -29,6 +30,10 @@ const LibraryPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Your Game Library – unplayed</title>
+        <meta name="description" content="Browse and manage your complete Steam library with advanced filtering, genre stats, and shelf life tracking." />
+      </Helmet>
       <Header />
       
       <main className="flex-grow w-full navbar-offset py-8 px-4">

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useIsMounted } from "@/hooks/useIsMounted";
@@ -158,7 +159,7 @@ const Index = () => {
         steamId: profile.steam_id,
       });
 
-      console.log("Import response:", data);
+      
       
       // If the server is processing in the background
       if (data.processing === "background") {
@@ -367,6 +368,10 @@ const Index = () => {
 
   return (
     <FullScreenModeWrapper>
+      <Helmet>
+        <title>unplayed – Conquer Your Steam Backlog</title>
+        <meta name="description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+      </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
 

@@ -91,20 +91,6 @@ export const useDashboardData = () => {
         )
       }));
 
-      console.log('Dashboard data compilation (using unified data):', {
-        unplayedGames: userMetrics.unplayedGames,
-        totalGames: userMetrics.totalGames,
-        cleanScore: userMetrics.cleanScore,
-        dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames),
-        totalPlaytime: userMetrics.totalPlaytimeHours,
-        recentlyPlayedCount: userMetrics.recentlyPlayedCount,
-        unplayedSpent: spendingData.unplayedSpent,
-        totalSpent: spendingData.totalLibraryValue,
-        genresCount: transformedGenres.length,
-        shelfLifeCount: transformedShelfLife.length,
-        source: 'unified_data'
-      });
-
       return {
         unplayedGames: userMetrics.unplayedGames,
         totalGames: userMetrics.totalGames,

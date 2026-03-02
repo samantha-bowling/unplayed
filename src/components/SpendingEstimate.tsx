@@ -21,12 +21,6 @@ const SpendingEstimate = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isAutoCalculating, setIsAutoCalculating] = useState(false);
   
-  console.log('SpendingEstimate - Using unified spending data V2:', {
-    unplayedSpent: spendingData.unplayedSpent,
-    currency: spendingData.currency,
-    lastCalculated: spendingData.lastCalculated,
-    source: 'user_spending_metrics_v2'
-  });
 
   // In demo mode, use demo data
   if (isDemo) {
@@ -96,7 +90,6 @@ const SpendingEstimate = ({
     }
 
     // If no data exists, auto-trigger calculation
-    console.log('No spending data found, auto-triggering calculation...');
     setIsAutoCalculating(true);
     
     try {

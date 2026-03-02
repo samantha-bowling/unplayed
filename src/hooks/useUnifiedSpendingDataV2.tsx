@@ -47,8 +47,6 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
         throw new Error('User not authenticated');
       }
 
-      console.log('Fetching unified spending data from user_spending_metrics...');
-
       // Fetch data from user_spending_metrics table (our single source of truth)
       const { data: metrics, error: metricsError } = await supabase
         .from('user_spending_metrics')
@@ -100,14 +98,6 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
         lastCalculated: metrics.last_calculated,
       };
 
-      console.log('Unified spending data loaded:', {
-        unplayedSpent: result.unplayedSpent,
-        totalLibraryValue: result.totalLibraryValue,
-        confidence: result.confidence,
-        dataQuality: result.dataQualityPercentage,
-        lastCalculated: result.lastCalculated,
-      });
-
       return result;
     },
     enabled: !!user && (options.enabled !== false),
@@ -121,8 +111,6 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
       toast("Refreshing spending data", {
         description: "Recalculating your spending metrics..."
       });
-
-      console.log('Calling direct RPC for spending metrics...');
 
       // Use direct RPC call with automatic fallback to edge function
       const result = await calculateSpendingMetricsDirect(user?.id || '');
@@ -138,7 +126,7 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
         description: "Your spending metrics have been updated successfully."
       });
 
-      console.log('Spending data refresh completed successfully');
+      
     } catch (error) {
       console.error('Error refreshing spending data:', error);
       toast.error("Error refreshing spending data", {

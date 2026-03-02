@@ -58,8 +58,6 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
     queryFn: async (): Promise<Partial<DustScoreData>> => {
       if (!user) throw new Error('User not authenticated');
 
-      console.log('Fetching enhanced dust data with 5-factor breakdown for user:', user.id);
-      
       // First get the detailed breakdowns from our new table
       const { data: dustBreakdowns, error: breakdownError } = await supabase
         .from('game_dust_breakdowns')

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
@@ -124,6 +125,10 @@ const DustPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Your Dust Report – unplayed</title>
+        <meta name="description" content="A detailed breakdown of your Steam library neglect. See dust scores, clean scores, and top dust contributors." />
+      </Helmet>
       <Header />
       
       <main className="flex-grow w-full navbar-offset py-8 px-4">

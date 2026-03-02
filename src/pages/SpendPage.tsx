@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +21,10 @@ const SpendPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Spending Analysis – unplayed</title>
+        <meta name="description" content="See how much you've spent on unplayed Steam games. Detailed spending patterns and insights." />
+      </Helmet>
       <Header />
       
       <main className="flex-grow w-full navbar-offset py-8 px-4">
