@@ -131,6 +131,7 @@ const GameCard: React.FC<GameCardProps> = ({
                     variant="outline"
                     size="sm"
                     className="bg-unplayed-mint/20 border-unplayed-mint/50 hover:bg-unplayed-mint/30 p-2 h-12"
+                    aria-label={`Play ${title}`}
                   >
                     <Play className="h-5 w-5" />
                   </Button>
@@ -148,6 +149,7 @@ const GameCard: React.FC<GameCardProps> = ({
                     variant="outline"
                     size="sm"
                     className="border-blue-500/50 hover:bg-blue-500/20 p-2 h-12"
+                    aria-label={`View ${title} on Steam`}
                   >
                     <ExternalLink className="h-5 w-5" />
                   </Button>
@@ -165,6 +167,7 @@ const GameCard: React.FC<GameCardProps> = ({
                     variant="outline"
                     size="sm"
                     className="border-gray-600 hover:bg-gray-800 p-2 h-12"
+                    aria-label={isHidden ? `Show ${title}` : `Ignore ${title}`}
                   >
                     {isHidden ? (
                       <Eye className="h-5 w-5" />
@@ -187,6 +190,7 @@ const GameCard: React.FC<GameCardProps> = ({
                         variant="outline"
                         size="sm"
                         className="border-gray-600 hover:bg-gray-800 p-2 h-12"
+                        aria-label={notes ? `Edit note for ${title}` : `Add note for ${title}`}
                       >
                         <FileEdit className="h-5 w-5" />
                       </Button>

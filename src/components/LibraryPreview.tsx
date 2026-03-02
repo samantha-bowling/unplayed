@@ -199,6 +199,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               className="pl-10"
+              aria-label="Search games"
             />
           </div>
         </div>
@@ -209,6 +210,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             variant={onlyUnplayed ? "default" : "outline"}
             size="sm"
             onClick={() => setOnlyUnplayed(!onlyUnplayed)}
+            aria-pressed={onlyUnplayed}
           >
             Only Unplayed
           </Button>
@@ -216,6 +218,7 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
             variant={hideIgnored ? "default" : "outline"}
             size="sm"
             onClick={() => setHideIgnored(!hideIgnored)}
+            aria-pressed={hideIgnored}
           >
             Hide Ignored
           </Button>

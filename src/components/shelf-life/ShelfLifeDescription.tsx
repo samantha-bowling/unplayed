@@ -12,7 +12,7 @@ const ShelfLifeDescription: React.FC = () => {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button className="ml-2 text-gray-500 hover:text-gray-400">
+            <button className="ml-2 text-gray-500 hover:text-gray-400" aria-label="More info about Shelf Life">
               <Info size={14} />
             </button>
           </TooltipTrigger>

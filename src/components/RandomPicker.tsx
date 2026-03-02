@@ -248,7 +248,7 @@ const RandomPicker = ({
           </div>
           
           {/* Game display area */}
-          <div className="mb-6">
+          <div className="mb-6" aria-live="polite">
             {isSpinning ? (
               <GameSpinner quip={currentQuip} />
             ) : currentSessionPick ? (

@@ -147,11 +147,12 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
       <h3 className="terminal-header text-2xl mb-2">unplayed Games</h3>
 
       <div className="terminal-content flex flex-col justify-center items-center py-6 flex-grow">
-        <div className={`text-6xl md:text-7xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
+        <div aria-hidden="true" className={`text-6xl md:text-7xl font-bold font-vt text-unplayed-mint mb-4 text-center transition-all duration-1000 ${
           isAnimationComplete ? 'drop-shadow-[0_0_10px_rgba(163,247,191,0.8)]' : ''
         }`}>
           {animatedCount}
         </div>
+        <span className="sr-only" aria-live="polite">{calculatedData.actualCount} unplayed games</span>
 
         <p className="text-gray-300 text-center text-xl mb-6" style={{ color: '#D1D5DB' }}>
           You've got <span className="text-unplayed-amber">{animatedCount}</span> unplayed games

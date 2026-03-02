@@ -9,7 +9,7 @@ interface GameSpinnerProps {
 
 const GameSpinner: React.FC<GameSpinnerProps> = ({ quip, source }) => {
   return (
-    <div className="h-80 flex flex-col items-center justify-center relative">
+    <div className="h-80 flex flex-col items-center justify-center relative" role="status" aria-live="polite">
       {/* Main spinning animation */}
       <div className="flex items-center mb-6">
         <Loader2 className="text-4xl text-unplayed-amber animate-spin h-12 w-12 mr-4" />

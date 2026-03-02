@@ -43,6 +43,9 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 w-full px-4 py-4 flex items-center justify-between z-50 glass-panel bg-black/60 backdrop-blur-md border-b border-white/10">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:bg-unplayed-mint focus:text-black focus:rounded focus:font-medium">
+        Skip to content
+      </a>
       <div className="flex items-center">
         <Link to="/" className="text-2xl font-space font-bold">
           <span className="text-unplayed-mint">unplayed</span>
