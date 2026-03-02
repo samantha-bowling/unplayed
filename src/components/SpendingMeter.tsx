@@ -88,13 +88,18 @@ const SpendingMeter = ({
   return (
     <div className="animate-fade-in flex flex-col h-full">
       <div className="flex flex-col items-center py-4">
-        <div className="text-4xl md:text-5xl font-bold text-unplayed-red mb-2">
+        <div className="text-4xl md:text-5xl font-bold text-unplayed-red mb-2" aria-hidden="true">
           {isLoading ? (
             <span className="opacity-50">Calculating...</span>
           ) : (
             <CurrencyAmount amount={animatedAmount} currency={currency} />
           )}
         </div>
+        {!isLoading && (
+          <span className="sr-only" aria-live="polite">
+            <CurrencyAmount amount={amount} currency={currency} /> spent on unplayed games
+          </span>
+        )}
         
         <p className="text-gray-300 text-center mb-2">
           Spent on unplayed games

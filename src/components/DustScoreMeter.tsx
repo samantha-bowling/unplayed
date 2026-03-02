@@ -65,7 +65,7 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="ml-2 text-gray-500 hover:text-gray-400">
+              <button className="ml-2 text-gray-500 hover:text-gray-400" aria-label="More info about Dust Score">
                 <InfoIcon size={16} />
               </button>
             </TooltipTrigger>

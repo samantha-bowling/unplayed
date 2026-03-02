@@ -66,22 +66,22 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row items-center space-y-0 md:space-y-0 md:space-x-6">
             {/* Show Delete Account for authenticated users first */}
             {user && (
-              <a href="#" className="text-unplayed-red hover:text-red-400 transition-colors text-sm py-2 md:py-0" onClick={openDeletionModal}>
+              <button className="text-unplayed-red hover:text-red-400 transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={openDeletionModal}>
                 Delete Account
-              </a>
+              </button>
             )}
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={openPrivacyPolicy}>
+            <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={openPrivacyPolicy}>
               Privacy Policy
-            </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={openTermsOfService}>
+            </button>
+            <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={openTermsOfService}>
               Terms of Service
-            </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={openAbout}>
+            </button>
+            <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={openAbout}>
               About
-            </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={handleSupportersClick}>
+            </button>
+            <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={handleSupportersClick}>
               Supporters
-            </a>
+            </button>
             <a href="https://discord.gg/YHbr3Ska95" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 flex items-center gap-1">
               <DiscordIcon size={16} className="opacity-80" />
               Discord
