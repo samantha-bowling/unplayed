@@ -23,8 +23,6 @@ export const useGenreStats = () => {
         throw new Error('User not authenticated');
       }
 
-      console.log('Fetching genre stats...');
-
       const { data: genreData, error: genreError } = await supabase
         .from('user_genre_stats')
         .select('*')
@@ -36,7 +34,6 @@ export const useGenreStats = () => {
         throw genreError;
       }
 
-      console.log('Genre stats loaded:', genreData?.length || 0, 'genres');
       return genreData || [];
     },
     enabled: !!user,

@@ -24,12 +24,11 @@ import ProfilePage from "./pages/ProfilePage";
 import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
 import SteamAuthHandler from "@/pages/SteamAuthHandler";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useTransition, Suspense } from "react";
+import { Suspense } from "react";
 import { UserRole } from "@/utils/auth-utils";
 
 const App = () => {
   const { status } = useAuth();
-  const [isPending] = useTransition();
 
   // Show central loading UI only during initial app loading
   if (status === AuthStatus.LOADING) {
@@ -154,12 +153,6 @@ const App = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       
-      {/* Global transition loading indicator */}
-      {isPending && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <SteamLoader message="Processing..." size="sm" variant="secondary" />
-        </div>
-      )}
     </Suspense>
     </HelmetProvider>
   );

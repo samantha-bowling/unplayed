@@ -1,6 +1,7 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -66,15 +67,13 @@ const LeaderboardPage = () => {
     }
   }, [error]);
 
-  // Calculate correct rankings based on dust score
-  const leaderboardWithCorrectRanks = leaderboardData?.map((entry, index) => {
-    // Calculate rank based on position in sorted array (starting from page offset)
-    const calculatedRank = (pagination.page - 1) * pagination.pageSize + index + 1;
-    return {
+  // Calculate correct rankings based on dust score (memoized)
+  const leaderboardWithCorrectRanks = useMemo(() => 
+    leaderboardData?.map((entry, index) => ({
       ...entry,
-      calculatedRank
-    };
-  }) || [];
+      calculatedRank: (pagination.page - 1) * pagination.pageSize + index + 1
+    })) || []
+  , [leaderboardData, pagination.page, pagination.pageSize]);
 
   // Generate page numbers for pagination
   const generatePageNumbers = () => {
@@ -171,6 +170,10 @@ const LeaderboardPage = () => {
   return (
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
+        <Helmet>
+          <title>Dust Dynasty Leaderboard – unplayed</title>
+          <meta name="description" content="Who has the dustiest Steam library? See the ultimate gaming backlog leaderboard on unplayed." />
+        </Helmet>
         <Header />
         
         <section className="navbar-offset flex-grow px-4 py-12 text-center relative overflow-hidden">

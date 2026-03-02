@@ -70,7 +70,7 @@ export const SteamLoader = ({
             repeatDelay: 0.5
           }}
         >
-          <div className={`h-2 w-2 rounded-full bg-${variant === 'primary' ? 'unplayed-mint' : 'unplayed-amber'}/40`}></div>
+          <div className={`h-2 w-2 rounded-full ${variant === 'primary' ? 'bg-unplayed-mint/40' : 'bg-unplayed-amber/40'}`}></div>
         </motion.div>
 
         {/* Outer spinning circle */}
@@ -113,7 +113,7 @@ export const SteamLoader = ({
 
         {/* Center pulsing dot */}
         <motion.div
-          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full bg-${variant === 'primary' ? 'unplayed-mint' : 'unplayed-amber'}`}
+          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full ${variant === 'primary' ? 'bg-unplayed-mint' : 'bg-unplayed-amber'}`}
           initial={{ scale: 0.6, opacity: 0.7 }}
           animate={{ scale: [0.6, 1.1, 0.6], opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}

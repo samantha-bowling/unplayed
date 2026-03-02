@@ -20,8 +20,6 @@ export const usePriceDistribution = () => {
         throw new Error('User not authenticated');
       }
 
-      console.log('Fetching price distribution data...');
-
       // Get user games with prices
       const { data: gamesData, error: gamesError } = await supabase
         .from('user_games')
@@ -85,7 +83,6 @@ export const usePriceDistribution = () => {
         };
       });
 
-      console.log('Price distribution calculated:', distribution);
       return distribution;
     },
     enabled: !!user,

@@ -75,19 +75,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Add user ID as a search param
         const steamAuthUrl = `/api/auth/steam?uid=${uid}&redirectTo=${encodeURIComponent(redirectTo)}`;
         
-        console.log(`[Auth] Initiating Steam linking for user ${uid}`);
-        console.log(`[Auth] Steam auth URL: ${steamAuthUrl}`);
-        console.log(`[Auth] Browser will navigate to: ${window.location.origin}${steamAuthUrl}`);
-        
-        // Log required data before redirect
-        console.log(`[Auth] Steam linking debug info:`, {
-          uid,
-          redirectTo,
-          fullUrl: `${window.location.origin}${steamAuthUrl}`,
-          timestamp: new Date().toISOString(),
-          sessionExists: !!session
-        });
-        
         // Redirect to Steam auth
         window.location.href = steamAuthUrl;
         return;
@@ -95,7 +82,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // For non-Steam providers, use Supabase OAuth
       const normalizedRedirectTo = options?.redirectTo || `${window.location.origin}/auth/callback`;
-      console.log(`[Auth] Using redirect URL for ${provider}: ${normalizedRedirectTo}`);
       
       const { error: err, data } = await supabase.auth.signInWithOAuth({
         provider,
@@ -114,7 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw err;
       }
       
-      console.log(`[Auth] ${provider} sign in initiated`, data);
+      
       
     } catch (err: any) {
       toast.error(`Login with ${provider} failed: ${err.message}`);
@@ -163,7 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up the auth state change listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log('🔑 Auth state change:', event, currentSession ? 'session exists' : 'no session');
+        
 
         if (currentSession) {
           setStatus(AuthStatus.AUTHENTICATED);
@@ -197,12 +183,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Update auth state in storage
           AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
         } else if (!data.session) {
-          console.log('No session found');
           setStatus(AuthStatus.UNAUTHENTICATED);
           // Update auth state in storage
           AuthStorage.setAuthState(AuthState.UNAUTHENTICATED);
         } else {
-          console.log('Session found');
           setStatus(AuthStatus.AUTHENTICATED);
           setSession(data.session);
           setUser(data.session.user);

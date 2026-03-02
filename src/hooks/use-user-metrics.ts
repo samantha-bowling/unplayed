@@ -28,8 +28,6 @@ export const useUserMetrics = () => {
     queryFn: async (): Promise<UserMetrics | null> => {
       if (!user) return null;
 
-      console.log('Fetching user metrics for user:', user.id);
-
       const { data, error } = await supabase
         .from('user_metrics')
         .select('*')
@@ -40,8 +38,6 @@ export const useUserMetrics = () => {
         console.error('Error fetching user metrics:', error);
         return null;
       }
-
-      console.log('Raw user metrics from database:', data);
 
       const metrics = {
         totalGames: data.total_games,
@@ -58,18 +54,6 @@ export const useUserMetrics = () => {
         recentlyPlayedCount: data.recently_played_count || 0,
         lastCalculated: data.last_calculated
       };
-
-      // Add data consistency debugging
-      const unplayedPercentage = metrics.totalGames > 0 
-        ? Math.round((metrics.unplayedGames / metrics.totalGames) * 100) 
-        : 0;
-      
-      console.log('Processed user metrics with consistency check:', {
-        ...metrics,
-        unplayedPercentage,
-        dataAge: new Date(data.last_calculated),
-        isStale: new Date(data.last_calculated) < new Date(Date.now() - 24 * 60 * 60 * 1000)
-      });
 
       return metrics;
     },

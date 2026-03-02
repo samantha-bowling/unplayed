@@ -39,14 +39,6 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
     // This is the SAME source the leaderboard uses
     const consistentScore = userMetrics?.totalDustScore || 0;
     
-    // Add debugging to verify consistency
-    console.log('DustScoreMeter - Using consistent data source:', {
-      propsScore: score,
-      userMetricsScore: userMetrics?.totalDustScore,
-      actualScore: consistentScore,
-      source: 'user_metrics.totalDustScore',
-      isDemoMode
-    });
     
     return consistentScore;
   }, [userMetrics?.totalDustScore, isDemoMode, demoData.dustScore, score]);
@@ -102,7 +94,7 @@ const DustScoreMeter = React.memo<DustScoreProps>(({
           </div>
         )}
 
-        {isDemoMode && !document.cookie.includes("demo_note_dismissed") && (
+        {isDemoMode && (
           <div className="mt-6 text-center">
             <p className="text-sm text-unplayed-mint">
               You're in Demo Mode. Sign in to track your Dust Score.

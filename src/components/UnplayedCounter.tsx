@@ -50,14 +50,6 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
     const totalGames = userMetrics?.totalGames ?? 0;
     const unplayedPercentage = totalGames > 0 ? Math.round((actualCount / totalGames) * 100) : 0;
     
-    // Add debugging to verify data consistency
-    console.log('UnplayedCounter - Using user_metrics data:', {
-      actualCount,
-      totalGames,
-      unplayedPercentage,
-      totalDustScore: userMetrics?.totalDustScore,
-      source: 'user_metrics_table'
-    });
     
     return {
       actualCount,
@@ -95,7 +87,7 @@ const UnplayedCounter = React.memo<UnplayedCounterProps>(({
 
   // Memoized demo note content
   const demoNote = useMemo(() => {
-    if (!calculatedData.isDemoMode || document.cookie.includes("demo_note_dismissed")) {
+    if (!calculatedData.isDemoMode) {
       return null;
     }
     return (
