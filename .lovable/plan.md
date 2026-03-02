@@ -1,22 +1,37 @@
 
 
-## Dead Code Safety Check: Demo Mode Impact
+# Picker Improvements with LocalStorage Persistence
 
-### Files proposed for deletion
+## Summary
 
-**`src/hooks/use-picker-data.tsx`** — Zero imports anywhere in the codebase. Confirmed dead code. No demo logic depends on it.
+Three phases of improvements. Phase 3 uses **localStorage** instead of Supabase to persist picks for authenticated users, avoiding database usage.
 
-**`src/components/PickerGameCard.tsx`** — Zero imports anywhere in the codebase. Confirmed dead code. No demo logic depends on it.
+## Phase 1: Code Quality (no UI changes)
+- Remove ~30 debug `console.log` statements from `RandomPicker.tsx`, `use-session-picker.tsx`, `use-game-picks.tsx`
+- Remove unused `ScrollArea` imports from `SelectedGame.tsx` and `RecentPick.tsx`
+- Fix duplicate "Launching game" toast — remove from `RandomPicker.handlePlayGame`, keep in `SelectedGame`
+- Fix stale closure — call `selectRandomGame()` before `setTimeout`, pass result into the callback
 
-### How demo mode flows through the picker today
+## Phase 2: Accessibility & Mobile
+- Replace `MoodFilterDropdown` internals with Radix `DropdownMenu` — adds keyboard nav, click-outside dismiss, removes manual `isDropdownOpen` state
+- Fix mobile layout in `SelectedGame.tsx` and `RecentPick.tsx` — `flex-col md:flex-row`, `w-full md:w-1/3`
 
-1. `Index.tsx` renders `<RandomPicker />` with **no** `isDemo` prop
-2. `RandomPicker` receives `isDemo` via the `withDemoIndicator` HOC, which reads from `useDemoMode()` context
-3. `RandomPicker` uses `useSessionPicker` (not `usePickerData`) — this is the live hook
-4. `isDemo` is only used for: logging, passing to `SelectedGame` and `RecentPick` (display-only), and the `MoodFilterDropdown` label
-5. The actual game data in demo mode comes from `useUnplayedData` → which checks `useDemoMode().isDemo` internally and returns `DEMO_DATA` when true
+## Phase 3: LocalStorage Pick Persistence
+- In `use-session-picker.tsx`, save `currentSessionPick` and `previousSessionPick` to localStorage keyed by user ID (e.g., `picker_picks_{userId}`)
+- On mount, hydrate session state from localStorage if the same user is logged in
+- Keep session-only (no persistence) for unauthenticated/demo users
+- `use-game-picks.tsx` and the `game_picks` Supabase table remain untouched — no DB writes for picks
 
-### Conclusion
+### localStorage schema
+```json
+{
+  "currentPick": { "id": 123, "name": "...", ... },
+  "previousPick": { "id": 456, "name": "...", ... },
+  "timestamp": "2026-03-02T..."
+}
+```
 
-**Safe to delete both files.** Neither `use-picker-data.tsx` nor `PickerGameCard.tsx` is referenced anywhere. The demo data pipeline flows through `DemoModeContext` → `useUnplayedData` → `useSessionPicker` → `RandomPicker`, and none of those touch the dead files. Deleting them has zero impact on demo or live functionality.
+Key: `steam_picker_${userId}`
+
+Optional: expire after 7 days so stale picks don't persist indefinitely.
 
