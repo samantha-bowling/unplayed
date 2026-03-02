@@ -81,8 +81,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         {/* Right: Game Info and Actions (2/3 of horizontal space) */}
         <div className="flex-1 flex flex-col justify-between">
           {/* Top section: Game name, developer, genres, and Play button */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1 min-w-0 mr-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+            <div className="flex-1 min-w-0">
               <h3 className="text-2xl font-semibold text-white mb-2 leading-tight">{game.name}</h3>
               {game.developer && game.developer.length > 0 && (
                 <p className="text-sm text-gray-400 mb-3">
@@ -104,7 +104,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             <div className="flex-shrink-0">
               <Button 
                 onClick={handlePlayGame}
-                className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
+                className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2 w-full sm:w-auto"
                 size="lg"
                 disabled={disabled}
               >

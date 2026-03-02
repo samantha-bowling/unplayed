@@ -63,26 +63,26 @@ const Footer = () => {
             <p className="text-gray-400 text-sm mt-1">Your Steam library backlog tamer</p>
           </div>
           
-          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
+          <div className="flex flex-col md:flex-row items-center space-y-0 md:space-y-0 md:space-x-6">
             {/* Show Delete Account for authenticated users first */}
             {user && (
-              <a href="#" className="text-unplayed-red hover:text-red-400 transition-colors text-sm" onClick={openDeletionModal}>
+              <a href="#" className="text-unplayed-red hover:text-red-400 transition-colors text-sm py-2 md:py-0" onClick={openDeletionModal}>
                 Delete Account
               </a>
             )}
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openPrivacyPolicy}>
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={openPrivacyPolicy}>
               Privacy Policy
             </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openTermsOfService}>
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={openTermsOfService}>
               Terms of Service
             </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={openAbout}>
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={openAbout}>
               About
             </a>
-            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm" onClick={handleSupportersClick}>
+            <a href="#" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0" onClick={handleSupportersClick}>
               Supporters
             </a>
-            <a href="https://discord.gg/YHbr3Ska95" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm flex items-center gap-1">
+            <a href="https://discord.gg/YHbr3Ska95" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 flex items-center gap-1">
               <DiscordIcon size={16} className="opacity-80" />
               Discord
             </a>
