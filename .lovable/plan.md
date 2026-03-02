@@ -1,68 +1,66 @@
+# Application-Wide Deep Dive: High-Impact, Low-Lift Improvements
 
+## 1. Excessive Console Logging (892 matches across 54 files)
 
-# Mobile Experience Deep Dive: Issues & Improvements
+The codebase has ~892 `console.log` calls across 54 files. Key offenders beyond the picker (which was partially cleaned):
 
-## Issues Found
+- `**UnplayedCounter.tsx**` (line 54-60) — logs on every render with user metrics
+- `**DustScoreMeter.tsx**` (line 43-49) — logs on every render with dust data
+- `**SpendingEstimate.tsx**` (line 24-29) — logs on every render
+- `**use-user-metrics.ts**` — 3 logs per fetch cycle
+- `**useUnifiedSpendingDataV2.tsx**` — 4 logs per fetch cycle
+- `**AuthContext.tsx**` — 8+ logs during auth flow
+- `**use-genre-stats.ts**`, `**use-dust-score-data.tsx**`, `**useDashboardData.tsx**`, `**usePriceDistribution.tsx**` — all log on fetch
 
-### 1. Picker: Game Title & "Play Now" Button Overlap (Critical)
-In `SelectedGame.tsx`, the mobile layout uses `flex items-start justify-between` (line 84) which places the game title and Play Now button side-by-side. On narrow screens, long game names like "The Witcher 3: Wild Hunt" wrap and collide with the button (visible in screenshot). The button should stack below the title on mobile.
+**Fix:** Remove all non-error `console.log` calls from production components and hooks. Keep `console.error` and `console.warn` for genuine error handling. Gate any remaining debug logs behind `process.env.NODE_ENV === 'development'` (as `PrivacyPolicyDialog.tsx` already does correctly).
 
-**Fix:** On mobile, stack the title area and Play Now button vertically. Move Play Now below the game name/genres block on small screens.
+**Impact:** Reduces console noise, minor performance improvement from fewer string allocations on every render cycle.
 
-### 2. Picker: "Prevent Duplicates" Checkbox Disappears After Pick
-The checkbox (line 219) has `!currentSessionPick &&` condition — once a game is picked, the option vanishes. Users can't change this preference without resetting. Minor but inconsistent.
+## 2. Unused `useTransition` in App.tsx
 
-### 3. Genre Chart Labels Clipped on Mobile
-The pie chart in `GenreHoarding.tsx` uses `label={({name, percent}) => ...}` which renders text labels that overflow the container on 375px screens. Labels like "Adventure 20%" and "Casual" are cut off at the edges. The chart `outerRadius={80}` is too large for mobile.
+`App.tsx` imports `useTransition` and renders a floating loader when `isPending` is true (line 32, 158-162), but `startTransition` is never called anywhere — `isPending` is always `false`. The loader never appears.
 
-**Fix:** Reduce `outerRadius` on mobile or disable inline labels and rely on the legend + tooltip instead.
+**Fix:** Remove the `useTransition` import, the `isPending` destructure, and the floating loader JSX (lines 27, 32, 157-162).
 
-### 4. Dashboard Cards: Excessive Vertical Space
-The `unplayed Value` card has a large empty area below "Show me the damage" button. The `equal-height-container` CSS forces all 3 dashboard cards to the same height, but on mobile they stack vertically — so equal height just creates empty space in shorter cards.
+## 5. `document.cookie` Check in Render Path
 
-**Fix:** Only apply `grid-auto-rows: 1fr` on `md:` screens. On mobile, let cards be natural height.
+Both `UnplayedCounter.tsx` (line 98) and `DustScoreMeter.tsx` (line 105) check `document.cookie.includes("demo_note_dismissed")` during render. This is a synchronous DOM read on every render, and cookies aren't reactive — the UI won't update if the cookie changes.
 
-### 5. Mobile Menu Doesn't Close on Navigation
-`MobileMenu.tsx` `NavLink` component doesn't call `onToggle` to close the menu when a link is clicked. The menu stays open after navigation.
+**Fix:** Replace with a `localStorage` check done once via `useState` initializer, or simply remove the cookie check and always show the demo note (it's already gated behind `isDemoMode`).
 
-**Fix:** Pass `onToggle` (or a close callback) to `NavLink` and call it on click.
+## 6. Missing `<meta>` Description / SEO
 
-### 6. Shelf Life Section: Game Items Cramped
-The shelf life game items show image + name + release date + age all in a single row. On mobile this gets very tight. The text "10y 10m" and release dates overlap with game names.
+`index.html` likely has minimal meta tags. The app has `react-helmet-async` installed but pages don't appear to set page-specific titles or descriptions.
 
-### 7. Library Preview: Pagination Numbers Too Small
-The pagination buttons use `w-8 h-8 p-0` (line 303) which is 32px — below the recommended 44px minimum touch target for mobile.
+**Fix:** Add `<Helmet>` tags with page-specific titles to key pages (Index, Leaderboard, Dust, Spend, Library). Low lift, improves SEO and social sharing.
 
-**Fix:** Increase to `w-10 h-10` on mobile.
+## 7. Leaderboard Page: `leaderboardWithCorrectRanks` Recalculates Every Render
 
-### 8. RecentPick: Same Title/Button Overlap as SelectedGame
-`RecentPick.tsx` has the same `flex items-start justify-between` layout (line 84) causing the "Play Now" button to overlap with the game name on mobile. Same fix needed.
+`LeaderboardPage.tsx` line 70 computes `leaderboardWithCorrectRanks` with `.map()` on every render without `useMemo`. For large leaderboards this is wasteful.
 
-### 9. Footer Links: Vertical Spacing Too Tight
-Footer links stack vertically on mobile with `space-y-2` (8px gap). Touch targets are just text links with no padding — easy to mis-tap.
+**Fix:** Wrap in `useMemo` with `[leaderboardData, pagination.page, pagination.pageSize]` deps.
 
-**Fix:** Add `py-1` to footer links for larger touch targets on mobile.
+## 8. SteamLoader Dynamic Tailwind Classes Won't Work
 
-### 10. Demo vs Auth Consistency
-Both experiences share the same components, so the layout issues affect both equally. The demo mode banner and auth CTA sections look fine on mobile. No inconsistencies between demo and auth mobile layouts beyond the shared component issues above.
+`SteamLoader.tsx` lines 73, 116 use template literals for Tailwind classes: `bg-${variant === 'primary' ? 'unplayed-mint' : 'unplayed-amber'}/40`. Tailwind purges dynamically constructed class names — these styles only work by coincidence if the full class exists elsewhere.
+
+**Fix:** Use a conditional map: `variant === 'primary' ? 'bg-unplayed-mint/40' : 'bg-unplayed-amber/40'`. Same pattern for the center dot.
 
 ---
 
-## Proposed Plan
+## Proposed Implementation Plan
 
-### Phase 1: Picker Mobile Layout (highest impact)
-1. **SelectedGame.tsx** — On mobile, stack the title/genres and Play Now button vertically instead of side-by-side. Add `flex-col sm:flex-row` to the title+button row.
-2. **RecentPick.tsx** — Same fix as SelectedGame for consistency.
+### Phase 1: Console Log Cleanup (highest impact on DX)
 
-### Phase 2: Dashboard Cards & Charts
-3. **index.css** — Change `.dashboard-grid` to only apply `grid-auto-rows: 1fr` at `md:` breakpoint so mobile cards have natural height.
-4. **GenreHoarding.tsx** — Disable inline pie chart labels on mobile (use `useIsMobile()` to conditionally set `label={false}`), reduce `outerRadius` to 60 on mobile.
+Remove ~60+ `console.log` calls from the most active components and hooks listed above. Keep error/warn logging.
 
-### Phase 3: Navigation & Touch Targets
-5. **MobileMenu.tsx** — Pass close callback to `NavLink`, call it on click so menu dismisses on navigation.
-6. **Footer.tsx** — Add `py-2` padding to mobile footer links for better touch targets.
-7. **LibraryPreview.tsx** — Increase pagination button size on mobile.
+### Phase 2: Code Quality Fixes
 
-### Phase 4: Minor Polish
-8. **GameSpinner.tsx** — The decorative "selecting...", "filtering...", "calculating..." text (lines 28-30) uses absolute positioning that can overflow on small screens. Hide on mobile or constrain.
+- Remove unused `useTransition` from `App.tsx`
+- Fix SteamLoader dynamic Tailwind classes
+- Replace `document.cookie` checks with localStorage in UnplayedCounter and DustScoreMeter
+- Memoize `leaderboardWithCorrectRanks`
 
+### Phase 4: SEO
+
+- Add `<Helmet>` page titles to Index, Leaderboard, Dust, Spend, Library pages
