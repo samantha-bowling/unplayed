@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface SelectedGameProps {
   game: GameListItem;
@@ -48,8 +48,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const handlePlayGame = () => {
     onPlayGame();
     
-    toast({
-      title: "Launching game",
+    toast("Launching game", {
       description: `Opening ${game.name} in Steam`,
     });
   };

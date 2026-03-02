@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick, GamePickFilters } from '@/types/picks.types';
 import { queryKeys } from '@/hooks/use-query-keys';
@@ -181,8 +181,7 @@ export const useGamePicks = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gamePicks(user?.id) });
       
       // Only show success toast for actual user-initiated saves
-      toast({
-        title: "Game picked!",
+      toast("Game picked!", {
         description: "Your selection has been saved.",
       });
     },
@@ -198,10 +197,8 @@ export const useGamePicks = () => {
         
         // Only show authentication toast if user appears to be truly unauthenticated
         if (!user || !isAuthenticated) {
-          toast({
-            title: "Authentication required",
+          toast.error("Authentication required", {
             description: "Please make sure you're logged in to save picks.",
-            variant: "destructive",
           });
         } else {
           // For authenticated users, this is a configuration issue
@@ -214,10 +211,8 @@ export const useGamePicks = () => {
         console.log('ℹ️ Duplicate key during upsert - this is normal behavior');
       } else {
         // Show toast for genuine errors that users should know about
-        toast({
-          title: "Failed to save pick",
+        toast.error("Failed to save pick", {
           description: "Your selection could not be saved. Please try again.",
-          variant: "destructive",
         });
       }
     },

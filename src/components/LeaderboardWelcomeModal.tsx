@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useProfile } from '@/hooks/use-profile';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Crown, Trophy, Shield, Eye, EyeOff, Users, Sparkles } from 'lucide-react';
 
 interface LeaderboardWelcomeModalProps {
@@ -18,7 +18,7 @@ const LeaderboardWelcomeModal: React.FC<LeaderboardWelcomeModalProps> = ({
   onOpenChange,
 }) => {
   const { updateProfile, isUpdating } = useProfile();
-  const { toast } = useToast();
+  
   const [selectedVisibility, setSelectedVisibility] = useState<'off' | 'anonymous' | 'public'>('anonymous');
 
   const handleJoin = async () => {
@@ -27,17 +27,14 @@ const LeaderboardWelcomeModal: React.FC<LeaderboardWelcomeModalProps> = ({
         leaderboard_visibility: selectedVisibility,
         leaderboard_prompt_shown: true
       });
-      toast({
-        title: "Welcome to the Dust Dynasty!",
+      toast("Welcome to the Dust Dynasty!", {
         description: selectedVisibility === 'off' 
           ? "You can always change your mind in settings." 
           : "Your dust score will appear on the leaderboard shortly.",
       });
       onOpenChange(false);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to save your preference. Please try again.",
       });
     }
@@ -52,9 +49,7 @@ const LeaderboardWelcomeModal: React.FC<LeaderboardWelcomeModalProps> = ({
       });
       onOpenChange(false);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to save your preference. Please try again.",
       });
     }

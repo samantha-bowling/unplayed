@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { FullScreenLayout } from "@/layouts";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Home, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import AuthErrorHandler from "@/components/AuthErrorHandler";
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const [isAuthRelated, setIsAuthRelated] = useState(false);
 
   useEffect(() => {
@@ -39,13 +39,11 @@ const NotFound = () => {
       }
       
       // Show toast for auth-related errors
-      toast({
-        title: "Authentication Error",
+      toast.error("Authentication Error", {
         description: "There was a problem with the authentication process. Please try again.",
-        variant: "destructive",
       });
     }
-  }, [location.pathname, location.search, toast, navigate]);
+  }, [location.pathname, location.search, navigate]);
 
   return (
     <FullScreenLayout>

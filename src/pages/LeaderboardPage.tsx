@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import useLeaderboardData from "@/hooks/use-leaderboard-data";
 import { 
@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const LeaderboardPage = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { toast } = useToast();
+  
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
@@ -53,21 +53,18 @@ const LeaderboardPage = () => {
 
   const handleRefresh = () => {
     refetch();
-    toast({
-      title: "Refreshing leaderboard",
+    toast("Refreshing leaderboard", {
       description: "Getting the latest rankings..."
     });
   };
 
   useEffect(() => {
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error loading leaderboard",
+      toast.error("Error loading leaderboard", {
         description: "There was a problem loading the leaderboard data.",
       });
     }
-  }, [error, toast]);
+  }, [error]);
 
   // Calculate correct rankings based on dust score
   const leaderboardWithCorrectRanks = leaderboardData?.map((entry, index) => {

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
@@ -10,16 +10,14 @@ import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
 export const useMetricsRefresh = () => {
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
-  const { toast } = useToast();
+  
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refreshUserMetrics = async () => {
     if (!user || isDemo) {
-      toast({
-        title: "Cannot refresh metrics",
+      toast.error("Cannot refresh metrics", {
         description: isDemo ? "Metrics refresh is not available in demo mode." : "User not authenticated.",
-        variant: "destructive"
       });
       return;
     }
@@ -42,8 +40,7 @@ export const useMetricsRefresh = () => {
         queryClient.invalidateQueries({ queryKey: key });
       });
       
-      toast({
-        title: "Metrics refreshed successfully",
+      toast("Metrics refreshed successfully", {
         description: `Updated metrics for ${result.metrics?.totalGames || 0} games.`
       });
       
@@ -51,10 +48,8 @@ export const useMetricsRefresh = () => {
       return result;
     } catch (error) {
       console.error('Error refreshing user metrics:', error);
-      toast({
-        title: "Failed to refresh metrics",
+      toast.error("Failed to refresh metrics", {
         description: "There was a problem updating your metrics. Please try again later.",
-        variant: "destructive"
       });
       throw error;
     } finally {

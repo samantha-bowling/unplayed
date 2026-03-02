@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { BookOpenCheck } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import parse from 'html-react-parser';
 import { sanitizeReviewHtml, convertBBCodeToHtml } from '@/lib/sanitize';
@@ -36,8 +36,7 @@ const GameReviewCard: React.FC<GameReviewCardProps> = ({
 }) => {
   const handleGetReview = () => {
     if (isDemo) {
-      toast({
-        title: "Demo Mode",
+      toast("Demo Mode", {
         description: "Sign in to fetch real Steam reviews that will motivate you to play!",
       });
       return;

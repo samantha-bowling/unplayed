@@ -4,7 +4,7 @@ import { useRefreshCooldown } from './useRefreshCooldown';
 import { useRefreshCache } from './useRefreshCache';
 import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export const usePriceRefresh = () => {
@@ -19,7 +19,7 @@ export const usePriceRefresh = () => {
   const { invalidateCache } = useRefreshCache();
   const { setOperationLoading, isOperationLoading } = useRefreshState(['prices']);
   const { validateUserOperation, user } = useRefreshAuth();
-  const { toast } = useToast();
+  
 
   const refreshPrices = useCallback(async () => {
     // Validate user can perform operation
@@ -51,8 +51,7 @@ export const usePriceRefresh = () => {
         // Invalidate spending-related caches immediately
         invalidateCache('spending');
 
-        toast({
-          title: "Prices refreshed successfully",
+        toast("Prices refreshed successfully", {
           description: `Updated prices for ${data.updatedGames || 0} games.`
         });
 
@@ -62,10 +61,8 @@ export const usePriceRefresh = () => {
       }
     } catch (error) {
       console.error('Price refresh failed:', error);
-      toast({
-        title: "Price refresh failed",
+      toast.error("Price refresh failed", {
         description: "There was a problem updating your game prices. Please try again later.",
-        variant: "destructive"
       });
       throw error;
     } finally {

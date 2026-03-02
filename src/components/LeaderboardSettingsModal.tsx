@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useProfile } from '@/hooks/use-profile';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Clock, Calculator, Shield, Eye, EyeOff, Users } from 'lucide-react';
 
 interface LeaderboardSettingsModalProps {
@@ -18,7 +18,7 @@ const LeaderboardSettingsModal: React.FC<LeaderboardSettingsModalProps> = ({
   onOpenChange,
 }) => {
   const { profile, updateProfile, isUpdating } = useProfile();
-  const { toast } = useToast();
+  
   const [selectedVisibility, setSelectedVisibility] = useState(
     profile?.leaderboard_visibility || 'off'
   );
@@ -40,15 +40,12 @@ const LeaderboardSettingsModal: React.FC<LeaderboardSettingsModalProps> = ({
   const handleSave = async () => {
     try {
       await updateProfile({ leaderboard_visibility: selectedVisibility });
-      toast({
-        title: "Settings saved",
+      toast("Settings saved", {
         description: "Your leaderboard visibility preference has been updated.",
       });
       onOpenChange(false);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to update your settings. Please try again.",
       });
     }

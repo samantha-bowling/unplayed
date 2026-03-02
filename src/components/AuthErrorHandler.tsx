@@ -3,7 +3,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AuthErrorHandlerProps {
   errorCode?: string;
@@ -24,7 +24,7 @@ const AuthErrorHandler: React.FC<AuthErrorHandlerProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   
   // Get URL params if not provided as props
   const params = new URLSearchParams(location.search);
@@ -83,8 +83,7 @@ Browser: ${navigator.userAgent}
 
     navigator.clipboard.writeText(errorText)
       .then(() => {
-        toast({
-          title: 'Error details copied',
+        toast("Error details copied", {
           description: 'Error information copied to clipboard',
         });
       })

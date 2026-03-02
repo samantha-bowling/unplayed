@@ -3,7 +3,7 @@ import { useRefreshCooldown } from './useRefreshCooldown';
 import { useRefreshCache } from './useRefreshCache';
 import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 
 export const useLibraryImport = () => {
@@ -18,7 +18,7 @@ export const useLibraryImport = () => {
   const { invalidateCacheDelayed } = useRefreshCache();
   const { setOperationLoading, isOperationLoading } = useRefreshState(['import']);
   const { validateUserOperation } = useRefreshAuth();
-  const { toast } = useToast();
+  
 
   const importLibrary = useCallback(async (steamId: string) => {
     // Validate user can perform operation
@@ -55,24 +55,21 @@ export const useLibraryImport = () => {
 
         if (hasCalculationFailures) {
           // Partial success - import worked but calculations failed
-          toast({
-            title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
+          toast(`Import ${data.status === 'complete' ? 'completed' : 'started'}`, {
             description: data.status === 'complete' 
               ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games. Dashboard metrics are calculating in the background - refresh your dashboard in 2-3 minutes for updated stats.`
               : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background. Dashboard metrics will calculate automatically - refresh your dashboard in a few minutes for updated stats.`
           });
         } else if (hasWarnings) {
           // Other warnings (non-critical)
-          toast({
-            title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
+          toast(`Import ${data.status === 'complete' ? 'completed' : 'started'}`, {
             description: data.status === 'complete' 
               ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games. ${data.warnings[0]}`
               : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background. ${data.warnings[0]}`
           });
         } else {
           // Complete success (existing behavior)
-          toast({
-            title: `Import ${data.status === 'complete' ? 'completed' : 'started'}`,
+          toast(`Import ${data.status === 'complete' ? 'completed' : 'started'}`, {
             description: data.status === 'complete' 
               ? `Successfully imported ${data.imported || 0} new games and updated ${data.updated || 0} existing games.`
               : `Found ${data.totalGames || 0} games. Processing ${data.newGamesFound || 0} new games in background.`
@@ -88,10 +85,8 @@ export const useLibraryImport = () => {
       }
     } catch (error) {
       console.error('Import failed:', error);
-      toast({
-        title: "Import failed",
+      toast.error("Import failed", {
         description: error.message || "Please try again later.",
-        variant: "destructive"
       });
       throw error;
     } finally {

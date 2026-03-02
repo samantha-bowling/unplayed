@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateSpendingMetricsDirect } from '@/hooks/useDirectRpcSpending';
 
@@ -38,7 +38,7 @@ interface UseUnifiedSpendingDataV2Options {
 
 export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Options = {}) => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.spendingMetrics(user?.id),
@@ -118,8 +118,7 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
   // Unified refresh function that recalculates spending metrics using direct RPC
   const refreshSpendingData = async () => {
     try {
-      toast({
-        title: "Refreshing spending data",
+      toast("Refreshing spending data", {
         description: "Recalculating your spending metrics..."
       });
 
@@ -135,18 +134,15 @@ export const useUnifiedSpendingDataV2 = (options: UseUnifiedSpendingDataV2Option
       // Refetch the query to update the UI with new data
       await refetch();
       
-      toast({
-        title: "Spending data refreshed",
+      toast("Spending data refreshed", {
         description: "Your spending metrics have been updated successfully."
       });
 
       console.log('Spending data refresh completed successfully');
     } catch (error) {
       console.error('Error refreshing spending data:', error);
-      toast({
-        title: "Error refreshing spending data",
+      toast.error("Error refreshing spending data", {
         description: "There was a problem updating your spending metrics. Please try again later.",
-        variant: "destructive"
       });
     }
   };

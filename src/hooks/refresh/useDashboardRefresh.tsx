@@ -4,7 +4,7 @@ import { useRefreshCooldown } from './useRefreshCooldown';
 import { useRefreshCache } from './useRefreshCache';
 import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
 
 export const useDashboardRefresh = () => {
@@ -19,7 +19,7 @@ export const useDashboardRefresh = () => {
   const { invalidateCacheDelayed } = useRefreshCache();
   const { setOperationLoading, isOperationLoading } = useRefreshState(['dashboard']);
   const { validateUserOperation, user } = useRefreshAuth();
-  const { toast } = useToast();
+  
 
   const refreshDashboard = useCallback(async () => {
     // Validate user can perform operation
@@ -50,18 +50,15 @@ export const useDashboardRefresh = () => {
       // Invalidate Phase 2 metrics caches after backend calculation
       invalidateCacheDelayed('phase2-metrics', 1000);
 
-      toast({
-        title: "Dashboard refreshed successfully",
+      toast("Dashboard refreshed successfully", {
         description: `Updated metrics for ${result.metrics?.totalGames || 0} games.`
       });
 
       return result;
     } catch (error) {
       console.error('Dashboard refresh failed:', error);
-      toast({
-        title: "Dashboard refresh failed",
+      toast.error("Dashboard refresh failed", {
         description: "There was a problem updating your metrics. Please try again later.",
-        variant: "destructive"
       });
       throw error;
     } finally {
