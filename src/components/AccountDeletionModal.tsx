@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from './ui/input';
@@ -27,7 +27,7 @@ const reasonOptions = [
 ];
 
 export function AccountDeletionModal({ open, onOpenChange }: AccountDeletionModalProps) {
-  const { toast } = useToast();
+  
   const { signOut } = useAuth();
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -52,8 +52,7 @@ export function AccountDeletionModal({ open, onOpenChange }: AccountDeletionModa
       }
       
       // Show success message
-      toast({
-        title: "Account deleted",
+      toast("Account deleted", {
         description: "Your account has been successfully deleted.",
       });
       
@@ -65,10 +64,8 @@ export function AccountDeletionModal({ open, onOpenChange }: AccountDeletionModa
       
     } catch (error) {
       console.error("Error deleting account:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to delete your account. Please try again later.",
-        variant: "destructive",
       });
       setIsDeleting(false);
     }

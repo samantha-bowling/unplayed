@@ -2,12 +2,12 @@
 import { useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export const useRefreshAuth = () => {
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
-  const { toast } = useToast();
+  
 
   // Check if user can perform refresh operations
   const canPerformRefresh = useCallback(() => {
@@ -19,19 +19,15 @@ export const useRefreshAuth = () => {
   // Show authentication required toast
   const showAuthRequiredToast = useCallback((operation: string) => {
     if (isDemo) {
-      toast({
-        title: `${operation} not available`,
+      toast.error(`${operation} not available`, {
         description: `${operation} is not available in demo mode.`,
-        variant: "destructive"
       });
     } else {
-      toast({
-        title: "Authentication required",
+      toast.error("Authentication required", {
         description: `Please log in to ${operation.toLowerCase()}.`,
-        variant: "destructive"
       });
     }
-  }, [isDemo, toast]);
+  }, [isDemo]);
 
   // Validate user can perform operation
   const validateUserOperation = useCallback((operation: string) => {

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { MousePointer } from 'lucide-react';
 import { useFullScreenMode } from '@/context/FullScreenModeContext';
 import FullScreenModeToggle from './FullScreenModeToggle';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import useSessionPicker from '@/hooks/use-session-picker';
 import GameSpinner from './GameSpinner';
@@ -150,10 +150,8 @@ const RandomPicker = ({
       if (!newSelectedGame) {
         console.log('No game was selected - showing error');
         setIsSpinning(false);
-        toast({
-          title: "No matching games found",
+        toast.error("No matching games found", {
           description: `Try a different mood or library filter.`,
-          variant: "destructive"
         });
         return;
       }
@@ -181,8 +179,7 @@ const RandomPicker = ({
     const steamUrl = `steam://run/${currentSessionPick.id}`;
     window.open(steamUrl, '_blank');
     
-    toast({
-      title: "Launching game",
+    toast("Launching game", {
       description: `Opening ${currentSessionPick.name} in Steam`,
     });
   };

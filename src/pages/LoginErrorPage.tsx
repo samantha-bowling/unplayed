@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -12,7 +12,7 @@ import { AuthLayout } from '@/layouts';
 const LoginErrorPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
+  
   const { status } = useAuth();
   const [countdown, setCountdown] = useState(10);
 
@@ -38,8 +38,7 @@ const LoginErrorPage = () => {
 
   const navigateToHome = () => {
     navigate('/', { replace: true });
-    toast({
-      title: 'Redirected to home',
+    toast("Redirected to home", {
       description: 'You can try logging in again from the home page.',
     });
   };

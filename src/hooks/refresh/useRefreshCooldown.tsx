@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export interface CooldownConfig {
   [key: string]: number; // milliseconds
@@ -21,7 +21,7 @@ const DEFAULT_COOLDOWNS: CooldownConfig = {
 export const useRefreshCooldown = (cooldowns: CooldownConfig = DEFAULT_COOLDOWNS) => {
   const { user } = useAuth();
   const { isDemo } = useDemoMode();
-  const { toast } = useToast();
+  
   const [timestamps, setTimestamps] = useState<RefreshTimestamps>({});
 
   // Check if operation is allowed based on cooldown
@@ -56,12 +56,10 @@ export const useRefreshCooldown = (cooldowns: CooldownConfig = DEFAULT_COOLDOWNS
   // Show cooldown toast message
   const showCooldownToast = useCallback((operation: string) => {
     const remaining = getRemainingCooldown(operation);
-    toast({
-      title: `${operation} on cooldown`,
+    toast.error(`${operation} on cooldown`, {
       description: `Please wait ${remaining} seconds before trying again.`,
-      variant: "destructive"
     });
-  }, [getRemainingCooldown, toast]);
+  }, [getRemainingCooldown]);
 
   return {
     canPerformOperation,

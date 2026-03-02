@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import GameReviewCard from '@/components/GameReviewCard';
 import useSteamReviews from '@/hooks/use-steam-reviews';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface RecentPickProps {
   recentPick: GamePick | null;
@@ -44,8 +44,7 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
     const steamUrl = `steam://run/${recentPick.game_id}`;
     window.open(steamUrl, '_blank');
     
-    toast({
-      title: "Launching game",
+    toast("Launching game", {
       description: `Opening ${gameName} in Steam`,
     });
   };
@@ -57,8 +56,7 @@ const RecentPick: React.FC<RecentPickProps> = ({ recentPick, isDemo = false }) =
 
   const handleGetReview = () => {
     if (isDemo) {
-      toast({
-        title: "Demo Mode",
+      toast("Demo Mode", {
         description: "Sign in to fetch real Steam reviews that will motivate you to play!",
       });
       return;

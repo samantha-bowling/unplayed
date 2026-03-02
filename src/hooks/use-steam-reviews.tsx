@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SteamReview {
@@ -102,10 +102,8 @@ const useSteamReviews = (gameId: number | null) => {
       setFallbackLevel(prev => prev + 1);
       setCurrentReviewIndex(0); // Reset review index for new data
     } else {
-      toast({
-        title: "No reviews available",
+      toast.error("No reviews available", {
         description: "We couldn't find any glowing words for this game.",
-        variant: "destructive"
       });
     }
   };

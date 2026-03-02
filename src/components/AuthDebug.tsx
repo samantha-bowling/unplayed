@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthStatus, AuthError, useAuth } from '@/context/AuthContext';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useProfile } from '@/hooks/use-profile';
 
 /**
@@ -21,7 +21,7 @@ const AuthDebug = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sessionAge, setSessionAge] = useState<string | null>(null);
-  const { toast } = useToast();
+  
   
   // Calculate session age
   useEffect(() => {
@@ -53,16 +53,13 @@ const AuthDebug = () => {
     setRefreshing(true);
     try {
       await refreshProfile();
-      toast({
-        title: "Profile Refreshed",
+      toast("Profile Refreshed", {
         description: "Profile data has been successfully refreshed",
       });
     } catch (error) {
       console.error("Error refreshing profile:", error);
-      toast({
-        title: "Refresh Failed",
+      toast.error("Refresh Failed", {
         description: String(error) || "Failed to refresh profile data",
-        variant: "destructive",
       });
     } finally {
       setRefreshing(false);

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { queryKeys } from '@/hooks/use-query-keys';
 
 export interface SpendingMetrics {
@@ -34,7 +34,7 @@ interface UseSpendingMetricsOptions {
 export const useSpendingMetrics = (options: UseSpendingMetricsOptions = {}) => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { toast } = useToast();
+  
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.spendingMetrics(user?.id),
@@ -115,16 +115,14 @@ export const useSpendingMetrics = (options: UseSpendingMetricsOptions = {}) => {
   // Function to refresh spending metrics
   const refreshMetrics = async () => {
     if (isDemo) {
-      toast({
-        title: "Demo Mode",
+      toast("Demo Mode", {
         description: "Spending data refresh is not available in demo mode."
       });
       return;
     }
 
     try {
-      toast({
-        title: "Refreshing spending data",
+      toast("Refreshing spending data", {
         description: "Calculating your latest spending metrics..."
       });
 
@@ -144,8 +142,7 @@ export const useSpendingMetrics = (options: UseSpendingMetricsOptions = {}) => {
         // Refetch the query to update the UI
         await refetch();
         
-        toast({
-          title: "Spending data refreshed",
+        toast("Spending data refreshed", {
           description: "Your spending metrics have been updated successfully."
         });
       } else {
@@ -153,10 +150,8 @@ export const useSpendingMetrics = (options: UseSpendingMetricsOptions = {}) => {
       }
     } catch (error) {
       console.error('Error refreshing spending metrics:', error);
-      toast({
-        title: "Error refreshing spending data",
+      toast.error("Error refreshing spending data", {
         description: "There was a problem updating your spending metrics. Please try again later.",
-        variant: "destructive"
       });
     }
   };

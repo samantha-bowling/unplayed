@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useUnifiedSpendingDataV2 } from '@/hooks/useUnifiedSpendingDataV2';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SpendingMeter from './SpendingMeter';
 
@@ -17,7 +17,7 @@ const SpendingEstimate = ({
   const { data: spendingData, isLoading: dataLoading, refreshSpendingData } = useUnifiedSpendingDataV2();
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
-  const { toast } = useToast();
+  
   const [isVisible, setIsVisible] = useState(false);
   const [isAutoCalculating, setIsAutoCalculating] = useState(false);
   
@@ -83,10 +83,8 @@ const SpendingEstimate = ({
 
   const handleShowDamage = async () => {
     if (!user) {
-      toast({
-        title: "Authentication required",
+      toast.error("Authentication required", {
         description: "Please sign in to view your spending data.",
-        variant: "destructive"
       });
       return;
     }
@@ -102,8 +100,7 @@ const SpendingEstimate = ({
     setIsAutoCalculating(true);
     
     try {
-      toast({
-        title: "Calculating your spending",
+      toast("Calculating your spending", {
         description: "Analyzing your library value for the first time..."
       });
 
@@ -129,8 +126,7 @@ const SpendingEstimate = ({
       // Refresh the spending data to get the latest values
       await refreshSpendingData();
       
-      toast({
-        title: "Spending calculated!",
+      toast("Spending calculated!", {
         description: "Your library value has been analyzed successfully."
       });
 
@@ -139,10 +135,8 @@ const SpendingEstimate = ({
       
     } catch (error) {
       console.error('Error auto-calculating spending:', error);
-      toast({
-        title: "Calculation failed",
+      toast.error("Calculation failed", {
         description: "There was a problem calculating your spending. Please try refreshing your dashboard.",
-        variant: "destructive"
       });
     } finally {
       setIsAutoCalculating(false);

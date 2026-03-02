@@ -5,7 +5,7 @@ import { AlertTriangle, Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useProfile } from "@/hooks/use-profile";
 
 /**
@@ -18,7 +18,7 @@ const AuthDebugPage = () => {
   const [nextRefresh, setNextRefresh] = useState<number | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
   const { refreshProfile } = useProfile();
-  const { toast } = useToast();
+  
   
   // Set up and clean up periodic refresh on toggle
   useEffect(() => {
@@ -26,10 +26,8 @@ const AuthDebugPage = () => {
       // Start with an immediate refresh
       refreshProfile().catch(error => {
         console.error("Error in auto-refresh:", error);
-        toast({
-          title: "Auto-refresh Error",
+        toast.error("Auto-refresh Error", {
           description: String(error) || "Failed to refresh profile",
-          variant: "destructive"
         });
       });
       
@@ -58,7 +56,7 @@ const AuthDebugPage = () => {
         setNextRefresh(null);
       };
     }
-  }, [autoRefresh, refreshProfile, toast]);
+  }, [autoRefresh, refreshProfile]);
   
   return (
     <div className="container mx-auto py-8">

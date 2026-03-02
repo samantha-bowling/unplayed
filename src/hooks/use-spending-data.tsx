@@ -5,7 +5,7 @@ import { useDemoMode } from '@/context/DemoModeContext';
 import { useProfile } from '@/hooks/use-profile';
 import { useUnplayedData } from '@/hooks/useUnplayedData';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { queryKeys } from '@/hooks/use-query-keys';
 
 export interface GamePriceData {
@@ -50,7 +50,7 @@ export const useSpendingData = () => {
   const { user } = useAuth();
   const { isDemo, demoData } = useDemoMode();
   const { data: unplayedData, isLoading: isUnplayedLoading } = useUnplayedData();
-  const { toast } = useToast();
+  
   const [refreshInProgress, setRefreshInProgress] = useState<boolean>(false);
   
   // Extract game IDs from unplayed data for querying - we need this regardless of demo mode
@@ -234,8 +234,7 @@ export const useSpendingData = () => {
     
     try {
       setRefreshInProgress(true);
-      toast({
-        title: "Refreshing price data",
+      toast("Refreshing price data", {
         description: `Updating ${gameIds.length} games. This might take a moment...`
       });
       
@@ -267,17 +266,14 @@ export const useSpendingData = () => {
       // Refetch prices from the DB
       await refetchGamePrices();
       
-      toast({
-        title: "Price refresh complete",
+      toast("Price refresh complete", {
         description: `Updated ${updatedCount} game prices successfully.`
       });
       
     } catch (error) {
       console.error("Error refreshing prices:", error);
-      toast({
-        title: "Error refreshing prices",
+      toast.error("Error refreshing prices", {
         description: "There was a problem updating game prices. Please try again later.",
-        variant: "destructive"
       });
     } finally {
       setRefreshInProgress(false);
