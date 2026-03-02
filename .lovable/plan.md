@@ -1,66 +1,28 @@
-# Application-Wide Deep Dive: High-Impact, Low-Lift Improvements
 
-## 1. Excessive Console Logging (892 matches across 54 files)
 
-The codebase has ~892 `console.log` calls across 54 files. Key offenders beyond the picker (which was partially cleaned):
+# Accessibility Improvements (Trimmed)
 
-- `**UnplayedCounter.tsx**` (line 54-60) — logs on every render with user metrics
-- `**DustScoreMeter.tsx**` (line 43-49) — logs on every render with dust data
-- `**SpendingEstimate.tsx**` (line 24-29) — logs on every render
-- `**use-user-metrics.ts**` — 3 logs per fetch cycle
-- `**useUnifiedSpendingDataV2.tsx**` — 4 logs per fetch cycle
-- `**AuthContext.tsx**` — 8+ logs during auth flow
-- `**use-genre-stats.ts**`, `**use-dust-score-data.tsx**`, `**useDashboardData.tsx**`, `**usePriceDistribution.tsx**` — all log on fetch
+## What's Cut
+- Phase 4 (color/context rank text, mood icon labels) — nice-to-have, minimal real-world impact
+- GameCard `focus-within` keyboard overlay (#6) — more complex, better as a separate pass
+- SVG chart `role="img"` (#11) — charts already have legends/tooltips
+- Import progress live region (#4) — import flow is rare, low priority
 
-**Fix:** Remove all non-error `console.log` calls from production components and hooks. Keep `console.error` and `console.warn` for genuine error handling. Gate any remaining debug logs behind `process.env.NODE_ENV === 'development'` (as `PrivacyPolicyDialog.tsx` already does correctly).
+## What Remains (3 focused phases)
 
-**Impact:** Reduces console noise, minor performance improvement from fewer string allocations on every render cycle.
+### Phase 1: Live Regions (screen reader announcements)
+1. `GameSpinner.tsx` — add `role="status"` + `aria-live="polite"` to container
+2. `RandomPicker.tsx` — wrap pick result area in `aria-live="polite"` so selected game name is announced
+3. `UnplayedCounter.tsx` / `SpendingMeter.tsx` — add visually hidden `<span>` with final value + `aria-live`, put `aria-hidden="true"` on animated display
 
-## 2. Unused `useTransition` in App.tsx
+### Phase 2: Button Labels
+4. `GameCard.tsx` — add `aria-label` to icon-only buttons (Play, Steam link, Hide, Note)
+5. `CleanScoreMeter.tsx`, `DustScoreMeter.tsx`, `ShelfLifeDescription.tsx` — add `aria-label="More info"` to info icon buttons
+6. `LibraryPreview.tsx` — add `aria-label="Search games"` to search input, `aria-pressed` to toggle filter buttons
 
-`App.tsx` imports `useTransition` and renders a floating loader when `isPending` is true (line 32, 158-162), but `startTransition` is never called anywhere — `isPending` is always `false`. The loader never appears.
+### Phase 3: Semantic HTML & Navigation
+7. `Header.tsx` — add visually hidden skip-to-content link (`sr-only focus:not-sr-only`) + `id="main-content"` on main content wrapper
+8. `Footer.tsx` — change `<a href="#">` modal triggers to `<button>` elements
 
-**Fix:** Remove the `useTransition` import, the `isPending` destructure, and the floating loader JSX (lines 27, 32, 157-162).
+**Total: ~8 files, all additive changes, zero visual impact.**
 
-## 5. `document.cookie` Check in Render Path
-
-Both `UnplayedCounter.tsx` (line 98) and `DustScoreMeter.tsx` (line 105) check `document.cookie.includes("demo_note_dismissed")` during render. This is a synchronous DOM read on every render, and cookies aren't reactive — the UI won't update if the cookie changes.
-
-**Fix:** Replace with a `localStorage` check done once via `useState` initializer, or simply remove the cookie check and always show the demo note (it's already gated behind `isDemoMode`).
-
-## 6. Missing `<meta>` Description / SEO
-
-`index.html` likely has minimal meta tags. The app has `react-helmet-async` installed but pages don't appear to set page-specific titles or descriptions.
-
-**Fix:** Add `<Helmet>` tags with page-specific titles to key pages (Index, Leaderboard, Dust, Spend, Library). Low lift, improves SEO and social sharing.
-
-## 7. Leaderboard Page: `leaderboardWithCorrectRanks` Recalculates Every Render
-
-`LeaderboardPage.tsx` line 70 computes `leaderboardWithCorrectRanks` with `.map()` on every render without `useMemo`. For large leaderboards this is wasteful.
-
-**Fix:** Wrap in `useMemo` with `[leaderboardData, pagination.page, pagination.pageSize]` deps.
-
-## 8. SteamLoader Dynamic Tailwind Classes Won't Work
-
-`SteamLoader.tsx` lines 73, 116 use template literals for Tailwind classes: `bg-${variant === 'primary' ? 'unplayed-mint' : 'unplayed-amber'}/40`. Tailwind purges dynamically constructed class names — these styles only work by coincidence if the full class exists elsewhere.
-
-**Fix:** Use a conditional map: `variant === 'primary' ? 'bg-unplayed-mint/40' : 'bg-unplayed-amber/40'`. Same pattern for the center dot.
-
----
-
-## Proposed Implementation Plan
-
-### Phase 1: Console Log Cleanup (highest impact on DX)
-
-Remove ~60+ `console.log` calls from the most active components and hooks listed above. Keep error/warn logging.
-
-### Phase 2: Code Quality Fixes
-
-- Remove unused `useTransition` from `App.tsx`
-- Fix SteamLoader dynamic Tailwind classes
-- Replace `document.cookie` checks with localStorage in UnplayedCounter and DustScoreMeter
-- Memoize `leaderboardWithCorrectRanks`
-
-### Phase 4: SEO
-
-- Add `<Helmet>` page titles to Index, Leaderboard, Dust, Spend, Library pages
