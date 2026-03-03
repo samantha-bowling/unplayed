@@ -14,7 +14,6 @@ export interface DemoDataType {
   totalPlaytime: number; // in hours
   totalSpent: number; // in dollars
   unplayedSpent: number; // in dollars - spending on unplayed games only
-  potentialGameplayHours: number; // Added for HLTB integration
   
   // Dust score specific data
   dustScoreBreakdown?: DustScoreBreakdown;
@@ -54,7 +53,6 @@ export const DEMO_DATA: DemoDataType = {
   totalPlaytime: 142.5,
   totalSpent: 234.99,
   unplayedSpent: 189.50,
-  potentialGameplayHours: 587.5,
   
   // Enhanced dust score breakdown with new 5-factor system
   dustScoreBreakdown: {

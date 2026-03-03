@@ -22,11 +22,6 @@ export const optimizedQueryKeys = {
       ['unplayed', userId, 'data', profileSteamId] as const,
   },
   
-  // Game estimates with optimized caching
-  estimates: {
-    byGameIds: (gameIds: number[]) => ['estimates', 'games', [...gameIds].sort()] as const,
-  },
-  
   // Phase 2 metrics keys
   metrics: {
     user: (userId?: string) => ['user-metrics', userId] as const,

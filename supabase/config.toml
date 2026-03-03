@@ -34,12 +34,6 @@ site_url = "https://lucid-lamarr-a4467f.lovable.dev"
 [functions.cleanup-old-data]
 verify_jwt = true
 
-[functions.prioritize-hltb-games]
-verify_jwt = true
-
-[functions.prioritize-smart-queue]
-verify_jwt = true
-
 [functions.steam-auth]
 verify_jwt = false
 

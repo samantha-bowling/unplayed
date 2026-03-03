@@ -15,7 +15,7 @@ export interface DashboardData {
   dustScore: number;
   totalSpent: number;
   unplayedSpent: number;
-  potentialGameplayHours: number;
+  
   cleanScore: number;
   recentlyPlayedCount: number;
   totalPlaytime: number;
@@ -42,7 +42,6 @@ export const useDashboardData = () => {
           dustScore: demoData.dustScore,
           totalSpent: demoData.totalSpent,
           unplayedSpent: demoData.totalSpent,
-          potentialGameplayHours: demoData.potentialGameplayHours,
           cleanScore: demoData.cleanScore,
           recentlyPlayedCount: demoData.recentlyPlayedCount,
           totalPlaytime: demoData.totalPlaytime || 0,
@@ -59,7 +58,6 @@ export const useDashboardData = () => {
           dustScore: 0,
           totalSpent: 0,
           unplayedSpent: 0,
-          potentialGameplayHours: 0,
           cleanScore: 0,
           recentlyPlayedCount: 0,
           totalPlaytime: 0,
@@ -97,7 +95,7 @@ export const useDashboardData = () => {
         dustScore: userMetrics.totalDustScore / Math.max(1, userMetrics.totalGames), // Average dust score
         totalSpent: spendingData.totalLibraryValue,
         unplayedSpent: spendingData.unplayedSpent,
-        potentialGameplayHours: 0, // Not available in userMetrics, would need separate calculation
+        
         cleanScore: userMetrics.cleanScore,
         recentlyPlayedCount: userMetrics.recentlyPlayedCount,
         totalPlaytime: userMetrics.totalPlaytimeHours,
@@ -119,7 +117,7 @@ export const useDashboardData = () => {
       dustScore: 0,
       totalSpent: 0,
       unplayedSpent: 0,
-      potentialGameplayHours: 0,
+      
       cleanScore: 0,
       recentlyPlayedCount: 0,
       totalPlaytime: 0,
