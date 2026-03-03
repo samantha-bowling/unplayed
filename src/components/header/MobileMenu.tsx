@@ -43,7 +43,7 @@ const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
                     <NavLink href="/admin/support" label="Admin Support" onClick={onToggle} />
                     <NavLink href="/admin/queue-manager" label="Queue Manager" onClick={onToggle} />
                     <NavLink href="/admin/account-deletions" label="Account Deletions" onClick={onToggle} />
-                    <NavLink href="/admin/hltb-data" label="HLTB Data" onClick={onToggle} />
+                    <NavLink href="/admin/data-manager" label="Data Manager" onClick={onToggle} />
                   </>
                 )}
               </>

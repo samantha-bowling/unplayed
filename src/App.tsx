@@ -15,7 +15,7 @@ import AdminSteamDataPage from "./pages/AdminSteamDataPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
 import QueueManagerPage from "./pages/QueueManagerPage";
-import AdminHltbDataPage from "./pages/AdminHltbDataPage";
+import AdminDataManagerPage from "./pages/AdminDataManagerPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import DustPage from "./pages/DustPage";
 import SpendPage from "./pages/SpendPage";
@@ -111,17 +111,18 @@ const App = () => {
           }
         />
         <Route
-          path="/admin/hltb-data"
+          path="/admin/data-manager"
           element={
             <ProtectedRoute requiredRole={UserRole.ADMIN}>
-              <AdminHltbDataPage />
+              <AdminDataManagerPage />
             </ProtectedRoute>
           }
         />
 
         {/* Redirects for old routes */}
-        <Route path="/admin/steam-data" element={<Navigate to="/admin/hltb-data" replace />} />
-        <Route path="/auth/steam-data" element={<Navigate to="/admin/hltb-data" replace />} />
+        <Route path="/admin/steam-data" element={<Navigate to="/admin/data-manager" replace />} />
+        <Route path="/auth/steam-data" element={<Navigate to="/admin/data-manager" replace />} />
+        <Route path="/admin/hltb-data" element={<Navigate to="/admin/data-manager" replace />} />
 
         {/* Protected routes requiring authentication */}
         <Route

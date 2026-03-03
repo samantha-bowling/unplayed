@@ -9,12 +9,10 @@ import { calculateRecentlyPlayedGames as calculateRecentlyPlayed } from './activ
  * Uses enhanced dust score and clean score calculations.
  */
 export const transformUserGameData = (
-  userGamesData: any[],
-  gameEstimatesData: Record<number, any> = {}
+  userGamesData: any[]
 ): UnplayedDataType => {
   console.log('transformUserGameData called with:', {
-    userGamesDataLength: userGamesData.length,
-    gameEstimatesDataKeys: Object.keys(gameEstimatesData).length
+    userGamesDataLength: userGamesData.length
   });
 
   // Initialize accumulators
@@ -70,11 +68,6 @@ export const transformUserGameData = (
       metacritic: gameData.metacritic_score || null,
       metacritic_score: gameData.metacritic_score || null, // Add metacritic_score for compatibility
       categories: gameData.categories || [],
-      completionEstimate: gameEstimatesData[game.game_id]?.completionist || null,
-      mainStoryEstimate: gameEstimatesData[game.game_id]?.main_story || null,
-      averageEstimate: gameEstimatesData[game.game_id]?.average || null,
-      steamAppid: gameEstimatesData[game.game_id]?.steam_appid || null,
-      howLongToBeatId: gameEstimatesData[game.game_id]?.how_long_to_beat_id || null,
     });
   });
 
@@ -122,11 +115,6 @@ export const transformUserGameData = (
   // Calculate recently played games count using standardized method from activity-insights
   const recentlyPlayedCount = calculateRecentlyPlayed(gamesList);
 
-  // Calculate total potential gameplay hours
-  const potentialGameplayHours = gamesList.reduce((sum, game) => {
-    return sum + (game.completionEstimate || 0);
-  }, 0);
-
   const playedGames = gamesList.filter(game => game.playtimeMinutes > 0).length;
   const totalPlaytimeHours = totalPlaytime / 60;
 
@@ -153,7 +141,6 @@ export const transformUserGameData = (
     totalPlaytime: totalPlaytimeHours,
     totalSpent,
     unplayedSpent: 0, // This will be populated later
-    potentialGameplayHours,
     genres: genresArray,
     shelfLife: shelfLife,
     library: libraryItems,

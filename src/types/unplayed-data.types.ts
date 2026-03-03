@@ -28,11 +28,6 @@ export interface GameListItem {
   metacritic_score?: number; // Added for quality factor
   notes?: string | null; // Added missing property
   hidden?: boolean; // Added missing property
-  completionEstimate?: number | null; // Added missing property
-  mainStoryEstimate?: number | null; // Added missing property
-  averageEstimate?: number | null; // Added missing property
-  steamAppid?: number | null; // Added missing property
-  howLongToBeatId?: number | null; // Added missing property
 }
 
 /**
@@ -153,7 +148,6 @@ export interface UnplayedDataType {
   totalPlaytime: number;
   totalSpent: number;
   unplayedSpent: number; // New field for spending on unplayed games only
-  potentialGameplayHours: number;
   
   // Game collections
   gamesList: GameListItem[];

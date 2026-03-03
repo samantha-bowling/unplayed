@@ -245,11 +245,6 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         releaseDate: game.games?.release_date,
         metacritic: game.games?.metacritic_score,
         categories: [],
-        completionEstimate: null,
-        mainStoryEstimate: null,
-        averageEstimate: null,
-        steamAppid: null,
-        howLongToBeatId: null,
       }));
 
       const { cleanScore, breakdown: legacyCleanScoreBreakdown, tier: cleanTier, cleanStreak } =

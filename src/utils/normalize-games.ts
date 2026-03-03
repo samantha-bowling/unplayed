@@ -49,7 +49,6 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       totalPlaytime: 0,
       totalSpent: 0,
       unplayedSpent: 0,
-      potentialGameplayHours: 0,
       genres: [],
       shelfLife: [],
       library: [],
@@ -127,7 +126,6 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
       totalPlaytime: games.totalPlaytime || 0,
       totalSpent: games.totalSpent || 0,
       unplayedSpent: games.unplayedSpent || 0,
-      potentialGameplayHours: games.potentialGameplayHours || 0,
       genres: games.genres || [],
       shelfLife: games.shelfLife?.map((item: any) => ({
         ...item,
@@ -160,7 +158,6 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
     totalPlaytime: 0,
     totalSpent: 0,
     unplayedSpent: 0,
-    potentialGameplayHours: 0,
     genres: [],
     shelfLife: [],
     library: [],

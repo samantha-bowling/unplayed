@@ -29,7 +29,6 @@ interface ScoringWeights {
   recentRelease: number;  // Recently released games
   priceRange: number;     // Commercial viability
   popularGenres: number;  // Popular game genres
-  hasEstimate: number;    // Already has HLTB data
 }
 
 const DEFAULT_WEIGHTS: ScoringWeights = {
@@ -38,7 +37,6 @@ const DEFAULT_WEIGHTS: ScoringWeights = {
   recentRelease: 20,     // Recent games are more relevant
   priceRange: 15,        // Commercial games are higher priority
   popularGenres: 10,     // Popular genres get slight boost
-  hasEstimate: -50       // Deprioritize games that already have data
 };
 
 serve(async (req) => {
@@ -137,18 +135,6 @@ serve(async (req) => {
     
     console.log(`[smart-prioritization] Found ${allGameDetails.length} game details`);
     
-    // Step 3: Get game estimates to check if games already have HLTB data
-    const { data: gameEstimates, error: estimatesError } = await supabase
-      .from('game_estimates')
-      .select('game_id');
-    
-    if (estimatesError) {
-      console.error(`[smart-prioritization] Error fetching game estimates: ${estimatesError.message}`);
-    }
-    
-    const gamesWithEstimates = new Set(gameEstimates?.map(est => est.game_id) || []);
-    console.log(`[smart-prioritization] Found ${gamesWithEstimates.size} games with estimates`);
-
     // Step 3: Get user-owned games for maximum priority
     const { data: userOwnedGames, error: userGamesError } = await supabase
       .from('user_games')
@@ -186,8 +172,7 @@ serve(async (req) => {
           userOwned: false,
           metacriticScore: null,
           releaseDate: null,
-          price: null,
-          hasEstimate: false
+          price: null
         };
       }
       
@@ -240,11 +225,6 @@ serve(async (req) => {
         }
       }
 
-      // Penalize games that already have estimates
-      if (gamesWithEstimates.has(game.id)) {
-        score += weights.hasEstimate; // This is negative
-      }
-
       return {
         app_id: queueItem.app_id,
         name: game.name || queueItem.name || `Unknown Game ${queueItem.app_id}`,
@@ -252,8 +232,7 @@ serve(async (req) => {
         userOwned: userOwnedSet.has(game.id),
         metacriticScore: game.metacritic_score,
         releaseDate: game.release_date,
-        price: game.price_cents ? game.price_cents / 100 : null,
-        hasEstimate: gamesWithEstimates.has(game.id)
+        price: game.price_cents ? game.price_cents / 100 : null
       };
     });
 
@@ -323,7 +302,6 @@ serve(async (req) => {
 
     // Step 8: Prepare response statistics
     const userOwnedCount = topGames.filter(g => g.userOwned).length;
-    const hasEstimateCount = topGames.filter(g => g.hasEstimate).length;
     const averageScore = topGames.reduce((sum, g) => sum + g.score, 0) / topGames.length;
 
     const response = {
@@ -335,7 +313,6 @@ serve(async (req) => {
         totalAnalyzed: pendingGames.length,
         topGamesSelected: topGames.length,
         userOwnedGames: userOwnedCount,
-        gamesWithEstimates: hasEstimateCount,
         averageScore: Math.round(averageScore * 100) / 100
       },
       dryRun,
