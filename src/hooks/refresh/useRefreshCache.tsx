@@ -56,7 +56,7 @@ export const useRefreshCache = () => {
       queryClient.invalidateQueries({ queryKey: key });
     });
 
-    console.log(`🗑️ Cache invalidated for scope: ${scope}`, keysToInvalidate);
+    
   }, [getKeysForScope, queryClient]);
 
   // Invalidate cache with delay (useful for backend processing)
