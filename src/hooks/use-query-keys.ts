@@ -104,7 +104,7 @@ export const optimizedQueryKeys = {
     genreStats: (userId?: string) => ['genre-stats', userId] as const,
   },
   helpers: {
-    allUserData: (userId?: string): readonly unknown[][] => [
+    allUserData: (userId?: string): readonly (readonly unknown[])[] => [
       optimizedQueryKeys.profile.base(userId),
       optimizedQueryKeys.unplayed.data(userId),
       optimizedQueryKeys.metrics.user(userId),
@@ -113,10 +113,10 @@ export const optimizedQueryKeys = {
       optimizedQueryKeys.metrics.shelfLife(userId),
       optimizedQueryKeys.metrics.genreStats(userId),
     ],
-    unplayedData: (userId?: string): readonly unknown[][] => [
+    unplayedData: (userId?: string): readonly (readonly unknown[])[] => [
       optimizedQueryKeys.unplayed.data(userId),
     ],
-    phase2Metrics: (userId?: string): readonly unknown[][] => [
+    phase2Metrics: (userId?: string): readonly (readonly unknown[])[] => [
       optimizedQueryKeys.metrics.user(userId),
       optimizedQueryKeys.metrics.spending(userId),
       optimizedQueryKeys.metrics.library(userId),
