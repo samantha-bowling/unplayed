@@ -37,7 +37,6 @@ export const buildGamesList = (data: any[]): GameListItem[] => {
 };
 
 export const normalizeDemoGames = (games: any): UnplayedDataType => {
-  export const normalizeDemoGames = (games: any): UnplayedDataType => {
   
   if (!games) {
     return {
