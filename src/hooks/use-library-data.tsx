@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { fetchAllUserGames } from '@/utils/fetch-all-user-games';
 
 // Type definitions for our data
 type Game = {
@@ -97,9 +98,9 @@ export function useLibraryData() {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
-      const { data, error } = await supabase
-        .from('user_games')
-        .select(`
+      const data = await fetchAllUserGames(
+        user.id,
+        `
           id,
           game_id,
           playtime_minutes,
@@ -119,10 +120,8 @@ export function useLibraryData() {
             categories,
             price_cents
           )
-        `)
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
+        `
+      );
       
       // Transform the nested data into a flatter structure
       return data.map((item: any): LibraryGame => ({
@@ -230,7 +229,6 @@ export function useLibraryData() {
       return sortDirection === 'asc' ? compareResult : -compareResult;
     });
 
-    console.log(`Applied sorting: ${sortBy} ${sortDirection}, result count: ${result.length}`);
     return result;
   }, [data, filters, sortBy, sortDirection]);
 
@@ -333,21 +331,14 @@ export function useLibraryData() {
 
   // Updated sorting function to match the expected signature from paginated hook
   const updateSort = useCallback((option: SortOption, direction?: 'asc' | 'desc') => {
-    console.log(`Updating sort from ${sortBy} ${sortDirection} to ${option}`);
     if (direction) {
-      // If direction is explicitly provided, use it
       setSortBy(option);
       setSortDirection(direction);
-      console.log(`Set sort to: ${option} ${direction}`);
     } else if (sortBy === option) {
-      // Toggle direction if clicking the same sort option
-      const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-      setSortDirection(newDirection);
-      console.log(`Toggled sort direction to: ${newDirection}`);
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(option);
       setSortDirection('asc');
-      console.log(`Changed sort to: ${option} asc`);
     }
   }, [sortBy, sortDirection]);
 
