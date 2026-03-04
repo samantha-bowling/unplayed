@@ -4,28 +4,31 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth, AuthStatus } from "@/context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import SteamLoader from "@/components/SteamLoader";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import AuthPage from "./pages/AuthPage";
-import LibraryPage from "./pages/LibraryPage";
-import AuthDebugPage from "./pages/AuthDebugPage";
-import SupportPage from "./pages/SupportPage";
-import AdminSupportPage from "./pages/AdminSupportPage";
-import AdminSteamDataPage from "./pages/AdminSteamDataPage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import AdminAccountDeletionsPage from "./pages/AdminAccountDeletionsPage";
-import QueueManagerPage from "./pages/QueueManagerPage";
-import AdminDataManagerPage from "./pages/AdminDataManagerPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import DustPage from "./pages/DustPage";
-import SpendPage from "./pages/SpendPage";
-import LoginErrorPage from "./pages/LoginErrorPage";
-import ProfilePage from "./pages/ProfilePage";
-import AuthCallbackHandler from "@/pages/AuthCallbackHandler";
-import SteamAuthHandler from "@/pages/SteamAuthHandler";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import { UserRole } from "@/utils/auth-utils";
+
+// Eager-loaded (common entry points)
+import Index from "./pages/Index";
+import AuthPage from "./pages/AuthPage";
+
+// Lazy-loaded pages
+const NotFound = lazy(() => import("./pages/NotFound"));
+const LibraryPage = lazy(() => import("./pages/LibraryPage"));
+const AuthDebugPage = lazy(() => import("./pages/AuthDebugPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
+const AdminSupportPage = lazy(() => import("./pages/AdminSupportPage"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
+const AdminAccountDeletionsPage = lazy(() => import("./pages/AdminAccountDeletionsPage"));
+const QueueManagerPage = lazy(() => import("./pages/QueueManagerPage"));
+const AdminDataManagerPage = lazy(() => import("./pages/AdminDataManagerPage"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
+const DustPage = lazy(() => import("./pages/DustPage"));
+const SpendPage = lazy(() => import("./pages/SpendPage"));
+const LoginErrorPage = lazy(() => import("./pages/LoginErrorPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const AuthCallbackHandler = lazy(() => import("@/pages/AuthCallbackHandler"));
+const SteamAuthHandler = lazy(() => import("@/pages/SteamAuthHandler"));
+const ProtectedRoute = lazy(() => import("@/components/ProtectedRoute"));
 
 const App = () => {
   const { status } = useAuth();
