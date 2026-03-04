@@ -9,7 +9,7 @@ import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { useMetricsRefresh } from "@/hooks/useMetricsRefresh";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
-import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
+import { useOptimizedCacheManagement } from '@/hooks/use-query-keys';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';

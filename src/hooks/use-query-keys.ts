@@ -86,4 +86,65 @@ export const queryKeys = {
   }
 } as const;
 
+// Optimized query keys (merged from use-query-keys-optimized.ts)
+export const optimizedQueryKeys = {
+  profile: {
+    base: (userId?: string) => ['profile', userId] as const,
+    steam: (userId?: string) => ['profile', userId, 'steam'] as const,
+  },
+  unplayed: {
+    data: (userId?: string, profileSteamId?: string) => 
+      ['unplayed', userId, 'data', profileSteamId] as const,
+  },
+  metrics: {
+    user: (userId?: string) => ['user-metrics', userId] as const,
+    spending: (userId?: string) => ['spendingMetrics', userId] as const,
+    library: (userId?: string) => ['library', userId] as const,
+    shelfLife: (userId?: string) => ['shelf-life-data', userId] as const,
+    genreStats: (userId?: string) => ['genre-stats', userId] as const,
+  },
+  helpers: {
+    allUserData: (userId?: string): readonly (readonly unknown[])[] => [
+      optimizedQueryKeys.profile.base(userId),
+      optimizedQueryKeys.unplayed.data(userId),
+      optimizedQueryKeys.metrics.user(userId),
+      optimizedQueryKeys.metrics.spending(userId),
+      optimizedQueryKeys.metrics.library(userId),
+      optimizedQueryKeys.metrics.shelfLife(userId),
+      optimizedQueryKeys.metrics.genreStats(userId),
+    ],
+    unplayedData: (userId?: string): readonly (readonly unknown[])[] => [
+      optimizedQueryKeys.unplayed.data(userId),
+    ],
+    phase2Metrics: (userId?: string): readonly (readonly unknown[])[] => [
+      optimizedQueryKeys.metrics.user(userId),
+      optimizedQueryKeys.metrics.spending(userId),
+      optimizedQueryKeys.metrics.library(userId),
+      optimizedQueryKeys.metrics.shelfLife(userId),
+      optimizedQueryKeys.metrics.genreStats(userId),
+    ],
+  }
+} as const;
+
+export const useOptimizedCacheManagement = () => {
+  return {
+    queryKeys: optimizedQueryKeys,
+    utils: {
+      invalidateProfile: (userId?: string) => [
+        optimizedQueryKeys.profile.base(userId),
+        optimizedQueryKeys.profile.steam(userId),
+      ],
+      invalidateUnplayed: (userId?: string) => [
+        ...optimizedQueryKeys.helpers.unplayedData(userId),
+      ],
+      invalidatePhase2Metrics: (userId?: string) => [
+        ...optimizedQueryKeys.helpers.phase2Metrics(userId),
+      ],
+      invalidateAllUserData: (userId?: string) => [
+        ...optimizedQueryKeys.helpers.allUserData(userId),
+      ],
+    }
+  };
+};
+
 export default queryKeys;

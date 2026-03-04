@@ -12,11 +12,9 @@ export const createEmptyGamesList = (): GameListItem[] => {
 
 export const buildGamesList = (data: any[]): GameListItem[] => {
   if (!data || !Array.isArray(data)) {
-    console.log('buildGamesList: Invalid data provided', data);
     return [];
   }
   
-  console.log('Building games list from data:', data.length, 'items');
   
   return data.map(item => ({
     id: item.game_id || item.id || item.appid,
@@ -39,7 +37,6 @@ export const buildGamesList = (data: any[]): GameListItem[] => {
 };
 
 export const normalizeDemoGames = (games: any): UnplayedDataType => {
-  console.log('normalizeDemoGames input:', games ? typeof games : 'undefined');
   
   if (!games) {
     return {
@@ -95,13 +92,7 @@ export const normalizeDemoGames = (games: any): UnplayedDataType => {
         release_date: game.release_date || game.releaseDate || null
       })) || buildGamesList(games.library || []);
   
-  console.log('normalizeDemoGames processed gamesList:', gamesList.length, 'items');
-  console.log('Sample demo game with image fields:', gamesList[0] ? {
-    name: gamesList[0].name,
-    image: gamesList[0].image,
-    image_url: gamesList[0].image_url,
-    header_image: gamesList[0].header_image
-  } : 'No games');
+  
   
   // If games is already an UnplayedDataType, return it with updated gamesList
   if ('unplayedGames' in games && 'totalGames' in games) {

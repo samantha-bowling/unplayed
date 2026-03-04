@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { queryKeys } from '@/hooks/use-query-keys';
-import { useOptimizedCacheManagement } from '@/hooks/use-query-keys-optimized';
+import { useOptimizedCacheManagement } from '@/hooks/use-query-keys';
 
 export type CacheInvalidationScope = 'unplayed' | 'phase2-metrics' | 'spending' | 'all-user-data';
 
@@ -56,7 +56,7 @@ export const useRefreshCache = () => {
       queryClient.invalidateQueries({ queryKey: key });
     });
 
-    console.log(`🗑️ Cache invalidated for scope: ${scope}`, keysToInvalidate);
+    
   }, [getKeysForScope, queryClient]);
 
   // Invalidate cache with delay (useful for backend processing)

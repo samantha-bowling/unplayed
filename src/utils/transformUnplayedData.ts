@@ -11,9 +11,6 @@ import { calculateRecentlyPlayedGames as calculateRecentlyPlayed } from './activ
 export const transformUserGameData = (
   userGamesData: any[]
 ): UnplayedDataType => {
-  console.log('transformUserGameData called with:', {
-    userGamesDataLength: userGamesData.length
-  });
 
   // Initialize accumulators
   let totalPlaytime = 0;
@@ -32,12 +29,6 @@ export const transformUserGameData = (
     const playtimeMinutes = game.playtime_minutes || 0;
     const dustScore = game.dust_score || 0; // Use the dust score from database (enhanced calculation)
 
-    console.log('Processing game:', {
-      gameId: game.game_id,
-      gameName: gameData.name,
-      dustScore: dustScore,
-      playtimeMinutes: playtimeMinutes
-    });
 
     // Accumulate total playtime
     totalPlaytime += playtimeMinutes;
@@ -71,11 +62,6 @@ export const transformUserGameData = (
     });
   });
 
-  console.log('Transform results:', {
-    totalGames: userGamesData.length,
-    totalDustScore: totalDustScore,
-    gamesList: gamesList.length
-  });
 
   // Calculate unplayed games count
   const unplayedGames = gamesList.filter(game => game.playtimeMinutes === 0).length;

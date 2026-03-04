@@ -1,14 +1,14 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { UnplayedDataType } from '@/types/unplayed-data.types';
 import { transformUserGameData } from '@/utils/transformUnplayedData';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { useProfile } from '@/hooks/use-profile';
-import { optimizedQueryKeys } from './use-query-keys-optimized';
+import { queryKeys } from './use-query-keys';
 import { useMemo } from 'react';
+import { fetchAllUserGames } from '@/utils/fetch-all-user-games';
 
 /**
  * Unified hook that provides unplayed game data with optimized performance
@@ -25,22 +25,20 @@ export const useUnplayedData = () => {
     [user, isDemo, profile?.steam_id]
   );
   
-  // Query for real data with optimized key structure
+  // Query for real data
   const { 
     data: userGamesData, 
     isLoading: isLoadingUserGames, 
     error: userGamesError,
     refetch: refetchUserGames,
   } = useQuery({
-    queryKey: optimizedQueryKeys.unplayed.data(user?.id, profile?.steam_id),
+    queryKey: queryKeys.unplayedData(user?.id),
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
-      console.log('Fetching unplayed data for user:', user.id);
-      
-      const { data: userGamesData, error: userGamesError } = await supabase
-        .from('user_games')
-        .select(`
+      const data = await fetchAllUserGames(
+        user.id,
+        `
           id,
           game_id,
           playtime_minutes,
@@ -60,34 +58,21 @@ export const useUnplayedData = () => {
             categories,
             price_cents
           )
-        `)
-        .eq('user_id', user.id)
-        .order('dust_score', { ascending: false });
+        `,
+        { column: 'dust_score', ascending: false }
+      );
       
-      if (userGamesError) {
-        console.error('Error fetching user games:', userGamesError);
-        throw userGamesError;
-      }
-
-      console.log(`Found ${userGamesData?.length || 0} games for user ${user.id}`);
-      
-      if (userGamesData && userGamesData.length > 0) {
-        const totalDustScore = userGamesData.reduce((sum, g) => sum + (g.dust_score || 0), 0);
-        console.log('Total dust score:', totalDustScore);
-      }
-      
-      return userGamesData;
+      return data;
     },
     enabled: isQueryEnabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // Reduced frequency for better performance
-    refetchInterval: 15 * 60 * 1000, // Increased to 15 minutes
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 15 * 60 * 1000,
   });
 
   // Memoize demo data processing to prevent unnecessary recalculations
   const normalizedDemoData = useMemo(() => {
     if (!isDemo) return null;
-    console.log('Using demo data:', demoData);
     return normalizeDemoGames(JSON.parse(JSON.stringify(demoData)));
   }, [isDemo, demoData]);
 
@@ -110,16 +95,8 @@ export const useUnplayedData = () => {
     [profile?.last_sync]
   );
 
-  // Calculate loading state
   const isLoading = isDemo ? false : isLoadingUserGames;
   const error = isDemo ? null : userGamesError;
-
-  // Log transformed data for debugging (only in development)
-  if (process.env.NODE_ENV === 'development' && userGamesData) {
-    console.log('Transformed data gamesList sample:', 
-      transformedData.gamesList?.length ? transformedData.gamesList.slice(0, 3) : 'No games in list');
-    console.log('Transformed data total dust score:', transformedData.dustScore);
-  }
 
   return {
     data: transformedData,
