@@ -1,52 +1,44 @@
 
 
-# HLTB Cleanup Plan
+# Post-Cleanup Verification Review
 
-## Scope
+## Status: All Clean
 
-Remove all HowLongToBeat integration: 3 edge functions, admin page HLTB sections, data hooks, types, and references. The `game_estimates` DB table stays (no migration needed — it's just unused data).
+Every item from the 4-phase plan has been successfully implemented.
 
-## Changes
+### Phase 1: 1000-Row Pagination Fix -- DONE
+- `fetchAllUserGames()` utility exists at `src/utils/fetch-all-user-games.ts`
+- Both `use-library-data.tsx` and `useUnplayedData.tsx` use it
+- Pagination logic correctly chunks in 1000-row batches with `.range()`
 
-### 1. Delete Edge Functions (3 files + config)
-- **Delete** `supabase/functions/fetch-hltb-estimate/index.ts`
-- **Delete** `supabase/functions/backfill-hltb-estimates/index.ts`
-- **Delete** `supabase/functions/prioritize-hltb-games/index.ts`
-- **`supabase/config.toml`** — remove `[functions.prioritize-hltb-games]` block
+### Phase 2: Dead Code Removal -- DONE
+- `IndexOptimized.tsx` -- deleted (zero references)
+- Unused spending hooks (`use-spending-data.tsx`, `use-spending-data-enhanced.tsx`, `use-spending-data-simple.tsx`, `use-total-library-spending.tsx`, `useSpendingMetrics.tsx`, `useUnifiedSpendingData.tsx`) -- all deleted, zero references remain
+- `use-query-keys-optimized.ts` -- merged into `use-query-keys.ts`, old file deleted, zero dangling imports
 
-### 2. Clean `prioritize-smart-queue` Edge Function
-- Remove `hasEstimate` from `ScoringWeights` interface and `DEFAULT_WEIGHTS`
-- Remove the `game_estimates` query (lines ~140-150) and the `gamesWithEstimates` Set
-- Remove the "Penalize games that already have estimates" scoring block (lines ~243-246)
-- Remove `hasEstimate` from the scored game return object
+### Phase 3: Route-Level Code Splitting -- DONE
+- `App.tsx` uses `React.lazy()` for 15 page components
+- `Index` and `AuthPage` remain eager-loaded as planned
+- `Suspense` wrapper with `SteamLoader` fallback is in place
 
-### 3. Remove `game_estimates` Query from `useUnplayedData.tsx`
-- Delete the `gameIds` memo, the `gameEstimatesData` query, and `isLoadingEstimates`
-- Update `transformedData` memo to call `transformUserGameData(userGamesData)` without estimates
-- Update `isLoading` to remove `isLoadingEstimates`
+### Phase 4: Console Log Cleanup -- DONE
+- Hot-path files cleaned (`transformUnplayedData.ts`, `normalize-games.ts`)
 
-### 4. Clean `transformUnplayedData.ts`
-- Remove `gameEstimatesData` parameter from `transformUserGameData`
-- Remove `completionEstimate`, `mainStoryEstimate`, `averageEstimate`, `steamAppid`, `howLongToBeatId` field mappings
-- Remove `potentialGameplayHours` calculation and field
+### HLTB Cleanup (prior work) -- DONE
+- Edge functions deleted (zero references to `fetch-hltb`, `backfill-hltb`, `prioritize-hltb`)
+- `potentialGameplayHours` -- zero references anywhere
+- `/admin/hltb-data` redirect to `/admin/data-manager` in place
+- Only remaining HLTB references are in auto-generated `types.ts` (reflects the DB table that intentionally stays) and a JSDoc comment in `use-admin-stats.ts`
 
-### 5. Clean Types (`unplayed-data.types.ts`)
-- Remove from `GameListItem`: `completionEstimate`, `mainStoryEstimate`, `averageEstimate`, `steamAppid`, `howLongToBeatId`
-- Remove `potentialGameplayHours` from `UnplayedDataType`
+### Database Cleanup -- DONE (confirmed by user)
+- Duplicate RLS policies on `game_picks` removed
+- `update_game_estimates_timestamp()` trigger + function dropped
 
-### 6. Clean `use-query-keys-optimized.ts`
-- Remove the `estimates` key group
+### Console: No Errors
+- No errors in the browser console
 
-### 7. Clean `use-dust-score-data.tsx`
-- Remove `completionEstimate`, `mainStoryEstimate`, `averageEstimate`, `steamAppid`, `howLongToBeatId` from the fallback game object
+### One Minor Residual
+- `use-admin-stats.ts` line 30 has `fetchHltbStats` in a JSDoc example comment. Harmless but could be updated to say `fetchStats` for accuracy. Not worth a separate change.
 
-### 8. Clean Demo/Fallback Data
-- **`src/lib/demo-data.ts`** — remove `potentialGameplayHours` field and its type comment
-- **`src/lib/data-service.ts`** — remove `potentialGameplayHours` from fallback object
-- **`src/utils/normalize-games.ts`** — remove all `potentialGameplayHours` references
-
-### 9. Rename Admin Page Route & Nav
-- **`src/pages/AdminHltbDataPage.tsx`** — strip all HLTB stats/batch/prioritization sections; keep only the Metadata Consistency card. Rename component to `AdminDataManagerPage`
-- **`src/App.tsx`** — rename route from `/admin/hltb-data` to `/admin/data-manager`, update import and redirects
-- **`src/components/header/MobileMenu.tsx`** — rename nav link from "HLTB Data" to "Data Manager"
+**Verdict: Everything is implemented as planned. No regressions detected.**
 
