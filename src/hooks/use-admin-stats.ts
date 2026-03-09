@@ -27,7 +27,7 @@ export interface FetchStatsOptions {
  * @example
  * ```tsx
  * // Simple usage
- * const { stats, isLoading, fetchStats } = useAdminStats(fetchHltbStats);
+ * const { stats, isLoading, fetchStats } = useAdminStats(fetchQueueStats);
  * 
  * // With options
  * const { stats, isLoading } = useAdminStats(fetchUserStats, {
