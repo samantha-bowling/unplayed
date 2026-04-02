@@ -149,7 +149,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p className="mb-2">
-                  To sync your library and show you what you own. We use Steam OpenID for login—no passwords, no spam, no secret Discord invites.
+                  To sync your library and show you what you own. We use Steam OpenID for login—no passwords, no spam.
                 </p>
                 <p>
                   Everything we show you is based on publicly available data (or with your permission). Your privacy matters more to us than launch day patches.
