@@ -82,10 +82,6 @@ const Footer = () => {
             <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={handleSupportersClick}>
               Supporters
             </button>
-            <a href="https://discord.gg/YHbr3Ska95" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 flex items-center gap-1">
-              <DiscordIcon size={16} className="opacity-80" />
-              Discord
-            </a>
           </div>
         </div>
         
