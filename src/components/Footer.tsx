@@ -8,7 +8,7 @@ import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import AboutDialog from "./AboutDialog";
 import AccountDeletionModal from "./AccountDeletionModal";
 import { Link } from "react-router-dom";
-import DiscordIcon from "./icons/DiscordIcon";
+
 
 const Footer = () => {
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
