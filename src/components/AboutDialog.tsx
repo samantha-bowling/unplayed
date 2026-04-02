@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/accordion";
 
 import { Mail } from "lucide-react";
-import DiscordIcon from "./icons/DiscordIcon";
+
 
 interface AboutDialogProps {
   open: boolean;
@@ -149,7 +149,7 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p className="mb-2">
-                  To sync your library and show you what you own. We use Steam OpenID for login—no passwords, no spam, no secret Discord invites.
+                  To sync your library and show you what you own. We use Steam OpenID for login—no passwords, no spam.
                 </p>
                 <p>
                   Everything we show you is based on publicly available data (or with your permission). Your privacy matters more to us than launch day patches.
@@ -174,15 +174,11 @@ const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
               </AccordionTrigger>
               <AccordionContent className="text-sm text-gray-300">
                 <p className="flex items-center gap-1">
-                  Cool, we probably have more answers. 
-                  <a href="https://discord.gg/YHbr3Ska95" target="_blank" rel="noopener noreferrer" className="flex items-center text-unplayed-pink hover:underline">
-                    <DiscordIcon className="h-4 w-4 mr-1" /> Join our Discord server
-                  </a> 
-                  or email us at 
-                  <a href="mailto:unplayed.wtf@gmail.com" className="flex items-center ml-1 text-unplayed-pink hover:underline">
-                    <Mail className="h-4 w-4 mr-1" />unplayed.wtf@gmail.com
-                  </a>
-                </p>
+                   Cool, we probably have more answers. Email us at 
+                   <a href="mailto:unplayed.wtf@gmail.com" className="flex items-center ml-1 text-unplayed-pink hover:underline">
+                     <Mail className="h-4 w-4 mr-1" />unplayed.wtf@gmail.com
+                   </a>
+                 </p>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
