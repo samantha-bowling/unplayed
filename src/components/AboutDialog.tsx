@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/accordion";
 
 import { Mail } from "lucide-react";
-import DiscordIcon from "./icons/DiscordIcon";
+
 
 interface AboutDialogProps {
   open: boolean;
