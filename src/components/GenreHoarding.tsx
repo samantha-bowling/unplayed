@@ -2,7 +2,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { withDemoIndicator, WithDemoProps } from './withDemoIndicator';
-import { useAuth } from '@/context/AuthContext';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,7 +22,6 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
   onGenreSelect,
   activeGenre = null
 }: GenreHoardingProps) => {
-  const { user } = useAuth();
   const { isDemo: contextIsDemo, demoData } = useDemoMode();
   const { data: dashboardData } = useDashboardData();
   const isMobile = useIsMobile();
@@ -33,11 +31,9 @@ const GenreHoarding = React.memo<GenreHoardingProps>(({
 
   // Memoize genre data - use demo data when in demo mode, otherwise use dashboard data
   const genreData = useMemo(() => {
-    if (isDemoMode) {
-      return demoData.genres;
-    }
-    return dashboardData.genres;
-  }, [isDemoMode, demoData.genres, dashboardData.genres]);
+    const nextGenreData = isDemoMode ? demoData.genres : dashboardData?.genres;
+    return Array.isArray(nextGenreData) ? nextGenreData : [];
+  }, [isDemoMode, demoData.genres, dashboardData]);
 
   // Memoize most hoarded genre calculation
   const mostHoardedGenre = useMemo(() => {
