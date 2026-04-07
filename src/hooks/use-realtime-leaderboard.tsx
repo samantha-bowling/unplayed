@@ -56,7 +56,7 @@ export const useRealtimeLeaderboard = () => {
 
     // Get user visibility settings
     const { data: usersData, error: usersError } = await supabase
-      .from('users')
+      .from('v_public_profiles')
       .select('id, steam_name, leaderboard_visibility')
       .in('id', userIds)
       .not('leaderboard_visibility', 'eq', 'off');
