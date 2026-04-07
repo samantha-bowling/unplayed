@@ -227,34 +227,14 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
         return lastPlayed >= thirtyDaysAgo;
       }).length;
 
-      // Calculate clean score using our enhanced calculation
-      const gamesList = userGamesData.map(game => ({
-        id: game.game_id,
-        name: game.games?.name || '',
-        playtimeMinutes: game.playtime_minutes || 0,
-        lastPlayed: game.last_played_date,
-        added: game.acquisition_date,
-        image: '',
-        price: 0,
-        genres: game.games?.genres || [],
-        notes: null,
-        hidden: false,
-        releaseDate: game.games?.release_date,
-        metacritic: game.games?.metacritic_score,
-        categories: [],
-      }));
-
-      const { cleanScore, breakdown: legacyCleanScoreBreakdown, tier: cleanTier, cleanStreak } =
-        calculateCleanScore(playedGames, totalGames, totalPlaytimeHours, gamesList, recentlyPlayedCount);
-
       return {
         dustScoreBreakdown: aggregateBreakdown,
         topDustContributors: topContributors,
         averageDustScore: avgDustScore,
-        cleanScore,
-        legacyCleanScoreBreakdown,
-        cleanTier,
-        cleanStreak,
+        cleanScore: 0, // Clean score is sourced from DB via useUserMetrics
+        legacyCleanScoreBreakdown: { completionRate: 0, engagementFactor: 0, recencyFactor: 0 },
+        cleanTier: CLEAN_SCORE_TIERS[CLEAN_SCORE_TIERS.length - 1],
+        cleanStreak: 0,
         recentlyPlayedCount,
         totalGames,
         unplayedGames: totalGames - playedGames
