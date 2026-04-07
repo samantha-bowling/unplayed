@@ -214,9 +214,6 @@ const useDustScoreData = (): DustScoreCalculationResponse => {
       const playedGames = userGamesData.filter(game =>
         (game.playtime_minutes || 0) > 0
       ).length;
-      const totalPlaytimeHours = userGamesData.reduce((sum, game) =>
-        sum + ((game.playtime_minutes || 0) / 60), 0
-      );
 
       // Count recently played games
       const thirtyDaysAgo = new Date();
