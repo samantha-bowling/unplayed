@@ -134,7 +134,7 @@ const CleanScoreBreakdown = ({
               <Progress value={breakdown.diversityScore} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-cyan-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.diversityScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                25% weight in your total score
+                15% weight in your total score
               </p>
             </div>
             
@@ -158,7 +158,7 @@ const CleanScoreBreakdown = ({
               <Progress value={breakdown.recencyScore} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-amber-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.recencyScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                25% weight in your total score
+                30% weight in your total score
               </p>
             </div>
             
@@ -182,7 +182,7 @@ const CleanScoreBreakdown = ({
               <Progress value={breakdown.backlogConversionScore} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.backlogConversionScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                25% weight in your total score
+                35% weight in your total score
               </p>
             </div>
 
@@ -206,7 +206,7 @@ const CleanScoreBreakdown = ({
               <Progress value={breakdown.sessionDepthScore} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.sessionDepthScore}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                25% weight in your total score
+                20% weight in your total score
               </p>
             </div>
 
