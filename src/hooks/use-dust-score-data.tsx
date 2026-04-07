@@ -21,10 +21,7 @@ import {
   processDustBreakdown, 
   processDustBreakdowns 
 } from '@/utils/dust-score-utils';
-import { 
-  CLEAN_SCORE_TIERS, 
-  calculateCleanScore 
-} from '@/utils/clean-score-utils';
+import { CLEAN_SCORE_TIERS } from '@/utils/clean-score-utils';
 
 const parseDustBreakdown = (breakdown: unknown): DustScoreBreakdownResponse => {
   const processed = processDustBreakdown(breakdown);
