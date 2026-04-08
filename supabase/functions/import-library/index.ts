@@ -380,6 +380,22 @@ serve(async (req) => {
 
         results.totalProcessed = results.newGamesImported + results.existingGamesUpdated;
 
+        // Update last_sync timestamp on the user record
+        if (results.totalProcessed > 0 || steamGames.length > 0) {
+          console.log(`🕐 Updating last_sync for user ${userId}...`);
+          const { error: syncError } = await supabase
+            .from('users')
+            .update({ last_sync: new Date().toISOString() })
+            .eq('id', userId);
+          
+          if (syncError) {
+            console.error('Failed to update last_sync:', syncError);
+            results.warnings.push('Failed to update sync timestamp');
+          } else {
+            console.log('✅ last_sync updated successfully');
+          }
+        }
+
         console.log(`🎯 Import completed:`, results);
 
         // **NEW: Auto-trigger calculation chain after successful import**
