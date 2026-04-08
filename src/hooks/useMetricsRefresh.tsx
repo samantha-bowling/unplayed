@@ -34,6 +34,15 @@ export const useMetricsRefresh = () => {
         throw new Error(result.error || 'Failed to refresh user metrics');
       }
 
+      // Refresh game_dust_breakdowns to stay in sync
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.rpc('refresh_user_dust_breakdowns', { p_user_id: user.id });
+        console.log('Dust breakdowns refreshed successfully');
+      } catch (breakdownError) {
+        console.warn('Failed to refresh dust breakdowns (non-critical):', breakdownError);
+      }
+
       // Invalidate Phase 2 metrics cache after successful backend refresh
       const phase2Keys = queryKeys.helpers.phase2Metrics(user.id);
       phase2Keys.forEach(key => {

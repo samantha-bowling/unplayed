@@ -131,10 +131,10 @@ const CleanScoreBreakdown = ({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.diversityScore} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-cyan-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.diversityScore}%` }}></div>
+              <Progress value={Math.round((breakdown.diversityScore / 15) * 100)} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-cyan-400 mt-[-8px] rounded-full" style={{ width: `${Math.round((breakdown.diversityScore / 15) * 100)}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                15% weight in your total score
+                {breakdown.diversityScore}/15 (15% weight)
               </p>
             </div>
             
@@ -155,10 +155,10 @@ const CleanScoreBreakdown = ({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.recencyScore} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-amber-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.recencyScore}%` }}></div>
+              <Progress value={Math.round((breakdown.recencyScore / 30) * 100)} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-amber-400 mt-[-8px] rounded-full" style={{ width: `${Math.round((breakdown.recencyScore / 30) * 100)}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                30% weight in your total score
+                {breakdown.recencyScore}/30 (30% weight)
               </p>
             </div>
             
@@ -179,10 +179,10 @@ const CleanScoreBreakdown = ({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.backlogConversionScore} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.backlogConversionScore}%` }}></div>
+              <Progress value={Math.round((breakdown.backlogConversionScore / 35) * 100)} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-green-400 mt-[-8px] rounded-full" style={{ width: `${Math.round((breakdown.backlogConversionScore / 35) * 100)}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                35% weight in your total score
+                {breakdown.backlogConversionScore}/35 (35% weight)
               </p>
             </div>
 
@@ -203,10 +203,10 @@ const CleanScoreBreakdown = ({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Progress value={breakdown.sessionDepthScore} className="h-2 bg-gray-700" />
-              <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${breakdown.sessionDepthScore}%` }}></div>
+              <Progress value={Math.round((breakdown.sessionDepthScore / 20) * 100)} className="h-2 bg-gray-700" />
+              <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${Math.round((breakdown.sessionDepthScore / 20) * 100)}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                20% weight in your total score
+                {breakdown.sessionDepthScore}/20 (20% weight)
               </p>
             </div>
 

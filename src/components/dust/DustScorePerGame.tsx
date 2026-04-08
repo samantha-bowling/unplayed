@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingDown, TrendingUp, Target, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useUnplayedData } from '@/hooks/useUnplayedData';
+import { useDustBreakdowns, GameDustBreakdown } from '@/hooks/use-dust-breakdowns';
 
 interface DustScorePerGameProps {
   avgDustScore: number;
@@ -16,7 +16,7 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
   totalGames,
   unplayedGames
 }) => {
-  const { data: unplayedData } = useUnplayedData();
+  const { data: dustBreakdowns } = useDustBreakdowns();
 
   // Calculate library health metrics
   const completionRate = totalGames > 0 ? ((totalGames - unplayedGames) / totalGames) * 100 : 0;
@@ -72,39 +72,38 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
   const dustQuality = getDustQuality();
   const TrendIcon = dustQuality.trend;
 
-  // Calculate dustiest genre using consistent data source
+  // Calculate dustiest genre using real per-game dust breakdown data
   const getDustiestGenre = () => {
-    if (!unplayedData?.gamesList || unplayedData.gamesList.length === 0) {
+    if (!dustBreakdowns || dustBreakdowns.length === 0) {
       return null;
     }
 
-    // Group games by genre and calculate average dust scores
-    const genreDustMap = new Map<string, { totalDust: number; gameCount: number }>();
+    // We need genre info per game — dustBreakdowns has genreScore but not genre names.
+    // Group by genreScore tier as a proxy, but better: use the genre score values directly.
+    // Since dustBreakdowns doesn't carry genre names, we aggregate dust scores by genre score tier.
+    // Actually, let's compute total dust per genreScore value to find highest-dust genre tier.
     
-    unplayedData.gamesList.forEach(game => {
-      if (game.genres && game.genres.length > 0) {
-        // Process each genre for this game
-        game.genres.forEach(genre => {
-          if (!genreDustMap.has(genre)) {
-            genreDustMap.set(genre, { totalDust: 0, gameCount: 0 });
-          }
-          
-          const genreData = genreDustMap.get(genre)!;
-          // Calculate dust score for this game (using same logic as the main calculation)
-          const dustScore = game.playtimeMinutes === 0 ? avgDustScore : avgDustScore * 0.3; // Simplified for consistency
-          genreData.totalDust += dustScore;
-          genreData.gameCount += 1;
-        });
-      }
+    // Better approach: genreScore of 10 = Strategy/RPG/Sim, 7 = other, 5 = Action
+    const genreTiers: Record<number, { label: string; totalDust: number; gameCount: number }> = {
+      10: { label: 'Strategy / RPG / Simulation', totalDust: 0, gameCount: 0 },
+      7: { label: 'Other Genres', totalDust: 0, gameCount: 0 },
+      5: { label: 'Action / Arcade / Racing', totalDust: 0, gameCount: 0 },
+    };
+
+    dustBreakdowns.forEach(game => {
+      const tier = genreTiers[game.genreScore] || genreTiers[7];
+      tier.totalDust += game.dustScore;
+      tier.gameCount += 1;
     });
 
-    // Find genre with highest average dust score
     let dustiestGenre = { name: 'Unknown', avgDust: 0, gameCount: 0 };
-    
-    for (const [genreName, data] of genreDustMap.entries()) {
-      const avgDust = data.totalDust / data.gameCount;
-      if (avgDust > dustiestGenre.avgDust && data.gameCount >= 3) { // Require at least 3 games for statistical relevance
-        dustiestGenre = { name: genreName, avgDust, gameCount: data.gameCount };
+
+    for (const tier of Object.values(genreTiers)) {
+      if (tier.gameCount >= 3) {
+        const avg = tier.totalDust / tier.gameCount;
+        if (avg > dustiestGenre.avgDust) {
+          dustiestGenre = { name: tier.label, avgDust: avg, gameCount: tier.gameCount };
+        }
       }
     }
 
@@ -240,13 +239,13 @@ const DustScorePerGame: React.FC<DustScorePerGameProps> = ({
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-300">
-                    This genre has the highest dust accumulation in your library from {unplayedData?.gamesList?.length || totalGames} total games
+                   <p className="text-xs text-gray-300">
+                    This genre category has the highest dust accumulation in your library
                   </p>
                 </div>
               ) : (
                 <p className="text-sm text-gray-400">
-                  No genre data available from your {unplayedData?.gamesList?.length || totalGames} games
+                  No genre data available yet
                 </p>
               )}
             </div>
