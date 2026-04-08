@@ -20,7 +20,7 @@ const LibraryGameDNA: React.FC = () => {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-3 text-muted-foreground font-mono">Analyzing your DNA...</span>
+        <span className="ml-3 text-muted-foreground font-mono">Analyzing your library DNA...</span>
       </div>
     );
   }
@@ -29,7 +29,7 @@ const LibraryGameDNA: React.FC = () => {
     return (
       <div className="text-center py-16 text-muted-foreground">
         <Dna className="h-12 w-12 mx-auto mb-4 opacity-40" />
-        <p className="font-space text-lg">Import your Steam library to reveal your Game DNA</p>
+        <p className="font-space text-lg">Import your Steam library to reveal your Library DNA</p>
       </div>
     );
   }
@@ -47,10 +47,10 @@ const LibraryGameDNA: React.FC = () => {
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
           <Dna className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-space font-bold text-foreground">Your Game DNA</h2>
+          <h2 className="text-2xl font-space font-bold text-foreground">Your Library DNA</h2>
         </div>
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Six dimensions that define who you are as a gamer, built from your entire Steam library.
+          Six dimensions that define your gaming identity, built from your entire Steam library.
         </p>
       </div>
 

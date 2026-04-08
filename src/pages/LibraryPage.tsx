@@ -85,7 +85,7 @@ const LibraryPage = () => {
                 value="game-dna"
                 className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
               >
-                Game DNA
+                Library DNA
               </TabsTrigger>
             </TabsList>
             

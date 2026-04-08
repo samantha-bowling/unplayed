@@ -48,7 +48,7 @@ const DNARadarChart: React.FC<DNARadarChartProps> = ({ dimensions }) => {
   });
 
   return (
-    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[320px] mx-auto" aria-label="Game DNA Radar Chart">
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[320px] mx-auto" aria-label="Library DNA Radar Chart">
       {/* Grid */}
       {gridRings.map((points, i) => (
         <polygon
