@@ -24,6 +24,13 @@ const SpendPage = () => {
       <Helmet>
         <title>Spending Analysis – unplayed</title>
         <meta name="description" content="See how much you've spent on unplayed Steam games. Detailed spending patterns and insights." />
+        <link rel="canonical" href="https://unplayed.lovable.app/spend" />
+        <meta property="og:url" content="https://unplayed.lovable.app/spend" />
+        <meta property="og:title" content="Spending Analysis – unplayed" />
+        <meta property="og:description" content="See how much you've spent on unplayed Steam games. Detailed spending patterns and insights." />
+        <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
+        <meta name="twitter:title" content="Spending Analysis – unplayed" />
+        <meta name="twitter:description" content="See how much you've spent on unplayed Steam games. Detailed spending patterns and insights." />
       </Helmet>
       <Header />
       
