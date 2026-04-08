@@ -30,6 +30,7 @@ const DNADimensionCard: React.FC<DNADimensionCardProps> = ({ dimension }) => {
       <Progress value={dimension.score} className="h-1.5" />
       <p className="text-xs text-muted-foreground italic">{dimension.description}</p>
       <p className="text-xs text-muted-foreground font-mono">{dimension.stat}</p>
+      <p className="text-[11px] text-muted-foreground/70 leading-snug border-t border-border/30 pt-1.5 mt-1">{dimension.explanation}</p>
     </div>
   );
 };
