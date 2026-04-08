@@ -16,11 +16,50 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate caller and verify admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Check admin role using the service-role client
+    const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin', {
+      check_user_id: userId,
+    });
+
+    if (roleError || !isAdmin) {
+      return new Response(JSON.stringify({ success: false, error: 'Forbidden: admin role required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
+      });
+    }
+
     const body = await req.json().catch(() => ({}));
-    const batchSize = body.batchSize || 5000;
+    // Clamp batchSize to 1–20000
+    const rawBatchSize = Number(body.batchSize) || 5000;
+    const batchSize = Math.max(1, Math.min(20000, rawBatchSize));
     const startAfter = body.startAfter || null;
 
-    console.log(`Processing dust score batch: size=${batchSize}, startAfter=${startAfter}`);
+    console.log(`Processing dust score batch: size=${batchSize}, startAfter=${startAfter}, requestedBy=${userId}`);
 
     const { data, error } = await supabase.rpc('recalculate_dust_scores_batch', {
       p_batch_size: batchSize,

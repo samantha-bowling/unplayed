@@ -96,7 +96,7 @@ const QueueManagerPage = () => {
   // Fallback method that counts each status individually
   const fetchQueueStatsDirectly = async (): Promise<QueueStats> => {
     try {
-      console.log("Using fallback direct counting method");
+      
       
       // Get total count
       const { count: totalCount, error: totalError } = await supabase
@@ -155,7 +155,7 @@ const QueueManagerPage = () => {
     },
     onSuccess: (data) => {
       toast.success("Processing batch initiated successfully!");
-      console.log("Batch processing response:", data);
+      
       fetchStats();
     },
     continuousInterval: 3000
@@ -211,7 +211,7 @@ const QueueManagerPage = () => {
       }
       
       toast.success(`Successfully prioritized ${data?.queuedGames || 0} games for processing!`);
-      console.log("Prioritization response:", data);
+      
       
       // Refresh queue stats after prioritization
       await fetchStats();
@@ -247,7 +247,7 @@ const QueueManagerPage = () => {
       }
       
       toast.success(`Successfully calculated metrics! Processed ${data?.metrics?.totalGames || 0} games`);
-      console.log("Metrics calculation response:", data);
+      
       
     } catch (err) {
       console.error("Error calculating metrics:", err);
@@ -266,7 +266,7 @@ const QueueManagerPage = () => {
       
       if (result.success) {
         toast.success("Leaderboard calculation completed successfully!");
-        console.log("Leaderboard calculation response:", result.data);
+        
       } else {
         toast.error(`Failed to calculate leaderboard: ${result.error}`);
       }
