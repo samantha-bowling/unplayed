@@ -259,23 +259,27 @@ const Index = () => {
         <LinkSteamAccount />
       );
     } else if (profile?.steam_id) {
-      // Fully authenticated with Steam
+      const lastSyncDate = profile.last_sync;
+      const lastMetricsDate = userMetrics?.lastCalculated;
+      const syncIsStale = isOlderThanDays(lastSyncDate, 7);
+
       return (
         <>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
             Welcome, {profile.steam_name}
           </h1>
-          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-6 max-w-3xl mx-auto">
             Time to face your backlog.
           </p>
-          <div className="flex justify-center gap-4">
-            <div className="flex flex-col items-center">
+          <div className="flex flex-col sm:flex-row justify-center gap-6">
+            {/* Import Button Column */}
+            <div className="flex flex-col items-center max-w-[220px]">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       onClick={importSteamLibrary}
-                      className="bg-unplayed-pink text-white font-semibold hover:bg-unplayed-pink/90"
+                      className="bg-unplayed-pink text-primary-foreground font-semibold hover:bg-unplayed-pink/90 w-full"
                       disabled={isImporting || isRefreshing}
                     >
                       <Import className="mr-2 h-4 w-4" />
@@ -287,22 +291,43 @@ const Index = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              {lastImportTime && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Last import: {lastImportTime.toLocaleString()}
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Fetches any new games added to your Steam library
+              </p>
+              {lastSyncDate ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 cursor-default">
+                        <Clock className="h-3 w-3" />
+                        Last synced: {formatRelativeTime(lastSyncDate)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{new Date(lastSyncDate).toLocaleString()}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">Never synced</p>
+              )}
+              {syncIsStale && lastSyncDate && (
+                <p className="text-xs text-amber-400 mt-1 font-medium">
+                  ⚠ It's been a while — sync to catch new purchases!
                 </p>
               )}
             </div>
             
+            {/* Refresh Button Column */}
             {!isImporting && (
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center max-w-[220px]">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         onClick={refreshAllData}
                         variant="outline"
-                        className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30"
+                        className="bg-unplayed-mint/20 text-unplayed-mint font-semibold hover:bg-unplayed-mint/30 border-unplayed-mint/30 w-full"
                         disabled={isRefreshing}
                       >
                         <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -310,24 +335,33 @@ const Index = () => {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Update metrics and refresh dashboard with latest data</p>
+                      <p>Recalculates your dust scores and dashboard stats</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                {lastDashboardRefreshTime && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Last refresh: {lastDashboardRefreshTime.toLocaleString()}
-                  </p>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Recalculates your dust scores and dashboard stats
+                </p>
+                {lastMetricsDate ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 cursor-default">
+                          <Clock className="h-3 w-3" />
+                          Last refreshed: {formatRelativeTime(lastMetricsDate)}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{new Date(lastMetricsDate).toLocaleString()}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">Never refreshed</p>
                 )}
               </div>
             )}
           </div>
-          
-          {lastRefreshed && (
-            <p className="text-sm text-gray-500 mt-2">
-              Data last updated: {new Date(lastRefreshed).toLocaleString()}
-            </p>
-          )}
           
           {isImporting && (
             <div className="mt-6 max-w-md mx-auto">
@@ -335,12 +369,12 @@ const Index = () => {
                 <SteamLoader message={isImporting ? importProgress : "Import complete!"} size="sm" variant="secondary" />
               </div>
               <Progress value={importPercentage} className="h-2" />
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 This may take a few minutes for large libraries
               </p>
               <div className="mt-4 text-sm bg-unplayed-mint/10 p-3 rounded-md flex items-start">
                 <AlertCircle className="w-4 h-4 text-unplayed-mint mr-2 mt-0.5 flex-shrink-0" />
-                <p className="text-gray-300">
+                <p className="text-muted-foreground">
                   You can leave this page during the import process. Your games will still be imported in the background.
                 </p>
               </div>
