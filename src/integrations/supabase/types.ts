@@ -1200,6 +1200,14 @@ export type Database = {
           updated_count: number
         }[]
       }
+      recalculate_dust_scores_batch: {
+        Args: { p_batch_size?: number; p_start_after_id?: string }
+        Returns: {
+          complete: boolean
+          last_processed_id: string
+          updated_count: number
+        }[]
+      }
       revoke_role: {
         Args: {
           target_role: Database["public"]["Enums"]["app_role"]
