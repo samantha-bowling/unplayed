@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -162,19 +162,27 @@ const QueueManagerPage = () => {
   });
 
   // Dust score batch recalculation processor
+  const dustCursorRef = useRef<string | null>(null);
   const dustProcessor = useBatchProcessor<BatchProcessResponse>({
     processingFunction: async (options) => {
       const { data, error } = await supabase.functions.invoke("recalculate-dust-scores", {
         body: {
           batchSize: options.batchSize,
-          startAfter: options.startAfter || null,
+          startAfter: dustCursorRef.current,
         }
       });
       if (error) throw error;
+      // Store the UUID cursor in the ref
+      if (data?.lastProcessedId) {
+        dustCursorRef.current = data.lastProcessedId;
+      }
       return data;
     },
     onSuccess: (data) => {
       toast.success(`Recalculated ${data.processedCount} dust scores`);
+    },
+    onComplete: () => {
+      dustCursorRef.current = null;
     },
     continuousInterval: 5000,
   });
@@ -327,7 +335,7 @@ const QueueManagerPage = () => {
                   processingText="Recalculating..."
                   continuousMode={dustProcessor.continuousMode}
                   onToggleContinuous={dustProcessor.toggleContinuousMode}
-                  onReset={dustProcessor.resetProcessor}
+                  onReset={() => { dustCursorRef.current = null; dustProcessor.resetProcessor(); }}
                   resetDisabled={dustProcessor.isProcessing}
                 />
               </div>
