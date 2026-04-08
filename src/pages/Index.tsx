@@ -89,41 +89,32 @@ const Index = () => {
     if (isRefreshing || !user) return;
 
     try {
-      // First refresh backend metrics
       await refreshUserMetrics();
-      setLastDashboardRefreshTime(new Date());
       
-      // Then refresh cache with a slight delay to ensure backend processing completes
       setTimeout(() => {
         toast.info("Refreshing your data...", {
           description: "This may take a moment to update all your stats."
         });
         
-        // Use optimized cache invalidation
         const keysToInvalidate = [
           ...utils.invalidateUnplayed(user?.id),
           ...utils.invalidateProfile(user?.id),
-          // Invalidate specific dashboard-related queries
           ['detailedDustData', user?.id],
           ['libraryGames', user?.id],
           ['paginatedLibraryGames', user?.id],
           ['libraryGamesCount', user?.id],
           ['pickerGames', user?.id],
-          ['spendingData', user?.id]
+          ['spendingData', user?.id],
+          ['userMetrics', user?.id]
         ];
         
-        // Efficiently invalidate only necessary queries
         keysToInvalidate.forEach(queryKey => {
           queryClient.invalidateQueries({ queryKey });
         });
         
-        // Explicit refetch of dashboard data
         refetch?.();
-        
-        // Refresh profile as well
         refreshProfile(true);
         
-        // Notify success after a short delay
         setTimeout(() => {
           toast.success("Data refresh complete!", { 
             description: "Your dashboard has been updated with the latest information."
@@ -185,22 +176,18 @@ const Index = () => {
           clearInterval(progressInterval);
           setImportPercentage(100);
           setImportProgress("Import complete!");
-          setLastImportTime(new Date());
           toast.success(`Steam library import completed!`, {
             description: "Your dashboard will update shortly."
           });
           
-          // Update all data
           refreshAllData();
+          refreshProfile(true);
           
-          // Reset state after a delay
           setTimeout(() => {
             setIsImporting(false);
           }, 1000);
-        }, 20000); // Assume 20 seconds for processing
+        }, 20000);
       } else {
-        // Server completed processing synchronously
-        setLastImportTime(new Date());
         toast.success(`Successfully imported ${data.imported || 0} games!`, {
           description: "Your dashboard will update shortly."
         });
@@ -208,10 +195,9 @@ const Index = () => {
         setImportPercentage(100);
         setImportProgress("Import complete!");
         
-        // Update all data
         refreshAllData();
+        refreshProfile(true);
         
-        // Reset state after a delay
         setTimeout(() => {
           setIsImporting(false);
         }, 1000);
