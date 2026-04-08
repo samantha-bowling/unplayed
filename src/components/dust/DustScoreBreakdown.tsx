@@ -173,7 +173,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-yellow-400">{qualityScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Based on real Metacritic scores from your games - lower quality games get higher dust scores</p>
+                      <p>Higher-rated games generate more dust when unplayed — owning a masterpiece and ignoring it is peak shame</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -245,7 +245,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                       <span className="text-lg font-bold text-purple-400">{genreScore}</span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Based on real genre data - niche genres get higher scores</p>
+                      <p>Strategy, RPG, and simulation games accumulate dust faster than action games</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -253,7 +253,7 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <Progress value={genrePercent} className="h-2 bg-gray-700" />
               <div className="h-0.5 bg-purple-400 mt-[-8px] rounded-full" style={{ width: `${genrePercent}%` }}></div>
               <p className="text-xs text-gray-400 mt-1">
-                {genrePercent}% of your raw score comes from genre rarity
+                {genrePercent}% of your raw score comes from genre type
               </p>
             </div>
             
@@ -286,16 +286,16 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               <h3 className="text-lg font-medium mb-2">What It Means</h3>
               <div className="space-y-3 text-sm">
                 <p>
-                  <span className="text-yellow-400 font-bold">Quality:</span> Games with poor reviews or no Metacritic score get higher dust scores.
+                  <span className="text-yellow-400 font-bold">Quality:</span> Higher-rated games (by Metacritic) generate more dust when unplayed — owning a masterpiece and ignoring it is peak shame. Games without ratings get the benefit of the doubt.
                 </p>
                 <p>
                   <span className="text-green-400 font-bold">Price:</span> More expensive unplayed games accumulate significantly more dust.
                 </p>
                 <p>
-                  <span className="text-unplayed-amber font-bold">Age:</span> Older games get higher scores - classics deserve attention!
+                  <span className="text-unplayed-amber font-bold">Age:</span> Older games get higher scores — classics deserve attention!
                 </p>
                 <p>
-                  <span className="text-purple-400 font-bold">Genre:</span> Niche or rare genres get slightly higher scores.
+                  <span className="text-purple-400 font-bold">Genre:</span> Strategy, simulation, and RPG games accumulate dust faster than action games.
                 </p>
                 <p>
                   <span className="text-unplayed-pink font-bold">Playtime:</span> Playing games significantly reduces their dust accumulation.

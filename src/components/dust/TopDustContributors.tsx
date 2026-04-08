@@ -167,7 +167,7 @@ const TopDustContributors: React.FC<TopDustContributorsProps> = ({ contributors 
         
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            Enhanced algorithm now factors in game quality - high-rated unplayed games create more dust!
+            Dust scores are calculated from 5 factors: quality, price, age, genre, and playtime. Games without Metacritic scores get the benefit of the doubt.
           </p>
         </div>
       </CardContent>
