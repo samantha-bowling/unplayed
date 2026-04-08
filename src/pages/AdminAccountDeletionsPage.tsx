@@ -80,7 +80,7 @@ const AdminAccountDeletionsPage = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-24">
-        <div className="mb-8">
+        <AdminBreadcrumb currentPage="Account Deletions" />
           <h1 className="text-3xl font-bold mb-2">Account Deletions</h1>
           <p className="text-gray-400">
             View feedback and analytics for users who have deleted their accounts.
