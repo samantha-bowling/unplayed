@@ -27,13 +27,14 @@ const DustPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
+  const { isAutoRefreshing } = useDustStalenessCheck();
   
   // Use Phase 2 hooks for real calculated data
   const { data: userMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useUserMetrics();
   const { data: dustBreakdowns, isLoading: breakdownsLoading, refetch: refetchBreakdowns } = useDustBreakdowns();
   const { data: cleanScoreBreakdowns, isLoading: cleanBreakdownsLoading, refetch: refetchCleanBreakdowns } = useCleanScoreBreakdowns();
   
-  const isLoading = metricsLoading || breakdownsLoading || cleanBreakdownsLoading;
+  const isLoading = metricsLoading || breakdownsLoading || cleanBreakdownsLoading || isAutoRefreshing;
 
 
   const refreshData = async () => {
@@ -78,7 +79,7 @@ const DustPage = () => {
       genreScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.genreScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
       playtimeFactor: Number(((dustBreakdowns?.reduce((sum, game) => sum + game.playtimeFactor, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)).toFixed(2))
     } : undefined,
-    topDustContributors: dustBreakdowns?.slice(0, 10).map(game => ({
+    topDustContributors: dustBreakdowns?.slice(0, 20).map(game => ({
       id: game.gameId,
       name: game.gameName,
       dustScore: game.dustScore,
