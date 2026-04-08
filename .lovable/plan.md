@@ -2,45 +2,61 @@
 
 ## Dust Score Pages Consistency Review
 
-### Issues Found
+### Current State
 
-**1. Stale `game_dust_breakdowns` table (Critical)**
-55% of records (590 of 1,067) in `game_dust_breakdowns` don't match the current `user_games.dust_score`. The trigger on `user_games` keeps dust scores fresh as time passes (e.g., age scores increase), but the breakdowns table is only populated during specific recalculation runs and never auto-updated. This means:
-- **Dust Score tab**: The averaged quality/price/age/genre/playtime values shown in the progress bars are based on stale per-game data
-- **Top Dust tab**: Individual game dust scores and breakdowns shown in tooltips are outdated
-- **Biggest Opportunity / Oldest Neglected cards**: May show wrong dust scores
+The Dust Report page has four tabs: Dust Score, Clean Score, Top Dust, and Analysis. After reviewing the code and database, here is what is working correctly and what needs fixing.
 
-**Fix**: Create a DB function that refreshes `game_dust_breakdowns` for a user by re-reading from `user_games` + `games` tables and applying `calculate_enhanced_dust_score`. Call it during metrics refresh. Alternatively, add a trigger on `user_games` that keeps `game_dust_breakdowns` in sync.
+### What is Already Working
 
-**2. Clean Score progress bars are misleading (Medium)**
-Each Clean Score factor has a different maximum: Diversity (0-15), Recency (0-30), Backlog Conversion (0-35), Session Depth (0-20). But the `<Progress>` component uses the raw value as a 0-100 percentage. So a maxed-out Diversity score of 15 renders as only 15% filled, while a maxed-out Backlog Conversion of 35 renders as 35% filled. This is visually confusing — all maxed-out bars should appear full.
+- **Clean Score progress bars**: Correctly normalized to each factor's max (15, 30, 35, 20) with "X/max" labels
+- **Dust breakdown refresh**: `refresh_user_dust_breakdowns` DB function exists and is called during metrics refresh
+- **Top Dust tab**: Uses real `game_dust_breakdowns` data with 5-factor tooltips
+- **Dust Score tab**: Shows averaged per-game factors with clarifying text ("average per-game breakdown")
+- **Analysis tab dustiest genre**: Now uses real `dustBreakdowns` data grouped by genre score tier instead of fake calculations
 
-**Fix**: Normalize each value to its own max before passing to Progress:
-```
-diversityPercent = (diversityScore / 15) * 100
-recencyPercent = (recencyScore / 30) * 100
-backlogPercent = (backlogConversionScore / 35) * 100
-sessionDepthPercent = (sessionDepthScore / 20) * 100
-```
-Also update the subtitle text to show e.g. "12/15 (15% weight)" instead of just "15% weight".
+### Remaining Issue: Stale Breakdown Data (Critical)
 
-**3. Analysis tab: Dustiest Genre uses fake dust scores (Medium)**
-In `DustScorePerGame.tsx` line 94, the dustiest genre calculation uses `avgDustScore * 0.3` as a simplified proxy for played games instead of actual per-game dust scores from `user_games`. This produces inaccurate genre-level dust data.
+The database shows **590 out of 1,067** records in `game_dust_breakdowns` do not match the current `user_games.dust_score`. While `refresh_user_dust_breakdowns` exists and is called during manual "Refresh Data" clicks, it only runs for the current user on demand. This means:
 
-**Fix**: Use actual dust scores from `dustBreakdowns` data (already available via the hook) instead of the `unplayedData` source with fake calculations. Pass `dustBreakdowns` as a prop or use the hook directly.
+1. Users who haven't clicked "Refresh Data" since the function was added still have stale breakdowns
+2. The Dust Score tab averages, Top Dust rankings, Biggest Opportunity, and Oldest Neglected cards may show outdated scores
 
-**4. Dust Score tab: averaged factors don't explain the total (Low)**
-The page header says "Your total Dust Score of X" but the progress bars show **averaged** per-game factor scores. There's no clear connection between "Quality: 12" (an average) and the total score of 6,299 (a sum). Users may be confused about what the numbers mean.
+**Root cause**: The `game_dust_breakdowns` table was populated during early batch runs and never auto-synced. The trigger on `user_games` updates `dust_score` there but does not propagate to `game_dust_breakdowns`.
 
-**Fix**: Add clarifying text like "Average per-game breakdown" above the progress bars, and add a note: "Total = sum of all per-game scores across N games".
+### Plan
 
-### Summary of Changes
+**Step 1: Auto-refresh breakdowns on page load when stale**
+
+In `DustPage.tsx`, add logic that checks whether the user's breakdowns are stale (e.g., `last_calculated` older than the most recent `user_games.updated_at`) and automatically triggers `refresh_user_dust_breakdowns` in the background. This ensures data is fresh without requiring manual action.
+
+- File: `src/pages/DustPage.tsx`
+- Add a `useEffect` that calls `supabase.rpc('refresh_user_dust_breakdowns', { p_user_id })` if breakdowns are missing or outdated, then refetches the query
+
+**Step 2: Add a staleness check query**
+
+Create a small helper or inline query that compares the latest `game_dust_breakdowns.last_calculated` for the user against `user_games.updated_at` to determine if a refresh is needed.
+
+- File: `src/pages/DustPage.tsx` (inline) or a small utility hook
+
+**Step 3: Ensure Top Dust tab shows more than 10 games**
+
+The `TopDustContributors` component accepts a "Show top" dropdown (5/10/15/20), but `DustPage.tsx` only passes `dustBreakdowns?.slice(0, 10)` as contributors. This caps the list at 10 regardless of selection.
+
+- File: `src/pages/DustPage.tsx` line 80
+- Change: Pass the full `dustBreakdowns` array (or at least top 20) instead of slicing to 10
+
+### Technical Details
 
 | File | Change |
 |------|--------|
-| New migration | Create `refresh_user_dust_breakdowns(p_user_id)` function that syncs `game_dust_breakdowns` from `user_games` + `games` + `calculate_enhanced_dust_score` |
-| `src/hooks/useMetricsRefresh.tsx` | Call the new breakdown refresh function during metrics refresh |
-| `src/components/dust/CleanScoreBreakdown.tsx` | Normalize progress bars to each factor's max; show "X/max" labels |
-| `src/components/dust/DustScorePerGame.tsx` | Replace fake genre dust calculation with real data from `useDustBreakdowns` |
-| `src/components/dust/DustScoreBreakdown.tsx` | Add "Average per-game" label to clarify the relationship between factors and total |
+| `src/pages/DustPage.tsx` | Add auto-refresh logic for stale breakdowns on mount; pass full contributors array |
+| No new migrations needed | `refresh_user_dust_breakdowns` already exists |
+| No new edge functions | Uses existing RPC call |
+
+### Impact
+
+- All four Dust tabs will show accurate, up-to-date data
+- Users visiting the page for the first time since the fix will see a brief loading state while breakdowns sync
+- Subsequent visits will be fast (data already fresh)
+- Top Dust dropdown will correctly show 5/10/15/20 games
 
