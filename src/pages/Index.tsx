@@ -8,8 +8,10 @@ import { useDemoMode } from "@/context/DemoModeContext";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useProfile } from "@/hooks/use-profile";
 import { useMetricsRefresh } from "@/hooks/useMetricsRefresh";
+import { useUserMetrics } from "@/hooks/use-user-metrics";
 import { callSupabaseFunction } from '@/utils/supabase-functions';
 import { useOptimizedCacheManagement } from '@/hooks/use-query-keys';
+import { formatRelativeTime, isOlderThanDays } from '@/utils/format-utils';
 
 import Header from "../components/Header";
 import AuthModal from '@/components/AuthModal';
@@ -31,7 +33,7 @@ import LinkSteamAccount from "@/components/LinkSteamAccount";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Import, AlertCircle } from "lucide-react";
+import { RefreshCw, Import, AlertCircle, Clock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
