@@ -1,45 +1,27 @@
 
 
-## Library Pages Data Accuracy Review
+## Fix: Stale Import Timestamp + Button Area Layout
 
-### Database vs UI Verification
+### Bug 1: `last_sync` never updates
 
-I queried the database directly and cross-referenced every statistic displayed on the library pages. Here is what I found:
+**Root cause**: The `import-library` edge function uses `safeImportNewGames()` from `import-analysis-utils.ts`, which does NOT call `updateUserLastSync()`. That function only exists in `database-utils.ts → processGamesInBatches()`, which is never called by the current import flow.
 
-| Statistic | DB Value | UI Source | Status |
-|-----------|----------|-----------|--------|
-| Total Games | 83 | `userMetrics.totalGames` | Correct |
-| Games Played | 30 | `userMetrics.playedGames` | Correct |
-| Unplayed Games | 53 | `userMetrics.unplayedGames` | Correct |
-| Total Playtime | 262.5h | `userMetrics.totalPlaytimeHours` | Correct (displays as 262.48h — minor rounding) |
-| Completion Rate | 36% | `playedGames / totalGames * 100` | Correct — tooltip says "% of games you've started playing" |
-| Unique Genres | 11 | Counted from `libraryGames` genre arrays | Correct |
-| Most Popular Genre | Indie (50 games) | Sorted by count descending | Correct |
-| Most Niche Genre | Early Access or Sports (2 games each) | Filtered to `total >= 2`, sorted ascending | Correct |
-| Average Game Age | ~6.1 years | Calculated from release dates | Correct |
-| Vintage Games (11+ yr) | 15 | Counted from release dates | Correct |
-| Decades Spanned | 3 (2000s, 2010s, 2020s) | Counted from decade buckets | Correct — you do NOT have any games older than 2004 |
-| Aging Unplayed | Variable | Unplayed games with release date 3+ years ago | Correct logic |
-| Games w/o release date | 1 | Falls into "Unknown" bucket | Correct |
+So `profile.last_sync` stays at whatever it was set to during your original import months ago.
 
-### Conclusion
+**Fix**: Add an `updateUserLastSync` call in `import-library/index.ts` after the import processing completes (both in the background and synchronous paths). We'll update `last_sync` right after `safeImportNewGames` and `updateExistingGamesPlaytime` finish, before the calculation chain runs.
 
-All statistics on the library pages are accurately derived from and consistent with the database. The data pipeline (`useLibraryData` fetching via `fetchAllUserGames` with pagination, and `useUserMetrics` from the `user_metrics` table) is working correctly.
+### Bug 2: Button area too tall
 
-### Minor Improvements Worth Making
+The two button columns each have `max-w-[220px]`, forcing the description text and timestamps to wrap into 3+ lines. The fix:
 
-1. **Round total playtime display** — Currently shows `262.48h`, should round to `262h` or `262.5h` for cleaner presentation.
+- Increase `max-w` from `220px` to `280px` on each column
+- Switch to a horizontal layout with `sm:flex-row` and `sm:items-start` so on desktop the columns sit side by side more compactly
+- Reduce vertical gaps between button, description, and timestamp from `mt-2` to `mt-1`
 
-2. **Completion Rate tooltip clarity** — The tooltip says "Percentage of games you've started playing." This is accurate but could be more explicit: "Percentage of owned games with any recorded playtime (30 of 83)."
-
-3. **Decades stat tooltip** — Could add context like "Your library spans from the 2000s to the 2020s" so users understand it's not claiming 30-year-old games.
-
-### Files to Modify
+### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/LibraryOverview.tsx` | Round `totalPlaytimeHours` display; enhance Completion Rate tooltip |
-| `src/components/LibraryShelfLifeTab.tsx` | Enhance Decades tooltip with actual decade range |
-
-These are cosmetic-only changes — no data logic fixes needed.
+| `supabase/functions/import-library/index.ts` | Add `last_sync` update after import processing |
+| `src/pages/Index.tsx` | Widen button columns, tighten spacing |
 
