@@ -1,79 +1,45 @@
 
 
-## SEO Enhancement Plan for Unplayed
+## Library Pages Data Accuracy Review
 
-### Current State
+### Database vs UI Verification
 
-**What's already in place:**
-- `react-helmet-async` on all 6 major pages with unique titles and descriptions
-- Open Graph and Twitter Card meta tags in `index.html` (but only for the homepage — not per-page)
-- `robots.txt` allowing all crawlers
-- Favicon set
-- JSON-LD structured data on ProfilePage only
-- Canonical URL on ProfilePage only
+I queried the database directly and cross-referenced every statistic displayed on the library pages. Here is what I found:
 
-**What's missing:**
-- No `sitemap.xml`
-- No canonical URLs on any page except ProfilePage
-- No JSON-LD structured data on homepage or public pages
-- No per-page Open Graph URLs (`og:url`)
-- `robots.txt` has no `Sitemap:` directive
-- No keyword-rich content on the unauthenticated homepage (the landing page is the only crawlable marketing surface)
-- Leaderboard page (the only other public page) has no structured data
-- No `<meta name="keywords">` (minor, but easy)
-- Font loading blocks rendering (no `font-display: swap` in link tags — though Google Fonts handles this via the `&display=swap` param, which is already present)
+| Statistic | DB Value | UI Source | Status |
+|-----------|----------|-----------|--------|
+| Total Games | 83 | `userMetrics.totalGames` | Correct |
+| Games Played | 30 | `userMetrics.playedGames` | Correct |
+| Unplayed Games | 53 | `userMetrics.unplayedGames` | Correct |
+| Total Playtime | 262.5h | `userMetrics.totalPlaytimeHours` | Correct (displays as 262.48h — minor rounding) |
+| Completion Rate | 36% | `playedGames / totalGames * 100` | Correct — tooltip says "% of games you've started playing" |
+| Unique Genres | 11 | Counted from `libraryGames` genre arrays | Correct |
+| Most Popular Genre | Indie (50 games) | Sorted by count descending | Correct |
+| Most Niche Genre | Early Access or Sports (2 games each) | Filtered to `total >= 2`, sorted ascending | Correct |
+| Average Game Age | ~6.1 years | Calculated from release dates | Correct |
+| Vintage Games (11+ yr) | 15 | Counted from release dates | Correct |
+| Decades Spanned | 3 (2000s, 2010s, 2020s) | Counted from decade buckets | Correct — you do NOT have any games older than 2004 |
+| Aging Unplayed | Variable | Unplayed games with release date 3+ years ago | Correct logic |
+| Games w/o release date | 1 | Falls into "Unknown" bucket | Correct |
 
-### Plan
+### Conclusion
 
-**1. Add `public/sitemap.xml`** (new file)
+All statistics on the library pages are accurately derived from and consistent with the database. The data pipeline (`useLibraryData` fetching via `fetchAllUserGames` with pagination, and `useUserMetrics` from the `user_metrics` table) is working correctly.
 
-Static sitemap listing all public, crawlable routes:
-- `/` (homepage)
-- `/leaderboard`
-- `/auth`
-- `/support`
+### Minor Improvements Worth Making
 
-Protected routes (`/library`, `/dust`, `/spend`) are behind auth and shouldn't be indexed. Profile pages are dynamic and would need a server-generated sitemap later.
+1. **Round total playtime display** — Currently shows `262.48h`, should round to `262h` or `262.5h` for cleaner presentation.
 
-**2. Update `public/robots.txt`**
+2. **Completion Rate tooltip clarity** — The tooltip says "Percentage of games you've started playing." This is accurate but could be more explicit: "Percentage of owned games with any recorded playtime (30 of 83)."
 
-- Add `Sitemap: https://unplayed.lovable.app/sitemap.xml`
-- Add `Disallow` for admin, auth callback, and error routes that shouldn't be indexed
+3. **Decades stat tooltip** — Could add context like "Your library spans from the 2000s to the 2020s" so users understand it's not claiming 30-year-old games.
 
-**3. Add canonical URLs to all pages** (via Helmet)
-
-Each page gets `<link rel="canonical" href="https://unplayed.lovable.app/...">` to prevent duplicate content issues and consolidate ranking signals.
-
-**4. Add per-page Open Graph meta tags** (via Helmet)
-
-Currently the homepage `index.html` sets OG tags, but Helmet on inner pages doesn't override `og:url`. Add `og:url`, `og:title`, `og:description`, and `og:image` to each page's `<Helmet>` block. Pages: Index, LeaderboardPage, DustPage, SpendPage, LibraryPage.
-
-**5. Add JSON-LD structured data to homepage**
-
-Add `WebSite` schema with `SearchAction` potential, plus `SoftwareApplication` schema describing unplayed as a web app for Steam backlog management. This helps Google understand what the site is.
-
-**6. Add JSON-LD structured data to Leaderboard**
-
-Add `ItemList` schema for the leaderboard entries — this can produce rich results in search.
-
-**7. Enhance unauthenticated homepage content**
-
-The landing page for logged-out users currently shows a single headline and one sentence. This is the only page Google can fully crawl. Add a brief "How It Works" section and feature highlights with keyword-rich text (e.g., "Steam backlog tracker", "unplayed games finder", "dust score", "gaming library analytics"). This is the highest-impact SEO change.
-
-### Files Modified
+### Files to Modify
 
 | File | Change |
 |------|--------|
-| `public/sitemap.xml` | New — static sitemap |
-| `public/robots.txt` | Add Sitemap directive and Disallow rules |
-| `src/pages/Index.tsx` | Add canonical, OG tags, JSON-LD, and landing content for logged-out users |
-| `src/pages/LeaderboardPage.tsx` | Add canonical, OG tags, JSON-LD ItemList |
-| `src/pages/DustPage.tsx` | Add canonical and OG tags |
-| `src/pages/SpendPage.tsx` | Add canonical and OG tags |
-| `src/pages/LibraryPage.tsx` | Add canonical and OG tags |
-| `index.html` | Minor: add `og:url` for homepage default |
+| `src/components/LibraryOverview.tsx` | Round `totalPlaytimeHours` display; enhance Completion Rate tooltip |
+| `src/components/LibraryShelfLifeTab.tsx` | Enhance Decades tooltip with actual decade range |
 
-### No backend or database changes needed
-
-All changes are client-side static content and meta tags.
+These are cosmetic-only changes — no data logic fixes needed.
 
