@@ -1,43 +1,24 @@
 
 
-## Production Readiness Review
+## Move Dust Score Tiers Below User's Dust Tier
 
-All recent changes have been reviewed. Here's the status:
+Currently in the right column of `DustScoreBreakdown.tsx`, the order is:
+1. Your Dust Tier
+2. Dust Reduction Progress
+3. Biggest Opportunity
+4. Oldest Neglected
+5. Dust Score Tiers
 
-### Database Changes -- Ready
+The change moves "Dust Score Tiers" to position 2, directly under "Your Dust Tier", so the user sees their ranking and the full tier reference together.
 
-| Migration | Status | Notes |
-|-----------|--------|-------|
-| `update_dust_score()` trigger | Deployed, verified | Now calls `calculate_enhanced_dust_score` with all 5 factors |
-| `calculate_enhanced_dust_score` Metacritic NULL fix | Deployed, verified | `NULL → 6` instead of `10` |
-| `game_dust_breakdowns` columns | Exist | `quality_score`, `price_score`, `genre_score` all present |
+### File: `src/components/dust/DustScoreBreakdown.tsx`
 
-The trigger is active and uses the correct function. New imports will get proper 5-factor scores.
+In the right column `<div>` (line 316), reorder the blocks:
+1. Your Dust Tier (lines 318-329) -- stays
+2. **Dust Score Tiers** (lines 377-399) -- moved up
+3. Dust Reduction Progress (lines 332-354) -- shifted down
+4. Biggest Opportunity (lines 357-364) -- stays
+5. Oldest Neglected (lines 367-374) -- stays
 
-### Frontend Changes -- 2 Minor Cleanup Items
-
-| File | Issue | Severity |
-|------|-------|----------|
-| `DustScoreBreakdown.tsx` line 25 | Debug `console.log` left in production code | Low -- noisy but harmless |
-| `DustPage.tsx` line 2 | Unused `useEffect` import | Low -- lint warning |
-| `use-dust-breakdowns.ts` lines 48-50 | `(breakdown as any)` casts for columns that now exist in the schema | Low -- works but unnecessary |
-
-### What's Correct
-
-- DustPage data mappings now use real `qualityScore`, `priceScore`, `genreScore` fields
-- TopDustContributors copy correctly describes the 5-factor system
-- DustScoreBreakdown "What It Means" copy matches the actual formula
-- MetadataConsistencyCard properly wrapped in CollapsibleToolCard
-- QueueManagerPage admin tools all consistent
-- TypeScript compiles with zero errors
-
-### Recommended Cleanup Before Push
-
-1. **Remove debug console.log** from `DustScoreBreakdown.tsx` line 25
-2. **Remove unused `useEffect` import** from `DustPage.tsx` line 2
-3. **Remove `(breakdown as any)` casts** in `use-dust-breakdowns.ts` -- the columns exist natively now, so direct access like `breakdown.quality_score` will work and provide type safety
-
-### Post-Deploy Action Required
-
-After pushing, run a **batch dust score recalculation** from the Admin Queue Manager to apply the Metacritic NULL scoring change (10 → 6) to all 303K existing `user_games` records. Without this, existing scores remain on the old formula until the next per-user refresh.
+No logic or styling changes needed -- just cut/paste the Dust Score Tiers block.
 
