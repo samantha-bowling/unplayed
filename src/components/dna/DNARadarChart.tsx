@@ -6,7 +6,7 @@ interface DNARadarChartProps {
   dimensions: DNADimension[];
 }
 
-const SIZE = 300;
+const SIZE = 380;
 const CENTER = SIZE / 2;
 const RADIUS = 120;
 const LEVELS = 4;
@@ -43,7 +43,7 @@ const DNARadarChart: React.FC<DNARadarChartProps> = ({ dimensions }) => {
 
   // Labels
   const labels = dimensions.map((d, i) => {
-    const [x, y] = polarToCartesian(i * angleStep, RADIUS + 28);
+    const [x, y] = polarToCartesian(i * angleStep, RADIUS + 38);
     return { x, y, label: d.label, score: d.score };
   });
 

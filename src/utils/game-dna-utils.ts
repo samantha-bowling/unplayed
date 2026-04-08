@@ -9,6 +9,7 @@ export interface DNADimension {
   icon: string; // lucide icon name
   stat: string; // key stat driving the score
   description: string; // witty one-liner
+  explanation: string; // plain-language scoring breakdown
 }
 
 export interface DNAProfile {
@@ -24,8 +25,7 @@ function clamp(v: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Math.round(v)));
 }
 
-function calcCollector(totalGames: number): { score: number; stat: string; desc: string } {
-  // Average Steam user owns ~10-15 games. 200+ is huge. 500+ is extreme.
+function calcCollector(totalGames: number): { score: number; stat: string; desc: string; explanation: string } {
   const score = clamp(Math.min(100, (totalGames / 400) * 100));
   const stat = `${totalGames} games owned`;
   const tiers: [number, string][] = [
@@ -36,20 +36,19 @@ function calcCollector(totalGames: number): { score: number; stat: string; desc:
     [0,  "Just getting started — the world awaits"],
   ];
   const desc = tiers.find(([t]) => score >= t)?.[1] ?? tiers[tiers.length - 1][1];
-  return { score, stat, desc };
+  const explanation = `Based on ${totalGames} games owned. Score reaches 50 at ~200 games and 100 at 400+.`;
+  return { score, stat, desc, explanation };
 }
 
-function calcExplorer(genreStats: GenreStat[]): { score: number; stat: string; desc: string } {
-  if (!genreStats.length) return { score: 0, stat: '0 genres', desc: 'No genre data yet' };
+function calcExplorer(genreStats: GenreStat[]): { score: number; stat: string; desc: string; explanation: string } {
+  if (!genreStats.length) return { score: 0, stat: '0 genres', desc: 'No genre data yet', explanation: 'No genre data available yet.' };
   const uniqueGenres = genreStats.length;
-  // Shannon entropy for evenness
   const total = genreStats.reduce((s, g) => s + g.game_count, 0);
-  if (total === 0) return { score: 0, stat: '0 genres', desc: 'No genre data yet' };
+  if (total === 0) return { score: 0, stat: '0 genres', desc: 'No genre data yet', explanation: 'No genre data available yet.' };
   const probs = genreStats.map(g => g.game_count / total).filter(p => p > 0);
   const entropy = -probs.reduce((s, p) => s + p * Math.log2(p), 0);
   const maxEntropy = Math.log2(uniqueGenres) || 1;
-  const evenness = entropy / maxEntropy; // 0-1
-  // Combine: genre count (60%) + evenness (40%)
+  const evenness = entropy / maxEntropy;
   const genreScore = Math.min(1, uniqueGenres / 20) * 60 + evenness * 40;
   const score = clamp(genreScore);
   const stat = `${uniqueGenres} genres explored`;
@@ -60,14 +59,14 @@ function calcExplorer(genreStats: GenreStat[]): { score: number; stat: string; d
     [0,  "Loyal to your favorites"],
   ];
   const desc = tiers.find(([t]) => score >= t)?.[1] ?? tiers[tiers.length - 1][1];
-  return { score, stat, desc };
+  const explanation = `Based on ${uniqueGenres} unique genres and how evenly you play across them (${Math.round(evenness * 100)}% evenness). 20+ genres with even spread = 100.`;
+  return { score, stat, desc, explanation };
 }
 
-function calcCompletionist(metrics: UserMetrics): { score: number; stat: string; desc: string } {
+function calcCompletionist(metrics: UserMetrics): { score: number; stat: string; desc: string; explanation: string } {
   const { playedGames, totalPlaytimeHours, totalGames } = metrics;
-  if (!playedGames || !totalGames) return { score: 0, stat: '0h avg', desc: 'Nothing played yet' };
+  if (!playedGames || !totalGames) return { score: 0, stat: '0h avg', desc: 'Nothing played yet', explanation: 'No playtime data yet.' };
   const avgHoursPerPlayed = totalPlaytimeHours / playedGames;
-  // 20h avg = ~100 score
   const score = clamp((avgHoursPerPlayed / 20) * 100);
   const stat = `${avgHoursPerPlayed.toFixed(1)}h avg per game`;
   const tiers: [number, string][] = [
@@ -77,14 +76,14 @@ function calcCompletionist(metrics: UserMetrics): { score: number; stat: string;
     [0,  "So many games, so little time"],
   ];
   const desc = tiers.find(([t]) => score >= t)?.[1] ?? tiers[tiers.length - 1][1];
-  return { score, stat, desc };
+  const explanation = `Based on ${avgHoursPerPlayed.toFixed(1)}h average per played game (${playedGames} played). Score reaches 50 at ~10h avg and 100 at ~20h avg.`;
+  return { score, stat, desc, explanation };
 }
 
-function calcHoarder(metrics: UserMetrics): { score: number; stat: string; desc: string } {
+function calcHoarder(metrics: UserMetrics): { score: number; stat: string; desc: string; explanation: string } {
   const { unplayedGames, totalGames, averageDustScore } = metrics;
-  if (!totalGames) return { score: 0, stat: '0% unplayed', desc: 'Nothing to hoard yet' };
+  if (!totalGames) return { score: 0, stat: '0% unplayed', desc: 'Nothing to hoard yet', explanation: 'No library data yet.' };
   const unplayedPct = (unplayedGames / totalGames) * 100;
-  // Combine unplayed % (70%) + avg dust score normalized to 0-100 (30%)
   const dustNorm = Math.min(100, (averageDustScore / 80) * 100);
   const score = clamp(unplayedPct * 0.7 + dustNorm * 0.3);
   const stat = `${Math.round(unplayedPct)}% unplayed`;
@@ -95,7 +94,8 @@ function calcHoarder(metrics: UserMetrics): { score: number; stat: string; desc:
     [0,  "Impressively disciplined"],
   ];
   const desc = tiers.find(([t]) => score >= t)?.[1] ?? tiers[tiers.length - 1][1];
-  return { score, stat, desc };
+  const explanation = `${Math.round(unplayedPct)}% unplayed (70% weight) + dust score ${Math.round(dustNorm)}/100 (30% weight). ${unplayedGames} of ${totalGames} games never played.`;
+  return { score, stat, desc, explanation };
 }
 
 interface SpendingData {
@@ -106,16 +106,15 @@ interface SpendingData {
   totalPlaytimeHours: number;
 }
 
-function calcBargainHunter(spending: SpendingData): { score: number; stat: string; desc: string } {
+function calcBargainHunter(spending: SpendingData): { score: number; stat: string; desc: string; explanation: string } {
   const { totalSpentCents, freeGames, paidGames, totalGames, totalPlaytimeHours } = spending;
-  if (!totalGames) return { score: 0, stat: '$0 spent', desc: 'No spending data yet' };
+  if (!totalGames) return { score: 0, stat: '$0 spent', desc: 'No spending data yet', explanation: 'No spending data available yet.' };
   const freePct = (freeGames / totalGames) * 100;
   const avgPricePaid = paidGames > 0 ? totalSpentCents / paidGames / 100 : 0;
   const costPerHour = totalPlaytimeHours > 0 ? (totalSpentCents / 100) / totalPlaytimeHours : 999;
-  // Lower avg price = higher score, more free games = higher score, lower cost/hour = higher
-  const priceScore = clamp(100 - (avgPricePaid / 30) * 100); // $30 avg = 0
-  const freeScore = clamp(freePct * 2); // 50% free = 100
-  const cphScore = clamp(100 - (costPerHour / 5) * 100); // $5/hr = 0
+  const priceScore = clamp(100 - (avgPricePaid / 30) * 100);
+  const freeScore = clamp(freePct * 2);
+  const cphScore = clamp(100 - (costPerHour / 5) * 100);
   const score = clamp(priceScore * 0.4 + freeScore * 0.3 + cphScore * 0.3);
   const stat = `$${(totalSpentCents / 100).toFixed(0)} total · $${costPerHour.toFixed(2)}/hr`;
   const tiers: [number, string][] = [
@@ -125,7 +124,8 @@ function calcBargainHunter(spending: SpendingData): { score: number; stat: strin
     [0,  "Money is no object"],
   ];
   const desc = tiers.find(([t]) => score >= t)?.[1] ?? tiers[tiers.length - 1][1];
-  return { score, stat, desc };
+  const explanation = `Avg price $${avgPricePaid.toFixed(2)} (40% weight, $0=100), ${Math.round(freePct)}% free games (30% weight), $${costPerHour.toFixed(2)}/hr cost (30% weight, $0=100).`;
+  return { score, stat, desc, explanation };
 }
 
 interface GameAgeData {
@@ -133,9 +133,8 @@ interface GameAgeData {
   vintagePct: number; // % of games 11+ years old
 }
 
-function calcRetroGamer(ageData: GameAgeData): { score: number; stat: string; desc: string } {
+function calcRetroGamer(ageData: GameAgeData): { score: number; stat: string; desc: string; explanation: string } {
   const { avgYearsOld, vintagePct } = ageData;
-  // 10 years avg = high. vintage % directly contributes.
   const ageScore = clamp((avgYearsOld / 12) * 100);
   const vintageScore = clamp(vintagePct * 1.5);
   const score = clamp(ageScore * 0.5 + vintageScore * 0.5);
@@ -147,7 +146,8 @@ function calcRetroGamer(ageData: GameAgeData): { score: number; stat: string; de
     [0,  "Bleeding edge only"],
   ];
   const desc = tiers.find(([t]) => score >= t)?.[1] ?? tiers[tiers.length - 1][1];
-  return { score, stat, desc };
+  const explanation = `Based on ${avgYearsOld.toFixed(1)}yr average game age (50% weight, 12yr=100) and ${Math.round(vintagePct)}% vintage games 11+ years old (50% weight).`;
+  return { score, stat, desc, explanation };
 }
 
 // --- Archetype detection ---
@@ -242,12 +242,12 @@ export function buildGameDNA(input: GameDNAInput): DNAProfile {
   const retro = calcRetroGamer(gameAgeData);
 
   const dimensions: DNADimension[] = [
-    { key: 'collector', label: 'Collector', score: collector.score, icon: 'Library', stat: collector.stat, description: collector.desc },
-    { key: 'explorer', label: 'Explorer', score: explorer.score, icon: 'Compass', stat: explorer.stat, description: explorer.desc },
-    { key: 'completionist', label: 'Completionist', score: completionist.score, icon: 'Trophy', stat: completionist.stat, description: completionist.desc },
-    { key: 'hoarder', label: 'Hoarder', score: hoarder.score, icon: 'PackageOpen', stat: hoarder.stat, description: hoarder.desc },
-    { key: 'bargain', label: 'Bargain Hunter', score: bargain.score, icon: 'BadgeDollarSign', stat: bargain.stat, description: bargain.desc },
-    { key: 'retro', label: 'Retro Gamer', score: retro.score, icon: 'Gamepad2', stat: retro.stat, description: retro.desc },
+    { key: 'collector', label: 'Collector', score: collector.score, icon: 'Library', stat: collector.stat, description: collector.desc, explanation: collector.explanation },
+    { key: 'explorer', label: 'Explorer', score: explorer.score, icon: 'Compass', stat: explorer.stat, description: explorer.desc, explanation: explorer.explanation },
+    { key: 'completionist', label: 'Completionist', score: completionist.score, icon: 'Trophy', stat: completionist.stat, description: completionist.desc, explanation: completionist.explanation },
+    { key: 'hoarder', label: 'Hoarder', score: hoarder.score, icon: 'PackageOpen', stat: hoarder.stat, description: hoarder.desc, explanation: hoarder.explanation },
+    { key: 'bargain', label: 'Bargain Hunter', score: bargain.score, icon: 'BadgeDollarSign', stat: bargain.stat, description: bargain.desc, explanation: bargain.explanation },
+    { key: 'retro', label: 'Retro Gamer', score: retro.score, icon: 'Gamepad2', stat: retro.stat, description: retro.desc, explanation: retro.explanation },
   ];
 
   const archetype = detectArchetype(dimensions);
