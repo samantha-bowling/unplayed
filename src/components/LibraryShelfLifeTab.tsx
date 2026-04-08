@@ -194,7 +194,9 @@ const LibraryShelfLifeTab = () => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Number of different decades represented in your library</p>
+                  <p>Your library spans {Object.keys(shelfLifeStats.gamesByDecade).sort().length > 0 
+                    ? `from the ${Object.keys(shelfLifeStats.gamesByDecade).sort()[0]} to the ${Object.keys(shelfLifeStats.gamesByDecade).sort().slice(-1)[0]}`
+                    : 'no decades yet'}</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
