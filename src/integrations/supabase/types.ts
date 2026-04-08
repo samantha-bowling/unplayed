@@ -1208,6 +1208,10 @@ export type Database = {
           updated_count: number
         }[]
       }
+      refresh_user_dust_breakdowns: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       revoke_role: {
         Args: {
           target_role: Database["public"]["Enums"]["app_role"]
