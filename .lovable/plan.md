@@ -1,58 +1,66 @@
 
 
-## Comprehensive Review & Improved Hero Section UX
+## Fix Spending Data Accuracy Across Dashboard & Spending Pages
 
-### Impact Analysis
+### Problem Confirmed
 
-Before implementing, here is how the plan interacts with other parts of the app:
+The `upsert_user_spending_metrics` DB function uses **raw, unvalidated prices** from the `games` table as a fallback, while `calculate_user_metrics_with_clean_score` uses `get_clean_game_price()` which caps prices at $500 and rejects bad data. This creates massive discrepancies:
 
-**No negative impact on other pages.** The changes are isolated to `Index.tsx` (hero section display) and `format-utils.ts` (new utility function). No calculation logic, hooks, or data pipelines are modified.
+| User | `user_spending_metrics` (total) | `user_metrics` (total) | Ratio |
+|------|------|------|------|
+| User A | $1,059,778 | $10,397 | 102x |
+| User B | $1,036,832 | $25,161 | 41x |
+| User C | $838,301 | $5,646 | 148x |
 
-| Area | Impact | Detail |
-|------|--------|--------|
-| Dashboard refresh (`refreshAllData`) | None | Function logic unchanged; we only change what text appears below the button |
-| `useDashboardRefresh` hook | None | Not used on Index.tsx; used elsewhere and untouched |
-| `useMetricsRefresh` hook | None | Still called the same way; no changes |
-| `useUnplayedData` | None | Still provides `lastRefreshed` (from `profile.last_sync`); we just use it differently |
-| `useUserMetrics` | Read-only | We read `lastCalculated` from this existing hook for the refresh timestamp |
-| Dust/Spend/Library pages | None | No shared state modified |
-| Import edge function | None | It already updates `users.last_sync` on completion |
+**Root cause:** 68 games in the `games` table have corrupt `price_cents` (e.g., F1® 25 = $999,000, Sekiro = $891,000). The `game_prices` table is clean, but when `upsert_user_spending_metrics` falls back to `g.price_cents`, it uses the corrupt values directly.
 
-### Current Data Sources (already in the DB)
+### Affected Components
 
-- **Last import time**: `users.last_sync` — updated by the `import-library` edge function every time it runs. Already available via `useProfile()` → `profile.last_sync`.
-- **Last dashboard refresh time**: `user_metrics.last_calculated` — updated by `calculate_user_metrics_with_clean_score` RPC every time metrics are recalculated. Already available via `useUserMetrics()` → `lastCalculated`.
+| Component | Data Source | Status |
+|-----------|-----------|--------|
+| Dashboard "unplayed Value" card (`SpendingEstimate`) | `useUnifiedSpendingDataV2` → `user_spending_metrics` | **Inflated** |
+| Spending page Overview tab (`SpendingSummary`) | same | **Inflated** |
+| Spending page Insights tab (`SpendingInsights`) | same (for savings, library composition counts) | **Inflated totals** |
+| Top Expensive Unplayed Games | `useTopExpensiveUnplayedGames` → `game_prices` directly | **OK** (game_prices is clean) |
+| Genre bar chart in Insights | `useGenreStats` → `user_genre_stats` (counts only) | **OK** (no price data) |
+| `useDashboardData` | reads from `user_spending_metrics` | **Inflated** |
 
-Both are persistent DB values, so they survive page reloads — unlike the current `useState` approach.
+### Plan
 
-### Changes
+**Step 1: Fix `upsert_user_spending_metrics` RPC (migration)**
 
-**File: `src/utils/format-utils.ts`** — Add `formatRelativeTime` helper
+Replace the raw `COALESCE(gp.final_price_cents, g.price_cents)` with `get_clean_game_price(ug.game_id, g.price_cents)` — the same validated price function used by `calculate_user_metrics_with_clean_score`. This ensures all prices are capped at $500 and negative/null values are handled.
 
-A small function that converts a Date to a human-readable relative string: "just now", "5 minutes ago", "3 days ago", "2 weeks ago", etc.
+The full function will be rewritten to mirror the approach in `calculate_user_spending_metrics` (which already uses `get_clean_game_price` correctly) but retaining the upsert behavior.
 
-**File: `src/pages/Index.tsx`** — Hero section updates
+**Step 2: Clean corrupt `games.price_cents` data (migration)**
 
-1. **Remove `lastImportTime` and `lastDashboardRefreshTime` local state** — these are volatile and reset on page reload.
+```sql
+UPDATE games SET price_cents = NULL WHERE price_cents > 50000;
+```
 
-2. **Read persistent timestamps from existing hooks**:
-   - Import time: `profile.last_sync` (already available from `useProfile`)
-   - Refresh time: `userMetrics?.lastCalculated` (add `useUserMetrics` import, already cached)
+This clears the 68 corrupt records so even functions that don't use `get_clean_game_price` won't be affected in the future.
 
-3. **Add descriptive text under each button**:
-   - Import: "Fetches any new games added to your Steam library"
-   - Refresh: "Recalculates your dust scores and dashboard stats"
+**Step 3: No frontend changes needed**
 
-4. **Show persistent relative timestamps** under each button:
-   - "Last synced: 3 days ago" (with full date in tooltip)
-   - "Last refreshed: 1 day ago" (with full date in tooltip)
+All frontend components (`SpendingEstimate`, `SpendingSummary`, `SpendingInsights`, `useDashboardData`) already read from `user_spending_metrics` via `useUnifiedSpendingDataV2`. Once the DB function is fixed:
+- A "Refresh Dashboard" click triggers `upsert_user_spending_metrics` which will now produce correct values
+- All pages will immediately show accurate data
 
-5. **Add a gentle nudge** when `profile.last_sync` is older than 7 days:
-   - Small amber text: "It's been a while — sync to catch new purchases!"
+`TopExpensiveUnplayedGames` reads directly from the clean `game_prices` table, so it is already correct.
 
-6. **Remove the ambiguous "Data last updated" line** (currently line 339-343) since per-button timestamps replace it.
+### Technical Details
 
-### No database changes needed
+| File | Change |
+|------|--------|
+| New migration | Rewrite `upsert_user_spending_metrics` to use `get_clean_game_price`; NULL out corrupt `games.price_cents > 50000` |
+| No frontend changes | All UI reads from `user_spending_metrics` which will be fixed at the DB level |
+| No edge function changes | `calculate-user-spending` calls `upsert_user_spending_metrics` — it will automatically benefit |
 
-All data sources already exist. No migrations, no new edge functions.
+### Impact
+
+- Dashboard and Spending page values will drop from inflated thousands/millions to accurate amounts
+- `user_spending_metrics` and `user_metrics` will be consistent with each other
+- Existing users will see corrected values after their next "Refresh Dashboard" click
+- No risk to other pages — this is purely a DB function fix and data cleanup
 
