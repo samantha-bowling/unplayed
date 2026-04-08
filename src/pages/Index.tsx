@@ -273,7 +273,7 @@ const Index = () => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6">
             {/* Import Button Column */}
-            <div className="flex flex-col items-center max-w-[220px]">
+            <div className="flex flex-col items-center max-w-[280px]">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -291,7 +291,7 @@ const Index = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
+              <p className="text-xs text-muted-foreground mt-1 text-center">
                 Fetches any new games added to your Steam library
               </p>
               {lastSyncDate ? (
@@ -320,7 +320,7 @@ const Index = () => {
             
             {/* Refresh Button Column */}
             {!isImporting && (
-              <div className="flex flex-col items-center max-w-[220px]">
+              <div className="flex flex-col items-center max-w-[280px]">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -339,7 +339,7 @@ const Index = () => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
+                <p className="text-xs text-muted-foreground mt-1 text-center">
                   Recalculates your dust scores and dashboard stats
                 </p>
                 {lastMetricsDate ? (
