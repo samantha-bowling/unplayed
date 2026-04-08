@@ -129,6 +129,13 @@ const DustPage = () => {
       <Helmet>
         <title>Your Dust Report – unplayed</title>
         <meta name="description" content="A detailed breakdown of your Steam library neglect. See dust scores, clean scores, and top dust contributors." />
+        <link rel="canonical" href="https://unplayed.lovable.app/dust" />
+        <meta property="og:url" content="https://unplayed.lovable.app/dust" />
+        <meta property="og:title" content="Your Dust Report – unplayed" />
+        <meta property="og:description" content="A detailed breakdown of your Steam library neglect. See dust scores, clean scores, and top dust contributors." />
+        <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
+        <meta name="twitter:title" content="Your Dust Report – unplayed" />
+        <meta name="twitter:description" content="A detailed breakdown of your Steam library neglect. See dust scores, clean scores, and top dust contributors." />
       </Helmet>
       <Header />
       

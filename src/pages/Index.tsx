@@ -392,6 +392,39 @@ const Index = () => {
       <Helmet>
         <title>unplayed – Conquer Your Steam Backlog</title>
         <meta name="description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+        <link rel="canonical" href="https://unplayed.lovable.app/" />
+        <meta property="og:url" content="https://unplayed.lovable.app/" />
+        <meta property="og:title" content="unplayed – Conquer Your Steam Backlog" />
+        <meta property="og:description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+        <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
+        <meta name="twitter:title" content="unplayed – Conquer Your Steam Backlog" />
+        <meta name="twitter:description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "unplayed",
+          "url": "https://unplayed.lovable.app",
+          "description": "Steam backlog tracker and gaming library analytics tool. Discover your unplayed games, dust scores, and spending insights.",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://unplayed.lovable.app/leaderboard",
+            "query-input": "required"
+          }
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "unplayed",
+          "applicationCategory": "GameApplication",
+          "operatingSystem": "Web",
+          "url": "https://unplayed.lovable.app",
+          "description": "Track your Steam backlog, analyze dust scores, and discover unplayed games in your library.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        })}</script>
       </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -456,26 +489,102 @@ const Index = () => {
           </div>
         </section>
 
-        {/* CTA */}
+        {/* SEO Content + CTA for logged-out users */}
         {!user && (
-          <section className="w-full py-10 px-4">
-            <div className="max-w-7xl mx-auto text-center">
-              <h2 className="text-3xl font-bold font-space mb-4 text-white">
-                Ready to confront your backlog?
-              </h2>
-              <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
-                Log in to explore your unplayed library and start tracking your Steam games.
-              </p>
-              <div className="flex justify-center">
-                <Button onClick={() => setAuthModalOpen(true)}>
-                  Sign In / Sign Up
-                </Button>
+          <>
+            {/* How It Works */}
+            <section className="w-full py-12 px-4">
+              <div className="max-w-5xl mx-auto">
+                <h2 className="text-3xl font-bold font-space mb-8 text-center text-white">
+                  How It Works
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="text-center">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-unplayed-mint/20 flex items-center justify-center">
+                      <Import className="w-7 h-7 text-unplayed-mint" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Import Your Steam Library</h3>
+                    <p className="text-muted-foreground">
+                      Connect your Steam account and import your full game library in seconds. Works with any public Steam profile.
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-unplayed-amber/20 flex items-center justify-center">
+                      <AlertCircle className="w-7 h-7 text-unplayed-amber" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">See Your Dust Score</h3>
+                    <p className="text-muted-foreground">
+                      Every unplayed game accumulates dust based on age, price, genre, and quality. Your Dust Score measures your total backlog neglect.
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-unplayed-pink/20 flex items-center justify-center">
+                      <RefreshCw className="w-7 h-7 text-unplayed-pink" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Conquer Your Backlog</h3>
+                    <p className="text-muted-foreground">
+                      Use the random game picker, spending insights, and shelf life tracker to finally play the games you already own.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mt-4 mb-2">
-                You'll connect your Steam account after login.
-              </p>
-            </div>
-          </section>
+            </section>
+
+            {/* Feature Highlights for SEO */}
+            <section className="w-full py-12 px-4 border-t border-white/5">
+              <div className="max-w-5xl mx-auto">
+                <h2 className="text-3xl font-bold font-space mb-8 text-center text-white">
+                  Your Steam Backlog, Analyzed
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="glass-panel p-6">
+                    <h3 className="text-lg font-semibold text-unplayed-mint mb-2">Steam Backlog Tracker</h3>
+                    <p className="text-muted-foreground text-sm">
+                      See exactly how many games in your Steam library you've never launched. Track your unplayed count over time and watch it shrink.
+                    </p>
+                  </div>
+                  <div className="glass-panel p-6">
+                    <h3 className="text-lg font-semibold text-unplayed-amber mb-2">Gaming Library Analytics</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Genre breakdowns, spending analysis, shelf life tracking, and price distribution charts for your entire Steam collection.
+                    </p>
+                  </div>
+                  <div className="glass-panel p-6">
+                    <h3 className="text-lg font-semibold text-unplayed-pink mb-2">Unplayed Games Finder</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Discover hidden gems in your library with the random game picker. Filter by genre, playtime, and more to find your next play.
+                    </p>
+                  </div>
+                  <div className="glass-panel p-6">
+                    <h3 className="text-lg font-semibold text-white mb-2">Dust Dynasty Leaderboard</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Compete with other gamers on the Dust Dynasty leaderboard. Who has the most neglected Steam library? Find out and claim your rank.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Final CTA */}
+            <section className="w-full py-10 px-4">
+              <div className="max-w-7xl mx-auto text-center">
+                <h2 className="text-3xl font-bold font-space mb-4 text-white">
+                  Ready to confront your backlog?
+                </h2>
+                <p className="text-xl text-muted-foreground mb-6 max-w-3xl mx-auto">
+                  Log in to explore your unplayed library and start tracking your Steam games.
+                </p>
+                <div className="flex justify-center">
+                  <Button onClick={() => setAuthModalOpen(true)}>
+                    Sign In / Sign Up
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4 mb-2">
+                  You'll connect your Steam account after login.
+                </p>
+              </div>
+            </section>
+          </>
         )}
 
         <Footer />

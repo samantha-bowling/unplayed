@@ -33,6 +33,13 @@ const LibraryPage = () => {
       <Helmet>
         <title>Your Game Library – unplayed</title>
         <meta name="description" content="Browse and manage your complete Steam library with advanced filtering, genre stats, and shelf life tracking." />
+        <link rel="canonical" href="https://unplayed.lovable.app/library" />
+        <meta property="og:url" content="https://unplayed.lovable.app/library" />
+        <meta property="og:title" content="Your Game Library – unplayed" />
+        <meta property="og:description" content="Browse and manage your complete Steam library with advanced filtering, genre stats, and shelf life tracking." />
+        <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
+        <meta name="twitter:title" content="Your Game Library – unplayed" />
+        <meta name="twitter:description" content="Browse and manage your complete Steam library with advanced filtering, genre stats, and shelf life tracking." />
       </Helmet>
       <Header />
       

@@ -173,6 +173,22 @@ const LeaderboardPage = () => {
         <Helmet>
           <title>Dust Dynasty Leaderboard – unplayed</title>
           <meta name="description" content="Who has the dustiest Steam library? See the ultimate gaming backlog leaderboard on unplayed." />
+          <link rel="canonical" href="https://unplayed.lovable.app/leaderboard" />
+          <meta property="og:url" content="https://unplayed.lovable.app/leaderboard" />
+          <meta property="og:title" content="Dust Dynasty Leaderboard – unplayed" />
+          <meta property="og:description" content="Who has the dustiest Steam library? See the ultimate gaming backlog leaderboard on unplayed." />
+          <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
+          <meta name="twitter:title" content="Dust Dynasty Leaderboard – unplayed" />
+          <meta name="twitter:description" content="Who has the dustiest Steam library? See the ultimate gaming backlog leaderboard on unplayed." />
+          <script type="application/ld+json">{JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": "Dust Dynasty Leaderboard",
+            "description": "The ultimate Steam backlog leaderboard – ranking gamers by their unplayed library dust scores.",
+            "url": "https://unplayed.lovable.app/leaderboard",
+            "numberOfItems": leaderboardData?.length || 0,
+            "itemListOrder": "https://schema.org/ItemListOrderDescending"
+          })}</script>
         </Helmet>
         <Header />
         
