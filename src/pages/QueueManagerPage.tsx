@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Zap, Loader2, Calculator, Trophy, RefreshCw, Wind, Users, ChevronDown, Info } from "lucide-react";
+import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
@@ -332,6 +333,7 @@ const QueueManagerPage = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-24">
+        <AdminBreadcrumb currentPage="Game Queue Manager" />
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Game Queue Manager</h1>
           <p className="text-muted-foreground">

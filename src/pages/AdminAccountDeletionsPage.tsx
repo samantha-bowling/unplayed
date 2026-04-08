@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { InfoIcon, HelpCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import AdminBreadcrumb from '@/components/admin/AdminBreadcrumb';
 import { 
   Tooltip, 
   TooltipContent, 
@@ -79,9 +80,10 @@ const AdminAccountDeletionsPage = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-24">
+        <AdminBreadcrumb currentPage="Account Deletions" />
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Account Deletions</h1>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             View feedback and analytics for users who have deleted their accounts.
           </p>
         </div>
