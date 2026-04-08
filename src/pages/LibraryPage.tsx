@@ -7,6 +7,7 @@ import LibraryOverview from "@/components/LibraryOverview";
 import LibraryGamesTab from "@/components/LibraryGamesTab";
 import LibraryGenresTab from "@/components/LibraryGenresTab";
 import LibraryShelfLifeTab from "@/components/LibraryShelfLifeTab";
+import LibraryGameDNA from "@/components/LibraryGameDNA";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLibraryData } from "@/hooks/use-library-data";
 
@@ -55,7 +56,7 @@ const LibraryPage = () => {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-black/40 border border-unplayed-mint/20">
+            <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-5 bg-black/40 border border-unplayed-mint/20">
               <TabsTrigger 
                 value="overview"
                 className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
@@ -80,6 +81,12 @@ const LibraryPage = () => {
               >
                 Shelf Life
               </TabsTrigger>
+              <TabsTrigger 
+                value="game-dna"
+                className="data-[state=active]:bg-unplayed-mint data-[state=active]:text-black"
+              >
+                Game DNA
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview" className="space-y-4">
@@ -96,6 +103,10 @@ const LibraryPage = () => {
             
             <TabsContent value="shelf-life" className="space-y-4">
               <LibraryShelfLifeTab />
+            </TabsContent>
+            
+            <TabsContent value="game-dna" className="space-y-4">
+              <LibraryGameDNA />
             </TabsContent>
           </Tabs>
         </div>
