@@ -1,66 +1,64 @@
 
 
-## Plan: Reorganize & Enhance Queue Manager Page
+## Plan: Admin Panel Consistency & Cleanup
 
-### Summary
-Reorganize the Queue Manager page into logical sections, make batch tools collapsed by default, add descriptive use-case info to each tool, and fix the layout relationship between Queue Statistics and its Batch Processing Controls.
+### Issues Found
 
-### Current Layout (top to bottom)
-1. Queue Statistics
-2. Smart Prioritization (card component)
-3. Header Image Enhancement (card component)
-4. Dust Score Recalculation
-5. Batch User Metrics Recalculation
-6. Batch Processing Controls (Steam queue processor) -- disconnected from Queue Stats
-7. Metadata Consistency
-8. Smart User Prioritization (manual, per-user)
-9. User Metrics Calculator (manual, per-user)
-10. Leaderboard Management
+1. **AdminSteamDataPage** is a 486-line legacy page that duplicates functionality now in QueueManagerPage (queue stats, batch processing, metadata consistency). It's still routed at `/admin/data-manager` but is essentially dead weight.
 
-### Proposed Layout (grouped by function)
+2. **AdminDataManagerPage** is a slimmer duplicate -- it only has the Metadata Consistency card, which already exists in QueueManagerPage's Section 3.
 
-**Section 1: Steam Queue Management**
-- Queue Statistics card
-- Batch Processing Controls (Steam queue) -- moved up, directly below its stats
-- Smart Prioritization card
-- Header Image Enhancement card
+3. **AuthDebugPage** doesn't use `AdminLayout` -- it's a bare `<div>` with no consistent wrapper, header spacing, or max-width constraint.
 
-**Section 2: Data Pipeline (Batch Recalculation)**
-- Section header: "Data Pipeline Tools" with brief explanation of the 3-stage flow
-- Dust Score Recalculation (collapsible, collapsed by default)
-- Batch User Metrics Recalculation (collapsible, collapsed by default)
-- Leaderboard Management (collapsible, collapsed by default)
+4. **AdminDashboardPage** has empty placeholder content (`h-16` div) inside each tool card, and the "Quick Utilities" section with DatabaseCleanupCard sits awkwardly alone in a half-width grid.
 
-**Section 3: Single-User Tools**
-- Section header: "Single-User Tools"
-- Smart User Prioritization (collapsible, collapsed by default)
-- User Metrics Calculator (collapsible, collapsed by default)
-- Metadata Consistency card (collapsible, collapsed by default)
+5. **AdminSupportPage** renders the full public SupportPage then tacks admin tools below it -- inconsistent with the dedicated admin layout pattern.
 
-### Collapsible Behavior
-- Use the existing `Collapsible` component from shadcn/ui
-- Each batch/single-user tool card gets a clickable header that toggles open/closed
-- Default state: collapsed
-- Add a chevron icon to indicate expand/collapse state
+6. **AdminDashboardPage** links to `/auth-debug` which is outside the `/admin/*` namespace -- inconsistent URL structure.
 
-### Enhanced Descriptions (added to each card)
-Each tool gets a "When to use" section with 2-3 bullet points explaining use cases:
+7. No back-navigation or breadcrumbs between admin pages.
 
-- **Dust Score Recalculation**: "Use after changing the dust score formula. Processes ~302K game records. Not needed for routine operations -- the trigger handles new imports automatically."
-- **Batch User Metrics**: "Use after bulk dust score recalculation to aggregate per-user stats. Processes ~538 users. Run before triggering leaderboard."
-- **Leaderboard Management**: "Use after user metrics are up to date. Snapshots all rankings. Auto-runs daily at midnight UTC."
-- **User Metrics Calculator**: "Debug tool for recalculating a single user's metrics. Useful for support tickets or verifying formula changes."
-- **Smart User Prioritization**: "Bump a specific user's games to the front of the processing queue. Useful when a user reports missing game data."
+### Proposed Changes
+
+**1. Remove dead pages: AdminSteamDataPage + AdminDataManagerPage**
+- Delete `src/pages/AdminSteamDataPage.tsx` and `src/pages/AdminDataManagerPage.tsx`
+- Remove their routes and redirects from `App.tsx`
+- Redirect `/admin/data-manager` to `/admin/queue-manager` (all tools live there now)
+
+**2. Wrap AuthDebugPage in AdminLayout**
+- Add `AdminLayout` wrapper for consistent spacing, max-width, and header
+- Move route from `/auth-debug` to `/admin/auth-debug`
+- Update AdminDashboardPage link accordingly
+
+**3. Clean up AdminDashboardPage**
+- Remove empty placeholder `h-16` divs from tool cards
+- Add live stat badges to each card (e.g., queue pending count for Queue Manager, deletion count for Account Deletions) using lightweight queries
+- Move DatabaseCleanupCard into a collapsible "Quick Utilities" section using `CollapsibleToolCard` pattern from QueueManagerPage
+- Add a "Data Manager" card pointing to `/admin/queue-manager` (or remove if redundant with Queue Manager card)
+
+**4. Add breadcrumb navigation to admin pages**
+- Simple "Admin Dashboard > Page Name" text breadcrumb at the top of each admin sub-page
+- Links back to `/admin/dashboard`
+
+**5. AdminSupportPage consistency**
+- Wrap the admin tools section in `AdminLayout` styling (gradient card with proper spacing) instead of the current overlay approach
+- No structural change needed -- just visual alignment with the terminal aesthetic
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/pages/QueueManagerPage.tsx` | Reorder cards into sections, wrap each tool in `Collapsible` (collapsed by default), add use-case descriptions, move Batch Processing Controls next to Queue Stats |
+| `src/pages/AdminSteamDataPage.tsx` | Delete |
+| `src/pages/AdminDataManagerPage.tsx` | Delete |
+| `src/App.tsx` | Remove dead routes, move `/auth-debug` to `/admin/auth-debug`, redirect `/admin/data-manager` to `/admin/queue-manager` |
+| `src/pages/AuthDebugPage.tsx` | Wrap in `AdminLayout` |
+| `src/pages/AdminDashboardPage.tsx` | Remove placeholder divs, add breadcrumb, update auth-debug path, make Quick Utilities collapsible |
+| `src/pages/AdminAccountDeletionsPage.tsx` | Add breadcrumb back to dashboard |
+| `src/pages/QueueManagerPage.tsx` | Add breadcrumb back to dashboard |
+| `src/pages/AdminSupportPage.tsx` | Add breadcrumb, align admin tools section styling |
 
 ### Technical Notes
-- Uses existing `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible`
-- Add `ChevronDown` icon from lucide-react for toggle indicator
-- Section headers use simple `h2` + `p` elements with existing text styles
-- No new components needed -- all changes in `QueueManagerPage.tsx`
+- Breadcrumb is a simple inline component (no new file needed) -- just a `Link` + separator + page title
+- Live stat badges on dashboard cards use `useQuery` with stale time to avoid hammering the DB on every visit
+- All changes are cosmetic/structural -- no backend or edge function changes
 
