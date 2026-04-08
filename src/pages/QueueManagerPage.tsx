@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Zap, Loader2, Calculator, Trophy, RefreshCw } from "lucide-react";
+import { Zap, Loader2, Calculator, Trophy, RefreshCw, Wind } from "lucide-react";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
@@ -13,7 +13,7 @@ import ProcessingFooter from "@/components/admin/ProcessingFooter";
 import SmartPrioritizationCard from "@/components/admin/SmartPrioritizationCard";
 import MetadataConsistencyCard from '@/components/admin/MetadataConsistencyCard';
 import HeaderImageEnhancementCard from '@/components/admin/HeaderImageEnhancementCard';
-import { useBatchProcessor } from "@/hooks/use-batch-processor";
+import { useBatchProcessor, type BatchProcessResponse } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
 import { triggerLeaderboardCalculation } from "@/utils/trigger-leaderboard-calculation";
 
