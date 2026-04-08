@@ -634,7 +634,19 @@ const QueueManagerPage = () => {
               </div>
             </CollapsibleToolCard>
 
-            <MetadataConsistencyCard />
+            <CollapsibleToolCard
+              title="Metadata Consistency"
+              icon={Calculator}
+              description="Fix inconsistent game metadata and data integrity issues across the games table."
+              whenToUse={[
+                "When games show mismatched names, images, or missing fields",
+                "After large batch imports that may have introduced stale or conflicting data",
+                "Periodic maintenance to ensure data quality"
+              ]}
+              gradient="bg-gradient-to-br from-purple-900/40 to-purple-700/20 border-purple-400/30"
+            >
+              <MetadataConsistencyCard />
+            </CollapsibleToolCard>
           </section>
         </div>
       </div>
