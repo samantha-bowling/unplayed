@@ -1,64 +1,75 @@
 
 
-## Plan: Admin Panel Consistency & Cleanup
+## Production Readiness Review: Admin Panel & Data Pipeline
 
-### Issues Found
+### What's Been Completed (All Good)
 
-1. **AdminSteamDataPage** is a 486-line legacy page that duplicates functionality now in QueueManagerPage (queue stats, batch processing, metadata consistency). It's still routed at `/admin/data-manager` but is essentially dead weight.
+| Area | Status | Notes |
+|------|--------|-------|
+| QueueManagerPage reorganization | Done | 3 sections, collapsible tools, "when to use" docs |
+| AdminDashboardPage cleanup | Done | Live stats, collapsible utilities, no dead placeholders |
+| Legacy page deletion | Done | AdminSteamDataPage, AdminDataManagerPage removed |
+| Route consolidation | Done | Redirects for old paths, `/auth-debug` → `/admin/auth-debug` |
+| Breadcrumb navigation | Done | All admin sub-pages have back-nav to dashboard |
+| AuthDebugPage wrapped in AdminLayout | Done | Consistent spacing and layout |
+| Batch dust score recalculation | Done | Edge function + DB RPC working |
+| Batch user metrics recalculation | Done | Edge function working (538 users) |
+| Leaderboard manual trigger | Done | Working, 38 eligible users processed |
 
-2. **AdminDataManagerPage** is a slimmer duplicate -- it only has the Metadata Consistency card, which already exists in QueueManagerPage's Section 3.
+### One Outstanding Issue: Database Trigger Still Uses Legacy Formula
 
-3. **AuthDebugPage** doesn't use `AdminLayout` -- it's a bare `<div>` with no consistent wrapper, header spacing, or max-width constraint.
+The `before_user_game_insert_update` trigger on `user_games` calls `update_dust_score()`, which still uses `calculate_dust_score(acquisition_date, release_date, playtime_minutes)` -- the **old** formula based only on age and ownership.
 
-4. **AdminDashboardPage** has empty placeholder content (`h-16` div) inside each tool card, and the "Quick Utilities" section with DatabaseCleanupCard sits awkwardly alone in a half-width grid.
+New users importing their library right now get **incorrect dust scores**. Their user metrics will then aggregate these wrong scores.
 
-5. **AdminSupportPage** renders the full public SupportPage then tacks admin tools below it -- inconsistent with the dedicated admin layout pattern.
+**Fix**: Update the `update_dust_score()` trigger function via a migration to call `calculate_enhanced_dust_score` instead. This is a single SQL migration:
 
-6. **AdminDashboardPage** links to `/auth-debug` which is outside the `/admin/*` namespace -- inconsistent URL structure.
+```sql
+CREATE OR REPLACE FUNCTION public.update_dust_score()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path TO 'pg_temp', 'public'
+AS $$
+DECLARE
+  game_record RECORD;
+  score_breakdown JSONB;
+BEGIN
+  SELECT release_date, 
+         COALESCE(price_cents, 0) as price_cents, 
+         COALESCE(genres, '{}') as genres, 
+         metacritic_score
+  INTO game_record
+  FROM public.games WHERE id = NEW.game_id;
 
-7. No back-navigation or breadcrumbs between admin pages.
+  score_breakdown := calculate_enhanced_dust_score(
+    game_record.release_date,
+    NEW.playtime_minutes,
+    game_record.price_cents,
+    game_record.genres,
+    game_record.metacritic_score
+  );
 
-### Proposed Changes
+  NEW.dust_score := (score_breakdown->>'totalScore')::INTEGER;
+  RETURN NEW;
+END;
+$$;
+```
 
-**1. Remove dead pages: AdminSteamDataPage + AdminDataManagerPage**
-- Delete `src/pages/AdminSteamDataPage.tsx` and `src/pages/AdminDataManagerPage.tsx`
-- Remove their routes and redirects from `App.tsx`
-- Redirect `/admin/data-manager` to `/admin/queue-manager` (all tools live there now)
+### Minor Issue: MetadataConsistencyCard Not Wrapped in CollapsibleToolCard
 
-**2. Wrap AuthDebugPage in AdminLayout**
-- Add `AdminLayout` wrapper for consistent spacing, max-width, and header
-- Move route from `/auth-debug` to `/admin/auth-debug`
-- Update AdminDashboardPage link accordingly
+In Section 3 of QueueManagerPage, the `MetadataConsistencyCard` is rendered bare (line 637) while the other two tools in the section use the `CollapsibleToolCard` wrapper. This is a visual inconsistency.
 
-**3. Clean up AdminDashboardPage**
-- Remove empty placeholder `h-16` divs from tool cards
-- Add live stat badges to each card (e.g., queue pending count for Queue Manager, deletion count for Account Deletions) using lightweight queries
-- Move DatabaseCleanupCard into a collapsible "Quick Utilities" section using `CollapsibleToolCard` pattern from QueueManagerPage
-- Add a "Data Manager" card pointing to `/admin/queue-manager` (or remove if redundant with Queue Manager card)
+**Fix**: Wrap it in a `CollapsibleToolCard` with appropriate description and "when to use" info, or leave it as-is if its own card already has collapsible behavior internally.
 
-**4. Add breadcrumb navigation to admin pages**
-- Simple "Admin Dashboard > Page Name" text breadcrumb at the top of each admin sub-page
-- Links back to `/admin/dashboard`
+### Implementation Plan
 
-**5. AdminSupportPage consistency**
-- Wrap the admin tools section in `AdminLayout` styling (gradient card with proper spacing) instead of the current overlay approach
-- No structural change needed -- just visual alignment with the terminal aesthetic
+1. **Apply trigger migration** -- Update `update_dust_score()` to use `calculate_enhanced_dust_score` (single SQL migration, no code changes)
+2. **Wrap MetadataConsistencyCard** in `CollapsibleToolCard` for visual consistency in QueueManagerPage Section 3
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/pages/AdminSteamDataPage.tsx` | Delete |
-| `src/pages/AdminDataManagerPage.tsx` | Delete |
-| `src/App.tsx` | Remove dead routes, move `/auth-debug` to `/admin/auth-debug`, redirect `/admin/data-manager` to `/admin/queue-manager` |
-| `src/pages/AuthDebugPage.tsx` | Wrap in `AdminLayout` |
-| `src/pages/AdminDashboardPage.tsx` | Remove placeholder divs, add breadcrumb, update auth-debug path, make Quick Utilities collapsible |
-| `src/pages/AdminAccountDeletionsPage.tsx` | Add breadcrumb back to dashboard |
-| `src/pages/QueueManagerPage.tsx` | Add breadcrumb back to dashboard |
-| `src/pages/AdminSupportPage.tsx` | Add breadcrumb, align admin tools section styling |
-
-### Technical Notes
-- Breadcrumb is a simple inline component (no new file needed) -- just a `Link` + separator + page title
-- Live stat badges on dashboard cards use `useQuery` with stale time to avoid hammering the DB on every visit
-- All changes are cosmetic/structural -- no backend or edge function changes
+| New migration SQL | Update `update_dust_score()` trigger function |
+| `src/pages/QueueManagerPage.tsx` | Wrap MetadataConsistencyCard in CollapsibleToolCard |
 
