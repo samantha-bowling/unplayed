@@ -221,7 +221,7 @@ const LibraryOverview = () => {
                   <div className="flex items-center space-x-2 cursor-help">
                     <Clock className="h-5 w-5 text-blue-400" />
                     <div>
-                      <p className="text-2xl font-bold text-white">{stats.totalPlaytimeHours}h</p>
+                      <p className="text-2xl font-bold text-white">{Math.round(stats.totalPlaytimeHours)}h</p>
                       <p className="text-sm text-gray-400">Total Playtime</p>
                     </div>
                   </div>
@@ -246,7 +246,7 @@ const LibraryOverview = () => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Percentage of games you've started playing</p>
+                  <p>Percentage of owned games with any recorded playtime ({stats.playedGames} of {stats.totalGames})</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>
