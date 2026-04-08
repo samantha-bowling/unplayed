@@ -1,43 +1,47 @@
 
 
-## Production Readiness Verification
+## Plan: Batch User Metrics Recalculation + Bug Fix
 
-### New Feature: Batched Dust Score Recalculation — Status: Ready
+### Summary
 
-**Edge Function Security** — Verified
-- Authentication: JWT validation via `getClaims()` — confirmed working (unauthenticated call returns 401)
-- Authorization: Admin role check via `is_admin()` RPC — present and correct
-- Input validation: `batchSize` clamped to 1–20,000 — confirmed
-- CORS headers on all response paths including errors — confirmed
-- Server-side logging is appropriate (edge function context)
+Create a new edge function to batch-recalculate `user_metrics` for all users (Stage 2 of the pipeline), add its UI to the admin Queue Manager page, and fix the existing single-user metrics calculator bug.
 
-**Database Function** — Verified
-- `recalculate_dust_scores_batch` uses `SECURITY DEFINER` with `SET search_path TO 'pg_temp', 'public'`
-- `statement_timeout` set to 120s per batch
-- Temp table uses `ON COMMIT DROP`
-- Returns proper cursor (`last_processed_id`) and `complete` flag
+### Pipeline Context
 
-**Frontend (QueueManagerPage)** — Verified
-- Route protected by `ProtectedRoute` + `requiredRole="admin"`
-- UUID cursor handled via `useRef` (workaround for numeric `lastProcessedId` in hook) — functional
-- Reset button correctly clears both `dustCursorRef` and hook state
-- Console logs cleaned from `use-batch-processor.ts` and `QueueManagerPage.tsx`
+```text
+Stage 1: Dust Scores (per game)        ✅ Complete (302K records)
+Stage 2: User Metrics (per user)        ← Building batch tool now
+Stage 3: Leaderboard Snapshot           ← Existing button (run after Stage 2)
+```
 
-**Minor observation (no action needed)**: `BatchProcessingControls` displays `lastProcessedId` only when `> 0` (line 133). Since the dust processor uses a UUID cursor stored in a ref (not the hook's numeric state), the "Last processed ID" line won't display for dust batches. This is cosmetically fine — the processed count still shows progress.
+### Changes
 
-### Pre-existing Security Findings (not related to this change)
+**1. New Edge Function: `supabase/functions/recalculate-all-user-metrics/index.ts`**
 
-Per the project's vulnerability management policy (error-level only), here are the outstanding error-level findings:
+- Admin-only auth (same pattern as `recalculate-dust-scores`)
+- Fetches distinct `user_id` values from `user_games` with cursor-based pagination (UUID ordering)
+- Calls `calculate_user_metrics_with_clean_score` RPC for each user in the batch
+- Accepts `batchSize` (default 50, max 200) and `startAfter` (UUID cursor)
+- Returns `{ processedCount, lastProcessedId, complete, success }`
+- Handles per-user errors gracefully (logs and continues)
 
-| Finding | Status | Notes |
-|---------|--------|-------|
-| Security Definer View | Ignored (false positive) | `v_public_profiles` uses SECURITY INVOKER |
-| User financial data exposed via public profile | Pre-existing | `user_metrics` exposes `total_library_value_cents` to public profiles |
-| Leaderboard library value exposure | Pre-existing | `library_value_cents` visible regardless of `show_library_value_on_leaderboard` flag |
+**2. Update `src/pages/QueueManagerPage.tsx`**
 
-These are pre-existing issues unrelated to the batched recalculation feature. The two data exposure findings are worth addressing in a future pass but are not blockers for this deployment.
+- Add a new "Batch User Metrics Recalculation" card (teal/cyan gradient) between the Dust Score card and the existing Batch Processing Controls card
+- Uses `useBatchProcessor` with a `useRef` cursor (same pattern as dust processor)
+- Batch size slider: 10-200, step 10, default 50
+- Includes BatchProcessingControls + ProcessingFooter
 
-### Verdict
+- **Fix bug** in `calculateUserMetrics` (line 237): pass `metricsUserId` in the request body so the edge function can process a specific user instead of always the logged-in admin
 
-The batched dust score recalculation feature is production-ready. Authentication, authorization, input validation, and error handling are all properly implemented. No new vulnerabilities were introduced.
+**3. Update `supabase/functions/calculate-user-metrics/index.ts`**
+
+- Read optional `target_user_id` from request body
+- If provided and caller is admin, use `target_user_id` instead of the authenticated user's ID
+- Add admin check via `is_admin` RPC when `target_user_id` is specified
+
+### Execution After Implementation
+
+1. Run "Batch Recalculate User Metrics" (new tool) — processes all users
+2. Click "Trigger Leaderboard Calculation" (existing button)
 
