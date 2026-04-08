@@ -1,47 +1,66 @@
 
 
-## Plan: Batch User Metrics Recalculation + Bug Fix
+## Plan: Reorganize & Enhance Queue Manager Page
 
 ### Summary
+Reorganize the Queue Manager page into logical sections, make batch tools collapsed by default, add descriptive use-case info to each tool, and fix the layout relationship between Queue Statistics and its Batch Processing Controls.
 
-Create a new edge function to batch-recalculate `user_metrics` for all users (Stage 2 of the pipeline), add its UI to the admin Queue Manager page, and fix the existing single-user metrics calculator bug.
+### Current Layout (top to bottom)
+1. Queue Statistics
+2. Smart Prioritization (card component)
+3. Header Image Enhancement (card component)
+4. Dust Score Recalculation
+5. Batch User Metrics Recalculation
+6. Batch Processing Controls (Steam queue processor) -- disconnected from Queue Stats
+7. Metadata Consistency
+8. Smart User Prioritization (manual, per-user)
+9. User Metrics Calculator (manual, per-user)
+10. Leaderboard Management
 
-### Pipeline Context
+### Proposed Layout (grouped by function)
 
-```text
-Stage 1: Dust Scores (per game)        ✅ Complete (302K records)
-Stage 2: User Metrics (per user)        ← Building batch tool now
-Stage 3: Leaderboard Snapshot           ← Existing button (run after Stage 2)
-```
+**Section 1: Steam Queue Management**
+- Queue Statistics card
+- Batch Processing Controls (Steam queue) -- moved up, directly below its stats
+- Smart Prioritization card
+- Header Image Enhancement card
 
-### Changes
+**Section 2: Data Pipeline (Batch Recalculation)**
+- Section header: "Data Pipeline Tools" with brief explanation of the 3-stage flow
+- Dust Score Recalculation (collapsible, collapsed by default)
+- Batch User Metrics Recalculation (collapsible, collapsed by default)
+- Leaderboard Management (collapsible, collapsed by default)
 
-**1. New Edge Function: `supabase/functions/recalculate-all-user-metrics/index.ts`**
+**Section 3: Single-User Tools**
+- Section header: "Single-User Tools"
+- Smart User Prioritization (collapsible, collapsed by default)
+- User Metrics Calculator (collapsible, collapsed by default)
+- Metadata Consistency card (collapsible, collapsed by default)
 
-- Admin-only auth (same pattern as `recalculate-dust-scores`)
-- Fetches distinct `user_id` values from `user_games` with cursor-based pagination (UUID ordering)
-- Calls `calculate_user_metrics_with_clean_score` RPC for each user in the batch
-- Accepts `batchSize` (default 50, max 200) and `startAfter` (UUID cursor)
-- Returns `{ processedCount, lastProcessedId, complete, success }`
-- Handles per-user errors gracefully (logs and continues)
+### Collapsible Behavior
+- Use the existing `Collapsible` component from shadcn/ui
+- Each batch/single-user tool card gets a clickable header that toggles open/closed
+- Default state: collapsed
+- Add a chevron icon to indicate expand/collapse state
 
-**2. Update `src/pages/QueueManagerPage.tsx`**
+### Enhanced Descriptions (added to each card)
+Each tool gets a "When to use" section with 2-3 bullet points explaining use cases:
 
-- Add a new "Batch User Metrics Recalculation" card (teal/cyan gradient) between the Dust Score card and the existing Batch Processing Controls card
-- Uses `useBatchProcessor` with a `useRef` cursor (same pattern as dust processor)
-- Batch size slider: 10-200, step 10, default 50
-- Includes BatchProcessingControls + ProcessingFooter
+- **Dust Score Recalculation**: "Use after changing the dust score formula. Processes ~302K game records. Not needed for routine operations -- the trigger handles new imports automatically."
+- **Batch User Metrics**: "Use after bulk dust score recalculation to aggregate per-user stats. Processes ~538 users. Run before triggering leaderboard."
+- **Leaderboard Management**: "Use after user metrics are up to date. Snapshots all rankings. Auto-runs daily at midnight UTC."
+- **User Metrics Calculator**: "Debug tool for recalculating a single user's metrics. Useful for support tickets or verifying formula changes."
+- **Smart User Prioritization**: "Bump a specific user's games to the front of the processing queue. Useful when a user reports missing game data."
 
-- **Fix bug** in `calculateUserMetrics` (line 237): pass `metricsUserId` in the request body so the edge function can process a specific user instead of always the logged-in admin
+### Files Modified
 
-**3. Update `supabase/functions/calculate-user-metrics/index.ts`**
+| File | Change |
+|------|--------|
+| `src/pages/QueueManagerPage.tsx` | Reorder cards into sections, wrap each tool in `Collapsible` (collapsed by default), add use-case descriptions, move Batch Processing Controls next to Queue Stats |
 
-- Read optional `target_user_id` from request body
-- If provided and caller is admin, use `target_user_id` instead of the authenticated user's ID
-- Add admin check via `is_admin` RPC when `target_user_id` is specified
-
-### Execution After Implementation
-
-1. Run "Batch Recalculate User Metrics" (new tool) — processes all users
-2. Click "Trigger Leaderboard Calculation" (existing button)
+### Technical Notes
+- Uses existing `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible`
+- Add `ChevronDown` icon from lucide-react for toggle indicator
+- Section headers use simple `h2` + `p` elements with existing text styles
+- No new components needed -- all changes in `QueueManagerPage.tsx`
 
