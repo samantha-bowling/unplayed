@@ -20,7 +20,7 @@ const AdminSupportPage = lazy(() => import("./pages/AdminSupportPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const AdminAccountDeletionsPage = lazy(() => import("./pages/AdminAccountDeletionsPage"));
 const QueueManagerPage = lazy(() => import("./pages/QueueManagerPage"));
-const AdminDataManagerPage = lazy(() => import("./pages/AdminDataManagerPage"));
+
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const DustPage = lazy(() => import("./pages/DustPage"));
 const SpendPage = lazy(() => import("./pages/SpendPage"));
@@ -74,7 +74,7 @@ const App = () => {
           4. Race condition protection (prevents state updates on unmounted components)
         */}
         <Route
-          path="/auth-debug"
+          path="/admin/auth-debug"
           element={
             <ProtectedRoute requiredRole={UserRole.ADMIN}>
               <AuthDebugPage />
@@ -113,19 +113,12 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/data-manager"
-          element={
-            <ProtectedRoute requiredRole={UserRole.ADMIN}>
-              <AdminDataManagerPage />
-            </ProtectedRoute>
-          }
-        />
-
         {/* Redirects for old routes */}
-        <Route path="/admin/steam-data" element={<Navigate to="/admin/data-manager" replace />} />
-        <Route path="/auth/steam-data" element={<Navigate to="/admin/data-manager" replace />} />
-        <Route path="/admin/hltb-data" element={<Navigate to="/admin/data-manager" replace />} />
+        <Route path="/admin/data-manager" element={<Navigate to="/admin/queue-manager" replace />} />
+        <Route path="/admin/steam-data" element={<Navigate to="/admin/queue-manager" replace />} />
+        <Route path="/auth/steam-data" element={<Navigate to="/admin/queue-manager" replace />} />
+        <Route path="/admin/hltb-data" element={<Navigate to="/admin/queue-manager" replace />} />
+        <Route path="/auth-debug" element={<Navigate to="/admin/auth-debug" replace />} />
 
         {/* Protected routes requiring authentication */}
         <Route
