@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { InfoIcon, HelpCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import AdminBreadcrumb from '@/components/admin/AdminBreadcrumb';
 import { 
   Tooltip, 
   TooltipContent, 

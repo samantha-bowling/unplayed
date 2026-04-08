@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Zap, Loader2, Calculator, Trophy, RefreshCw, Wind, Users, ChevronDown, Info } from "lucide-react";
+import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
