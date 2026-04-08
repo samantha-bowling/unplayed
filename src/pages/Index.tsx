@@ -583,7 +583,8 @@ const Index = () => {
                   You'll connect your Steam account after login.
                 </p>
               </div>
-          </section>
+            </section>
+          </>
         )}
 
         <Footer />
