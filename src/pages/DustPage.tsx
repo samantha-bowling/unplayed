@@ -71,26 +71,25 @@ const DustPage = () => {
   const processedData = {
     dustScore: userMetrics?.totalDustScore || 0,
     dustScoreBreakdown: userMetrics ? {
-      // These will be real values when we have per-game breakdowns
-      qualityScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ageScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
-      priceScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ownershipScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
+      qualityScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.qualityScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
+      priceScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.priceScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
       ageScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.ageScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
-      genreScore: 7, // Default until we have genre scores in breakdowns
+      genreScore: Math.round((dustBreakdowns?.reduce((sum, game) => sum + game.genreScore, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)),
       playtimeFactor: Number(((dustBreakdowns?.reduce((sum, game) => sum + game.playtimeFactor, 0) || 0) / Math.max(dustBreakdowns?.length || 1, 1)).toFixed(2))
     } : undefined,
     topDustContributors: dustBreakdowns?.slice(0, 10).map(game => ({
       id: game.gameId,
       name: game.gameName,
       dustScore: game.dustScore,
-      addedDate: '', // Will need to add this to breakdown table
+      addedDate: '',
       releaseDate: game.releaseDate,
       playtimeMinutes: game.playtimeMinutes,
       image: game.imageUrl,
       breakdown: {
-        qualityScore: game.ageScore, // Mapping until we have real quality scores
-        priceScore: game.ownershipScore, // Mapping until we have real price scores
+        qualityScore: game.qualityScore,
+        priceScore: game.priceScore,
         ageScore: game.ageScore,
-        genreScore: 7, // Default
+        genreScore: game.genreScore,
         playtimeFactor: game.playtimeFactor
       }
     })) || [],
