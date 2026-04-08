@@ -30,12 +30,30 @@ serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    console.log(`Processing metrics for user: ${user.id}`);
+    // Check for optional target_user_id in request body
+    const body = await req.json().catch(() => ({}));
+    let targetUserId = user.id;
+
+    if (body.target_user_id && body.target_user_id !== user.id) {
+      // Verify caller is admin before allowing target_user_id override
+      const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin', {
+        check_user_id: user.id,
+      });
+
+      if (roleError || !isAdmin) {
+        throw new Error('Forbidden: admin role required to calculate metrics for other users');
+      }
+
+      targetUserId = body.target_user_id;
+      console.log(`Admin ${user.id} calculating metrics for target user: ${targetUserId}`);
+    } else {
+      console.log(`Processing metrics for user: ${user.id}`);
+    }
 
     // Use the new fixed database function that processes ALL games and handles clean scores properly
     const { data: metricsResult, error: metricsError } = await supabase.rpc(
       'calculate_user_metrics_with_clean_score',
-      { p_user_id: user.id }
+      { p_user_id: targetUserId }
     );
 
     if (metricsError) {
@@ -44,7 +62,7 @@ serve(async (req) => {
     }
 
     console.log('Metrics calculation completed successfully:', {
-      userId: user.id,
+      userId: targetUserId,
       totalGames: metricsResult.total_games,
       cleanScore: metricsResult.clean_score,
       calculationVersion: metricsResult.calculation_version

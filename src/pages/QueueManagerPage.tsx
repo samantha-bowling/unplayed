@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Zap, Loader2, Calculator, Trophy, RefreshCw, Wind } from "lucide-react";
+import { Zap, Loader2, Calculator, Trophy, RefreshCw, Wind, Users } from "lucide-react";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
@@ -96,8 +96,6 @@ const QueueManagerPage = () => {
   // Fallback method that counts each status individually
   const fetchQueueStatsDirectly = async (): Promise<QueueStats> => {
     try {
-      
-      
       // Get total count
       const { count: totalCount, error: totalError } = await supabase
         .from("steam_app_queue")
@@ -155,7 +153,6 @@ const QueueManagerPage = () => {
     },
     onSuccess: (data) => {
       toast.success("Processing batch initiated successfully!");
-      
       fetchStats();
     },
     continuousInterval: 3000
@@ -187,6 +184,31 @@ const QueueManagerPage = () => {
     continuousInterval: 5000,
   });
 
+  // Batch user metrics recalculation processor
+  const metricsCursorRef = useRef<string | null>(null);
+  const metricsProcessor = useBatchProcessor<BatchProcessResponse>({
+    processingFunction: async (options) => {
+      const { data, error } = await supabase.functions.invoke("recalculate-all-user-metrics", {
+        body: {
+          batchSize: options.batchSize,
+          startAfter: metricsCursorRef.current,
+        }
+      });
+      if (error) throw error;
+      if (data?.lastProcessedId) {
+        metricsCursorRef.current = data.lastProcessedId;
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Recalculated metrics for ${data.processedCount} users`);
+    },
+    onComplete: () => {
+      metricsCursorRef.current = null;
+    },
+    continuousInterval: 8000,
+  });
+
   const prioritizeUserGames = async () => {
     if (!userId) {
       toast.error("Please enter a User ID");
@@ -212,7 +234,6 @@ const QueueManagerPage = () => {
       
       toast.success(`Successfully prioritized ${data?.queuedGames || 0} games for processing!`);
       
-      
       // Refresh queue stats after prioritization
       await fetchStats();
       
@@ -235,9 +256,7 @@ const QueueManagerPage = () => {
       toast.info("Calculating user metrics...");
       
       const { data, error } = await supabase.functions.invoke("calculate-user-metrics", {
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        }
+        body: { target_user_id: metricsUserId },
       });
       
       if (error) {
@@ -246,8 +265,7 @@ const QueueManagerPage = () => {
         return;
       }
       
-      toast.success(`Successfully calculated metrics! Processed ${data?.metrics?.totalGames || 0} games`);
-      
+      toast.success(`Successfully calculated metrics! Processed ${data?.metrics?.total_games || 0} games`);
       
     } catch (err) {
       console.error("Error calculating metrics:", err);
@@ -266,7 +284,6 @@ const QueueManagerPage = () => {
       
       if (result.success) {
         toast.success("Leaderboard calculation completed successfully!");
-        
       } else {
         toast.error(`Failed to calculate leaderboard: ${result.error}`);
       }
@@ -337,6 +354,47 @@ const QueueManagerPage = () => {
                   onToggleContinuous={dustProcessor.toggleContinuousMode}
                   onReset={() => { dustCursorRef.current = null; dustProcessor.resetProcessor(); }}
                   resetDisabled={dustProcessor.isProcessing}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Batch User Metrics Recalculation Card */}
+          <Card className="bg-gradient-to-br from-teal-900/40 to-cyan-700/20 border-teal-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                Batch User Metrics Recalculation
+              </CardTitle>
+              <CardDescription>
+                Recalculate metrics (clean score, dust totals, library value) for all users
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BatchProcessingControls
+                batchSize={metricsProcessor.batchSize}
+                onBatchSizeChange={metricsProcessor.setBatchSize}
+                batchSizeMin={10}
+                batchSizeMax={200}
+                batchSizeStep={10}
+                batchSizeLabel="Users per Batch"
+                continuousMode={metricsProcessor.continuousMode}
+                processedCount={metricsProcessor.processedCount}
+                lastProcessedId={metricsProcessor.lastProcessedId}
+                processComplete={metricsProcessor.processComplete}
+                showWarningThreshold={100}
+                warningMessage="Large batches may be slow (1 RPC per user)"
+              />
+              <div className="mt-6">
+                <ProcessingFooter
+                  isProcessing={metricsProcessor.isProcessing}
+                  onProcess={metricsProcessor.processBatch}
+                  processText="Recalculate Batch"
+                  processingText="Recalculating..."
+                  continuousMode={metricsProcessor.continuousMode}
+                  onToggleContinuous={metricsProcessor.toggleContinuousMode}
+                  onReset={() => { metricsCursorRef.current = null; metricsProcessor.resetProcessor(); }}
+                  resetDisabled={metricsProcessor.isProcessing}
                 />
               </div>
             </CardContent>
@@ -436,7 +494,7 @@ const QueueManagerPage = () => {
                 User Metrics Calculator
               </CardTitle>
               <CardDescription>
-                Calculate and populate user metrics data for existing users
+                Calculate and populate user metrics data for a specific user
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -445,18 +503,18 @@ const QueueManagerPage = () => {
                 <Input
                   id="metrics-user-id"
                   type="text"
-                  placeholder="Enter User UUID (leave empty for current user)"
+                  placeholder="Enter User UUID"
                   value={metricsUserId}
                   onChange={(e) => setMetricsUserId(e.target.value)}
                 />
                 <p className="text-xs text-gray-400">
-                  Leave empty to calculate metrics for the currently authenticated user
+                  Calculates metrics for the specified user (admin override)
                 </p>
               </div>
 
               <button
                 onClick={calculateUserMetrics}
-                disabled={isCalculatingMetrics}
+                disabled={isCalculatingMetrics || !metricsUserId}
                 className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center"
               >
                 {isCalculatingMetrics ? (
