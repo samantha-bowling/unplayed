@@ -126,11 +126,11 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
   const processBatch = useCallback(async (customOptions?: Record<string, any>) => {
     setState(prevState => {
       if (prevState.isProcessing || prevState.processComplete) {
-        console.log('[useBatchProcessor] Skipping processBatch - already processing or complete');
+        // Already processing or complete — skip
         return prevState;
       }
 
-      console.log('[useBatchProcessor] Starting batch processing');
+      // Starting batch processing
       return { ...prevState, isProcessing: true };
     });
 
@@ -149,9 +149,7 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
         ...customOptions,
       };
 
-      console.log('[useBatchProcessor] Processing with options:', options);
       const result = await processingFunctionRef.current(options);
-      console.log('[useBatchProcessor] Processing result:', result);
       
       if (result) {
         // Update state based on result
@@ -165,7 +163,7 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
         if (onSuccessRef.current) onSuccessRef.current(result);
         
         if (result.complete) {
-          console.log('[useBatchProcessor] Processing complete');
+          // Processing complete
           toast.success("Processing complete! No more items to process.");
           if (onCompleteRef.current) onCompleteRef.current();
           setState(prev => ({ ...prev, continuousMode: false }));
@@ -198,15 +196,11 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
   // Effect for continuous mode
   useEffect(() => {
     if (state.continuousMode && !state.isProcessing && !state.processComplete) {
-      console.log('[useBatchProcessor] Setting up continuous processing interval');
-      
       continuousIntervalRef.current = window.setInterval(() => {
-        console.log('[useBatchProcessor] Continuous processing tick');
         processBatch();
       }, continuousInterval);
     } else {
       if (continuousIntervalRef.current) {
-        console.log('[useBatchProcessor] Cleaning up continuous processing interval');
         window.clearInterval(continuousIntervalRef.current);
         continuousIntervalRef.current = undefined;
       }
@@ -214,7 +208,6 @@ export function useBatchProcessor<T extends BatchProcessResponse>({
 
     return () => {
       if (continuousIntervalRef.current) {
-        console.log('[useBatchProcessor] Cleaning up continuous processing interval on unmount');
         window.clearInterval(continuousIntervalRef.current);
       }
     };
