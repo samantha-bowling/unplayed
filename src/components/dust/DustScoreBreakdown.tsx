@@ -21,9 +21,6 @@ interface DustScoreBreakdownProps {
 const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) => {
   const { data: dustBreakdowns } = useDustBreakdowns();
 
-  // Debug logging
-  console.log("DustScoreBreakdown received:", { totalScore, breakdown });
-
   // If no breakdown data is available, show placeholder
   if (!breakdown) {
     return (
