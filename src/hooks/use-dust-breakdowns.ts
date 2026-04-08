@@ -45,9 +45,9 @@ export const useDustBreakdowns = () => {
         dustScore: breakdown.current_dust_score,
         ageScore: breakdown.age_score,
         ownershipScore: breakdown.ownership_score,
-        qualityScore: (breakdown as any).quality_score || 10,  // Use new column with fallback
-        priceScore: (breakdown as any).price_score || breakdown.ownership_score || 7,  // Use new column with fallbacks
-        genreScore: (breakdown as any).genre_score || 7,  // Use new column with fallback
+        qualityScore: breakdown.quality_score,
+        priceScore: breakdown.price_score,
+        genreScore: breakdown.genre_score,
         playtimeFactor: breakdown.playtime_factor,
         imageUrl: breakdown.image_url || breakdown.header_image,
         headerImage: breakdown.header_image,
