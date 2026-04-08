@@ -1,39 +1,43 @@
 
 
-## Batched Dust Score Recalculation — Admin Tool
+## Production Readiness Review
 
-### Problem
-The `recalculate_all_dust_scores()` function times out on 302K records even with a 300s timeout, because `calculate_enhanced_dust_score()` is called per-row (returning JSONB) inside a single massive CTE + UPDATE.
+I reviewed the new batched dust-score recalculation feature across the edge function, database function, batch processor hook, and admin UI. Here are the findings:
 
-### Solution
-Create a new batched version that processes chunks by ID range, and add an admin UI card to the Queue Manager page using the existing `useBatchProcessor` hook and `BatchProcessingControls`/`ProcessingFooter` components.
+### Critical Issues
 
-### Technical Details
+**1. Edge function has no authentication or admin check**
+`supabase/functions/recalculate-dust-scores/index.ts` uses the service role key to call the RPC but never validates who is calling it. Anyone with the project URL and anon key can invoke it and trigger mass updates to 302K records. This is the highest priority fix.
 
-**1. New database function: `recalculate_dust_scores_batch`**
-- Accepts `p_batch_size INTEGER DEFAULT 5000` and `p_start_after_id UUID DEFAULT NULL`
-- Selects the next `p_batch_size` user_games rows (ordered by `id`, after `p_start_after_id`)
-- Runs the CTE + UPDATE on just that batch
-- Returns `updated_count`, `last_processed_id`, `complete` (true when fewer rows than batch size were found)
-- Uses `SET statement_timeout TO '120s'`
+**Fix:** Validate the JWT from the `Authorization` header, then check admin role using the `is_admin()` database function before proceeding.
 
-**2. Update the edge function `recalculate-dust-scores/index.ts`**
-- Accept `batchSize` and `startAfter` in the request body
-- Call `recalculate_dust_scores_batch` RPC instead of the all-at-once function
-- Return `{ processedCount, lastProcessedId, complete }` matching `BatchProcessResponse`
+**2. No input validation on `batchSize`**
+A caller could pass `batchSize: 999999` and cause the same timeout problem the batching was designed to prevent. The value should be clamped (e.g., 1–20000).
 
-**3. Add admin UI card to `QueueManagerPage.tsx`**
-- New "Dust Score Recalculation" card using `useBatchProcessor` wired to the edge function
-- `BatchProcessingControls` for batch size slider (default 5000, max 20000)
-- `ProcessingFooter` with process, continuous mode, and reset buttons
-- Progress indicator showing total processed and completion status
+### Moderate Issues
 
-This reuses all existing batch processing patterns already in the codebase (same hook, same UI components used by the Steam queue processor).
+**3. Excessive `console.log` statements in production code**
+Per the project's console-logging policy, these files have non-essential `console.log` calls that should be removed or gated behind dev checks:
+- `src/hooks/use-batch-processor.ts` — ~10 log statements
+- `src/pages/QueueManagerPage.tsx` — ~5 log statements
+- `supabase/functions/recalculate-dust-scores/index.ts` — 2 log statements (edge function logs are acceptable here since they're server-side and useful for debugging)
 
-### Files Changed
+**4. `useBatchProcessor` cursor mismatch (minor, already worked around)**
+The hook's `lastProcessedId` state is typed as `number` but dust scores use UUID cursors. The current `useRef` workaround is functional but slightly fragile — the `startAfter` from `options` (line 148) would send `0` on the first batch. The custom `processingFunction` in QueueManagerPage correctly ignores this and uses `dustCursorRef.current` instead, so it works, but it's worth noting.
+
+### What's Already Good
+- Route is protected with `ProtectedRoute` + `requiredRole="admin"`
+- Database function uses `SECURITY DEFINER` with safe `search_path`
+- `statement_timeout` of 120s per batch is appropriate
+- CORS headers are present
+- The `onComplete` callback correctly resets the cursor ref
+- Temp table uses `ON COMMIT DROP`
+
+### Plan (3 file changes)
+
 | File | Change |
 |------|--------|
-| `supabase/migrations/new.sql` | Create `recalculate_dust_scores_batch()` function |
-| `supabase/functions/recalculate-dust-scores/index.ts` | Accept batch params, call new RPC |
-| `src/pages/QueueManagerPage.tsx` | Add Dust Score Recalculation card |
+| `supabase/functions/recalculate-dust-scores/index.ts` | Add JWT verification + admin role check; clamp `batchSize` to 1–20000 |
+| `src/hooks/use-batch-processor.ts` | Remove or gate `console.log` calls behind dev check |
+| `src/pages/QueueManagerPage.tsx` | Remove or gate `console.log` calls behind dev check |
 
