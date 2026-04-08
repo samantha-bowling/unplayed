@@ -293,6 +293,47 @@ const QueueManagerPage = () => {
 
           <HeaderImageEnhancementCard />
 
+          {/* Dust Score Recalculation Card */}
+          <Card className="bg-gradient-to-br from-orange-900/40 to-orange-700/20 border-orange-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Wind className="mr-2 h-5 w-5" />
+                Dust Score Recalculation
+              </CardTitle>
+              <CardDescription>
+                Batch recalculate all dust scores using the enhanced algorithm (~302K records)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BatchProcessingControls
+                batchSize={dustProcessor.batchSize}
+                onBatchSizeChange={dustProcessor.setBatchSize}
+                batchSizeMin={1000}
+                batchSizeMax={20000}
+                batchSizeStep={1000}
+                batchSizeLabel="Batch Size"
+                continuousMode={dustProcessor.continuousMode}
+                processedCount={dustProcessor.processedCount}
+                lastProcessedId={dustProcessor.lastProcessedId}
+                processComplete={dustProcessor.processComplete}
+                showWarningThreshold={10000}
+                warningMessage="Large batches may timeout"
+              />
+              <div className="mt-6">
+                <ProcessingFooter
+                  isProcessing={dustProcessor.isProcessing}
+                  onProcess={dustProcessor.processBatch}
+                  processText="Recalculate Batch"
+                  processingText="Recalculating..."
+                  continuousMode={dustProcessor.continuousMode}
+                  onToggleContinuous={dustProcessor.toggleContinuousMode}
+                  onReset={dustProcessor.resetProcessor}
+                  resetDisabled={dustProcessor.isProcessing}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-gradient-to-br from-blue-900/40 to-blue-700/20 border-blue-400/30">
             <CardHeader>
               <CardTitle className="text-lg">Batch Processing Controls</CardTitle>
