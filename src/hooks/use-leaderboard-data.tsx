@@ -133,7 +133,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   ): Promise<LeaderboardQueryResult> => {
     let query = supabase
       .from('leaderboard_snapshots')
-      .select('id, username, is_anonymous, dust_score, clean_score, ranking, previous_ranking, rank_change, snapshot_date, user_id');
+      .select('id, username, is_anonymous, dust_score, clean_score, ranking, previous_ranking, rank_change, snapshot_date, user_id, total_games');
     
     // For all-time leaderboard, get the most recent snapshot for each user
     if (!timeframeFilter) {

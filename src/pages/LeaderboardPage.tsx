@@ -227,12 +227,13 @@ const LeaderboardPage = () => {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-sm p-4">
                   <div className="space-y-2 text-sm">
-                    <p className="font-semibold text-unplayed-mint">How the Dust Dynasty works:</p>
-                    <ul className="space-y-1 text-left">
-                      <li>• <strong>Dust Score:</strong> Higher scores = more neglected gaming libraries</li>
-                      <li>• <strong>All-Time:</strong> Historical rankings based on snapshot data</li>
-                      <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
-                    </ul>
+                 <p className="font-semibold text-unplayed-mint">How the Dust Dynasty works:</p>
+                     <ul className="space-y-1 text-left">
+                       <li>• <strong>Dust Score:</strong> Sum of dust across all games — based on age, quality, price, genre, and playtime</li>
+                       <li>• <strong>Avg Dust:</strong> Normalized per-game score for fairer comparison across different library sizes</li>
+                       <li>• <strong>All-Time:</strong> Historical rankings based on snapshot data</li>
+                       <li>• <strong>Privacy:</strong> Control your visibility in leaderboard settings</li>
+                     </ul>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -278,8 +279,9 @@ const LeaderboardPage = () => {
                   <TableHeader>
                     <TableRow>
                         <TableHead className="w-24 text-center text-unplayed-mint font-bold text-base py-3 px-2">Rank</TableHead>
-                        <TableHead className="text-center text-unplayed-mint font-bold text-base py-3 px-2">Player</TableHead>
-                        <TableHead className="text-center text-unplayed-mint font-bold text-base py-3 px-2 w-28">Dust Score</TableHead>
+                         <TableHead className="text-center text-unplayed-mint font-bold text-base py-3 px-2">Player</TableHead>
+                         <TableHead className="text-center text-unplayed-mint font-bold text-base py-3 px-2 w-28">Dust Score</TableHead>
+                         <TableHead className="hidden md:table-cell text-center text-unplayed-mint font-bold text-base py-3 px-2 w-24">Avg Dust</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -329,8 +331,11 @@ const LeaderboardPage = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-center font-mono font-bold text-unplayed-amber py-3 px-2 w-28">
-                              {entry.dust_score.toLocaleString()}
-                            </TableCell>
+                               {entry.dust_score.toLocaleString()}
+                             </TableCell>
+                             <TableCell className="hidden md:table-cell text-center font-mono text-gray-400 py-3 px-2 w-24">
+                               {entry.total_games > 0 ? Math.round(entry.dust_score / entry.total_games) : '—'}
+                             </TableCell>
                           </TableRow>
                         );
                       })}
