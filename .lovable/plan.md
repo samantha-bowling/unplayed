@@ -1,24 +1,22 @@
 
 
-## Move Dust Score Tiers Below User's Dust Tier
+## Add Average Dust Score to Leaderboard
 
-Currently in the right column of `DustScoreBreakdown.tsx`, the order is:
-1. Your Dust Tier
-2. Dust Reduction Progress
-3. Biggest Opportunity
-4. Oldest Neglected
-5. Dust Score Tiers
+The leaderboard currently shows only the raw total dust score, which scales with library size. Adding an "Avg Dust" column provides a normalized comparison without revealing game counts.
 
-The change moves "Dust Score Tiers" to position 2, directly under "Your Dust Tier", so the user sees their ranking and the full tier reference together.
+### Changes
 
-### File: `src/components/dust/DustScoreBreakdown.tsx`
+**1. `src/hooks/use-leaderboard-data.tsx`**
+- Add `total_games` to the select query on line 136
+- This field already exists in the `LeaderboardEntry` type but isn't being fetched
 
-In the right column `<div>` (line 316), reorder the blocks:
-1. Your Dust Tier (lines 318-329) -- stays
-2. **Dust Score Tiers** (lines 377-399) -- moved up
-3. Dust Reduction Progress (lines 332-354) -- shifted down
-4. Biggest Opportunity (lines 357-364) -- stays
-5. Oldest Neglected (lines 367-374) -- stays
+**2. `src/pages/LeaderboardPage.tsx`**
+- Add a 4th column header: **"Avg Dust"** (with `hidden md:table-cell` for mobile)
+- For each row, compute and display `Math.round(entry.dust_score / entry.total_games)` in a secondary style
+- Update the info tooltip (lines 228-237) to briefly mention the 5-factor formula and that Avg Dust normalizes for library size
+- No game counts, library sizes, or player-specific numbers shown — just the averaged score
 
-No logic or styling changes needed -- just cut/paste the Dust Score Tiers block.
+### What stays private
+- `total_games` is fetched for the calculation only — it is **not** displayed anywhere
+- No subtitle with game counts under player names
 
