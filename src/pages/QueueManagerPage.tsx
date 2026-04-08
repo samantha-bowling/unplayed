@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Zap, Loader2, Calculator, Trophy, RefreshCw } from "lucide-react";
+import { Zap, Loader2, Calculator, Trophy, RefreshCw, Wind } from "lucide-react";
 import AdminLayout from '@/layouts/AdminLayout';
 import QueueStatsCard from "@/components/admin/QueueStatsCard";
 import BatchProcessingControls from "@/components/admin/BatchProcessingControls";
@@ -13,7 +13,7 @@ import ProcessingFooter from "@/components/admin/ProcessingFooter";
 import SmartPrioritizationCard from "@/components/admin/SmartPrioritizationCard";
 import MetadataConsistencyCard from '@/components/admin/MetadataConsistencyCard';
 import HeaderImageEnhancementCard from '@/components/admin/HeaderImageEnhancementCard';
-import { useBatchProcessor } from "@/hooks/use-batch-processor";
+import { useBatchProcessor, type BatchProcessResponse } from "@/hooks/use-batch-processor";
 import { useAdminStats } from "@/hooks/use-admin-stats";
 import { triggerLeaderboardCalculation } from "@/utils/trigger-leaderboard-calculation";
 
@@ -156,11 +156,27 @@ const QueueManagerPage = () => {
     onSuccess: (data) => {
       toast.success("Processing batch initiated successfully!");
       console.log("Batch processing response:", data);
-      
-      // Refresh queue stats after processing
       fetchStats();
     },
-    continuousInterval: 3000 // 3 second delay between batches in continuous mode
+    continuousInterval: 3000
+  });
+
+  // Dust score batch recalculation processor
+  const dustProcessor = useBatchProcessor<BatchProcessResponse>({
+    processingFunction: async (options) => {
+      const { data, error } = await supabase.functions.invoke("recalculate-dust-scores", {
+        body: {
+          batchSize: options.batchSize,
+          startAfter: options.startAfter || null,
+        }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Recalculated ${data.processedCount} dust scores`);
+    },
+    continuousInterval: 5000,
   });
 
   const prioritizeUserGames = async () => {
@@ -276,6 +292,47 @@ const QueueManagerPage = () => {
           <SmartPrioritizationCard />
 
           <HeaderImageEnhancementCard />
+
+          {/* Dust Score Recalculation Card */}
+          <Card className="bg-gradient-to-br from-orange-900/40 to-orange-700/20 border-orange-400/30">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Wind className="mr-2 h-5 w-5" />
+                Dust Score Recalculation
+              </CardTitle>
+              <CardDescription>
+                Batch recalculate all dust scores using the enhanced algorithm (~302K records)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BatchProcessingControls
+                batchSize={dustProcessor.batchSize}
+                onBatchSizeChange={dustProcessor.setBatchSize}
+                batchSizeMin={1000}
+                batchSizeMax={20000}
+                batchSizeStep={1000}
+                batchSizeLabel="Batch Size"
+                continuousMode={dustProcessor.continuousMode}
+                processedCount={dustProcessor.processedCount}
+                lastProcessedId={dustProcessor.lastProcessedId}
+                processComplete={dustProcessor.processComplete}
+                showWarningThreshold={10000}
+                warningMessage="Large batches may timeout"
+              />
+              <div className="mt-6">
+                <ProcessingFooter
+                  isProcessing={dustProcessor.isProcessing}
+                  onProcess={dustProcessor.processBatch}
+                  processText="Recalculate Batch"
+                  processingText="Recalculating..."
+                  continuousMode={dustProcessor.continuousMode}
+                  onToggleContinuous={dustProcessor.toggleContinuousMode}
+                  onReset={dustProcessor.resetProcessor}
+                  resetDisabled={dustProcessor.isProcessing}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <Card className="bg-gradient-to-br from-blue-900/40 to-blue-700/20 border-blue-400/30">
             <CardHeader>
