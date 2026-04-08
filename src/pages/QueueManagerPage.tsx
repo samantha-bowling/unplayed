@@ -335,7 +335,7 @@ const QueueManagerPage = () => {
                   processingText="Recalculating..."
                   continuousMode={dustProcessor.continuousMode}
                   onToggleContinuous={dustProcessor.toggleContinuousMode}
-                  onReset={dustProcessor.resetProcessor}
+                  onReset={() => { dustCursorRef.current = null; dustProcessor.resetProcessor(); }}
                   resetDisabled={dustProcessor.isProcessing}
                 />
               </div>
