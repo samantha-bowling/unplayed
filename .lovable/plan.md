@@ -1,64 +1,79 @@
 
 
-## Bug: `get_clean_game_price()` Broken — Returns NULL for All Games With Price Data
+## SEO Enhancement Plan for Unplayed
 
-### Root Cause
+### Current State
 
-The `get_clean_game_price()` database function has a critical variable type mismatch. It declares `price_data` as `jsonb`, then does:
+**What's already in place:**
+- `react-helmet-async` on all 6 major pages with unique titles and descriptions
+- Open Graph and Twitter Card meta tags in `index.html` (but only for the homepage — not per-page)
+- `robots.txt` allowing all crawlers
+- Favicon set
+- JSON-LD structured data on ProfilePage only
+- Canonical URL on ProfilePage only
 
-```sql
-SELECT gp.final_price_cents, gp.initial_price_cents, gp.currency, gp.last_checked
-INTO price_data
-FROM public.game_prices gp ...
-```
+**What's missing:**
+- No `sitemap.xml`
+- No canonical URLs on any page except ProfilePage
+- No JSON-LD structured data on homepage or public pages
+- No per-page Open Graph URLs (`og:url`)
+- `robots.txt` has no `Sitemap:` directive
+- No keyword-rich content on the unauthenticated homepage (the landing page is the only crawlable marketing surface)
+- Leaderboard page (the only other public page) has no structured data
+- No `<meta name="keywords">` (minor, but easy)
+- Font loading blocks rendering (no `font-display: swap` in link tags — though Google Fonts handles this via the `&display=swap` param, which is already present)
 
-In PL/pgSQL, `SELECT col1, col2, col3, col4 INTO single_variable` assigns only the **first column** to that variable. So `price_data` receives an integer (e.g. `2499`), auto-cast to jsonb as a bare number `2499` — **not** a jsonb object.
+### Plan
 
-Then `price_data->>'final_price_cents'` tries to extract a key from a jsonb number, which returns `NULL`. So:
-- `final_price` = NULL
-- The function falls through to `IF final_price IS NULL THEN confidence := 'low'`
+**1. Add `public/sitemap.xml`** (new file)
 
-**Result**: Every game that HAS a `game_prices` row gets `NULL` price and `low` confidence. Games WITHOUT a `game_prices` row correctly fall back to `games.price_cents` at `medium` confidence. This is backwards — the more price data we have, the worse the results.
+Static sitemap listing all public, crawlable routes:
+- `/` (homepage)
+- `/leaderboard`
+- `/auth`
+- `/support`
 
-### Your Numbers Explained
+Protected routes (`/library`, `/dust`, `/spend`) are behind auth and shouldn't be indexed. Profile pages are dynamic and would need a server-generated sitemap later.
 
-- 83 total games
-- 60 have `game_prices` rows with valid prices → all return NULL/low (broken)
-- ~11 have no `game_prices` row but have `games.price_cents` → return valid price/medium (working)
-- ~12 have neither → truly unknown
+**2. Update `public/robots.txt`**
 
-So only 11 out of 83 games contribute to your $240.89 total. The real total should be significantly higher.
+- Add `Sitemap: https://unplayed.lovable.app/sitemap.xml`
+- Add `Disallow` for admin, auth callback, and error routes that shouldn't be indexed
 
-### Fix: One Database Migration
+**3. Add canonical URLs to all pages** (via Helmet)
 
-Replace the `get_clean_game_price()` function to use individual typed variables instead of a single jsonb variable for the SELECT INTO.
+Each page gets `<link rel="canonical" href="https://unplayed.lovable.app/...">` to prevent duplicate content issues and consolidate ranking signals.
 
-**File: New SQL migration**
+**4. Add per-page Open Graph meta tags** (via Helmet)
 
-```sql
-CREATE OR REPLACE FUNCTION public.get_clean_game_price(...)
-```
+Currently the homepage `index.html` sets OG tags, but Helmet on inner pages doesn't override `og:url`. Add `og:url`, `og:title`, `og:description`, and `og:image` to each page's `<Helmet>` block. Pages: Index, LeaderboardPage, DustPage, SpendPage, LibraryPage.
 
-Key change: declare four separate variables (`v_final_price_cents`, `v_initial_price_cents`, `v_currency`, `v_last_checked`) and SELECT INTO them individually. Then reference them directly instead of trying to extract from jsonb.
+**5. Add JSON-LD structured data to homepage**
 
-### After Deploying
+Add `WebSite` schema with `SearchAction` potential, plus `SoftwareApplication` schema describing unplayed as a web app for Steam backlog management. This helps Google understand what the site is.
 
-Once the function is fixed, re-running `upsert_user_spending_metrics` for your user will produce correct totals because the same `get_clean_game_price()` is called by all spending RPCs. No other code changes needed — the bug is entirely in this one database function.
+**6. Add JSON-LD structured data to Leaderboard**
 
-### Impact
+Add `ItemList` schema for the leaderboard entries — this can produce rich results in search.
 
-| Area | Effect |
-|------|--------|
-| Spending page (SpendingSummary) | Correct totals, free game count, confidence score |
-| Dashboard (useUserMetrics) | `total_library_value_cents` and `unplayed_value_cents` fixed |
-| Leaderboard (library value column) | Correct values |
-| All other users | Fixed on next metrics recalculation |
-| Edge functions | No changes needed |
-| UI code | No changes needed |
+**7. Enhance unauthenticated homepage content**
+
+The landing page for logged-out users currently shows a single headline and one sentence. This is the only page Google can fully crawl. Add a brief "How It Works" section and feature highlights with keyword-rich text (e.g., "Steam backlog tracker", "unplayed games finder", "dust score", "gaming library analytics"). This is the highest-impact SEO change.
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| New migration SQL | Replace `get_clean_game_price()` with properly typed variables |
+| `public/sitemap.xml` | New — static sitemap |
+| `public/robots.txt` | Add Sitemap directive and Disallow rules |
+| `src/pages/Index.tsx` | Add canonical, OG tags, JSON-LD, and landing content for logged-out users |
+| `src/pages/LeaderboardPage.tsx` | Add canonical, OG tags, JSON-LD ItemList |
+| `src/pages/DustPage.tsx` | Add canonical and OG tags |
+| `src/pages/SpendPage.tsx` | Add canonical and OG tags |
+| `src/pages/LibraryPage.tsx` | Add canonical and OG tags |
+| `index.html` | Minor: add `og:url` for homepage default |
+
+### No backend or database changes needed
+
+All changes are client-side static content and meta tags.
 
