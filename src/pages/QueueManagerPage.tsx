@@ -156,11 +156,27 @@ const QueueManagerPage = () => {
     onSuccess: (data) => {
       toast.success("Processing batch initiated successfully!");
       console.log("Batch processing response:", data);
-      
-      // Refresh queue stats after processing
       fetchStats();
     },
-    continuousInterval: 3000 // 3 second delay between batches in continuous mode
+    continuousInterval: 3000
+  });
+
+  // Dust score batch recalculation processor
+  const dustProcessor = useBatchProcessor<BatchProcessResponse>({
+    processingFunction: async (options) => {
+      const { data, error } = await supabase.functions.invoke("recalculate-dust-scores", {
+        body: {
+          batchSize: options.batchSize,
+          startAfter: options.startAfter || null,
+        }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Recalculated ${data.processedCount} dust scores`);
+    },
+    continuousInterval: 5000,
   });
 
   const prioritizeUserGames = async () => {
