@@ -42,17 +42,16 @@ const Index = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<string>("Preparing to import...");
   const [importPercentage, setImportPercentage] = useState(0);
-  const [lastImportTime, setLastImportTime] = useState<Date | null>(null);
-  const [lastDashboardRefreshTime, setLastDashboardRefreshTime] = useState<Date | null>(null);
   
   const isMounted = useIsMounted();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, isLoading: profileLoading, refreshProfile } = useProfile();
   const { isDemo } = useDemoMode();
-  const { data: unplayedData, isLoading: dataLoading, lastRefreshed, refetch } = useUnplayedData();
+  const { data: unplayedData, isLoading: dataLoading, refetch } = useUnplayedData();
   const { isFullScreenMode, focusedComponent } = useFullScreenMode();
   const { refreshUserMetrics, isRefreshing } = useMetricsRefresh();
+  const { data: userMetrics } = useUserMetrics();
   const queryClient = useQueryClient();
   const { queryKeys, utils } = useOptimizedCacheManagement();
 
