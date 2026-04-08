@@ -22,12 +22,12 @@ export async function callUpsertUser(payload: UpsertUserPayload) {
       throw new Error('Authentication required to update user profile');
     }
     
-    // Use the Netlify redirect path with auth header
-    const response = await fetch(`/api/upsert-user`, {
+    const response = await fetch(`https://gwmygthanyycveyqqspr.supabase.co/functions/v1/upsert-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bXlndGhhbnl5Y3ZleXFxc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTAxMjUsImV4cCI6MjA2MjMyNjEyNX0.zrL5sYy8LE4ErMRL-W-yuZZR10EYyrgIS9Kj-EfUw80',
       },
       body: JSON.stringify(payload),
     });

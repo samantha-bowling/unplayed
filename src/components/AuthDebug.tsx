@@ -88,24 +88,6 @@ const AuthDebug = () => {
     }
   };
   
-  // Test the Netlify redirect
-  const testNetlifyRedirect = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/auth/steam/health', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const data = await response.json();
-      setDebugResults(data);
-    } catch (error) {
-      setDebugResults({ error: String(error) });
-    } finally {
-      setIsLoading(false);
-    }
-  };
   
   // Get current session data
   const getCurrentSession = async () => {
@@ -374,16 +356,16 @@ const AuthDebug = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-white">Test Netlify Redirect</h3>
+                  <h3 className="text-lg font-medium text-white">Test Steam Auth Health</h3>
                   <p className="text-sm text-gray-400">
-                    Test the Netlify redirect to the Steam Auth function
+                    Test the Steam Auth edge function health endpoint
                   </p>
                   <Button 
-                    onClick={testNetlifyRedirect}
+                    onClick={testSteamAuthEndpoint}
                     disabled={isLoading}
                     variant="outline"
                   >
-                    {isLoading ? 'Testing...' : 'Test Netlify Redirect'}
+                    {isLoading ? 'Testing...' : 'Test Steam Auth Health'}
                   </Button>
                 </div>
                 
@@ -423,11 +405,10 @@ const AuthDebug = () => {
                 <div className="space-y-2">
                   <h4 className="font-medium text-unplayed-mint">Common Issues</h4>
                   <ul className="list-disc pl-5 text-sm space-y-1">
-                    <li>DNS settings between domains (IONOS and Netlify)</li>
-                    <li>Redirect URLs in Steam Developer settings</li>
+                    <li>Redirect URLs in Supabase Edge Function secrets</li>
                     <li>Service role key not configured properly</li>
                     <li>CORS headers and preflight requests</li>
-                    <li>Netlify redirects configuration</li>
+                    <li>FRONTEND_URL secret configuration</li>
                   </ul>
                 </div>
                 
@@ -435,7 +416,6 @@ const AuthDebug = () => {
                   <h4 className="font-medium text-unplayed-mint">Diagnostics Path</h4>
                   <ol className="list-decimal pl-5 text-sm space-y-1">
                     <li>Verify direct Edge Function access</li>
-                    <li>Check Netlify redirect functionality</li>
                     <li>Validate session handling</li>
                     <li>Test external services connectivity</li>
                     <li>Examine error details and logs</li>
