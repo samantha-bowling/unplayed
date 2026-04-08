@@ -1,29 +1,22 @@
 
 
-## Toast Duration Review
+## Rename "Game DNA" → "Library DNA"
 
-### Current State
+A copy-only change across the files that reference "Game DNA" in user-facing text. No logic, scoring, or file renaming needed — just updating strings.
 
-The `<Sonner>` component in `src/components/ui/sonner.tsx` does **not** set a `duration` prop, so Sonner's built-in default of **4000ms (4 seconds)** applies to every toast.
+### Changes
 
-Most toast calls across the codebase (~50+ calls) also do **not** specify a `duration`, inheriting that 4s default. The only file with explicit durations is `src/utils/metrics-feedback.ts`, which sets 2000-5000ms for specific processing toasts.
+**`src/pages/LibraryPage.tsx`**
+- Tab trigger label: "Game DNA" → "Library DNA"
 
-Error toasts (`toast.error(...)`) also use 4s by default -- Sonner does not differentiate.
+**`src/components/LibraryGameDNA.tsx`**
+- Heading: "Your Game DNA" → "Your Library DNA"
+- Empty state text: "Import your Steam library to reveal your Game DNA" → "Import your Steam library to reveal your Library DNA"
+- Subtitle: "Six dimensions that define who you are as a gamer, built from your entire Steam library." → "Six dimensions that define your gaming identity, built from your entire Steam library."
+- Loading text: "Analyzing your DNA..." → "Analyzing your library DNA..."
 
-### Proposed Change
+**`src/components/dna/DNARadarChart.tsx`**
+- SVG `aria-label`: "Game DNA Radar Chart" → "Library DNA Radar Chart"
 
-Set a shorter global default on the `<Sonner>` component and add a longer default for error toasts so they remain visible:
-
-| Toast Type | Current | Proposed |
-|---|---|---|
-| Regular/success | 4000ms | **2500ms** |
-| Error | 4000ms | **4000ms** (keep) |
-
-### File Modified
-
-| File | Change |
-|---|---|
-| `src/components/ui/sonner.tsx` | Add `duration={2500}` prop to the `<Sonner>` component. Add `error` classNames styling for visibility. |
-
-This is a one-line change. The explicit durations in `metrics-feedback.ts` will continue to override the default where needed. No other files need changes.
+No file renames, no logic changes, no new dependencies.
 
