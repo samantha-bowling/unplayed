@@ -328,6 +328,24 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               </p>
             </div>
 
+            {/* Dust Score Tiers - 2 column layout */}
+            <div className="bg-black/20 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                {allTiers.map((tier, index) => (
+                  <div key={index}>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tier.color }}></div>
+                      <span className="font-medium" style={{ color: tier.color }}>
+                        {tier.name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400 pl-5">{tier.range}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Dust Reduction Progress Tracker */}
             {dustReductionData && (
               <div className="bg-black/30 rounded-lg p-4">
@@ -372,24 +390,6 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
                 highlight={`${new Date().getFullYear() - new Date(oldestNeglected.releaseDate!).getFullYear()} years old • Never played`}
               />
             )}
-
-            {/* Dust Score Tiers - 2 column layout */}
-            <div className="bg-black/20 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-3">Dust Score Tiers</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                {allTiers.map((tier, index) => (
-                  <div key={index}>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tier.color }}></div>
-                      <span className="font-medium" style={{ color: tier.color }}>
-                        {tier.name}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-400 pl-5">{tier.range}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </CardContent>
