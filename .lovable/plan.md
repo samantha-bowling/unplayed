@@ -1,58 +1,64 @@
 
 
-## Comprehensive Review & Improved Hero Section UX
+## Bug: `get_clean_game_price()` Broken — Returns NULL for All Games With Price Data
 
-### Impact Analysis
+### Root Cause
 
-Before implementing, here is how the plan interacts with other parts of the app:
+The `get_clean_game_price()` database function has a critical variable type mismatch. It declares `price_data` as `jsonb`, then does:
 
-**No negative impact on other pages.** The changes are isolated to `Index.tsx` (hero section display) and `format-utils.ts` (new utility function). No calculation logic, hooks, or data pipelines are modified.
+```sql
+SELECT gp.final_price_cents, gp.initial_price_cents, gp.currency, gp.last_checked
+INTO price_data
+FROM public.game_prices gp ...
+```
 
-| Area | Impact | Detail |
-|------|--------|--------|
-| Dashboard refresh (`refreshAllData`) | None | Function logic unchanged; we only change what text appears below the button |
-| `useDashboardRefresh` hook | None | Not used on Index.tsx; used elsewhere and untouched |
-| `useMetricsRefresh` hook | None | Still called the same way; no changes |
-| `useUnplayedData` | None | Still provides `lastRefreshed` (from `profile.last_sync`); we just use it differently |
-| `useUserMetrics` | Read-only | We read `lastCalculated` from this existing hook for the refresh timestamp |
-| Dust/Spend/Library pages | None | No shared state modified |
-| Import edge function | None | It already updates `users.last_sync` on completion |
+In PL/pgSQL, `SELECT col1, col2, col3, col4 INTO single_variable` assigns only the **first column** to that variable. So `price_data` receives an integer (e.g. `2499`), auto-cast to jsonb as a bare number `2499` — **not** a jsonb object.
 
-### Current Data Sources (already in the DB)
+Then `price_data->>'final_price_cents'` tries to extract a key from a jsonb number, which returns `NULL`. So:
+- `final_price` = NULL
+- The function falls through to `IF final_price IS NULL THEN confidence := 'low'`
 
-- **Last import time**: `users.last_sync` — updated by the `import-library` edge function every time it runs. Already available via `useProfile()` → `profile.last_sync`.
-- **Last dashboard refresh time**: `user_metrics.last_calculated` — updated by `calculate_user_metrics_with_clean_score` RPC every time metrics are recalculated. Already available via `useUserMetrics()` → `lastCalculated`.
+**Result**: Every game that HAS a `game_prices` row gets `NULL` price and `low` confidence. Games WITHOUT a `game_prices` row correctly fall back to `games.price_cents` at `medium` confidence. This is backwards — the more price data we have, the worse the results.
 
-Both are persistent DB values, so they survive page reloads — unlike the current `useState` approach.
+### Your Numbers Explained
 
-### Changes
+- 83 total games
+- 60 have `game_prices` rows with valid prices → all return NULL/low (broken)
+- ~11 have no `game_prices` row but have `games.price_cents` → return valid price/medium (working)
+- ~12 have neither → truly unknown
 
-**File: `src/utils/format-utils.ts`** — Add `formatRelativeTime` helper
+So only 11 out of 83 games contribute to your $240.89 total. The real total should be significantly higher.
 
-A small function that converts a Date to a human-readable relative string: "just now", "5 minutes ago", "3 days ago", "2 weeks ago", etc.
+### Fix: One Database Migration
 
-**File: `src/pages/Index.tsx`** — Hero section updates
+Replace the `get_clean_game_price()` function to use individual typed variables instead of a single jsonb variable for the SELECT INTO.
 
-1. **Remove `lastImportTime` and `lastDashboardRefreshTime` local state** — these are volatile and reset on page reload.
+**File: New SQL migration**
 
-2. **Read persistent timestamps from existing hooks**:
-   - Import time: `profile.last_sync` (already available from `useProfile`)
-   - Refresh time: `userMetrics?.lastCalculated` (add `useUserMetrics` import, already cached)
+```sql
+CREATE OR REPLACE FUNCTION public.get_clean_game_price(...)
+```
 
-3. **Add descriptive text under each button**:
-   - Import: "Fetches any new games added to your Steam library"
-   - Refresh: "Recalculates your dust scores and dashboard stats"
+Key change: declare four separate variables (`v_final_price_cents`, `v_initial_price_cents`, `v_currency`, `v_last_checked`) and SELECT INTO them individually. Then reference them directly instead of trying to extract from jsonb.
 
-4. **Show persistent relative timestamps** under each button:
-   - "Last synced: 3 days ago" (with full date in tooltip)
-   - "Last refreshed: 1 day ago" (with full date in tooltip)
+### After Deploying
 
-5. **Add a gentle nudge** when `profile.last_sync` is older than 7 days:
-   - Small amber text: "It's been a while — sync to catch new purchases!"
+Once the function is fixed, re-running `upsert_user_spending_metrics` for your user will produce correct totals because the same `get_clean_game_price()` is called by all spending RPCs. No other code changes needed — the bug is entirely in this one database function.
 
-6. **Remove the ambiguous "Data last updated" line** (currently line 339-343) since per-button timestamps replace it.
+### Impact
 
-### No database changes needed
+| Area | Effect |
+|------|--------|
+| Spending page (SpendingSummary) | Correct totals, free game count, confidence score |
+| Dashboard (useUserMetrics) | `total_library_value_cents` and `unplayed_value_cents` fixed |
+| Leaderboard (library value column) | Correct values |
+| All other users | Fixed on next metrics recalculation |
+| Edge functions | No changes needed |
+| UI code | No changes needed |
 
-All data sources already exist. No migrations, no new edge functions.
+### Files Modified
+
+| File | Change |
+|------|--------|
+| New migration SQL | Replace `get_clean_game_price()` with properly typed variables |
 
