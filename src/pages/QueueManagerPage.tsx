@@ -333,6 +333,7 @@ const QueueManagerPage = () => {
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-24">
+        <AdminBreadcrumb currentPage="Game Queue Manager" />
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Game Queue Manager</h1>
           <p className="text-muted-foreground">
