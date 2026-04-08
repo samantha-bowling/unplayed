@@ -8,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") || "https://unplayed.wtf";
 const STEAM_API_KEY = Deno.env.get("STEAM_API_KEY")!;
 
-const RETURN_URL = `${FRONTEND_URL}/api/auth/steam/callback`;
+const RETURN_URL = `${SUPABASE_URL}/functions/v1/steam-auth/callback`;
 const REALM = FRONTEND_URL;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

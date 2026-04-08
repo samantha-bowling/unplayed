@@ -154,7 +154,7 @@ const Index = () => {
     });
     
     try {
-      // Use the Netlify redirect path instead of direct Supabase function URL
+      // Call import-library edge function directly via Supabase
       const data = await callSupabaseFunction('import-library', {
         steamId: profile.steam_id,
       });
