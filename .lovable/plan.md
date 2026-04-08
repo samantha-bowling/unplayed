@@ -1,72 +1,31 @@
 
 
-## Game DNA Tab for Library Page
+## Game DNA: Calculation Transparency + Radar Label Fix
 
-### Concept
+### Two issues to fix:
 
-A new "Game DNA" tab on the `/library` page that synthesizes all available data into a personalized gamer profile. Instead of showing raw stats, it tells the user *who they are as a gamer* through six scored dimensions visualized as a radar/hexagon chart, plus supporting insights.
+**1. Radar chart labels clipped** — The SVG viewBox is `300x300` but labels at `RADIUS + 28` pixels from center extend beyond the viewBox edges, clipping "Retro Gamer", "Bargain Hunter", "Completionist", and "Hoarder". Fix: increase viewBox to `380x380`, adjust CENTER to 190, and increase label offset to `RADIUS + 35` for breathing room.
 
-### Data Available (Already in DB)
+**2. No visibility into what scores mean** — Each dimension card currently shows a score, a one-liner, and a single stat. Users can't understand *why* they got 21 for Collector or what 21 means relative to the scale.
 
-All calculations are purely client-side from existing data -- no new tables, no new edge functions, no migrations needed.
+### Solution: Add calculation explanation to each dimension
 
-| Data Source | Fields Used |
-|---|---|
-| `user_games` | playtime_minutes, dust_score, acquisition_date, last_played_date |
-| `games` | genres, categories, price_cents, metacritic_score, release_date |
-| `user_metrics` | total_games, played_games, unplayed_games, total_playtime_hours, average_dust_score, clean_score |
-| `user_spending_metrics` | total_spent_cents, free_games, paid_games, confidence_score |
-| `user_genre_stats` | genre_name, game_count, percentage |
+Add a new `explanation` field to `DNADimension` that describes the scoring formula in plain language and shows the user's position on the scale. Examples:
 
-### The Six DNA Dimensions (0-100 each)
+- **Collector 21**: "Based on 83 games owned. Score reaches 50 at ~200 games and 100 at 400+."
+- **Explorer 65**: "Based on 10 unique genres and how evenly you play across them."
+- **Completionist 44**: "Based on 8.7h average per played game. Score reaches 100 at ~20h average."
+- **Hoarder 58**: "64% unplayed games (70% weight) combined with dust score (30% weight)."
+- **Bargain Hunter 23**: "Combines avg price paid, % free games, and cost per hour of play."
+- **Retro Gamer 40**: "Based on 6.2yr average game age and 18% vintage (11+ year) games."
 
-1. **Collector** -- Library size relative to average Steam users. Based on `total_games`.
-2. **Explorer** -- Genre diversity and willingness to try new things. Derived from unique genre count and genre distribution evenness (Shannon entropy across `user_genre_stats`).
-3. **Completionist** -- How deeply games are played. Based on average playtime per played game and ratio of games with 10+ hours.
-4. **Hoarder** -- Inverse of play rate. Based on unplayed percentage and average dust score. Higher = more hoarding.
-5. **Bargain Hunter** -- Spending efficiency. Based on free game percentage, average price paid, and cost-per-hour of entertainment.
-6. **Retro Gamer** -- Preference for older titles. Based on average release year age and percentage of vintage (11+ year) games.
+The dimension card will show a collapsible or always-visible explanation line below the existing content, styled subtly.
 
-### Visual Design
-
-```text
-                Collector
-                  /    \
-     Retro Gamer /      \ Explorer
-                |        |
-  Bargain Hunter \      / Completionist
-                  \    /
-                 Hoarder
-```
-
-A hexagonal radar chart rendered with SVG (no new dependencies), styled with the unplayed-mint color scheme. Each axis labeled with the dimension name and score. The filled area shows the user's "shape."
-
-Below the radar chart: six cards in a 2x3 or 3x2 grid, one per dimension, showing:
-- Dimension name and icon
-- Score (0-100) with a small progress bar
-- A witty one-liner based on score tier (e.g., Collector 90+ = "Your library has its own gravitational pull")
-- Key stat that drives the score
-
-### Additional Insights Section
-
-Below the DNA dimensions, a "Library Personality" section with:
-- **Gamer Archetype**: A single label based on the dominant 2-3 dimensions (e.g., "The Thoughtful Collector" if high Collector + high Explorer + low Hoarder)
-- **Play Style**: Single-player vs Multiplayer preference (from `categories` data -- Single-player vs Multi-player/Co-op counts)
-- **Platform Preference**: Controller vs Keyboard (from Full/Partial Controller Support category counts)
-- **Most Unexpected Stat**: One auto-selected surprising insight (e.g., "You own 68 highly-rated games you've never touched")
-
-### Implementation
+### Files to modify
 
 | File | Change |
-|---|---|
-| `src/components/LibraryGameDNA.tsx` | New -- main Game DNA tab component with radar chart and dimension cards |
-| `src/components/dna/DNARadarChart.tsx` | New -- SVG hexagonal radar chart component |
-| `src/components/dna/DNADimensionCard.tsx` | New -- individual dimension score card |
-| `src/components/dna/DNAPersonality.tsx` | New -- archetype and play style insights |
-| `src/utils/game-dna-utils.ts` | New -- all scoring calculations (pure functions, no DB calls) |
-| `src/pages/LibraryPage.tsx` | Add 5th tab "Game DNA" to the TabsList (change grid-cols-4 to grid-cols-5) |
-
-### No Backend Changes
-
-All six dimension scores are computed client-side from data already fetched by `useLibraryData()`, `useUserMetrics()`, and `useGenreStats()`. No new database tables, edge functions, or migrations required.
+|------|--------|
+| `src/utils/game-dna-utils.ts` | Add `explanation` field to `DNADimension` type; generate plain-language explanations in each `calc*` function showing the formula inputs and scale benchmarks |
+| `src/components/dna/DNADimensionCard.tsx` | Display the new `explanation` text below the existing stat line |
+| `src/components/dna/DNARadarChart.tsx` | Increase viewBox to `380x380`, adjust CENTER/label offsets to prevent label clipping |
 
