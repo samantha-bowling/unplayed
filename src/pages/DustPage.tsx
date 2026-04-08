@@ -19,6 +19,7 @@ import { useUserMetrics } from '@/hooks/use-user-metrics';
 import { useDustBreakdowns } from '@/hooks/use-dust-breakdowns';
 import { useCleanScoreBreakdowns } from '@/hooks/use-clean-score-breakdowns';
 import { useMetricsRefresh } from '@/hooks/useMetricsRefresh';
+import { useDustStalenessCheck } from '@/hooks/use-dust-staleness-check';
 
 const DustPage = () => {
   const [activeTab, setActiveTab] = useState("dustScore");
