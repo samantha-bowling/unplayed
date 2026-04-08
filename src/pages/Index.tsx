@@ -392,6 +392,39 @@ const Index = () => {
       <Helmet>
         <title>unplayed – Conquer Your Steam Backlog</title>
         <meta name="description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+        <link rel="canonical" href="https://unplayed.lovable.app/" />
+        <meta property="og:url" content="https://unplayed.lovable.app/" />
+        <meta property="og:title" content="unplayed – Conquer Your Steam Backlog" />
+        <meta property="og:description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+        <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
+        <meta name="twitter:title" content="unplayed – Conquer Your Steam Backlog" />
+        <meta name="twitter:description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "unplayed",
+          "url": "https://unplayed.lovable.app",
+          "description": "Steam backlog tracker and gaming library analytics tool. Discover your unplayed games, dust scores, and spending insights.",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://unplayed.lovable.app/leaderboard",
+            "query-input": "required"
+          }
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "unplayed",
+          "applicationCategory": "GameApplication",
+          "operatingSystem": "Web",
+          "url": "https://unplayed.lovable.app",
+          "description": "Track your Steam backlog, analyze dust scores, and discover unplayed games in your library.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        })}</script>
       </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
