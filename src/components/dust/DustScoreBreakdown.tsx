@@ -149,7 +149,8 @@ const DustScoreBreakdown = ({ totalScore, breakdown }: DustScoreBreakdownProps) 
               Dust Score Breakdown
             </CardTitle>
             <CardDescription className="text-base mt-3">
-              Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is calculated from real data across these 5 factors
+              Your total Dust Score of <span className="font-bold" style={{ color: '#FAFAFA' }}>{totalScore.toLocaleString()}</span> is the sum of all per-game scores.
+              The bars below show the <span className="text-white font-medium">average per-game breakdown</span> across your library.
             </CardDescription>
           </div>
         </div>
