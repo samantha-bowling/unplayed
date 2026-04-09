@@ -1,4 +1,4 @@
-import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ExternalLink, Crown, Sparkles, ArrowLeft, Lock, Home } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
