@@ -108,8 +108,6 @@ export function ProfileCustomizationModal() {
         onSuccess: () => {
           toast.success('Profile customization saved!');
           setIsOpen(false);
-          // Reload to reflect theme changes
-          window.location.reload();
         },
         onError: () => {
           toast.error('Failed to save customization');
@@ -238,7 +236,7 @@ export function ProfileCustomizationModal() {
               placeholder="A short message about your gaming style..."
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              maxLength={60}
+              maxLength={50}
               className={taglineOverflow ? 'border-destructive' : ''}
               aria-describedby="tagline-help"
             />
@@ -383,7 +381,7 @@ export function ProfileCustomizationModal() {
             <div className="relative overflow-hidden rounded-lg border-2 border-white/20 p-4 h-48">
               {/* Mini background animations */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
-                {ANIMATION_PACKS[selectedAnimationPack].icons.slice(0, 5).map((Icon, i) => (
+                {(ANIMATION_PACKS[selectedAnimationPack].icons || []).slice(0, 5).map((Icon, i) => (
                   <div
                     key={i}
                     className="absolute"

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
-export type AnimationPackId = 'gaming' | 'nature' | 'fruit' | 'snacks' | 'egg' | 'heart' | 'emoji';
+export type AnimationPackId = 'none' | 'gaming' | 'nature' | 'fruit' | 'snacks' | 'egg' | 'heart' | 'emoji';
 
 export interface AnimationPack {
   id: AnimationPackId;
@@ -27,6 +27,14 @@ export interface AnimationPack {
 }
 
 export const ANIMATION_PACKS: Record<AnimationPackId, AnimationPack> = {
+  none: {
+    id: 'none',
+    name: 'None',
+    description: 'No background animations',
+    icon: Monitor,
+    icons: [],
+    count: 0,
+  },
   gaming: {
     id: 'gaming',
     name: 'Gaming',
