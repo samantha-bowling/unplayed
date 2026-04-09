@@ -1,6 +1,6 @@
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ExternalLink, Crown, Sparkles, ArrowLeft } from 'lucide-react';
+import { ExternalLink, Crown, Sparkles, ArrowLeft, Lock, Home } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -56,7 +56,25 @@ export default function ProfilePage() {
 
   // Privacy check: Only allow viewing public profiles or own profile
   if (!profileLoading && profile && profile.profile_visibility === 'private' && !isOwnProfile) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-lg">
+        <Card className="text-center">
+          <CardContent className="py-12 space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <Lock className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold">This profile is private</h2>
+            <p className="text-muted-foreground text-sm">
+              This user has chosen to keep their profile private.
+            </p>
+            <Button variant="outline" className="gap-2" onClick={() => navigate('/')}>
+              <Home className="h-4 w-4" />
+              Back to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (profileLoading || statsLoading) {

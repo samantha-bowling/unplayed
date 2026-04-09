@@ -89,8 +89,8 @@ export function ProfileBackgroundAnimations({
     }
   }, [packId, enabled, prefersReducedMotion]);
   
-  // Don't render if disabled or user prefers reduced motion
-  if (!enabled || prefersReducedMotion || positions.length === 0) {
+  // Don't render if disabled, 'none' pack, or user prefers reduced motion
+  if (!enabled || packId === 'none' || prefersReducedMotion || positions.length === 0) {
     return null;
   }
   
