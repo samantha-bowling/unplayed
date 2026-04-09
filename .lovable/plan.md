@@ -1,22 +1,40 @@
 
 
-## Rename "Game DNA" → "Library DNA"
+## Remove Support/Donation Page and Stripe Integration
 
-A copy-only change across the files that reference "Game DNA" in user-facing text. No logic, scoring, or file renaming needed — just updating strings.
+### Summary
+Remove the `/support` page, `/admin/support` page, all donor-related components, Stripe webhook edge function, donor tier calculation edge function, and all navigation links pointing to them.
 
-### Changes
+### Files to Delete
+| File | Reason |
+|------|--------|
+| `src/pages/SupportPage.tsx` | The support/donation page |
+| `src/pages/AdminSupportPage.tsx` | Admin support page |
+| `src/components/HallOfThanks.tsx` | Donor hall of thanks component |
+| `src/components/DonorGrid.tsx` | Donor grid display |
+| `src/components/DonorCard.tsx` | Individual donor card |
+| `supabase/functions/handle-stripe-donation/index.ts` | Stripe webhook handler |
+| `supabase/functions/calculate-donor-tiers/index.ts` | Donor tier calculation |
 
-**`src/pages/LibraryPage.tsx`**
-- Tab trigger label: "Game DNA" → "Library DNA"
+### Files to Modify
 
-**`src/components/LibraryGameDNA.tsx`**
-- Heading: "Your Game DNA" → "Your Library DNA"
-- Empty state text: "Import your Steam library to reveal your Game DNA" → "Import your Steam library to reveal your Library DNA"
-- Subtitle: "Six dimensions that define who you are as a gamer, built from your entire Steam library." → "Six dimensions that define your gaming identity, built from your entire Steam library."
-- Loading text: "Analyzing your DNA..." → "Analyzing your library DNA..."
+**`src/App.tsx`**
+- Remove `SupportPage` and `AdminSupportPage` lazy imports
+- Remove `/support` route
+- Remove `/admin/support` route
 
-**`src/components/dna/DNARadarChart.tsx`**
-- SVG `aria-label`: "Game DNA Radar Chart" → "Library DNA Radar Chart"
+**`src/components/Footer.tsx`**
+- Remove the `handleSupportersClick` callback
+- Remove the "Supporters" button from the footer links
 
-No file renames, no logic changes, no new dependencies.
+**`src/components/header/MobileMenu.tsx`**
+- Remove the "Admin Support" nav link
+
+**`src/pages/AdminDashboardPage.tsx`**
+- Remove the "Admin Support" card from the admin dashboard grid
+
+### Notes
+- The `donors` table in Supabase will remain untouched (no data deletion) -- you can drop it manually later if desired
+- No navigation links in `NavigationLinks.tsx` reference `/support`, so no change needed there
+- Stripe secrets (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) can be removed from Supabase edge function secrets manually via the dashboard if desired
 
