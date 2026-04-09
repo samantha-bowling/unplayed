@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Shield, Bug, UserMinus, ActivitySquare, Database, ChevronDown, Info } from 'lucide-react';
+import { Bug, UserMinus, ActivitySquare, Database, ChevronDown, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,14 +57,6 @@ const AdminDashboardPage = () => {
       path: '/admin/auth-debug',
       color: 'bg-gradient-to-br from-emerald-900/40 to-emerald-700/20',
       borderColor: 'border-unplayed-mint/30',
-    },
-    {
-      title: 'Admin Support',
-      description: 'Manage support requests and user assistance.',
-      icon: <Shield className="h-8 w-8 text-unplayed-pink" />,
-      path: '/admin/support',
-      color: 'bg-gradient-to-br from-pink-900/40 to-pink-700/20',
-      borderColor: 'border-unplayed-pink/30',
     },
     {
       title: 'Account Deletions',
