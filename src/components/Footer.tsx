@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
+import { useAuth } from "@/context/AuthContext";
 import { useAuth } from "@/context/AuthContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
