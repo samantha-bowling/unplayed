@@ -40,11 +40,6 @@ const Footer = () => {
     setShowDeletionModal(true);
   }, []);
 
-  const handleSupportersClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/support');
-    window.scrollTo(0, 0);
-  }, [navigate]);
 
   // Hide footer in full screen mode
   if (isFullScreenMode) {
@@ -78,9 +73,6 @@ const Footer = () => {
             </button>
             <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={openAbout}>
               About
-            </button>
-            <button className="text-gray-400 hover:text-unplayed-mint transition-colors text-sm py-2 md:py-0 bg-transparent border-none cursor-pointer" onClick={handleSupportersClick}>
-              Supporters
             </button>
           </div>
         </div>

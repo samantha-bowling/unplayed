@@ -15,8 +15,6 @@ import AuthPage from "./pages/AuthPage";
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LibraryPage = lazy(() => import("./pages/LibraryPage"));
 const AuthDebugPage = lazy(() => import("./pages/AuthDebugPage"));
-const SupportPage = lazy(() => import("./pages/SupportPage"));
-const AdminSupportPage = lazy(() => import("./pages/AdminSupportPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const AdminAccountDeletionsPage = lazy(() => import("./pages/AdminAccountDeletionsPage"));
 const QueueManagerPage = lazy(() => import("./pages/QueueManagerPage"));
@@ -56,7 +54,6 @@ const App = () => {
           <Route path="/auth/callback" element={<AuthCallbackHandler />} />
           <Route path="/auth/steam-callback" element={<SteamAuthHandler />} />
           <Route path="/login-error" element={<LoginErrorPage />} />
-          <Route path="/support" element={<SupportPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           
           {/* Profile routes - both long and short URLs */}
@@ -86,14 +83,6 @@ const App = () => {
           element={
             <ProtectedRoute requiredRole={UserRole.ADMIN}>
               <AdminDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/support"
-          element={
-            <ProtectedRoute requiredRole={UserRole.ADMIN}>
-              <AdminSupportPage />
             </ProtectedRoute>
           }
         />

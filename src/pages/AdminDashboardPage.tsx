@@ -59,14 +59,6 @@ const AdminDashboardPage = () => {
       borderColor: 'border-unplayed-mint/30',
     },
     {
-      title: 'Admin Support',
-      description: 'Manage support requests and user assistance.',
-      icon: <Shield className="h-8 w-8 text-unplayed-pink" />,
-      path: '/admin/support',
-      color: 'bg-gradient-to-br from-pink-900/40 to-pink-700/20',
-      borderColor: 'border-unplayed-pink/30',
-    },
-    {
       title: 'Account Deletions',
       description: 'View analytics and feedback from deleted accounts.',
       icon: <UserMinus className="h-8 w-8 text-unplayed-red" />,
