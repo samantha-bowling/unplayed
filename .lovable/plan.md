@@ -1,40 +1,42 @@
 
 
-## Remove Support/Donation Page and Stripe Integration
+## Profile Enhancements Plan
 
-### Summary
-Remove the `/support` page, `/admin/support` page, all donor-related components, Stripe webhook edge function, donor tier calculation edge function, and all navigation links pointing to them.
+Four targeted improvements to the profile experience, all UI-only changes with no database modifications.
 
-### Files to Delete
-| File | Reason |
+### 1. Add "No Animations" option
+**`src/lib/profile-animation-packs.ts`**
+- Add a `'none'` entry to `AnimationPackId` type and `ANIMATION_PACKS` record with an empty `icons` array, `count: 0`, and a descriptive label like "None — No background animations"
+
+**`src/components/profile/ProfileBackgroundAnimations.tsx`**
+- Early-return when `packId === 'none'` or when the pack has no icons
+
+**`src/components/profile/ProfileCustomizationModal.tsx`**
+- The "None" pack will automatically appear in the animation picker grid since it iterates `Object.values(ANIMATION_PACKS)`
+- Preview section: handle empty icons array gracefully (already guarded by `.slice(0, 5)`)
+
+### 2. Remove full page reload on save
+**`src/components/profile/ProfileCustomizationModal.tsx`**
+- In `handleSave` → `onSuccess`: remove `window.location.reload()`
+- Instead, close the modal (`setIsOpen(false)`) and let React Query's cache invalidation (already happening in `useProfile.updateProfile.onSuccess`) reactively update the profile page
+- The `ProfilePage` already reads from the query cache, so the theme/animation changes will apply automatically
+
+### 3. Fix tagline character limit mismatch
+**`src/components/profile/ProfileCustomizationModal.tsx`**
+- Change the `<Input maxLength={60}>` to `maxLength={50}` to match the validation logic and the displayed counter ("X/50 characters")
+
+### 4. Better private profile UX
+**`src/pages/ProfilePage.tsx`**
+- Replace the silent `<Navigate to="/" replace />` for private profiles with an informative card:
+  - Icon (Lock), heading "This profile is private", description "This user has chosen to keep their profile private."
+  - A "Back to Home" button for navigation
+- Keep the redirect behavior for unauthenticated users who land on private profiles, but show the message for authenticated visitors
+
+### Files touched
+| File | Change |
 |------|--------|
-| `src/pages/SupportPage.tsx` | The support/donation page |
-| `src/pages/AdminSupportPage.tsx` | Admin support page |
-| `src/components/HallOfThanks.tsx` | Donor hall of thanks component |
-| `src/components/DonorGrid.tsx` | Donor grid display |
-| `src/components/DonorCard.tsx` | Individual donor card |
-| `supabase/functions/handle-stripe-donation/index.ts` | Stripe webhook handler |
-| `supabase/functions/calculate-donor-tiers/index.ts` | Donor tier calculation |
-
-### Files to Modify
-
-**`src/App.tsx`**
-- Remove `SupportPage` and `AdminSupportPage` lazy imports
-- Remove `/support` route
-- Remove `/admin/support` route
-
-**`src/components/Footer.tsx`**
-- Remove the `handleSupportersClick` callback
-- Remove the "Supporters" button from the footer links
-
-**`src/components/header/MobileMenu.tsx`**
-- Remove the "Admin Support" nav link
-
-**`src/pages/AdminDashboardPage.tsx`**
-- Remove the "Admin Support" card from the admin dashboard grid
-
-### Notes
-- The `donors` table in Supabase will remain untouched (no data deletion) -- you can drop it manually later if desired
-- No navigation links in `NavigationLinks.tsx` reference `/support`, so no change needed there
-- Stripe secrets (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) can be removed from Supabase edge function secrets manually via the dashboard if desired
+| `src/lib/profile-animation-packs.ts` | Add `'none'` animation pack |
+| `src/components/profile/ProfileBackgroundAnimations.tsx` | Guard for `'none'` pack |
+| `src/components/profile/ProfileCustomizationModal.tsx` | Remove reload, fix maxLength |
+| `src/pages/ProfilePage.tsx` | Private profile message UI |
 
