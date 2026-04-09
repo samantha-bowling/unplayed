@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Shield, Bug, UserMinus, ActivitySquare, Database, ChevronDown, Info } from 'lucide-react';
+import { Bug, UserMinus, ActivitySquare, Database, ChevronDown, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

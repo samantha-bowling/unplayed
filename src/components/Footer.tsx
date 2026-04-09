@@ -2,7 +2,6 @@
 import { useState, useCallback } from "react";
 import { useFullScreenMode } from "@/context/FullScreenModeContext";
 import { useAuth } from "@/context/AuthContext";
-import { useAuth } from "@/context/AuthContext";
 import PrivacyPolicyDialog from "./PrivacyPolicyDialog";
 import TermsOfServiceDialog from "./TermsOfServiceDialog";
 import AboutDialog from "./AboutDialog";
@@ -17,7 +16,6 @@ const Footer = () => {
   const [showDeletionModal, setShowDeletionModal] = useState(false);
   const { isFullScreenMode } = useFullScreenMode();
   const { user } = useAuth();
-  const navigate = useNavigate();
   
   // Use useCallback to prevent unnecessary re-renders
   const openPrivacyPolicy = useCallback((e: React.MouseEvent) => {
