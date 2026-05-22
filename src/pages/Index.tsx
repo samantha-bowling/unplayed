@@ -240,7 +240,7 @@ const Index = () => {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
             Your PC games are gathering dust.
           </h1>
-          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+          <p className="text-xl text-foreground/90 mb-6 max-w-3xl mx-auto">
             unplayed helps you conquer your massive Steam backlog and actually play the games you own.
           </p>
           <div className="flex justify-center gap-4 mb-4">
