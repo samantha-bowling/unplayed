@@ -6,6 +6,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
+import { devLog, devWarn } from '../lib/dev-log';
 
 interface MetricsResult {
   success: boolean;
@@ -37,23 +38,23 @@ export const calculateUserMetricsDirect = async (userId: string): Promise<Metric
   }
 
   try {
-    console.log('📊 Attempting direct RPC call for user metrics...');
+    devLog('📊 Attempting direct RPC call for user metrics...');
     
     const { data, error } = await supabase.rpc('calculate_user_metrics_with_clean_score', {
       p_user_id: userId
     });
 
     if (error) {
-      console.warn('Direct RPC failed, falling back to edge function:', error.message);
+      devWarn('Direct RPC failed, falling back to edge function:', error.message);
       return calculateViaEdgeFunction(userId);
     }
 
     if (!data) {
-      console.warn('No data from direct RPC, falling back to edge function');
+      devWarn('No data from direct RPC, falling back to edge function');
       return calculateViaEdgeFunction(userId);
     }
 
-    console.log('✅ Direct RPC successful for user metrics');
+    devLog('✅ Direct RPC successful for user metrics');
 
     // Cast to expected shape since RPC returns JSONB
     const metrics = data as Record<string, unknown>;
@@ -86,7 +87,7 @@ export const calculateUserMetricsDirect = async (userId: string): Promise<Metric
  */
 const calculateViaEdgeFunction = async (userId: string): Promise<MetricsResult> => {
   try {
-    console.log('📊 Using edge function for user metrics...');
+    devLog('📊 Using edge function for user metrics...');
     
     const { data, error } = await supabase.functions.invoke('calculate-user-metrics', {
       body: { user_id: userId }
@@ -101,7 +102,7 @@ const calculateViaEdgeFunction = async (userId: string): Promise<MetricsResult> 
       return { success: false, error: data?.error || 'Unknown error' };
     }
 
-    console.log('✅ Edge function successful for user metrics');
+    devLog('✅ Edge function successful for user metrics');
     return {
       success: true,
       metrics: data.metrics

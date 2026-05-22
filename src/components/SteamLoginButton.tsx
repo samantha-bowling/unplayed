@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { useProfile } from '@/hooks/use-profile';
 import { toast } from 'sonner';
+import { devLog } from '../lib/dev-log';
 
 interface SteamLoginButtonProps {
   className?: string;
@@ -43,14 +44,14 @@ const SteamLoginButton = ({
     }
     
     setButtonLoading(true);
-    console.log('[Steam Auth] Starting Steam account linking process for user', user.id);
+    devLog('[Steam Auth] Starting Steam account linking process for user', user.id);
     
     // Log the redirect URL we're using
     const redirectUrl = `${window.location.origin}/auth/steam-callback`;
-    console.log('[Steam Auth] Using redirect URL:', redirectUrl);
+    devLog('[Steam Auth] Using redirect URL:', redirectUrl);
     
     // Add additional debug info before initiating Steam auth
-    console.log('[Steam Auth] Current user state:', { 
+    devLog('[Steam Auth] Current user state:', { 
       userId: user.id, 
       userEmail: user.email, 
       hasProfile: !!profile, 

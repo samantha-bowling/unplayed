@@ -9,6 +9,7 @@ import { callUpsertUser } from '@/utils/auth/callUpsertUser';
 import { AuthStorage } from '@/utils/auth-service';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { useQueryClient } from '@tanstack/react-query';
+import { devLog } from '../lib/dev-log';
 
 /**
  * Dedicated component for handling Steam account linking.
@@ -31,22 +32,22 @@ const SteamAuthHandler = () => {
 
   // Log current URL and params for debugging
   useEffect(() => {
-    console.log('[SteamAuth] SteamAuthHandler mounted');
-    console.log('[SteamAuth] Current URL:', window.location.href);
-    console.log('[SteamAuth] Search params:', Object.fromEntries(searchParams.entries()));
+    devLog('[SteamAuth] SteamAuthHandler mounted');
+    devLog('[SteamAuth] Current URL:', window.location.href);
+    devLog('[SteamAuth] Search params:', Object.fromEntries(searchParams.entries()));
   }, [searchParams]);
 
   useEffect(() => {
     const processSteamAuth = async () => {
       try {
-        console.log('[SteamAuth] Processing Steam auth callback');
-        console.log('[SteamAuth] URL params:', {
+        devLog('[SteamAuth] Processing Steam auth callback');
+        devLog('[SteamAuth] URL params:', {
           steam_id,
           steam_name,
           steam_avatar,
           uid
         });
-        console.log('[SteamAuth] Current user:', user);
+        devLog('[SteamAuth] Current user:', user);
         
         // Validate required parameters
         if (!steam_id || !steam_name || !uid) {
@@ -74,7 +75,7 @@ const SteamAuthHandler = () => {
         AuthStorage.markFromAuthCallback();
         
         try {
-          console.log('[SteamAuth] Updating user profile with Steam data');
+          devLog('[SteamAuth] Updating user profile with Steam data');
           
           const decodedSteamName = steam_name ? decodeURIComponent(steam_name) : '';
           const decodedSteamAvatar = steam_avatar ? decodeURIComponent(steam_avatar) : undefined;
@@ -88,12 +89,12 @@ const SteamAuthHandler = () => {
             onboarding_complete: true,
           };
           
-          console.log('[SteamAuth] Upsert user payload:', updatePayload);
+          devLog('[SteamAuth] Upsert user payload:', updatePayload);
           
           // Update user profile with Steam information
           const result = await callUpsertUser(updatePayload);
           
-          console.log('[SteamAuth] Upsert successful, result:', result);
+          devLog('[SteamAuth] Upsert successful, result:', result);
           
           // Invalidate profile cache to force refresh with new Steam data
           queryClient.invalidateQueries({ queryKey: ['profile', uid] });
@@ -143,7 +144,7 @@ const SteamAuthHandler = () => {
     if (user) {
       processSteamAuth();
     } else {
-      console.log('[SteamAuth] No user detected, waiting...');
+      devLog('[SteamAuth] No user detected, waiting...');
       // Set a timeout to give auth context time to initialize
       const timer = setTimeout(() => {
         if (!user) {

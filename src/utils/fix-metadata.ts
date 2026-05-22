@@ -1,4 +1,5 @@
 import { callSupabaseFunction } from './supabase-functions';
+import { devLog } from '../lib/dev-log';
 
 export interface FixMetadataOptions {
   dryRun?: boolean;
@@ -31,7 +32,7 @@ export async function fixInconsistentMetadata(
 ): Promise<FixMetadataResponse> {
   const { dryRun = false, prioritizeUserGames = true } = options;
   
-  console.log(`[fixInconsistentMetadata] Starting ${dryRun ? 'dry run' : 'live'} metadata fix`);
+  devLog(`[fixInconsistentMetadata] Starting ${dryRun ? 'dry run' : 'live'} metadata fix`);
   
   try {
     const result = await callSupabaseFunction<FixMetadataResponse>(
@@ -42,7 +43,7 @@ export async function fixInconsistentMetadata(
       }
     );
     
-    console.log('[fixInconsistentMetadata] Result:', result);
+    devLog('[fixInconsistentMetadata] Result:', result);
     return result;
   } catch (error) {
     console.error('[fixInconsistentMetadata] Error:', error);

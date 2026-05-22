@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { GameListItem } from '@/types/unplayed-data.types';
 import { GamePick, GamePickFilters } from '@/types/picks.types';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { devLog } from '../lib/dev-log';
 import { 
   getAuthDebugInfo, 
   testGamePicksRLS, 
@@ -27,11 +28,11 @@ export const useGamePicks = () => {
   // Debug authentication state when it changes
   useEffect(() => {
     if (user) {
-      console.log('🔐 useGamePicks - User authenticated:', user.id);
+      devLog('🔐 useGamePicks - User authenticated:', user.id);
       // Test RLS policies when user becomes authenticated
       testGamePicksRLS();
     } else {
-      console.log('🔐 useGamePicks - User not authenticated');
+      devLog('🔐 useGamePicks - User not authenticated');
     }
   }, [user]);
 
@@ -44,15 +45,15 @@ export const useGamePicks = () => {
     queryKey: queryKeys.gamePicks(user?.id),
     queryFn: async () => {
       if (!isAuthenticated) {
-        console.log('🔍 Query skipped - user not authenticated');
+        devLog('🔍 Query skipped - user not authenticated');
         return null;
       }
 
-      console.log('🔍 Fetching recent pick for user:', user.id);
+      devLog('🔍 Fetching recent pick for user:', user.id);
 
       // Enhanced debug info for the query
       const authInfo = await getAuthDebugInfo();
-      console.log('🔍 Auth info during query:', authInfo);
+      devLog('🔍 Auth info during query:', authInfo);
 
       // First, get the most recent pick with enhanced debugging
       const { data: pickData, error: pickError } = await supabase
@@ -81,11 +82,11 @@ export const useGamePicks = () => {
       }
 
       if (!pickData) {
-        console.log('✅ No recent pick found for user');
+        devLog('✅ No recent pick found for user');
         return null;
       }
 
-      console.log('✅ Recent pick found:', pickData);
+      devLog('✅ Recent pick found:', pickData);
 
       // Get the game data for this pick with debugging
       const { data: gameData, error: gameError } = await supabase
@@ -112,7 +113,7 @@ export const useGamePicks = () => {
         logDatabaseError('SELECT', 'user_games', userGameError, { userId: user.id, gameId: pickData.game_id });
       }
 
-      console.log('✅ Complete pick data assembled:', {
+      devLog('✅ Complete pick data assembled:', {
         pick: pickData,
         game: gameData,
         userGame: userGameData
@@ -142,11 +143,11 @@ export const useGamePicks = () => {
         throw new Error('User must be authenticated to save picks');
       }
 
-      console.log('🔍 Attempting to save game pick:', { gameId, userId: user.id, filters });
+      devLog('🔍 Attempting to save game pick:', { gameId, userId: user.id, filters });
 
       // Debug authentication before attempting save
       const authInfo = await getAuthDebugInfo();
-      console.log('🔍 Auth info during save:', authInfo);
+      devLog('🔍 Auth info during save:', authInfo);
 
       // Use PostgreSQL upsert (ON CONFLICT DO UPDATE) for better race condition handling
       const { data, error } = await supabase
@@ -172,11 +173,11 @@ export const useGamePicks = () => {
         throw error;
       }
 
-      console.log('✅ Successfully saved game pick:', data);
+      devLog('✅ Successfully saved game pick:', data);
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Game pick saved successfully:', data);
+      devLog('✅ Game pick saved successfully:', data);
       // Invalidate the specific user's game picks cache using the correct query key
       queryClient.invalidateQueries({ queryKey: queryKeys.gamePicks(user?.id) });
       
@@ -208,7 +209,7 @@ export const useGamePicks = () => {
         console.error('🔒 No matching RLS policy - check game_picks table policies');
       } else if (error.message?.includes('duplicate key') || error.code === '23505') {
         // Unique constraint violation - this is expected with upserts, don't show error
-        console.log('ℹ️ Duplicate key during upsert - this is normal behavior');
+        devLog('ℹ️ Duplicate key during upsert - this is normal behavior');
       } else {
         // Show toast for genuine errors that users should know about
         toast.error("Failed to save pick", {

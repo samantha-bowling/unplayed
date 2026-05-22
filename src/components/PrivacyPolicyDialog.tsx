@@ -1,5 +1,6 @@
 
 import React from "react";
+import { devLog } from '../lib/dev-log';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ interface PrivacyPolicyDialogProps {
 
 const PrivacyPolicyDialog = ({ open, onOpenChange }: PrivacyPolicyDialogProps) => {
   if (process.env.NODE_ENV === "development") {
-    console.log("PrivacyPolicyDialog render: open =", open);
+    devLog("PrivacyPolicyDialog render: open =", open);
   }
 
   return (

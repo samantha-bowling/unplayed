@@ -7,6 +7,7 @@ import SteamLoader from '@/components/SteamLoader';
 import { AuthStorage } from '@/utils/auth-service';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { useQueryClient } from '@tanstack/react-query';
+import { devLog } from '../lib/dev-log';
 
 /**
  * Handles callbacks from general authentication providers (Discord, Twitch, Email).
@@ -25,7 +26,7 @@ const AuthCallbackHandler = () => {
   useEffect(() => {
     const processAuthCallback = async () => {
       try {
-        console.log('[AuthCallback] Processing auth callback');
+        devLog('[AuthCallback] Processing auth callback');
         
         // Mark that we're handling an auth callback
         AuthStorage.markFromAuthCallback();
@@ -47,7 +48,7 @@ const AuthCallbackHandler = () => {
         
         // If user exists, proceed with authentication flow
         if (user) {
-          console.log('[AuthCallback] User is authenticated, id:', user.id);
+          devLog('[AuthCallback] User is authenticated, id:', user.id);
           
           // Mark successful login
           AuthStorage.markJustLoggedIn();
@@ -71,7 +72,7 @@ const AuthCallbackHandler = () => {
             }
           }, 500);
         } else {
-          console.log('[AuthCallback] No user found, redirecting to auth page');
+          devLog('[AuthCallback] No user found, redirecting to auth page');
           // If no user by this point, send to auth page
           navigate('/auth');
         }

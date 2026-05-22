@@ -1,6 +1,7 @@
 
 import React from 'react';
 import MainLayout from './MainLayout';
+import { devWarn } from '../lib/dev-log';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,7 +22,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       const Component = () => {
         const { isAdmin } = useAuthPermission();
         if (!isAdmin) {
-          console.warn('[AdminLayout] Rendered without admin context - check route protection');
+          devWarn('[AdminLayout] Rendered without admin context - check route protection');
         }
         return null;
       };

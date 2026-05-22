@@ -5,6 +5,7 @@ import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
 import { toast } from 'sonner';
 import { callSupabaseFunction } from '@/utils/supabase-functions';
+import { devLog } from '../../lib/dev-log';
 
 export const useLibraryImport = () => {
   const { 
@@ -35,7 +36,7 @@ export const useLibraryImport = () => {
     setOperationLoading('import', true);
 
     try {
-      console.log('🚀 Starting smart library import...');
+      devLog('🚀 Starting smart library import...');
       
       const data = await callSupabaseFunction('import-library', {
         steamId: steamId,

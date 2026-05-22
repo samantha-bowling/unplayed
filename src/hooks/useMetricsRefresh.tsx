@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
 import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
+import { devLog, devWarn } from '../lib/dev-log';
 
 export const useMetricsRefresh = () => {
   const { user } = useAuth();
@@ -25,7 +26,7 @@ export const useMetricsRefresh = () => {
     try {
       setIsRefreshing(true);
       
-      console.log('Refreshing user metrics for user:', user.id);
+      devLog('Refreshing user metrics for user:', user.id);
       
       // Use direct RPC call with automatic fallback to edge function
       const result = await calculateUserMetricsDirect(user.id);
@@ -38,9 +39,9 @@ export const useMetricsRefresh = () => {
       try {
         const { supabase } = await import('@/integrations/supabase/client');
         await supabase.rpc('refresh_user_dust_breakdowns', { p_user_id: user.id });
-        console.log('Dust breakdowns refreshed successfully');
+        devLog('Dust breakdowns refreshed successfully');
       } catch (breakdownError) {
-        console.warn('Failed to refresh dust breakdowns (non-critical):', breakdownError);
+        devWarn('Failed to refresh dust breakdowns (non-critical):', breakdownError);
       }
 
       // Invalidate Phase 2 metrics cache after successful backend refresh
@@ -53,7 +54,7 @@ export const useMetricsRefresh = () => {
         description: `Updated metrics for ${result.metrics?.totalGames || 0} games.`
       });
       
-      console.log('User metrics refresh completed:', result);
+      devLog('User metrics refresh completed:', result);
       return result;
     } catch (error) {
       console.error('Error refreshing user metrics:', error);

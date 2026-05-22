@@ -4,6 +4,7 @@
  */
 
 import { AuthStatus } from '@/context/AuthContext';
+import { devDebug } from '../lib/dev-log';
 
 type AuthEventType = 
   | 'auth_success' 
@@ -25,7 +26,7 @@ export const trackAuthEvent = (
 ) => {
   // For development, just log to console
   if (process.env.NODE_ENV === 'development') {
-    console.debug(`[Auth Analytics] ${eventType}`, context || {});
+    devDebug(`[Auth Analytics] ${eventType}`, context || {});
     return;
   }
   
@@ -59,7 +60,7 @@ export const isRecoverableAuthError = (errorType: string): boolean => {
 export const logAuthEvent = (event: string, data?: any) => {
   // Original debug logging
   if (process.env.NODE_ENV === 'development') {
-    console.debug(`[Auth] ${event}`, data || '');
+    devDebug(`[Auth] ${event}`, data || '');
   }
   
   // Map certain events to analytics

@@ -2,6 +2,7 @@
 import { UnplayedDataType } from '@/types/unplayed-data.types';
 import { normalizeDemoGames } from '@/utils/normalize-games';
 import { DEMO_DATA } from './demo-data';
+import { devLog, devWarn } from '../lib/dev-log';
 
 /**
  * Enhanced central service for unified data operations
@@ -16,7 +17,7 @@ export const getUnplayedDataService = {
     try {
       return normalizeDemoGames(DEMO_DATA);
     } catch (error) {
-      console.warn('[DataService] Error normalizing demo data, using fallback', error);
+      devWarn('[DataService] Error normalizing demo data, using fallback', error);
       return this.getFallbackData();
     }
   },
@@ -72,11 +73,11 @@ export const getUnplayedDataService = {
     
     if (isDemo) {
       // For demo mode, always provide working data
-      console.log('[DataService] Demo mode: providing fallback data');
+      devLog('[DataService] Demo mode: providing fallback data');
       return this.getFallbackData();
     } else {
       // For live mode, provide fallback but also surface the error
-      console.warn('[DataService] Live mode: data error occurred, using fallback');
+      devWarn('[DataService] Live mode: data error occurred, using fallback');
       return this.getFallbackData();
     }
   },
@@ -101,7 +102,7 @@ export const getUnplayedDataService = {
     try {
       return JSON.parse(JSON.stringify(data));
     } catch (error) {
-      console.warn('[DataService] Failed to create safe copy, returning original data');
+      devWarn('[DataService] Failed to create safe copy, returning original data');
       return data;
     }
   },
@@ -111,7 +112,7 @@ export const getUnplayedDataService = {
    */
   logDataFlow(component: string, isDemo: boolean, dataSize: number): void {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[DataService] ${component}: ${isDemo ? 'Demo' : 'Live'} data (${dataSize} items)`);
+      devLog(`[DataService] ${component}: ${isDemo ? 'Demo' : 'Live'} data (${dataSize} items)`);
     }
   }
 };

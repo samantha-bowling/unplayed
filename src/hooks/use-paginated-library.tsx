@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { LibraryGame, SortOption } from '@/hooks/use-library-data';
 import { queryKeys, FilterOptions } from './use-query-keys';
+import { devLog } from '../lib/dev-log';
 
 // Constants for pagination
 const DEFAULT_PAGE_SIZE = 24;
@@ -95,7 +96,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       // Handle genre filtering
       if (filters.selectedGenre && filters.selectedGenre.trim() !== '') {
         try {
-          console.log('Fetching games with genre:', filters.selectedGenre);
+          devLog('Fetching games with genre:', filters.selectedGenre);
           const { data: genreGames, error: genreError } = await supabase
             .from('games')
             .select('id')
@@ -109,7 +110,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           if (genreGames && genreGames.length > 0) {
             query = query.in('game_id', genreGames.map(g => g.id));
           } else {
-            console.log('No games found with genre:', filters.selectedGenre);
+            devLog('No games found with genre:', filters.selectedGenre);
             return { count: 0 };
           }
         } catch (error) {
@@ -134,7 +135,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           if (gameIds && gameIds.length > 0) {
             query = query.in('game_id', gameIds.map(g => g.id));
           } else {
-            console.log('No games found matching search:', filters.search);
+            devLog('No games found matching search:', filters.search);
             return { count: 0 };
           }
         } catch (error) {
@@ -213,7 +214,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       // Handle genre filtering
       if (filters.selectedGenre && filters.selectedGenre.trim() !== '') {
         try {
-          console.log('Fetching games with genre for main query:', filters.selectedGenre);
+          devLog('Fetching games with genre for main query:', filters.selectedGenre);
           const { data: genreGames, error: genreError } = await supabase
             .from('games')
             .select('id')
@@ -227,7 +228,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           if (genreGames && genreGames.length > 0) {
             query = query.in('game_id', genreGames.map(g => g.id));
           } else {
-            console.log('No games found with genre:', filters.selectedGenre);
+            devLog('No games found with genre:', filters.selectedGenre);
             return [];
           }
         } catch (error) {
@@ -252,7 +253,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           if (gameIds && gameIds.length > 0) {
             query = query.in('game_id', gameIds.map(g => g.id));
           } else {
-            console.log('No games found matching search:', filters.search);
+            devLog('No games found matching search:', filters.search);
             return [];
           }
         } catch (error) {
@@ -262,7 +263,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
       }
       
       // Add sorting
-      console.log(`Applying sort: ${sortBy} ${sortDirection}`);
+      devLog(`Applying sort: ${sortBy} ${sortDirection}`);
       switch (sortBy) {
         case 'name':
           query = query.order('games(name)', { ascending: sortDirection === 'asc' });
@@ -295,7 +296,7 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
           return [];
         }
         
-        console.log(`Fetched ${userGames.length} games with sort: ${sortBy} ${sortDirection}`);
+        devLog(`Fetched ${userGames.length} games with sort: ${sortBy} ${sortDirection}`);
         
         return userGames.map((item: any): LibraryGame => ({
           ...item.games,
@@ -385,15 +386,15 @@ export function usePaginatedLibrary(): PaginatedLibraryResult {
   
   // Sort controls
   const updateSort = useCallback((option: SortOption) => {
-    console.log(`Paginated: Updating sort from ${sortBy} ${sortDirection} to ${option}`);
+    devLog(`Paginated: Updating sort from ${sortBy} ${sortDirection} to ${option}`);
     if (sortBy === option) {
       const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
       setSortDirection(newDirection);
-      console.log(`Paginated: Toggled sort direction to: ${newDirection}`);
+      devLog(`Paginated: Toggled sort direction to: ${newDirection}`);
     } else {
       setSortBy(option);
       setSortDirection('asc');
-      console.log(`Paginated: Changed sort to: ${option} asc`);
+      devLog(`Paginated: Changed sort to: ${option} asc`);
     }
     setPagination(prev => ({ ...prev, page: 1 }));
   }, [sortBy, sortDirection]);

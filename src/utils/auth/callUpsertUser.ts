@@ -1,3 +1,4 @@
+import { devLog } from '../../lib/dev-log';
 
 // src/utils/auth/callUpsertUser.ts
 
@@ -11,7 +12,7 @@ export type UpsertUserPayload = {
 
 export async function callUpsertUser(payload: UpsertUserPayload) {
   try {
-    console.log('🔄 Calling upsert-user with payload:', payload);
+    devLog('🔄 Calling upsert-user with payload:', payload);
     
     // Get auth session for JWT token
     const { supabase } = await import('@/integrations/supabase/client');
@@ -33,7 +34,7 @@ export async function callUpsertUser(payload: UpsertUserPayload) {
     });
 
     const result = await response.json();
-    console.log('📥 Upsert user response:', result);
+    devLog('📥 Upsert user response:', result);
 
     if (!response.ok) {
       console.error('🔴 Upsert failed:', result.error);

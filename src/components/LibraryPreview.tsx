@@ -11,6 +11,7 @@ import { useLibraryData } from '@/hooks/use-library-data';
 import { getBestGameImageFromDbData } from '@/utils/image-utils';
 import SteamLoader from './SteamLoader';
 import GameCard from './GameCard';
+import { devLog } from '../lib/dev-log';
 
 interface LibraryPreviewProps {
   zenModeFullScreen?: boolean;
@@ -103,29 +104,29 @@ const LibraryPreview: React.FC<LibraryPreviewProps> = ({ zenModeFullScreen = fal
 
   const handleMarkAsPlayed = async (userGameId: string) => {
     if (isDemo) {
-      console.log('Demo mode: Mark as played:', userGameId);
+      devLog('Demo mode: Mark as played:', userGameId);
       return;
     }
     // Implementation for marking as played
-    console.log('Mark as played:', userGameId);
+    devLog('Mark as played:', userGameId);
   };
 
   const handleToggleHidden = async (userGameId: string, currentHidden: boolean) => {
     if (isDemo) {
-      console.log('Demo mode: Toggle hidden:', userGameId, !currentHidden);
+      devLog('Demo mode: Toggle hidden:', userGameId, !currentHidden);
       return;
     }
     // Implementation for toggling hidden
-    console.log('Toggle hidden:', userGameId, !currentHidden);
+    devLog('Toggle hidden:', userGameId, !currentHidden);
   };
 
   const handleSaveNote = async (userGameId: string, note: string) => {
     if (isDemo) {
-      console.log('Demo mode: Save note:', userGameId, note);
+      devLog('Demo mode: Save note:', userGameId, note);
       return;
     }
     // Implementation for saving note
-    console.log('Save note:', userGameId, note);
+    devLog('Save note:', userGameId, note);
   };
 
   const resetFilters = () => {

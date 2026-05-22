@@ -6,6 +6,7 @@ import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { devLog } from '../../lib/dev-log';
 
 export const usePriceRefresh = () => {
   const { 
@@ -36,7 +37,7 @@ export const usePriceRefresh = () => {
     setOperationLoading('prices', true);
 
     try {
-      console.log('💰 Starting price refresh...');
+      devLog('💰 Starting price refresh...');
 
       // Call price refresh function
       const { data, error } = await supabase.functions.invoke('refresh-user-prices', {

@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { devLog } from '../lib/dev-log';
 
 export type ProfileVisibility = 'public' | 'private';
 
@@ -53,7 +54,7 @@ export function useProfile() {
     queryFn: async () => {
       if (!user?.id) return null;
       
-      console.log(`[useProfile] Fetching profile for user ${user.id}`);
+      devLog(`[useProfile] Fetching profile for user ${user.id}`);
       
       const { data, error } = await supabase
         .from('users')
@@ -79,7 +80,7 @@ export function useProfile() {
           : []
       } : null;
       
-      console.log('[useProfile] Profile fetched with roles:', profileWithRoles);
+      devLog('[useProfile] Profile fetched with roles:', profileWithRoles);
       return profileWithRoles as UserProfile | null;
     },
     enabled: !!user?.id && !!session,
@@ -92,7 +93,7 @@ export function useProfile() {
     mutationFn: async (profileData: Partial<UserProfile>) => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      console.log('[useProfile] Updating profile:', profileData);
+      devLog('[useProfile] Updating profile:', profileData);
       
       const { data, error } = await supabase
         .from('users')
@@ -113,7 +114,7 @@ export function useProfile() {
       queryClient.setQueryData([PROFILE_CACHE_KEY, user?.id], data);
       // Invalidate to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: [PROFILE_CACHE_KEY, user?.id] });
-      console.log('[useProfile] Profile updated successfully:', data);
+      devLog('[useProfile] Profile updated successfully:', data);
     }
   });
   

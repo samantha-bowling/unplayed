@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { devLog } from '../lib/dev-log';
 
 export interface TopExpensiveGame {
   id: number;
@@ -22,7 +23,7 @@ export const useTopExpensiveUnplayedGames = () => {
         throw new Error('User not authenticated');
       }
 
-      console.log('Fetching top expensive unplayed games...');
+      devLog('Fetching top expensive unplayed games...');
 
       // Get unplayed games with prices, sorted by price descending
       const { data: gamesData, error: gamesError } = await supabase
@@ -86,7 +87,7 @@ export const useTopExpensiveUnplayedGames = () => {
         })
         .filter((item): item is TopExpensiveGame => item !== null);
 
-      console.log('Top expensive unplayed games loaded:', result);
+      devLog('Top expensive unplayed games loaded:', result);
 
       return result;
     },

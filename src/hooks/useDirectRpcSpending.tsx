@@ -6,6 +6,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
+import { devLog, devWarn } from '../lib/dev-log';
 
 interface SpendingResult {
   success: boolean;
@@ -38,23 +39,23 @@ export const calculateSpendingMetricsDirect = async (userId: string): Promise<Sp
   }
 
   try {
-    console.log('💰 Attempting direct RPC call for spending metrics...');
+    devLog('💰 Attempting direct RPC call for spending metrics...');
     
     const { data, error } = await supabase.rpc('upsert_user_spending_metrics', {
       p_user_id: userId
     });
 
     if (error) {
-      console.warn('Direct RPC failed, falling back to edge function:', error.message);
+      devWarn('Direct RPC failed, falling back to edge function:', error.message);
       return calculateViaEdgeFunction(userId);
     }
 
     if (!data) {
-      console.warn('No data from direct RPC, falling back to edge function');
+      devWarn('No data from direct RPC, falling back to edge function');
       return calculateViaEdgeFunction(userId);
     }
 
-    console.log('✅ Direct RPC successful for spending metrics');
+    devLog('✅ Direct RPC successful for spending metrics');
 
     // Cast to expected shape since RPC returns JSONB
     const metrics = data as Record<string, unknown>;
@@ -89,7 +90,7 @@ export const calculateSpendingMetricsDirect = async (userId: string): Promise<Sp
  */
 const calculateViaEdgeFunction = async (userId: string): Promise<SpendingResult> => {
   try {
-    console.log('💰 Using edge function for spending metrics...');
+    devLog('💰 Using edge function for spending metrics...');
     
     const { data, error } = await supabase.functions.invoke('calculate-user-spending', {
       body: { user_id: userId, force_refresh: true }
@@ -104,7 +105,7 @@ const calculateViaEdgeFunction = async (userId: string): Promise<SpendingResult>
       return { success: false, error: data?.error || 'Unknown error' };
     }
 
-    console.log('✅ Edge function successful for spending metrics');
+    devLog('✅ Edge function successful for spending metrics');
     return {
       success: true,
       metrics: {

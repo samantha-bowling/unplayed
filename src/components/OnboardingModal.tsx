@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { devWarn } from '../lib/dev-log';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({
       try {
         localStorage.setItem('unplayed_onboarding_dismissed', 'true');
       } catch (error) {
-        console.warn('Failed to save onboarding preference:', error);
+        devWarn('Failed to save onboarding preference:', error);
       }
     }
     onClose();

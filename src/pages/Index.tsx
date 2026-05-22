@@ -35,6 +35,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RefreshCw, Import, AlertCircle, Clock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { devWarn } from '../lib/dev-log';
 
 const Index = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -77,7 +78,7 @@ const Index = () => {
           setOnboardingModalOpen(true);
         }
       } catch (error) {
-        console.warn('Failed to check onboarding preference:', error);
+        devWarn('Failed to check onboarding preference:', error);
         // Show modal anyway if localStorage fails
         setOnboardingModalOpen(true);
       }
