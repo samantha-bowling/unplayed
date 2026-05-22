@@ -199,7 +199,7 @@ export default function ProfilePage() {
       
       <Helmet>
         <title>{`${profile.steam_name} on Unplayed`}</title>
-        <meta name="description" content={`${profile.profile_tagline || 'Check out my Steam library!'} - ${dustScore.toLocaleString()} Dust Score`} />
+        <meta name="description" content={`${profile.profile_tagline || `Check out ${profile.steam_name}'s Steam backlog stats on unplayed`} — ${dustScore.toLocaleString()} Dust Score, ${mainStatData.label}: ${mainStatData.value}. See their unplayed games, top genres, and gaming insights.`} />
         
         {/* Open Graph */}
         <meta property="og:title" content={`${profile.steam_name} - ${profile.profile_tagline || 'Unplayed Profile'}`} />
