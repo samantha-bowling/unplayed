@@ -428,6 +428,7 @@ const Index = () => {
       </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
+        <main className="flex-grow">
 
         {/* Hero */}
         <section className="w-full navbar-offset pb-8 px-4">
