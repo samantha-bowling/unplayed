@@ -1164,6 +1164,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_public_dustiest_game: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_dust_score: number
+          game_name: string
+          header_image: string
+        }[]
+      }
       get_stale_prices_for_refresh: {
         Args: { batch_size?: number }
         Returns: {
