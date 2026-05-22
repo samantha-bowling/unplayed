@@ -14,7 +14,8 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /auth/callback
+Disallow: /auth/steam-callback
 Disallow: /auth-debug
 Disallow: /login-error
 
-Sitemap: https://unplayed.lovable.app/sitemap.xml
+Sitemap: https://unplayed.wtf/sitemap.xml

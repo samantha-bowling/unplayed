@@ -1,0 +1,9 @@
+# unplayed
+
+> unplayed helps PC gamers discover games in their Steam library they've never played, surface forgotten gems, and conquer their backlog with stats like Dust Score, shelf life, and spending insights.
+
+## Pages
+
+- [Home](/): Overview of unplayed and how it helps you conquer your Steam backlog.
+- [Leaderboard](/leaderboard): Global rankings of gamers by Dust Score and backlog stats.
+- [Sign in](/auth): Sign in with Steam to import your library and analyze your backlog.
