@@ -131,13 +131,21 @@ export default function ProfilePage() {
   const mainStatType = ((profile.profile_main_stat || 'dust_score') as ProfileBadgeType);
   const mainStatConfig = PROFILE_BADGES[mainStatType];
 
+  // Badges that expose private data (financial or game counts) — hidden on visitor views.
+  const RESTRICTED_BADGES_FOR_VISITORS: ProfileBadgeType[] = [
+    'library_value',
+    'total_games',
+    'played_games',
+  ];
+
   // Helper function to get the appropriate data for each badge type
   const getBadgeData = (badgeType: ProfileBadgeType) => {
-    // Hide library_value for public viewers (not own profile)
-    if (badgeType === 'library_value' && !isOwnProfile) {
-      return { label: 'Library Value', value: 'Private', subtitle: undefined };
+    // Hide restricted badges for public viewers (not own profile)
+    if (!isOwnProfile && RESTRICTED_BADGES_FOR_VISITORS.includes(badgeType)) {
+      const config = PROFILE_BADGES[badgeType];
+      return { label: config.name, value: 'Private', subtitle: undefined };
     }
-    
+
     const config = PROFILE_BADGES[badgeType];
     if (badgeType === 'top_genre') {
       return config.format(stats?.genreStats);
@@ -154,15 +162,14 @@ export default function ProfilePage() {
   // Get main stat data
   const mainStatData = getBadgeData(mainStatType);
 
-  // Filter additional stats (only non-null badges, exclude library_value for public profiles)
+  // Filter additional stats (only non-null badges, exclude restricted ones for visitors)
   const additionalStats = [
     profile.profile_badge_1,
     profile.profile_badge_2,
     profile.profile_badge_3,
   ].filter(badge => {
     if (!badge) return false;
-    // Hide library_value badge when viewing others' profiles
-    if (badge === 'library_value' && !isOwnProfile) return false;
+    if (!isOwnProfile && RESTRICTED_BADGES_FOR_VISITORS.includes(badge as ProfileBadgeType)) return false;
     return true;
   }) as ProfileBadgeType[];
 
