@@ -1,88 +1,60 @@
-# Security Hardening Plan — 4 Fixes + 1 Documented Acceptance
+# Application Health Check — Execution Plan
 
-Sequential execution. Each finding is verified before moving to the next. **Owner read paths stay byte-identical** — visitor branches are the only behavior change in shared hooks.
+Scope locked from your feedback. Three small, independent batches. No DB migrations, no behavior changes.
 
----
+## Batch 1 — Console sweep (Tier 1)
 
-## Guardrail (applies to Findings 1 & 2)
+**Approach:** introduce a tiny helper, not inline guards.
 
-When updating `use-profile-stats.tsx`, **do not refactor the shared owner path**. The owner (authenticated, viewing self) must continue to read directly from `game_dust_breakdowns` and `user_metrics` exactly as today. Only the visitor branch (viewing someone else's public profile) is rerouted through new RPCs. No consolidation, no "while we're here" cleanup of the owner code path.
+- Create `src/lib/dev-log.ts`:
+  ```ts
+  const isDev = import.meta.env.DEV;
+  export const devLog  = (...a: unknown[]) => { if (isDev) console.log(...a); };
+  export const devWarn = (...a: unknown[]) => { if (isDev) console.warn(...a); };
+  // console.error stays as-is everywhere — useful for prod observability
+  ```
+- Sweep all `console.log` / `console.warn` calls in `src/**` → replace with `devLog` / `devWarn`. ~270 sites across ~80 files, top offenders: `supabase-debug.ts`, `use-game-picks.tsx`, `use-paginated-library.tsx`, `SteamAuthHandler.tsx`, `enhanced-steam-api.ts`, `useDirectRpcMetrics.tsx`, `useDirectRpcSpending.tsx`, `QueueManagerPage.tsx`.
+- Leave `console.error` untouched (intentional prod visibility).
+- Leave `supabase/functions/**` untouched (Deno runtime, separate logging story).
+- Leave `console.log` calls already gated by `process.env.NODE_ENV === 'development'` or `import.meta.env.DEV` untouched.
 
----
+**Risk:** zero — same runtime behavior in dev, silent in prod (which is already the stated policy).
 
-## Finding 1 — `game_dust_breakdowns` public exposure
+## Batch 2 — Migration file cleanup (Tier 1)
 
-**Migration:**
-- Drop policy `Allow public read for public profiles` on `game_dust_breakdowns`.
-- Create RPC `get_public_dustiest_game(p_user_id uuid)` — SECURITY DEFINER, gated by `is_profile_public(p_user_id)`, returns single top-scoring row: `game_name`, `current_dust_score`, `header_image`.
+- Inspect `supabase/migrations/add-performance-indexes.sql` (the only non-timestamped file).
+- Check via `supabase--read_query` against `pg_indexes` whether each index in that file already exists.
+  - If **all present** → delete the file (already applied historically, just lingering).
+  - If **any missing** → wrap into a proper timestamped migration and apply via `supabase--migration`.
+- Either way, the migrations directory ends up clean and timestamp-ordered.
 
-**Code:** `src/hooks/use-profile-stats.tsx` — visitor branch only: replace direct table query with `supabase.rpc('get_public_dustiest_game', ...)`.
+**Risk:** low — read-only check first, only writes if indexes are genuinely missing.
 
-**Verify:** anon `SELECT * FROM game_dust_breakdowns LIMIT 1` returns 0 rows; public profile still shows dustiest game; owner profile unchanged.
+## Batch 3 — Framer-motion duplicate check (Tier 2, kept per your call)
 
----
+- Grep `package.json` + `src/**` for: `framer-motion`, `motion/react`, `@react-spring`, `react-spring`, `gsap`, `lottie`, `auto-animate`.
+- Confirm only `framer-motion` is in use. Report findings inline in the closing message — no code change unless a duplicate is found.
 
-## Finding 2 — `user_metrics` public exposure (financial fields)
+**Risk:** zero — pure inspection.
 
-**Migration:**
-- Drop policy `Allow public read for public profiles` on `user_metrics`.
-- Create RPC `get_public_user_metrics(p_user_id uuid)` — SECURITY DEFINER, gated by `is_profile_public`, returns only: `clean_score`, `clean_score_tier`, `clean_streak`, `total_playtime_hours`, `recently_played_count`, `average_dust_score`, `total_dust_score`. **Excludes** all `*_cents` and all game-count columns.
+## Batch 4 — Error boundary spot-check (your addition)
 
-**Code:**
-- `src/hooks/use-profile-stats.tsx` — visitor branch only: call new RPC, return safe defaults (null/0) for excluded fields.
-- `src/pages/ProfilePage.tsx` — audit and hide any financial UI or game-count UI when viewing as non-owner.
+Not a full audit. Verify these two flows have a visible failure UI, not a silent hang:
 
-**Verify:** anon read of `user_metrics` blocked; public profile shows scores + playtime, no $ or counts; owner profile unchanged.
+1. **Steam auth flow** — `SteamAuthHandler.tsx`, `AuthCallbackHandler.tsx`, `SteamLoginButton.tsx`, `LoginErrorPage.tsx`. Confirm `try/catch` paths route to `LoginErrorPage` or surface a Sonner error toast, and that the auth route is wrapped in `DataErrorBoundary` (or equivalent).
+2. **Library sync / import** — `useLibraryImport`, `import-library` edge function call site, `ImportProgressIndicator`. Confirm failure → toast + progress indicator resets, no spinner-forever state.
 
----
+Deliverable: a short written assessment of any gaps + targeted fixes only where a real silent-failure path exists. No speculative wrapping of components that already have coverage.
 
-## Finding 3 — `leaderboard_snapshots` financial + count leakage
+**Risk:** low — additive only, won't touch happy paths.
 
-**Code:** `supabase/functions/calculate-leaderboard-rankings/index.ts`
-- When building snapshot rows: set `library_value_cents = null` unless the user has `show_library_value_on_leaderboard = true`.
-- Always set `total_games`, `unplayed_games`, `played_games` to `null` (or `0` if not nullable — confirm schema before migration).
-- Add comment noting opt-in preference governs financial inclusion.
+## Out of scope (explicitly)
 
-**Migration (one-time scrub):** `UPDATE leaderboard_snapshots SET library_value_cents = NULL WHERE user_id NOT IN (SELECT id FROM users WHERE show_library_value_on_leaderboard = true)`; null out game counts globally.
+- The 53 SECURITY DEFINER linter warnings (intentional design).
+- Page splits for `QueueManagerPage.tsx` / `Index.tsx`.
+- Dependency upgrades.
+- Refresh / query-key / RLS refactors.
 
-**Verify:** anon read confirms financial/count fields null for non-opted-in users; leaderboard UI unchanged (counts already hidden per Leaderboard Normalization memory).
+## Order of execution
 
----
-
-## Finding 4 — `games` table INSERT policy
-
-**Migration:** `DROP POLICY "Authenticated users can insert games" ON public.games;`
-
-**Code:** none. Edge functions use service role and bypass RLS.
-
-**Verify:** linter clears finding; sync edge functions still insert successfully.
-
----
-
-## Finding 5 — `v_public_profiles` SECURITY DEFINER (DESCOPED)
-
-**Decision:** Accept the linter finding. Do not drop or replace the view.
-
-**Action:**
-- Mark finding as ignored in Supabase dashboard with rationale.
-- Update `@security-memory` to document:
-  > `v_public_profiles` is intentionally SECURITY DEFINER. The view exposes only pre-approved public columns (`id`, `steam_name`, `steam_avatar`, `profile_*`) and is the correct pattern for bypassing owner-only RLS on the `users` table for public profile reads. Linter warning acknowledged and accepted.
-
-**No code changes.** `ProfilePage.tsx` and `use-realtime-leaderboard.tsx` are not touched.
-
----
-
-## End-of-pass validation
-
-1. Anonymous `read_query` against `game_dust_breakdowns`, `user_metrics`, `leaderboard_snapshots` — confirm financial/per-game fields inaccessible.
-2. Logged-out view of a public profile — renders correctly via new RPCs.
-3. Owner view of own profile — byte-identical to today.
-4. Re-run Supabase linter — confirm Findings 1–4 cleared; Finding 5 remains as accepted/documented.
-
-## Files touched
-
-- 4 migrations (Findings 1, 2, 3-scrub, 4)
-- `supabase/functions/calculate-leaderboard-rankings/index.ts`
-- `src/hooks/use-profile-stats.tsx` (visitor branch only)
-- `src/pages/ProfilePage.tsx` (visitor-mode UI hiding)
-- Security memory update (Finding 5 rationale + general posture)
+Batch 1 → Batch 2 → Batch 3 (report) → Batch 4 (report + targeted fixes). Each batch independently revertible.
