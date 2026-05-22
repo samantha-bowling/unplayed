@@ -94,10 +94,11 @@ Deno.serve(async (req) => {
     
     console.log(`Starting leaderboard calculation for snapshot date: ${snapshotDate}`);
 
-    // Get all users who opted into the leaderboard (public or anonymous)
+    // Get all users who opted into the leaderboard (public or anonymous).
+    // Also fetch the per-user opt-in flag for library value display.
     const { data: eligibleUsers, error: userError } = await supabase
       .from('users')
-      .select('id, steam_name, leaderboard_visibility')
+      .select('id, steam_name, leaderboard_visibility, show_library_value_on_leaderboard')
       .not('leaderboard_visibility', 'eq', 'off');
 
     if (userError) throw userError;
