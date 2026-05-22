@@ -392,8 +392,8 @@ const Index = () => {
       <Helmet>
         <title>unplayed – Conquer Your Steam Backlog</title>
         <meta name="description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
-        <link rel="canonical" href="https://unplayed.lovable.app/" />
-        <meta property="og:url" content="https://unplayed.lovable.app/" />
+        <link rel="canonical" href="https://unplayed.wtf/" />
+        <meta property="og:url" content="https://unplayed.wtf/" />
         <meta property="og:title" content="unplayed – Conquer Your Steam Backlog" />
         <meta property="og:description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
         <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
