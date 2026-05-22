@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import AuthSuccessAnimation from '@/components/AuthSuccessAnimation';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import TermsOfServiceDialog from '@/components/TermsOfServiceDialog';
@@ -55,6 +56,14 @@ const AuthPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+      <Helmet>
+        <title>Sign in to unplayed — Connect Steam & Track Your Backlog</title>
+        <meta name="description" content="Sign in to unplayed with Discord or Twitch, link your Steam account, and start analyzing your unplayed games, Dust Score, and gaming backlog." />
+        <link rel="canonical" href="https://unplayed.wtf/auth" />
+        <meta property="og:title" content="Sign in to unplayed" />
+        <meta property="og:description" content="Connect your account to start managing your Steam backlog with unplayed." />
+        <meta property="og:url" content="https://unplayed.wtf/auth" />
+      </Helmet>
       <AnimatePresence>
         {isLoading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-6">

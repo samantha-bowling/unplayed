@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Home, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import AuthErrorHandler from "@/components/AuthErrorHandler";
+import { Helmet } from "react-helmet-async";
 
 const NotFound = () => {
   const location = useLocation();
@@ -47,6 +48,11 @@ const NotFound = () => {
 
   return (
     <FullScreenLayout>
+      <Helmet>
+        <title>Page Not Found — unplayed</title>
+        <meta name="description" content="The page you're looking for doesn't exist on unplayed. Head back home to keep exploring your Steam backlog." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="flex-grow flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="mb-6 flex justify-center">
