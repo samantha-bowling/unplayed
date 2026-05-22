@@ -51,8 +51,9 @@ export default function ProfilePage() {
     enabled: !!userId,
   });
 
-  // Fetch profile stats
-  const { data: stats, isLoading: statsLoading } = useProfileStats(userId);
+  // Fetch profile stats — visitor path routes through gated RPCs that strip
+  // financial fields and game counts; owner path is byte-identical to before.
+  const { data: stats, isLoading: statsLoading } = useProfileStats(userId, isOwnProfile);
 
   // Privacy check: Only allow viewing public profiles or own profile
   if (!profileLoading && profile && profile.profile_visibility === 'private' && !isOwnProfile) {
