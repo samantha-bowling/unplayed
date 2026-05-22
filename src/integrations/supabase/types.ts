@@ -1172,6 +1172,18 @@ export type Database = {
           header_image: string
         }[]
       }
+      get_public_user_metrics: {
+        Args: { p_user_id: string }
+        Returns: {
+          average_dust_score: number
+          clean_score: number
+          clean_score_tier: string
+          clean_streak: number
+          recently_played_count: number
+          total_dust_score: number
+          total_playtime_hours: number
+        }[]
+      }
       get_stale_prices_for_refresh: {
         Args: { batch_size?: number }
         Returns: {
