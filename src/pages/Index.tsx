@@ -240,7 +240,7 @@ const Index = () => {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-space mb-6 text-unplayed-mint">
             Your PC games are gathering dust.
           </h1>
-          <p className="text-xl text-gray-300 mb-6 max-w-3xl mx-auto">
+          <p className="text-xl text-foreground/90 mb-6 max-w-3xl mx-auto">
             unplayed helps you conquer your massive Steam backlog and actually play the games you own.
           </p>
           <div className="flex justify-center gap-4 mb-4">
@@ -392,8 +392,8 @@ const Index = () => {
       <Helmet>
         <title>unplayed – Conquer Your Steam Backlog</title>
         <meta name="description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
-        <link rel="canonical" href="https://unplayed.lovable.app/" />
-        <meta property="og:url" content="https://unplayed.lovable.app/" />
+        <link rel="canonical" href="https://unplayed.wtf/" />
+        <meta property="og:url" content="https://unplayed.wtf/" />
         <meta property="og:title" content="unplayed – Conquer Your Steam Backlog" />
         <meta property="og:description" content="Discover how many Steam games you've never played. Track your backlog, dust scores, and spending with unplayed." />
         <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/gKolm4BO26SZgtzHFVTH9PMyhqV2/social-images/social-1759980433279-Screenshot 2025-10-04 082507.png" />
@@ -428,6 +428,7 @@ const Index = () => {
       </Helmet>
       <div className="min-h-screen flex flex-col">
         <Header />
+        <main className="flex-grow">
 
         {/* Hero */}
         <section className="w-full navbar-offset pb-8 px-4">
@@ -586,7 +587,7 @@ const Index = () => {
             </section>
           </>
         )}
-
+        </main>
         <Footer />
         {isMounted && (
           <>
