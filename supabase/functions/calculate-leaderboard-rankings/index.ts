@@ -94,10 +94,11 @@ Deno.serve(async (req) => {
     
     console.log(`Starting leaderboard calculation for snapshot date: ${snapshotDate}`);
 
-    // Get all users who opted into the leaderboard (public or anonymous)
+    // Get all users who opted into the leaderboard (public or anonymous).
+    // Also fetch the per-user opt-in flag for library value display.
     const { data: eligibleUsers, error: userError } = await supabase
       .from('users')
-      .select('id, steam_name, leaderboard_visibility')
+      .select('id, steam_name, leaderboard_visibility, show_library_value_on_leaderboard')
       .not('leaderboard_visibility', 'eq', 'off');
 
     if (userError) throw userError;
@@ -158,13 +159,18 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Use the pre-calculated values from user_metrics for consistency
-          const totalGames = userMetrics.total_games || 0;
-          const unplayedGames = userMetrics.unplayed_games || 0;
-          const playedGames = userMetrics.played_games || 0;
+          // Use the pre-calculated values from user_metrics for consistency.
+          // Privacy: game counts are never persisted to snapshots (always 0),
+          // and library value is only persisted when the user opts in via
+          // `show_library_value_on_leaderboard`. Both are gated regardless of
+          // what the UI does, so an anon read of leaderboard_snapshots cannot
+          // leak financial data or backlog size.
           const dustScore = userMetrics.total_dust_score || 0;
           const cleanScore = userMetrics.clean_score || 0;
-          const libraryValueCents = userMetrics.total_library_value_cents || 0;
+          const showLibraryValue = (user as any).show_library_value_on_leaderboard === true;
+          const libraryValueCents = showLibraryValue
+            ? (userMetrics.total_library_value_cents || 0)
+            : null;
 
           // Get previous rankings for this user from the previous snapshot
           let previousRanking = null;
@@ -179,7 +185,8 @@ Deno.serve(async (req) => {
             previousRanking = previousEntry && previousEntry.length > 0 ? previousEntry[0].ranking : null;
           }
 
-          // UPSERT leaderboard entry (this prevents duplicates) - FIXED variable name
+          // UPSERT leaderboard entry. Game-count columns are zeroed (NOT NULL
+          // in schema) so historical/audit reads cannot leak backlog sizes.
           const { error: upsertError } = await supabase
             .from('leaderboard_snapshots')
             .upsert({
@@ -187,16 +194,16 @@ Deno.serve(async (req) => {
               snapshot_date: snapshotDate,
               dust_score: dustScore,
               clean_score: cleanScore,
-              total_games: totalGames,
-              played_games: playedGames,
-              unplayed_games: unplayedGames, // FIXED: was unplayedGames, now unplayed_games
+              total_games: 0,
+              played_games: 0,
+              unplayed_games: 0,
               library_value_cents: libraryValueCents,
               username: user.leaderboard_visibility === 'public' ? user.steam_name : null,
               is_anonymous: user.leaderboard_visibility === 'anonymous',
               previous_ranking: previousRanking,
             }, {
-              onConflict: 'user_id,snapshot_date', // Use the unique constraint we created
-              ignoreDuplicates: false // Update existing entries
+              onConflict: 'user_id,snapshot_date',
+              ignoreDuplicates: false,
             });
 
           if (upsertError) {
