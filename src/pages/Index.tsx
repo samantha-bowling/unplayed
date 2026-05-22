@@ -587,7 +587,7 @@ const Index = () => {
             </section>
           </>
         )}
-
+        </main>
         <Footer />
         {isMounted && (
           <>
