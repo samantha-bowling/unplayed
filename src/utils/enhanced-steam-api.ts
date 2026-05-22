@@ -1,3 +1,4 @@
+import { devLog, devWarn } from '../lib/dev-log';
 
 /**
  * Enhanced Steam API utilities with better large library handling
@@ -26,22 +27,22 @@ export async function fetchCompleteSteamLibrary(
     chunkSize = 1000
   } = options;
 
-  console.log(`🎮 Fetching complete Steam library for ${steamId}`);
-  console.log(`📋 Options:`, { includeAppInfo, includePlayedFreeGames, retryAttempts });
+  devLog(`🎮 Fetching complete Steam library for ${steamId}`);
+  devLog(`📋 Options:`, { includeAppInfo, includePlayedFreeGames, retryAttempts });
 
   let allGames: any[] = [];
   let attempt = 0;
 
   while (attempt < retryAttempts) {
     try {
-      console.log(`🔄 Attempt ${attempt + 1}/${retryAttempts}`);
+      devLog(`🔄 Attempt ${attempt + 1}/${retryAttempts}`);
 
       // Primary approach: GetOwnedGames with app info
       const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?` +
         `key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=${includeAppInfo ? 1 : 0}` +
         `&include_played_free_games=${includePlayedFreeGames ? 1 : 0}`;
 
-      console.log(`📡 Fetching from Steam API...`);
+      devLog(`📡 Fetching from Steam API...`);
       const response = await fetch(ownedGamesUrl);
 
       if (!response.ok) {
@@ -55,14 +56,14 @@ export async function fetchCompleteSteamLibrary(
       }
 
       allGames = data.response.games || [];
-      console.log(`✅ Successfully fetched ${allGames.length} games`);
+      devLog(`✅ Successfully fetched ${allGames.length} games`);
 
       // If we got a reasonable number of games, break out of retry loop
       if (allGames.length > 0) {
         break;
       }
 
-      console.warn(`⚠️ Got 0 games, this might indicate privacy settings or API issues`);
+      devWarn(`⚠️ Got 0 games, this might indicate privacy settings or API issues`);
 
     } catch (error) {
       console.error(`❌ Attempt ${attempt + 1} failed:`, error);
@@ -73,7 +74,7 @@ export async function fetchCompleteSteamLibrary(
       
       // Wait before retrying (exponential backoff)
       const delay = Math.pow(2, attempt) * 1000;
-      console.log(`⏳ Waiting ${delay}ms before retry...`);
+      devLog(`⏳ Waiting ${delay}ms before retry...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
     
@@ -95,7 +96,7 @@ export async function fetchCompleteSteamLibrary(
     ...game
   }));
 
-  console.log(`🎯 Processed ${processedGames.length} games with enhanced data`);
+  devLog(`🎯 Processed ${processedGames.length} games with enhanced data`);
   
   return processedGames;
 }
@@ -138,9 +139,9 @@ export function validateLibraryCompleteness(
   
   const isComplete = warnings.length === 0;
   
-  console.log(`📊 Library validation: ${isComplete ? 'PASSED' : 'WARNINGS'}`);
+  devLog(`📊 Library validation: ${isComplete ? 'PASSED' : 'WARNINGS'}`);
   if (warnings.length > 0) {
-    console.warn('⚠️ Validation warnings:', warnings);
+    devWarn('⚠️ Validation warnings:', warnings);
   }
   
   return {

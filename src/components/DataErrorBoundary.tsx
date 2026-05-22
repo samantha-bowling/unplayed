@@ -2,6 +2,7 @@
 import React, { Component, ReactNode } from 'react';
 import { useDemoMode } from '@/context/DemoModeContext';
 import { getUnplayedDataService } from '@/lib/data-service';
+import { devLog } from '../lib/dev-log';
 
 interface Props {
   children: ReactNode;
@@ -32,7 +33,7 @@ export class DataErrorBoundaryClass extends Component<Props & { isDemo: boolean 
     
     if (isDemo) {
       // For demo mode, log but don't show error to user
-      console.log(`[DataErrorBoundary] Demo mode error in ${component}, providing fallback`);
+      devLog(`[DataErrorBoundary] Demo mode error in ${component}, providing fallback`);
     } else {
       // For live mode, log with more detail
       console.error(`[DataErrorBoundary] Live mode error in ${component}:`, error, errorInfo);

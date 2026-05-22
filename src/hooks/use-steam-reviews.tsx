@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { devLog } from '../lib/dev-log';
 
 interface SteamReview {
   review: string;
@@ -49,7 +50,7 @@ const useSteamReviews = (gameId: number | null) => {
       if (!gameId) return null;
 
       try {
-        console.log(`Calling fetch-steam-reviews for game ${gameId}, fallback level: ${fallbackLevel}`);
+        devLog(`Calling fetch-steam-reviews for game ${gameId}, fallback level: ${fallbackLevel}`);
         
         const { data: responseData, error } = await supabase.functions.invoke('fetch-steam-reviews', {
           body: { gameId, fallbackLevel }

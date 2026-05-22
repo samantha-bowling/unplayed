@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import { devLog } from '../lib/dev-log';
 
 /**
  * Options for configuring the useAdminStats hook
@@ -33,7 +34,7 @@ export interface FetchStatsOptions {
  * const { stats, isLoading } = useAdminStats(fetchUserStats, {
  *   fetchOnMount: true,
  *   refetchInterval: 60000, // Refresh every minute
- *   onSuccess: (data) => console.log('Stats loaded:', data)
+ *   onSuccess: (data) => devLog('Stats loaded:', data)
  * });
  * ```
  */

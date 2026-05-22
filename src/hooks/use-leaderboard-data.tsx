@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { devLog } from '../lib/dev-log';
 
 export type LeaderboardEntry = {
   id: string;
@@ -90,7 +91,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
       
       if (error) {
         // It's possible there is no previous snapshot yet
-        console.log('No previous snapshot found');
+        devLog('No previous snapshot found');
         return null;
       }
       
@@ -265,7 +266,7 @@ export const useLeaderboardData = (type: LeaderboardType) => {
   // Fixed timeframe setter for backward compatibility (always 'all')
   const changeTimeframe = (newTimeframe: 'all' | 'month' | 'week') => {
     // For all-time leaderboard, we ignore timeframe changes
-    console.log('Timeframe changes ignored for all-time leaderboard');
+    devLog('Timeframe changes ignored for all-time leaderboard');
   };
 
   // Find user rank in the current data

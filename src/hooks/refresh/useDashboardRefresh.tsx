@@ -6,6 +6,7 @@ import { useRefreshState } from './useRefreshState';
 import { useRefreshAuth } from './useRefreshAuth';
 import { toast } from 'sonner';
 import { calculateUserMetricsDirect } from '@/hooks/useDirectRpcMetrics';
+import { devLog } from '../../lib/dev-log';
 
 export const useDashboardRefresh = () => {
   const { 
@@ -36,7 +37,7 @@ export const useDashboardRefresh = () => {
     setOperationLoading('dashboard', true);
 
     try {
-      console.log('📊 Starting dashboard metrics refresh...');
+      devLog('📊 Starting dashboard metrics refresh...');
 
       // Use direct RPC call with automatic fallback to edge function
       const result = await calculateUserMetricsDirect(user.id);

@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronRight, Bug } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import useAuthPermission from '@/hooks/use-auth-permission';
+import { devLog } from '../lib/dev-log';
 import { 
   getAuthDebugInfo, 
   testGamePicksRLS, 
@@ -35,18 +36,18 @@ const DebugPanel = () => {
   }
 
   const runAuthDebug = async () => {
-    console.log('🔍 Running auth debug...');
+    devLog('🔍 Running auth debug...');
     const authInfo = await getAuthDebugInfo();
     setDebugInfo(authInfo);
   };
 
   const runRLSTest = async () => {
-    console.log('🔒 Running RLS test...');
+    devLog('🔒 Running RLS test...');
     await testGamePicksRLS();
   };
 
   const runTableAccessTest = async () => {
-    console.log('🔍 Running table access test...');
+    devLog('🔍 Running table access test...');
     await testUserTableAccess();
   };
 

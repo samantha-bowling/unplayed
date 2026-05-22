@@ -3,6 +3,7 @@
  * Utilities for detecting what games need to be imported vs already exist
  */
 import { supabase } from '@/integrations/supabase/client';
+import { devLog } from '../lib/dev-log';
 
 export interface ImportAnalysis {
   existingGames: number[];
@@ -19,7 +20,7 @@ export async function analyzeLibraryForImport(
   userId: string, 
   steamLibrary: any[]
 ): Promise<ImportAnalysis> {
-  console.log(`🔍 Analyzing library for user ${userId}: ${steamLibrary.length} games from Steam`);
+  devLog(`🔍 Analyzing library for user ${userId}: ${steamLibrary.length} games from Steam`);
   
   // Get all game IDs that the user already has imported
   const { data: existingUserGames, error } = await supabase
@@ -33,7 +34,7 @@ export async function analyzeLibraryForImport(
   }
   
   const existingGameIds = new Set(existingUserGames?.map(ug => ug.game_id) || []);
-  console.log(`📚 User already has ${existingGameIds.size} games imported`);
+  devLog(`📚 User already has ${existingGameIds.size} games imported`);
   
   // Filter to only new games that haven't been imported yet
   const newGames = steamLibrary.filter(game => {
@@ -41,8 +42,8 @@ export async function analyzeLibraryForImport(
     return !existingGameIds.has(gameId);
   });
   
-  console.log(`🆕 Found ${newGames.length} new games to import`);
-  console.log(`✅ ${existingGameIds.size} games already imported, skipping`);
+  devLog(`🆕 Found ${newGames.length} new games to import`);
+  devLog(`✅ ${existingGameIds.size} games already imported, skipping`);
   
   return {
     existingGames: Array.from(existingGameIds),
@@ -63,7 +64,7 @@ export function shouldPerformFullResync(analysis: ImportAnalysis): boolean {
   // If we're missing more than 10% of the library, suggest full resync
   const missingPercentage = newGamesCount / totalLibrarySize;
   
-  console.log(`📊 Library analysis: ${missingPercentage * 100}% new games detected`);
+  devLog(`📊 Library analysis: ${missingPercentage * 100}% new games detected`);
   
   return missingPercentage > 0.1; // More than 10% missing
 }

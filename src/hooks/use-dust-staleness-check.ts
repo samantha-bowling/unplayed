@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/use-query-keys';
+import { devLog } from '../lib/dev-log';
 
 /**
  * Checks if the user's game_dust_breakdowns are stale compared to user_games,
@@ -50,7 +51,7 @@ export const useDustStalenessCheck = () => {
         const isStale = !breakdownRow || (gameTime > breakdownTime);
 
         if (isStale) {
-          console.log('[DustStaleness] Breakdowns are stale, auto-refreshing...');
+          devLog('[DustStaleness] Breakdowns are stale, auto-refreshing...');
           setIsAutoRefreshing(true);
 
           await supabase.rpc('refresh_user_dust_breakdowns', {
@@ -62,7 +63,7 @@ export const useDustStalenessCheck = () => {
             queryKey: queryKeys.dustBreakdowns(user.id),
           });
 
-          console.log('[DustStaleness] Auto-refresh complete');
+          devLog('[DustStaleness] Auto-refresh complete');
         }
       } catch (err) {
         console.error('[DustStaleness] Error during staleness check:', err);

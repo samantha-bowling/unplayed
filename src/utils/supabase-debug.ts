@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { devLog, devWarn } from '../lib/dev-log';
 
 /**
  * Debug utilities for Supabase authentication and RLS policy issues
@@ -37,7 +38,7 @@ export async function getAuthDebugInfo(): Promise<AuthDebugInfo> {
     timestamp: new Date().toISOString()
   };
 
-  console.log('🔐 Auth Debug Info:', debugInfo);
+  devLog('🔐 Auth Debug Info:', debugInfo);
   
   if (error) {
     console.error('🔐 Auth Session Error:', error);
@@ -50,12 +51,12 @@ export async function getAuthDebugInfo(): Promise<AuthDebugInfo> {
  * Test RLS policies for game_picks table
  */
 export async function testGamePicksRLS(): Promise<void> {
-  console.log('🔒 Testing game_picks RLS policies...');
+  devLog('🔒 Testing game_picks RLS policies...');
   
   const authInfo = await getAuthDebugInfo();
   
   if (!authInfo.isAuthenticated) {
-    console.warn('🔒 User not authenticated - RLS tests will fail');
+    devWarn('🔒 User not authenticated - RLS tests will fail');
     return;
   }
 
@@ -74,7 +75,7 @@ export async function testGamePicksRLS(): Promise<void> {
         hint: error.hint
       });
     } else {
-      console.log('✅ RLS SELECT test passed:', data?.length || 0, 'records accessible');
+      devLog('✅ RLS SELECT test passed:', data?.length || 0, 'records accessible');
     }
   } catch (err) {
     console.error('🔒 RLS SELECT test exception:', err);
@@ -102,7 +103,7 @@ export async function testGamePicksRLS(): Promise<void> {
         hint: error.hint
       });
     } else {
-      console.log('✅ RLS INSERT test passed:', data);
+      devLog('✅ RLS INSERT test passed:', data);
       
       // Clean up test record
       await supabase
@@ -154,12 +155,12 @@ export function logDatabaseError(operation: string, tableName: string, error: an
  * Test user's access to various tables with type-safe approach
  */
 export async function testUserTableAccess(): Promise<void> {
-  console.log('🔍 Testing user table access...');
+  devLog('🔍 Testing user table access...');
   
   const authInfo = await getAuthDebugInfo();
   
   if (!authInfo.isAuthenticated) {
-    console.warn('🔍 User not authenticated - skipping table access tests');
+    devWarn('🔍 User not authenticated - skipping table access tests');
     return;
   }
 
@@ -176,7 +177,7 @@ export async function testUserTableAccess(): Promise<void> {
         message: error.message
       });
     } else {
-      console.log(`✅ Access granted to users:`, data?.length || 0, 'records');
+      devLog(`✅ Access granted to users:`, data?.length || 0, 'records');
     }
   } catch (err) {
     console.error(`💥 Exception accessing users:`, err);
@@ -195,7 +196,7 @@ export async function testUserTableAccess(): Promise<void> {
         message: error.message
       });
     } else {
-      console.log(`✅ Access granted to user_games:`, data?.length || 0, 'records');
+      devLog(`✅ Access granted to user_games:`, data?.length || 0, 'records');
     }
   } catch (err) {
     console.error(`💥 Exception accessing user_games:`, err);
@@ -214,7 +215,7 @@ export async function testUserTableAccess(): Promise<void> {
         message: error.message
       });
     } else {
-      console.log(`✅ Access granted to games:`, data?.length || 0, 'records');
+      devLog(`✅ Access granted to games:`, data?.length || 0, 'records');
     }
   } catch (err) {
     console.error(`💥 Exception accessing games:`, err);
@@ -233,7 +234,7 @@ export async function testUserTableAccess(): Promise<void> {
         message: error.message
       });
     } else {
-      console.log(`✅ Access granted to game_picks:`, data?.length || 0, 'records');
+      devLog(`✅ Access granted to game_picks:`, data?.length || 0, 'records');
     }
   } catch (err) {
     console.error(`💥 Exception accessing game_picks:`, err);

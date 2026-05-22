@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Loader2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { devLog } from '../../lib/dev-log';
 
 interface ScoringWeights {
   userOwned: number;
@@ -67,7 +68,7 @@ const SmartPrioritizationCard: React.FC = () => {
         toast.info("Running analysis (dry run)...");
       }
 
-      console.log('Calling smart prioritization with:', { targetCount, weights, dryRun });
+      devLog('Calling smart prioritization with:', { targetCount, weights, dryRun });
       
       const { data, error } = await supabase.functions.invoke('prioritize-smart-queue', {
         body: {
@@ -91,7 +92,7 @@ const SmartPrioritizationCard: React.FC = () => {
         toast.success(`Successfully prioritized ${data.updated} games in the queue!`);
       }
 
-      console.log('Smart prioritization result:', data);
+      devLog('Smart prioritization result:', data);
 
     } catch (err) {
       console.error('Unexpected error:', err);

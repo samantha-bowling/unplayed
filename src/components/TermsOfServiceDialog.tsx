@@ -1,5 +1,6 @@
 
 import React from "react";
+import { devLog } from '../lib/dev-log';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ interface TermsOfServiceDialogProps {
 
 const TermsOfServiceDialog = ({ open, onOpenChange }: TermsOfServiceDialogProps) => {
   if (process.env.NODE_ENV === "development") {
-    console.log("TermsOfServiceDialog render: open =", open);
+    devLog("TermsOfServiceDialog render: open =", open);
   }
 
   return (
